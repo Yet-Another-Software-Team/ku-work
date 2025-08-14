@@ -35,7 +35,7 @@ go mod download
    cp sample.env .env
    ```
 
-2. Edit `.env` file with your database credentials, for example:
+2. Edit `.env` file with your database credentials:
    ```env
    DB_USERNAME=your_db_username
    DB_PASSWORD=your_db_password
@@ -43,6 +43,12 @@ go mod download
    DB_PORT=5432
    DB_NAME=ku_work_db
    LISTEN_ADDRESS=:8000
+   
+   # CORS Configuration (optional)
+   CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+   CORS_ALLOWED_METHODS=GET,POST,PUT,DELETE,OPTIONS
+   CORS_ALLOWED_HEADERS=Origin,Content-Length,Content-Type,Authorization
+   CORS_ALLOW_CREDENTIALS=false
    ```
 
 ### 3. Frontend Setup
@@ -62,6 +68,17 @@ Or using npm:
 ```bash
 npm install
 ```
+
+#### Environment Configuration
+1. Copy the sample environment file:
+   ```bash
+   cp sample.env .env
+   ```
+
+2. Edit `.env` file with your backend URL (default should work for local development):
+   ```env
+   API_BASE_URL=http://localhost:8000
+   ```
 
 ## How to Run
 
