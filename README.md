@@ -32,7 +32,13 @@ go mod download
 #### Environment Configuration
 1. Copy the sample environment file:
    ```bash
+   # Linux/Unix/MacOS
    cp sample.env .env
+   
+   # Windows
+   copy sample.env .env
+   
+   # Edit .env with your configuration
    ```
 
 2. Edit `.env` file with your database credentials:
@@ -72,7 +78,13 @@ npm install
 #### Environment Configuration
 1. Copy the sample environment file:
    ```bash
+   # Linux/Unix/MacOS
    cp sample.env .env
+   
+   # Windows
+   copy sample.env .env
+   
+   # Edit .env with your configuration
    ```
 
 2. Edit `.env` file with your backend URL (default should work for local development):

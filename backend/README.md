@@ -16,7 +16,12 @@ A RESTful API built with Go, Gin framework, PostgreSQL, and GORM for user manage
 
 2. **Set up environment variables**
    ```bash
+   # Linux/Unix/MacOS
    cp sample.env .env
+   
+   # Windows
+   copy sample.env .env
+   
    # Edit .env with your configuration
    ```
 

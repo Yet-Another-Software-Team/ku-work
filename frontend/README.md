@@ -1,36 +1,76 @@
-# Nuxt Minimal Starter
+# KU-Work Frontend
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+A modern Vue.js frontend application built with Nuxt 3, providing a user-friendly interface for the KU-Work user management system.
 
-## Setup
+## Prerequisites
 
-Make sure to install dependencies:
+- **Node.js** 18+ 
+- **Bun**
+- **Backend API** running on http://localhost:8000 (default)
 
+## Installation
+
+### 1. Install Dependencies
+
+Using Bun (recommended):
 ```bash
-# bun
 bun install
 ```
 
-## Development Server
+Using npm:
+```bash
+npm install
+```
 
-Start the development server on `http://localhost:3000`:
+### 2. Environment Configuration
+
+Copy the sample environment file and configure your API settings:
+
+```bash
+cp sample.env .env
+```
+
+Edit `.env` with your backend API URL:
+```env
+API_BASE_URL=http://localhost:8000
+```
+
+## Development
+
+### Start Development Server
 
 ```bash
 bun run dev
 ```
 
-## Production
+The application will be available at `http://localhost:3000`
 
-Build the application for production:
+### Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `bun run dev` | Start development server |
+| `bun run build` | Build for production |
+| `bun run preview` | Preview production build |
+| `bun run generate` | Generate static site |
+
+## 🚀 Production Deployment
+
+### Build Application
 
 ```bash
 bun run build
 ```
 
-Locally preview production build:
+### Preview Production Build
 
 ```bash
 bun run preview
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+### Static Generation (Optional)
+
+For static hosting:
+```bash
+bun run generate
+```
