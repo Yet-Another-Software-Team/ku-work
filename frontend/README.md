@@ -55,7 +55,7 @@ The application will be available at `http://localhost:3000`
 | `bun run preview` | Preview production build |
 | `bun run generate` | Generate static site |
 
-## 🚀 Production Deployment
+## Production Deployment
 
 ### Build Application
 
