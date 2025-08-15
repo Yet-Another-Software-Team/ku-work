@@ -11,7 +11,7 @@ A RESTful API built with Go, Gin framework, PostgreSQL, and GORM for user manage
 
 1. **Install Go dependencies**
    ```bash
-   go mod tidy
+   go mod download
    ```
 
 2. **Set up environment variables**
@@ -28,9 +28,14 @@ A RESTful API built with Go, Gin framework, PostgreSQL, and GORM for user manage
 3. **Set up the database**
    - Option A: Use Docker Compose (recommended)
      ```bash
-     docker-compose up -d db
+     docker compose up -d db
      ```
    - Option B: Install PostgreSQL locally and create a database
+   ```sql
+    CREATE DATABASE ku_work_db;
+    ```
+    replace `ku_work_db` with your desired database name
+
 
 ## Configuration
 
@@ -59,7 +64,7 @@ Copy `sample.env` to `.env` and configure the following variables:
 
 1. **Start the database** (if using Docker)
    ```bash
-   docker-compose up -d db
+   docker compose up -d db
    ```
 
 2. **Run the application**
@@ -67,7 +72,7 @@ Copy `sample.env` to `.env` and configure the following variables:
    go run main.go
    ```
 
-### Production Build
+### Production Build (WIP, NOT TESTED)
 
 1. **Build the binary**
    ```bash
@@ -108,28 +113,23 @@ Copy `sample.env` to `.env` and configure the following variables:
     - `400`: Invalid request body
     - `500`: Internal server error
 
-## Docker Setup
+## Docker Usage
 
-The project includes Docker Compose configuration for easy database setup:
+The project includes Docker Compose configuration for easy database usage:
 
 1. **Start the database**
    ```bash
-   docker-compose up -d db
+   docker compose up -d db
    ```
 
-2. **View database logs**
+2. **Stop the database**
    ```bash
-   docker-compose logs db
+   docker compose down
    ```
 
-3. **Stop the database**
+3. **Reset database (remove volumes)**
    ```bash
-   docker-compose down
-   ```
-
-4. **Reset database (remove volumes)**
-   ```bash
-   docker-compose down -v
+   docker compose down -v
    ```
   
 ### Code Organization
