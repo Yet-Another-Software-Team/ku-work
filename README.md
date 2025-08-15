@@ -100,6 +100,7 @@ npm install
    ```bash
    cd backend
    docker compose up -d
+   go run .
    ```
 
 2. **Access the application**:
