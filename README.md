@@ -13,7 +13,7 @@ A full-stack web application with Go backend and Nuxt.js frontend, featuring use
 ### Optional (Recommended)
 - **Docker** and **Docker Compose** for containerized development
 
-## 🛠️ Installation
+## Installation
 
 ### 1. Clone the Repository
 
