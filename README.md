@@ -102,10 +102,15 @@ npm install
    docker compose up -d
    go run .
    ```
+   and
+   ```bash
+   cd frontend
+   bun run dev
+   ```
 
 2. **Access the application**:
    - Backend API: http://localhost:8000
-   - Frontend: Start separately (see manual setup below)
+   - Frontend: http://localhost:3000
 
 ### Option 2: Manual Setup
 
@@ -114,11 +119,12 @@ Make sure PostgreSQL is running and create a database:
 ```sql
 CREATE DATABASE ku_work_db;
 ```
+replace `ku_work_db` with your desired database name
 
 #### 2. Start Backend Server
 ```bash
 cd backend
-go run main.go
+go run .
 ```
 The backend will start on **http://localhost:8000**
 
