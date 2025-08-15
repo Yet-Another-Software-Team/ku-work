@@ -4,7 +4,7 @@ A modern Vue.js frontend application built with Nuxt 3, providing a user-friendl
 
 ## Prerequisites
 
-- **Node.js** 18+ 
+- **Node.js** 18+
 - **Bun**
 - **Backend API** running on http://localhost:8000 (default)
 
@@ -21,9 +21,15 @@ bun install
 
 Copy the sample environment file and configure your API settings:
 
-```bash
-cp sample.env .env
-```
+   ```bash
+   # Linux/Unix/MacOS
+   cp sample.env .env
+
+   # Windows
+   copy sample.env .env
+
+   # Edit .env with your configuration
+   ```
 
 Edit `.env` with your backend API URL:
 ```env
