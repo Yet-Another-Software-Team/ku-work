@@ -12,14 +12,9 @@ A modern Vue.js frontend application built with Nuxt 3, providing a user-friendl
 
 ### 1. Install Dependencies
 
-Using Bun (recommended):
+Using Bun:
 ```bash
 bun install
-```
-
-Using npm:
-```bash
-npm install
 ```
 
 ### 2. Environment Configuration

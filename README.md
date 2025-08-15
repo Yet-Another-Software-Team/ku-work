@@ -65,14 +65,9 @@ cd ../frontend
 ```
 
 #### Install Dependencies
-Using Bun (recommended):
+Using Bun:
 ```bash
 bun install
-```
-
-Or using npm:
-```bash
-npm install
 ```
 
 #### Environment Configuration
