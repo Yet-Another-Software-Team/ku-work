@@ -21,6 +21,5 @@ services:
       start_period: 10s
       interval: 10s
       retries: 6
-    command: postgres -c "log_statement=all" && psql -U ${DB_USERNAME} -c "CREATE DATABASES IF NOT EXISTS ${DB_NAME}"
 volumes:
   db:
