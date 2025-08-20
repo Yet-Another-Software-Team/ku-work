@@ -2,24 +2,23 @@
     <div>
         <h1 class="text-8xl w-full text-center font-bold">API Test</h1>
         <p class="text-2xl w-full text-center mx-auto">
-            This is page for testing API endpoints and it is a subject to be
-            changed
+            This is a page for testing API endpoints and is subject to change.
         </p>
 
-        <!-- Add User Card -->
+        <!-- User Registration Card -->
         <UCard class="m-4">
             <template #header>
-                <h2>Add User</h2>
+                <h2>Register User</h2>
             </template>
             <div class="flex flex-col gap-2">
                 <UInput
                     v-model="user"
-                    class="w-[50%] h-[2em]"
+                    class="w-full h-[2em]"
                     placeholder="Username"
                 />
                 <UInput
                     v-model="password"
-                    class="w-[50%] h-[2em]"
+                    class="w-full h-[2em]"
                     placeholder="Password"
                     :type="show ? 'text' : 'password'"
                     :ui="{ trailing: 'pe-1' }"
@@ -44,83 +43,133 @@
             <template #footer>
                 <div class="flex gap-2">
                     <UButton
-                        label="Add User"
+                        label="Register User"
                         :loading="isAdding"
                         :disabled="!user || !password"
                         @click="addUser"
-                    />
-                    <UButton
-                        label="Refresh Users"
-                        variant="outline"
-                        :loading="isLoading"
-                        @click="fetchUsers"
                     />
                 </div>
             </template>
         </UCard>
 
-        <!-- Users List Card -->
+        <!-- Login Card -->
         <UCard class="m-4">
             <template #header>
-                <h2>Users List</h2>
+                <h2>Login</h2>
             </template>
-
-            <div v-if="isLoading" class="flex justify-center p-4">
-                <div
-                    class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"
+            <div class="flex flex-col gap-2">
+                <UInput
+                    v-model="loginUser.username"
+                    class="w-full h-[2em]"
+                    placeholder="Username"
+                />
+                <UInput
+                    v-model="loginUser.password"
+                    class="w-full h-[2em]"
+                    placeholder="Password"
+                    type="password"
                 />
             </div>
-
-            <div
-                v-else-if="users.length === 0"
-                class="text-center p-4 text-gray-500"
-            >
-                No users found
-            </div>
-
-            <div v-else class="space-y-2">
-                <div
-                    v-for="(userData, index) in users"
-                    :key="index"
-                    class="p-3 border border-gray-200 rounded-lg flex justify-between items-center"
-                >
-                    <div>
-                        <span class="text-gray-600 pr-4">ID: {{ userData.ID || userData.id }}</span>
-                        <span class="font-medium">{{
-                            userData.Username ||
-                            userData.username ||
-                            `User ${index + 1}`
-                        }}</span>
+            <template #footer>
+                <div class="flex flex-col gap-2">
+                    <UButton
+                        label="Login"
+                        :loading="isLoggingIn"
+                        :disabled="!loginUser.username || !loginUser.password"
+                        @click="login"
+                    />
+                    <div
+                        v-if="localToken"
+                        class="text-wrap break-all text-sm mt-2"
+                    >
+                        <h4 class="font-bold">JWT Token in Local Storage:</h4>
+                        <p class="text-gray-500">{{ localToken }}</p>
                     </div>
                 </div>
+            </template>
+        </UCard>
+        
+        <!-- Logout Card -->
+        <UCard class="m-4">
+            <template #header>
+                <h2>Logout</h2>
+            </template>
+            <p>
+                Click this button to log out. This will remove your JWT token and clear the protected route response.
+            </p>
+            <template #footer>
+                <UButton
+                    label="Logout"
+                    :disabled="!localToken"
+                    color="primary"
+                    @click="logout"
+                />
+            </template>
+        </UCard>
+
+        <!-- Protected Route Card -->
+        <UCard class="m-4">
+            <template #header>
+                <h2>Test Protected Route</h2>
+            </template>
+            <div class="flex flex-col gap-2">
+                <p>
+                    Click the button below to test the protected `/protected`
+                    route. You must be logged in and have a JWT token stored.
+                </p>
             </div>
+            <template #footer>
+                <div class="flex flex-col gap-2">
+                    <UButton
+                        label="Test API"
+                        :loading="isTestingProtected"
+                        :disabled="!localToken"
+                        @click="testProtected"
+                    />
+                    <div v-if="profileData" class="text-sm mt-2">
+                        <h4 class="font-bold">API Response:</h4>
+                        <pre
+                            class="bg-gray-100 p-2 rounded-lg text-gray-800 break-all"
+                            >{{ JSON.stringify(profileData, null, 2) }}</pre>
+                        >
+                    </div>
+                </div>
+            </template>
         </UCard>
     </div>
 </template>
 
 <script setup>
+import { onMounted } from 'vue';
+
 const toast = useToast();
 const config = useRuntimeConfig();
 
+// Registration
 const user = ref("");
 const password = ref("");
 const show = ref(false);
-const users = ref([]);
-const isLoading = ref(false);
 const isAdding = ref(false);
 
-// Fetch users on component mount
-onMounted(() => {
-    fetchUsers();
+// Login
+const loginUser = ref({
+    username: "",
+    password: "",
 });
+const localToken = ref(null);
+const isLoggingIn = ref(false);
 
-// Function to add a new user
+// Protected Route
+const profileData = ref(null);
+const isTestingProtected = ref(false);
+
+// Function to register a new user
 const addUser = async () => {
     if (!user.value || !password.value) {
         toast.add({
             title: "Validation Error",
             description: "Please provide both username and password",
-            color: "error",
+            color: "red",
         });
         return;
     }
@@ -128,35 +177,32 @@ const addUser = async () => {
     isAdding.value = true;
 
     try {
-        const _ = await $fetch("/create_user", {
+        const _ = await $fetch("/register", {
             method: "POST",
             baseURL: config.public.apiBaseUrl,
             headers: {
                 "Content-Type": "application/json",
             },
             body: {
-                user: user.value,
+                username: user.value,
                 password: password.value,
             },
         });
 
         toast.add({
             title: "Success",
-            description: "User created successfully!",
-            color: "success",
+            description: "User registered successfully!",
+            color: "green",
         });
 
         // Clear form
         user.value = "";
         password.value = "";
         show.value = false;
-
-        // Refresh users list
-        await fetchUsers();
     } catch (error) {
         console.error("Error creating user:", error);
 
-        let errorMessage = "Failed to create user";
+        let errorMessage = "Failed to register user";
         if (error.data?.detail) {
             errorMessage = error.data.detail;
         } else if (error.data?.message) {
@@ -175,49 +221,213 @@ const addUser = async () => {
     }
 };
 
-// Function to fetch all users
-const fetchUsers = async () => {
-    isLoading.value = true;
+// Function to log in and get tokens
+const login = async () => {
+    if (!loginUser.value.username || !loginUser.value.password) {
+        toast.add({
+            title: "Validation Error",
+            description: "Please provide both username and password for login",
+            color: "error",
+        });
+        return;
+    }
+
+    isLoggingIn.value = true;
+    localToken.value = null;
+    profileData.value = null;
 
     try {
-        const response = await $fetch("/users", {
-            method: "GET",
+        const response = await $fetch("/login", {
+            method: "POST",
             baseURL: config.public.apiBaseUrl,
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: {
+                username: loginUser.value.username,
+                password: loginUser.value.password,
+            },
+            // Add credentials to allow cookies to be sent
+            credentials: 'include'
         });
 
-        // Handle backend response format: {"users": [...]}
-        if (response.users && Array.isArray(response.users)) {
-            users.value = response.users;
-        } else if (Array.isArray(response)) {
-            users.value = response;
-        } else if (response.data && Array.isArray(response.data)) {
-            users.value = response.data;
-        } else {
-            users.value = [];
-        }
-    } catch (error) {
-        console.error("Error fetching users:", error);
+        // Store tokens
+        localStorage.setItem("jwt_token", response.token);
+        localToken.value = response.token;
 
-        let errorMessage = "Failed to fetch users";
-        if (error.data?.detail) {
-            errorMessage = error.data.detail;
-        } else if (error.data?.message) {
+        toast.add({
+            title: "Login Successful",
+            description:
+                "You have successfully logged in and received a token.",
+            color: "success",
+        });
+    } catch (error) {
+        console.error("Error during login:", error);
+
+        let errorMessage = "Failed to log in";
+        if (error.data?.message) {
             errorMessage = error.data.message;
+        } else if (error.data?.error) {
+            errorMessage = error.data.error;
         } else if (error.message) {
             errorMessage = error.message;
         }
 
         toast.add({
-            title: "Error",
+            title: "Login Failed",
             description: errorMessage,
             color: "error",
         });
-
-        users.value = [];
     } finally {
-        isLoading.value = false;
+        isLoggingIn.value = false;
     }
 };
+
+// Function to handle logout
+const logout = async () => {
+    // Send request to backend to delete the token
+    try {
+        await $fetch("/logout", {
+            method: "POST",
+            baseURL: config.public.apiBaseUrl,
+            // Include credentials to send the refresh token cookie
+            credentials: 'include'
+        });
+    } catch (error) {
+        console.error("Error during logout:", error);
+    } finally {
+        localStorage.removeItem("jwt_token");
+        localToken.value = null;
+        profileData.value = null;
+
+        toast.add({
+            title: "Logged Out",
+            description: "You have been successfully logged out.",
+            color: "warning",
+        });
+    }
+};
+
+// Helper function to refresh the JWT token
+const refreshToken = async () => {
+    try {
+        // We only need to include credentials. The refresh token is in an HttpOnly cookie.
+        const response = await $fetch("/refresh-token", {
+            method: "POST",
+            baseURL: config.public.apiBaseUrl,
+            credentials: 'include'
+        });
+
+        // Store the new JWT token
+        localStorage.setItem("jwt_token", response.token);
+        localToken.value = response.token;
+        return response.token;
+    } catch (error) {
+        console.error("Failed to refresh token:", error);
+        // If refreshing the token fails, it means the session is over.
+        // Perform a full logout.
+        logout();
+        throw error;
+    }
+};
+
+// Function to fetch the user profile from a protected route
+const testProtected = async () => {
+    // Get the JWT from local storage
+    const token = localStorage.getItem("jwt_token");
+    if (!token) {
+        toast.add({
+            title: "Access Denied",
+            description: "Please log in first to get a token.",
+            color: "red",
+        });
+        return;
+    }
+
+    isTestingProtected.value = true;
+    profileData.value = null;
+
+    try {
+        const response = await $fetch("/protected", {
+            method: "GET",
+            baseURL: config.public.apiBaseUrl,
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            credentials: 'include'
+        });
+
+        profileData.value = response;
+        toast.add({
+            title: "Success",
+            description: "Successfully fetched protected profile data.",
+            color: "success",
+        });
+    } catch (error) {
+        console.error("Error accessing protected route:", error);
+
+        // Check if the error is a 401 Unauthorized due to an expired token
+        if (error.response?.status === 401) {
+            console.log("Attempting to refresh token...");
+            try {
+                // Get a new token
+                const newToken = await refreshToken();
+
+                // Retry the original request with the new token
+                const response = await $fetch("/protected", {
+                    method: "GET",
+                    baseURL: config.public.apiBaseUrl,
+                    headers: {
+                        Authorization: `Bearer ${newToken}`,
+                    },
+                    credentials: 'include'
+                });
+
+                profileData.value = response;
+                toast.add({
+                    title: "Success (Refreshed)",
+                    description: "Token refreshed and profile data fetched.",
+                    color: "success",
+                });
+
+            } catch (refreshError) {
+                // If the refresh token request fails, the session is invalid.
+                // The refreshToken() function already calls logout().
+                toast.add({
+                    title: "Session Expired",
+                    description: "Your session has expired. Please log in again.",
+                    color: "error",
+                });
+            }
+        } else {
+            // Handle other types of errors
+            let errorMessage = "Failed to access protected route";
+            if (error.data?.error) {
+                errorMessage = error.data.error;
+            } else if (error.data?.message) {
+                errorMessage = error.data.message;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            toast.add({
+                title: "Authorization Error",
+                description: errorMessage,
+                color: "error",
+            });
+        }
+    } finally {
+        isTestingProtected.value = false;
+    }
+};
+
+// This lifecycle hook runs when the component is mounted.
+onMounted(() => {
+  const storedToken = localStorage.getItem("jwt_token");
+  if (storedToken) {
+    localToken.value = storedToken;
+  }
+});
 </script>
 
 <style>

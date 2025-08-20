@@ -1,18 +1,25 @@
 package handlers
 
 import (
+	"ku-work/backend/middlewares"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	// Initialize handlers
-	userHandlers := NewUserHandlers(db)
+	authHandlers := NewAuthHandlers(db)
+	
+	
+	router.POST("/register", authHandlers.RegisterHandler)
+	router.POST("/login", authHandlers.LoginHandler)	
+	router.POST("/refresh", authHandlers.RefreshTokenHandler)
+	router.POST("/logout", authHandlers.LogoutHandler)
 
-	// Health check route
-	router.GET("/", userHandlers.HealthCheck)
-
-	// User routes
-	router.GET("/users", userHandlers.GetUsers)
-	router.POST("/create_user", userHandlers.CreateUser)
+	
+	protected := router.Use(middlewares.AuthMiddleware(authHandlers.JWTSecret))
+	protected.GET("/protected", func(ctx *gin.Context) {
+		ctx.JSON(200, gin.H{"message": "Protected route"})
+	})
 }
