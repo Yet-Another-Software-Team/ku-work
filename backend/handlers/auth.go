@@ -181,63 +181,50 @@ func (h *AuthHandlers) generateTokens(userID uint) (string, string, error) {
 
 // handle refresh token request
 func (h *AuthHandlers) RefreshTokenHandler(ctx *gin.Context) {
-	// Step 1: Get the refresh token from the HttpOnly cookie.
 	refreshToken, err := ctx.Cookie("refresh_token")
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Missing refresh token cookie"})
 		return
 	}
 	
-	// Step 2: Find the refresh token in the database.
 	var refreshTokenDB model.RefreshToken
 	if err := h.DB.Where("token = ?", refreshToken).First(&refreshTokenDB).Error; err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid refresh token"})
 		return
 	}
-
-	// Step 3: Check if the refresh token has expired.
+	
 	if refreshTokenDB.ExpiresAt.Before(time.Now()) {
-		// Also delete the expired token from the database for cleanup.
 		h.DB.Delete(&refreshTokenDB)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Refresh token expired"})
 		return
 	}
 	
-	// Step 4: Generate new JWT and refresh token.
 	jwtToken, newRefreshToken, err := h.generateTokens(refreshTokenDB.UserID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate new tokens"})
 		return
 	}
 	
-	// Step 5: Delete the old token from the database and save the new one.
 	h.DB.Delete(&refreshTokenDB)
 	
-	// Step 6: Set the new refresh token as a new HttpOnly cookie.
 	ctx.SetCookie("refresh_token", newRefreshToken, int(time.Hour * 24 * 30 / time.Second), "/", "", true, true)
 
-	// Step 7: Return the new JWT token in the JSON response body.
 	ctx.JSON(http.StatusOK, gin.H{"token": jwtToken})
 }
 
 // LogoutHandler invalidates the user's session.
 func (h *AuthHandlers) LogoutHandler(ctx *gin.Context) {
-	// Get the refresh token from the HttpOnly cookie.
 	refreshToken, err := ctx.Cookie("refresh_token")
 	if err != nil {
-		// If the cookie is already gone, just return success.
 		ctx.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 		return
 	}
 
-	// Delete the refresh token from the database.
 	var refreshTokenDB model.RefreshToken
 	if err := h.DB.Where("token = ?", refreshToken).First(&refreshTokenDB).Error; err == nil {
 		h.DB.Delete(&refreshTokenDB)
 	}
 
-	// Clear the refresh token cookie by setting its MaxAge to a negative value.
-	// Corrected for production: Secure is true, Domain is empty to default to backend domain.
 	ctx.SetCookie("refresh_token", "", -1, "/", "", true, true)
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})

@@ -163,7 +163,6 @@ const isLoggingIn = ref(false);
 const profileData = ref(null);
 const isTestingProtected = ref(false);
 
-// Function to register a new user
 const addUser = async () => {
     if (!user.value || !password.value) {
         toast.add({
@@ -247,11 +246,9 @@ const login = async () => {
                 username: loginUser.value.username,
                 password: loginUser.value.password,
             },
-            // Add credentials to allow cookies to be sent
             credentials: 'include'
         });
 
-        // Store tokens
         localStorage.setItem("jwt_token", response.token);
         localToken.value = response.token;
 
@@ -285,12 +282,10 @@ const login = async () => {
 
 // Function to handle logout
 const logout = async () => {
-    // Send request to backend to delete the token
     try {
         await $fetch("/logout", {
             method: "POST",
             baseURL: config.public.apiBaseUrl,
-            // Include credentials to send the refresh token cookie
             credentials: 'include'
         });
     } catch (error) {
@@ -311,21 +306,17 @@ const logout = async () => {
 // Helper function to refresh the JWT token
 const refreshToken = async () => {
     try {
-        // We only need to include credentials. The refresh token is in an HttpOnly cookie.
         const response = await $fetch("/refresh-token", {
             method: "POST",
             baseURL: config.public.apiBaseUrl,
             credentials: 'include'
         });
 
-        // Store the new JWT token
         localStorage.setItem("jwt_token", response.token);
         localToken.value = response.token;
         return response.token;
     } catch (error) {
         console.error("Failed to refresh token:", error);
-        // If refreshing the token fails, it means the session is over.
-        // Perform a full logout.
         logout();
         throw error;
     }
@@ -333,7 +324,6 @@ const refreshToken = async () => {
 
 // Function to fetch the user profile from a protected route
 const testProtected = async () => {
-    // Get the JWT from local storage
     const token = localStorage.getItem("jwt_token");
     if (!token) {
         toast.add({
@@ -366,14 +356,11 @@ const testProtected = async () => {
     } catch (error) {
         console.error("Error accessing protected route:", error);
 
-        // Check if the error is a 401 Unauthorized due to an expired token
         if (error.response?.status === 401) {
             console.log("Attempting to refresh token...");
             try {
-                // Get a new token
                 const newToken = await refreshToken();
 
-                // Retry the original request with the new token
                 const response = await $fetch("/protected", {
                     method: "GET",
                     baseURL: config.public.apiBaseUrl,
@@ -390,9 +377,7 @@ const testProtected = async () => {
                     color: "success",
                 });
 
-            } catch (refreshError) {
-                // If the refresh token request fails, the session is invalid.
-                // The refreshToken() function already calls logout().
+            } catch {
                 toast.add({
                     title: "Session Expired",
                     description: "Your session has expired. Please log in again.",
