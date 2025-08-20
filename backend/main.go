@@ -25,6 +25,9 @@ func main() {
 	corsConfig := middleware.SetupCORS()
 	router.Use(cors.New(corsConfig))
 
+	// Setup Auth middleware
+	router.Use(middleware.Auth)
+
 	// Setup routes
 	handlers.SetupRoutes(router, db)
 

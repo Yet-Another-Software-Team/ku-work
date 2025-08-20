@@ -44,6 +44,6 @@ func LoadDB() (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	db.AutoMigrate(&model.User{})
+	db.AutoMigrate(&model.User{}, &model.Job{})
 	return db, nil
 }

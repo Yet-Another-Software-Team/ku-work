@@ -8,6 +8,7 @@ import (
 func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	// Initialize handlers
 	userHandlers := NewUserHandlers(db)
+	jobHandlers := NewJobHandlers(db)
 
 	// Health check route
 	router.GET("/", userHandlers.HealthCheck)
@@ -15,4 +16,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	// User routes
 	router.GET("/users", userHandlers.GetUsers)
 	router.POST("/create_user", userHandlers.CreateUser)
+
+	// Job routes
+	router.POST("/create_job", jobHandlers.CreateJob)
 }
