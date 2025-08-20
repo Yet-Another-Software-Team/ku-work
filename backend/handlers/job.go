@@ -19,13 +19,12 @@ func NewJobHandlers(db *gorm.DB) *JobHandlers {
 }
 
 func (h *JobHandlers) CreateJob(ctx *gin.Context) {
-	// probUserId, hasUserId := ctx.Get("userid")
-	// if !hasUserId {
-	// 	ctx.String(http.StatusUnauthorized, "Unauthorized")
-	// 	return
-	// }
-	// userid := probUserId.(uint)
-	userid := 1
+	probUserId, hasUserId := ctx.Get("userid")
+	if !hasUserId {
+		ctx.String(http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	userid := probUserId.(uint)
 	var user model.User
 	userQueryResult := h.DB.First(&user, userid)
 	if userQueryResult.Error != nil {
