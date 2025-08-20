@@ -37,8 +37,8 @@ func (h *JobHandlers) CreateJob(ctx *gin.Context) {
 		Duration    string `json:"duration" binding:"required,max=128"`
 		Description string `json:"description" binding:"required,max=16384"`
 		Location    string `json:"location" binding:"required,max=128"`
-		JobType     string `json:"jobtype" binding:"required,oneof='fulltime' 'parttime' 'contract' 'casual'"`
-		Experience  string `json:"experience" binding:"required,oneof='newgrad' 'junior' 'senior' 'manager'"`
+		JobType     string `json:"jobtype" binding:"required,oneof='fulltime' 'parttime' 'contract' 'casual' 'internship'"`
+		Experience  string `json:"experience" binding:"required,oneof='newgrad' 'junior' 'senior' 'manager' 'internship'"`
 		MinSalary   uint   `json:"minsalary" binding:"required"`
 		MaxSalary   uint   `json:"maxsalary" binding:"required"`
 	}

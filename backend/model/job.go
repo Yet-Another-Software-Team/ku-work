@@ -7,19 +7,21 @@ import (
 type ExperienceType string
 
 const (
-	NewGrad ExperienceType = "newgrad"
-	Junior  ExperienceType = "junior"
-	Senior  ExperienceType = "senior"
-	Manager ExperienceType = "manager"
+	ExperienceNewGrad    ExperienceType = "newgrad"
+	ExperienceJunior     ExperienceType = "junior"
+	ExperienceSenior     ExperienceType = "senior"
+	ExperienceManager    ExperienceType = "manager"
+	ExperienceInternship ExperienceType = "internship"
 )
 
 type JobType string
 
 const (
-	FullTime JobType = "fulltime"
-	PartTime JobType = "parttime"
-	Contract JobType = "contract"
-	Casual   JobType = "casual"
+	JobTypeFullTime   JobType = "fulltime"
+	JobTypePartTime   JobType = "parttime"
+	JobTypeContract   JobType = "contract"
+	JobTypeCasual     JobType = "casual"
+	JobTypeInternship JobType = "internship"
 )
 
 type Job struct {
@@ -32,8 +34,8 @@ type Job struct {
 	Duration    string
 	Description string
 	Location    string
-	JobType     JobType        `gorm:"type:enum('fulltime', 'parttime', 'contract', 'casual')"`
-	Experience  ExperienceType `gorm:"type:enum('newgrad', 'junior', 'senior', 'manager')"`
+	JobType     JobType        `gorm:"type:enum('fulltime', 'parttime', 'contract', 'casual', 'internship')"`
+	Experience  ExperienceType `gorm:"type:enum('newgrad', 'junior', 'senior', 'manager', 'internship')"`
 	MinSalary   uint
 	MaxSalary   uint
 	IsApproved  bool
