@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type JWTHandlers struct {
@@ -59,7 +60,13 @@ func (h *JWTHandlers) generateTokens(userID uint) (string, string, error) {
 		ExpiresAt: time.Now().Add(time.Hour * 24 * 30), // Refresh token expires in 30 days.
 	}
 	
-	h.DB.Save(&refreshTokenDB)
+ h.DB.Clauses(clause.OnConflict{
+        Columns:   []clause.Column{{Name: "user_id"}},
+        DoUpdates: clause.Assignments(map[string]any {
+            "token":      refreshTokenDB.Token,
+            "expires_at": refreshTokenDB.ExpiresAt,
+        }),
+    }).Create(&refreshTokenDB)
 
 	return signedJwtToken, refreshTokenString, nil
 }
@@ -79,18 +86,18 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	}
 	
 	if refreshTokenDB.ExpiresAt.Before(time.Now()) {
-		h.DB.Delete(&refreshTokenDB)
+		h.DB.Unscoped().Delete(&refreshTokenDB)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Refresh token expired"})
 		return
 	}
 	
+	h.DB.Unscoped().Delete(&refreshTokenDB)
 	jwtToken, newRefreshToken, err := h.generateTokens(refreshTokenDB.UserID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate new tokens"})
 		return
 	}
 	
-	h.DB.Delete(&refreshTokenDB)
 	
 	ctx.SetCookie("refresh_token", newRefreshToken, int(time.Hour * 24 * 30 / time.Second), "/", "", true, true)
 
@@ -107,7 +114,7 @@ func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
 
 	var refreshTokenDB model.RefreshToken
 	if err := h.DB.Where("token = ?", refreshToken).First(&refreshTokenDB).Error; err == nil {
-		h.DB.Delete(&refreshTokenDB)
+		h.DB.Unscoped().Delete(&refreshTokenDB)
 	}
 
 	ctx.SetCookie("refresh_token", "", -1, "/", "", true, true)
