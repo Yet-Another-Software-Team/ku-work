@@ -29,13 +29,13 @@ type Job struct {
 	CreatedAt   time.Time
 	Name        string
 	CompanyID   uint
-	Company     User `gorm:"foreignKey:CompanyRefer"`
+	Company     User `gorm:"foreignKey:CompanyID"`
 	Position    string
 	Duration    string
 	Description string
 	Location    string
-	JobType     JobType        `gorm:"type:enum('fulltime', 'parttime', 'contract', 'casual', 'internship')"`
-	Experience  ExperienceType `gorm:"type:enum('newgrad', 'junior', 'senior', 'manager', 'internship')"`
+	JobType     JobType
+	Experience  ExperienceType
 	MinSalary   uint
 	MaxSalary   uint
 	IsApproved  bool
