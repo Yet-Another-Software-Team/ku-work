@@ -34,8 +34,8 @@ type Job struct {
 	Duration    string
 	Description string
 	Location    string
-	JobType     JobType        `gorm:"type:enum('fulltime', 'parttime', 'contract', 'casual', 'internship')"`
-	Experience  ExperienceType `gorm:"type:enum('newgrad', 'junior', 'senior', 'manager', 'internship')"`
+	JobType     JobType
+	Experience  ExperienceType
 	MinSalary   uint
 	MaxSalary   uint
 	IsApproved  bool
