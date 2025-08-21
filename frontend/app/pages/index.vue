@@ -100,7 +100,6 @@
             <template #footer>
                 <UButton
                     label="Logout"
-                    :disabled="!localToken"
                     color="primary"
                     @click="logout"
                 />
@@ -123,7 +122,6 @@
                     <UButton
                         label="Test API"
                         :loading="isTestingProtected"
-                        :disabled="!localToken"
                         @click="testProtected"
                     />
                     <div v-if="profileData" class="text-sm mt-2">
@@ -176,7 +174,7 @@ const addUser = async () => {
     isAdding.value = true;
 
     try {
-        const _ = await $fetch("/register", {
+        const response = await $fetch("/register", {
             method: "POST",
             baseURL: config.public.apiBaseUrl,
             headers: {
@@ -188,10 +186,13 @@ const addUser = async () => {
             },
         });
 
+        localStorage.setItem("jwt_token", response.token);
+        localToken.value = response.token;
+        
         toast.add({
             title: "Success",
-            description: "User registered successfully!",
-            color: "green",
+            description: "User registered and logged in successfully!",
+            color: "success",
         });
 
         // Clear form
