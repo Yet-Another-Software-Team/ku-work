@@ -166,7 +166,7 @@ const addUser = async () => {
         toast.add({
             title: "Validation Error",
             description: "Please provide both username and password",
-            color: "red",
+            color: "error",
         });
         return;
     }
@@ -318,7 +318,6 @@ const refreshToken = async () => {
         return response.token;
     } catch (error) {
         console.error("Failed to refresh token:", error);
-        logout();
         throw error;
     }
 };
@@ -326,14 +325,6 @@ const refreshToken = async () => {
 // Function to fetch the user profile from a protected route
 const testProtected = async () => {
     const token = localStorage.getItem("jwt_token");
-    if (!token) {
-        toast.add({
-            title: "Access Denied",
-            description: "Please log in first to get a token.",
-            color: "red",
-        });
-        return;
-    }
 
     isTestingProtected.value = true;
     profileData.value = null;
