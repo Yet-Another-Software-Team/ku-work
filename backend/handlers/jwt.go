@@ -15,7 +15,7 @@ import (
 )
 
 type JWTHandlers struct {
-	DB *gorm.DB
+	DB        *gorm.DB
 	JWTSecret []byte
 }
 
@@ -26,7 +26,7 @@ func NewJWTHandlers(db *gorm.DB) *JWTHandlers {
 		log.Fatal("JWT_SECRET environment variable is not set")
 	}
 	return &JWTHandlers{
-		DB: db,
+		DB:        db,
 		JWTSecret: jwtSecret,
 	}
 }
@@ -51,15 +51,15 @@ func (h *JWTHandlers) generateTokens(userID uint) (string, string, error) {
 	refreshTokenBytes := make([]byte, 32)
 	rand.Read(refreshTokenBytes)
 	refreshTokenString := base64.URLEncoding.EncodeToString(refreshTokenBytes)
-	
+
 	// Create or update the refresh token in the database.
 	refreshTokenDB := model.RefreshToken{
 		UserID:    userID,
 		Token:     refreshTokenString,
 		ExpiresAt: time.Now().Add(time.Hour * 24 * 30), // Refresh token expires in 30 days.
 	}
-	
- 	h.DB.Create(&refreshTokenDB)
+
+	h.DB.Create(&refreshTokenDB)
 
 	return signedJwtToken, refreshTokenString, nil
 }
@@ -71,33 +71,32 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Missing refresh token cookie"})
 		return
 	}
-	
+
 	var refreshTokenDB model.RefreshToken
 	if err := h.DB.Where("token = ?", refreshToken).First(&refreshTokenDB).Error; err != nil {
 		ctx.SetCookie("refresh_token", "", -1, "/", "", true, true)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid refresh token"})
 		return
 	}
-	
-	
+
 	if refreshTokenDB.ExpiresAt.Before(time.Now()) {
 		h.DB.Unscoped().Delete(&refreshTokenDB)
 		ctx.SetCookie("refresh_token", "", -1, "/", "", true, true)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Refresh token expired"})
 		return
 	}
-	
+
 	// Clear user's expired token
 	h.DB.Unscoped().Where("user_id = ? AND expires_at < ?", refreshTokenDB.UserID, time.Now()).Delete(&model.RefreshToken{})
-	
+
 	h.DB.Unscoped().Delete(&refreshTokenDB)
 	jwtToken, newRefreshToken, err := h.generateTokens(refreshTokenDB.UserID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate new tokens"})
 		return
 	}
-	
-	ctx.SetCookie("refresh_token", newRefreshToken, int(time.Hour * 24 * 30 / time.Second), "/", "", true, true)
+
+	ctx.SetCookie("refresh_token", newRefreshToken, int(time.Hour*24*30/time.Second), "/", "", true, true)
 
 	ctx.JSON(http.StatusOK, gin.H{"token": jwtToken})
 }
@@ -128,13 +127,13 @@ func (h *JWTHandlers) HandleToken(req_ctx *gin.Context, user model.User) *gin.Co
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
 		return ctx
 	}
-	
+
 	// Set the refresh token cookie with a max age of 30 days
 	maxAge := int(time.Hour * 24 * 30 / time.Second)
 	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", true, true)
 
 	// Return the JWT token in the JSON response body.
 	ctx.JSON(http.StatusOK, gin.H{"token": jwtToken})
-	
+
 	return ctx
 }

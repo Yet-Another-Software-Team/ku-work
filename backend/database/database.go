@@ -44,14 +44,14 @@ func LoadDB() (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	allModels := []any{
 		&model.User{},
 		&model.Admin{},
 		&model.GoogleOAuthDetails{},
 		&model.RefreshToken{},
 	}
-	
+
 	db.AutoMigrate(allModels...)
 	return db, nil
 }

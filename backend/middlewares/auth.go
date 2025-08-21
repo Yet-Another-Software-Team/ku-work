@@ -10,7 +10,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-
 func AuthMiddleware(jwtSecret []byte) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		// Get the token from the Authorization header

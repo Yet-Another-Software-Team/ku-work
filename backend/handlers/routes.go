@@ -12,14 +12,13 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	localAuthHandlers := NewLocalAuthHandlers(db)
 	googleAuthHandlers := NewOAuthHandlers(db)
 	jwtHandler := NewJWTHandlers(db)
-	
+
 	router.POST("/register", localAuthHandlers.RegisterHandler)
-	router.POST("/google/login", googleAuthHandlers.GoogleOauthHandler)	
-	router.POST("/login", localAuthHandlers.LoginHandler)	
+	router.POST("/google/login", googleAuthHandlers.GoogleOauthHandler)
+	router.POST("/login", localAuthHandlers.LoginHandler)
 	router.POST("/refresh", jwtHandler.RefreshTokenHandler)
 	router.POST("/logout", jwtHandler.LogoutHandler)
 
-	
 	// Authentication Protected Routes
 	protected := router.Use(middlewares.AuthMiddleware(jwtHandler.JWTSecret))
 	protected.GET("/protected", func(ctx *gin.Context) {
