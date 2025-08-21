@@ -3,6 +3,7 @@ package handlers
 import (
 	"ku-work/backend/model"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -49,17 +50,17 @@ func (h *JobHandlers) CreateJob(ctx *gin.Context) {
 		return
 	}
 	job := model.Job{
-		Name: input.Name,
-		CompanyID: user.ID,
-		Position: input.Position,
-		Duration: input.Duration,
+		Name:        input.Name,
+		CompanyID:   user.ID,
+		Position:    input.Position,
+		Duration:    input.Duration,
 		Description: input.Description,
-		Location: input.Location,
-		JobType: model.JobType(input.JobType),
-		Experience: model.ExperienceType(input.Experience),
-		MinSalary: input.MinSalary,
-		MaxSalary: input.MaxSalary,
-		IsApproved: false,
+		Location:    input.Location,
+		JobType:     model.JobType(input.JobType),
+		Experience:  model.ExperienceType(input.Experience),
+		MinSalary:   input.MinSalary,
+		MaxSalary:   input.MaxSalary,
+		IsApproved:  false,
 	}
 	result := h.DB.Create(&job)
 	if result.Error != nil {
@@ -68,5 +69,56 @@ func (h *JobHandlers) CreateJob(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, gin.H{
 		"id": job.ID,
+	})
+}
+
+func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
+	type FetchJobsInput struct {
+		Name       string   `json:"name" binding:"max=128"`
+		Limit      uint     `json:"limit" binding:"max=128"`
+		Offset     uint     `json:"offset" binding:"max=128"`
+		Location   *string  `json:"location" binding:"max=128"`
+		Keyword    string   `json:"description" binding:"max=16384"`
+		JobType    *[]string `json:"jobtype" binding:"max=5,dive,max=32"`
+		Experience *[]string `json:"experience" binding:"max=5,dive,max=32"`
+		MinSalary  uint     `json:"minsalary"`
+		MaxSalary  uint     `json:"maxsalary"`
+	}
+	input := FetchJobsInput{
+		MinSalary: 0,
+		MaxSalary: ^uint(0),
+		Limit: 32,
+		Offset: 0,
+	}
+	err := ctx.Bind(&input)
+	if err != nil {
+		ctx.String(http.StatusBadRequest, err.Error())
+		return
+	}
+	capitalizedKeyword := strings.ToUpper(input.Keyword)
+	query := h.DB.Model(&model.Job{})
+	query = query.Where("UPPER(name) LIKE %?% OR UPPER(description) LIKE %?%", capitalizedKeyword)
+	query = query.Where("min_salary <= ?", input.MinSalary)
+	query = query.Where("max_salary >= ?", input.MaxSalary)
+	if input.Location != nil {
+		query = query.Where("location = ?", *input.Location)
+	}
+	if input.JobType != nil {
+		query = query.Where("job_type IN ?", *input.JobType)
+	}
+	if input.Experience != nil {
+		query = query.Where("experience IN ?", *input.Experience)
+	}
+	query = query.Where(&model.Job{IsApproved: true})
+	query = query.Offset(int(input.Offset))
+	query = query.Limit(int(input.Limit))
+	var jobs []model.Job
+	result := query.Find(&jobs)
+	if result.Error != nil {
+		ctx.String(http.StatusInternalServerError, result.Error.Error())
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"jobs": jobs,
 	})
 }
