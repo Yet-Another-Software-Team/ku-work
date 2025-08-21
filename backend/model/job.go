@@ -29,7 +29,7 @@ type Job struct {
 	CreatedAt   time.Time
 	Name        string
 	CompanyID   uint
-	Company     User `gorm:"foreignKey:CompanyRefer"`
+	Company     User `gorm:"foreignKey:CompanyID"`
 	Position    string
 	Duration    string
 	Description string
