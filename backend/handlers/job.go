@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"ku-work/backend/model"
 	"net/http"
 	"strings"
@@ -77,37 +78,37 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 		Name       string   `json:"name" binding:"max=128"`
 		Limit      uint     `json:"limit" binding:"max=128"`
 		Offset     uint     `json:"offset" binding:"max=128"`
-		Location   *string  `json:"location" binding:"max=128"`
+		Location   string   `json:"location" binding:"max=128"`
 		Keyword    string   `json:"description" binding:"max=16384"`
-		JobType    *[]string `json:"jobtype" binding:"max=5,dive,max=32"`
-		Experience *[]string `json:"experience" binding:"max=5,dive,max=32"`
+		JobType    []string `json:"jobtype" binding:"max=5,dive,max=32"`
+		Experience []string `json:"experience" binding:"max=5,dive,max=32"`
 		MinSalary  uint     `json:"minsalary"`
 		MaxSalary  uint     `json:"maxsalary"`
 	}
 	input := FetchJobsInput{
 		MinSalary: 0,
-		MaxSalary: ^uint(0),
-		Limit: 32,
-		Offset: 0,
+		MaxSalary: ^uint(0) >> 1,
+		Limit:     32,
+		Offset:    0,
 	}
 	err := ctx.Bind(&input)
 	if err != nil {
 		ctx.String(http.StatusBadRequest, err.Error())
 		return
 	}
-	capitalizedKeyword := strings.ToUpper(input.Keyword)
+	capitalizedKeyword := fmt.Sprintf("%%%s%%", strings.ToUpper(input.Keyword))
 	query := h.DB.Model(&model.Job{})
-	query = query.Where("UPPER(name) LIKE %?% OR UPPER(description) LIKE %?%", capitalizedKeyword)
+	query = query.Where(h.DB.Where("UPPER(name) LIKE ?", capitalizedKeyword).Or("UPPER(description) LIKE ?", capitalizedKeyword))
 	query = query.Where("min_salary <= ?", input.MinSalary)
 	query = query.Where("max_salary >= ?", input.MaxSalary)
-	if input.Location != nil {
-		query = query.Where("location = ?", *input.Location)
+	if len(input.Location) != 0 {
+		query = query.Where("location = ?", input.Location)
 	}
-	if input.JobType != nil {
-		query = query.Where("job_type IN ?", *input.JobType)
+	if len(input.JobType) != 0 {
+		query = query.Where("job_type IN ?", input.JobType)
 	}
-	if input.Experience != nil {
-		query = query.Where("experience IN ?", *input.Experience)
+	if len(input.Experience) != 0 {
+		query = query.Where("experience IN ?", input.Experience)
 	}
 	query = query.Where(&model.Job{IsApproved: true})
 	query = query.Offset(int(input.Offset))
