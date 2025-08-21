@@ -55,6 +55,14 @@ go mod download
    CORS_ALLOWED_METHODS=GET,POST,PUT,DELETE,OPTIONS
    CORS_ALLOWED_HEADERS=Origin,Content-Length,Content-Type,Authorization
    CORS_ALLOW_CREDENTIALS=false
+   
+   # JWT Configuration
+   JWT_SECRET=your_jwt_secret_here
+   
+   # Google OAuth Configuration
+   GOOGLE_CLIENT_ID=your_google_client_id_here
+   GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+   
    ```
 
 ### 3. Frontend Setup
@@ -85,6 +93,7 @@ bun install
 2. Edit `.env` file with your backend URL (default should work for local development):
    ```env
    API_BASE_URL=http://localhost:8000
+   GOOGLE_CLIENT_ID=your_google_client_id_here
    ```
 
 ## How to Run
