@@ -11,7 +11,7 @@ import (
 // Represent JWT refresh token and its details.
 type RefreshToken struct {
 	gorm.Model
-	UserID uint `gorm:"uniqueIndex"`
+	UserID uint
 	Token string `gorm:"unique"`
 	ExpiresAt time.Time
 }
