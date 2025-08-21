@@ -1,0 +1,147 @@
+package handlers
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"time"
+
+	"ku-work/backend/model"
+
+	"github.com/gin-gonic/gin"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"gorm.io/gorm"
+)
+
+type OauthHandlers struct {
+	DB                *gorm.DB
+	OauthStateString  string
+	GoogleOauthConfig *oauth2.Config
+	JWTHandlers       *JWTHandlers
+}
+
+func NewOAuthHandlers(db *gorm.DB) *OauthHandlers {
+	b := make([]byte, 16)
+	rand.Read(b)
+	oauthStateString := base64.URLEncoding.EncodeToString(b)
+
+	googleOauthConfig := &oauth2.Config{
+		RedirectURL:  "postmessage",
+		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+		Scopes:       []string{"openid", "https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"},
+		Endpoint:     google.Endpoint,
+	}
+
+	if googleOauthConfig.ClientID == "" || googleOauthConfig.ClientSecret == "" {
+		log.Fatal("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables are not set")
+	}
+
+	return &OauthHandlers{
+		DB:                db,
+		OauthStateString:  oauthStateString,
+		GoogleOauthConfig: googleOauthConfig,
+		JWTHandlers:       NewJWTHandlers(db),
+	}
+}
+
+type oauthToken struct {
+	Code string `json:"code"`
+}
+
+func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
+	var req oauthToken
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Authorization code is required"})
+		return
+	}
+
+	exchange_ctx := context.Background()
+	token, err := h.GoogleOauthConfig.Exchange(exchange_ctx, req.Code)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	api_req, err := http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo", nil)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	api_req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
+
+	api_res, err := client.Do(api_req)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer api_res.Body.Close()
+
+	if api_res.StatusCode != http.StatusOK {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Access Token is invalid, expired or insufficient"})
+		return
+	}
+
+	type UserInfo struct {
+		ID         string `json:"id"`
+		Email      string `json:"email"`
+		Name       string `json:"name"`
+		GivenName  string `json:"given_name"`
+		FamilyName string `json:"family_name"`
+	}
+
+	var userInfo UserInfo
+	if err := json.NewDecoder(api_res.Body).Decode(&userInfo); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Check if this user already exists on the DB via their external ID.
+	var oauthDetail model.GoogleOAuthDetails
+	h.DB.Where("external_id = ?", userInfo.ID).First(&oauthDetail)
+
+	// User is not exist, registering
+	if oauthDetail.ID == 0 {
+		var newUser model.User
+		h.DB.FirstOrCreate(&newUser, model.User{
+			Username: userInfo.Email,
+		})
+
+		oauthDetail = model.GoogleOAuthDetails{
+			UserID:     newUser.ID,
+			ExternalID: userInfo.ID,
+			FirstName:  userInfo.GivenName,
+			LastName:   userInfo.FamilyName,
+			Email:      userInfo.Email,
+		}
+
+		h.DB.Create(&oauthDetail)
+	}
+
+	// Update user details if necessary
+	if oauthDetail.UserID != 0 {
+		h.DB.Model(&oauthDetail).Updates(model.GoogleOAuthDetails{
+			FirstName: userInfo.GivenName,
+			LastName:  userInfo.FamilyName,
+			Email:     userInfo.Email,
+		})
+	}
+
+	// Get updated oauthDetail
+	h.DB.Where("external_id = ?", userInfo.ID).First(&oauthDetail)
+
+	// getUser model and return JWT Token to frontend.
+	var user model.User
+	h.DB.Model(&user).Where("id = ?", oauthDetail.UserID).First(&user)
+
+	//Return JWT Token to context
+	ctx = h.JWTHandlers.HandleToken(ctx, user)
+
+}

@@ -1,51 +1,24 @@
 package handlers
 
 import (
-	"crypto/rand"
-	"encoding/base64"
-	"log"
 	"net/http"
-	"os"
 
 	"ku-work/backend/model"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 	"gorm.io/gorm"
 )
 
 type LocalAuthHandlers struct {
 	DB                *gorm.DB
-	OauthStateString  string
-	GoogleOauthConfig *oauth2.Config
-	JWTHandler        *JWTHandlers
+	JWTHandlers        *JWTHandlers
 }
 
 func NewLocalAuthHandlers(db *gorm.DB) *LocalAuthHandlers {
-	// TODO: MOVE THIS TO OAUTH HANDLERS
-	b := make([]byte, 16)
-	rand.Read(b)
-	oauthStateString := base64.URLEncoding.EncodeToString(b)
-	
-	googleOauthConfig := &oauth2.Config{
-		RedirectURL:  "postmessage",
-		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-		Scopes:       []string{"openid", "https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"},
-		Endpoint:     google.Endpoint,
-	}
-	
-	if googleOauthConfig.ClientID == "" || googleOauthConfig.ClientSecret == "" {
-		log.Fatal("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables are not set")
-	}
-	
 	return &LocalAuthHandlers {
 		DB: db,
-		OauthStateString: oauthStateString,
-		GoogleOauthConfig: googleOauthConfig,
-		JWTHandler: NewJWTHandlers(db),
+		JWTHandlers: NewJWTHandlers(db),
 	}
 }
 
@@ -95,7 +68,7 @@ func (h *LocalAuthHandlers) RegisterHandler(ctx *gin.Context) {
 
 	transaction.Commit()
 	
-	ctx = h.JWTHandler.HandleToken(ctx, newUser)
+	ctx = h.JWTHandlers.HandleToken(ctx, newUser)
 }
 
 // struct to handle incoming login data.
@@ -124,5 +97,5 @@ func (h *LocalAuthHandlers) LoginHandler(ctx *gin.Context) {
 		return
 	}
 	
-	ctx = h.JWTHandler.HandleToken(ctx, user)
+	ctx = h.JWTHandlers.HandleToken(ctx, user)
 }

@@ -46,7 +46,6 @@ func AuthMiddleware(jwtSecret []byte) gin.HandlerFunc {
 
 		// Check if the token is valid
 		if claims, ok := token.Claims.(*model.UserClaims); ok && token.Valid {
-			// Add the user ID to the context to be used by the next handler
 			ctx.Set("userID", claims.UserID)
 			ctx.Next()
 		} else {

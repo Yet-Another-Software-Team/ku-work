@@ -78,6 +78,11 @@
                         :disabled="!loginUser.username || !loginUser.password"
                         @click="login"
                     />
+                    <UButton
+                        label="GoogleOAuth"
+                        :loading="isLoggingIn"
+                        @click="oauthLogin"
+                    />
                     <div
                         v-if="localToken"
                         class="text-wrap break-all text-sm mt-2"
@@ -139,6 +144,7 @@
 
 <script setup>
 import { onMounted } from 'vue';
+import { googleAuthCodeLogin } from "vue3-google-login"
 
 const toast = useToast();
 const config = useRuntimeConfig();
@@ -397,6 +403,27 @@ const testProtected = async () => {
         isTestingProtected.value = false;
     }
 };
+
+const oauthLogin = async () => {
+  isLoggingIn.value = true;
+  try {
+    const oauth_response = await googleAuthCodeLogin()
+    const response = await $fetch("/google/login", {
+      method: "POST",
+      baseURL: config.public.apiBaseUrl,
+      body: {
+        code: oauth_response.code,
+      },
+    });
+    localStorage.setItem("jwt_token", response.token);
+    localToken.value = response.token;
+  } catch (error) {
+    console.error(error)
+  } finally {
+    
+    isLoggingIn.value = false;
+  }
+}
 
 // This lifecycle hook runs when the component is mounted.
 onMounted(() => {

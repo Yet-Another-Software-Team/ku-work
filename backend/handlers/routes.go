@@ -10,9 +10,11 @@ import (
 func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	// Initialize handlers
 	localAuthHandlers := NewLocalAuthHandlers(db)
+	googleAuthHandlers := NewOAuthHandlers(db)
 	jwtHandler := NewJWTHandlers(db)
 	
 	router.POST("/register", localAuthHandlers.RegisterHandler)
+	router.POST("/google/login", googleAuthHandlers.GoogleOauthHandler)	
 	router.POST("/login", localAuthHandlers.LoginHandler)	
 	router.POST("/refresh", jwtHandler.RefreshTokenHandler)
 	router.POST("/logout", jwtHandler.LogoutHandler)
