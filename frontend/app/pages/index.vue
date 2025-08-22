@@ -11,6 +11,7 @@
     <div v-else>
         <h2>Welcome back!</h2>
         <p>You are logged in.</p>
+        <p v-if="isAdmin">You are an admin.</p>
         <LogoutButton @logout="handleLogoutSuccess" />
     </div>
 </div>
@@ -18,6 +19,7 @@
 
 <script setup>
 const login = ref(false);
+const isAdmin = ref(false);
 const isRefreshing = ref(false);
 const config = useRuntimeConfig();
 
@@ -39,16 +41,17 @@ const refreshToken = async () => {
     localStorage.setItem("jwt_token", response.token);
     login.value = true;
     
-    // Try to get protected route to prove the authorization
-    const prot_resp = await $fetch("/protected", {
+    const admin_resp = await $fetch("/admin", {
         baseURL: config.public.apiBaseUrl,
         headers: {
             Authorization: `Bearer ${localStorage.getItem("jwt_token")}`,
         },
         credentials: 'include'
     });
-    
-    console.log(prot_resp)
+    isAdmin.value = true;
+  } catch (error) {
+    isAdmin.value = false;
+    console.error(error);
   } finally {
     isRefreshing.value = false;
   }

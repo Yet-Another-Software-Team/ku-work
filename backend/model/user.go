@@ -23,5 +23,5 @@ type GoogleOAuthDetails struct {
 // Represents a user's who is an Admin without any additional fields.
 type Admin struct {
 	gorm.Model
-	UserID uint `gorm:"unique"`
+	UserID uint `gorm:"unique;foreignkey:UserID"`
 }

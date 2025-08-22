@@ -20,8 +20,14 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	router.POST("/logout", jwtHandler.LogoutHandler)
 
 	// Authentication Protected Routes
-	protected := router.Use(middlewares.AuthMiddleware(jwtHandler.JWTSecret))
-	protected.GET("/protected", func(ctx *gin.Context) {
+	authed := router.Use(middlewares.AuthMiddleware(jwtHandler.JWTSecret))
+	authed.GET("/protected", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{"message": "Protected route"})
+	})
+	
+	// Admin Routes
+	admin := authed.Use(middlewares.AdminPermissionMiddleware(db))
+	admin.GET("/admin", func(ctx *gin.Context) {
+		ctx.JSON(200, gin.H{"message": "Admin route"})
 	})
 }
