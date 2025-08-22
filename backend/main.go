@@ -3,7 +3,7 @@ package main
 import (
 	"ku-work/backend/database"
 	"ku-work/backend/handlers"
-	"ku-work/backend/middleware"
+	"ku-work/backend/middlewares"
 	"os"
 
 	"github.com/gin-contrib/cors"
@@ -22,11 +22,8 @@ func main() {
 	router := gin.Default()
 
 	// Setup CORS middleware
-	corsConfig := middleware.SetupCORS()
+	corsConfig := middlewares.SetupCORS()
 	router.Use(cors.New(corsConfig))
-
-	// Setup Auth middleware
-	router.Use(middleware.Auth)
 
 	// Setup routes
 	handlers.SetupRoutes(router, db)

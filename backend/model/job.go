@@ -28,8 +28,8 @@ type Job struct {
 	ID          uint `gorm:"primaryKey"`
 	CreatedAt   time.Time
 	Name        string
-	CompanyID   uint
-	Company     User `gorm:"foreignKey:CompanyID"`
+	CompanyID   string `gorm:"type:uuid"`
+	Company     User   `gorm:"foreignKey:CompanyID"`
 	Position    string
 	Duration    string
 	Description string

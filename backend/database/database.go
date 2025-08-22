@@ -44,6 +44,15 @@ func LoadDB() (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	db.AutoMigrate(&model.User{}, &model.Job{})
+
+	allModels := []any{
+		&model.User{},
+		&model.Admin{},
+		&model.GoogleOAuthDetails{},
+		&model.RefreshToken{},
+		&model.Job{},
+	}
+
+	db.AutoMigrate(allModels...)
 	return db, nil
 }

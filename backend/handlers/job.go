@@ -19,18 +19,12 @@ func NewJobHandlers(db *gorm.DB) *JobHandlers {
 }
 
 func (h *JobHandlers) CreateJob(ctx *gin.Context) {
-	probUserId, hasUserId := ctx.Get("userid")
+	probUserId, hasUserId := ctx.Get("userID")
 	if !hasUserId {
 		ctx.String(http.StatusUnauthorized, "Unauthorized")
 		return
 	}
-	userid := probUserId.(uint)
-	var user model.User
-	userQueryResult := h.DB.First(&user, userid)
-	if userQueryResult.Error != nil {
-		ctx.String(http.StatusInternalServerError, userQueryResult.Error.Error())
-		return
-	}
+	userid := probUserId.(string)
 	type CreateJobInput struct {
 		Name        string `json:"name" binding:"required,max=128"`
 		Position    string `json:"position" binding:"required,max=128"`
@@ -50,7 +44,7 @@ func (h *JobHandlers) CreateJob(ctx *gin.Context) {
 	}
 	job := model.Job{
 		Name: input.Name,
-		CompanyID: user.ID,
+		CompanyID: userid,
 		Position: input.Position,
 		Duration: input.Duration,
 		Description: input.Description,
