@@ -20,18 +20,14 @@ func AdminPermissionMiddleware(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		
-		var admin model.Admin
-		// Get higest role possible
-		if err := db.First(&admin, "user_id = ?", userID).Error; err != nil {
-		   if err == gorm.ErrRecordNotFound {
-		        ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "You do not have the necessary permissions to perform this action."})
-		    } else {
-		        log.Printf("Database error: %v", err)
-		        ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "An internal server error occurred."})
-		    }
+		var count int64
+		db.Model(&model.Admin{}).Where("user_id = ?", userID).Count(&count)
+
+		if count == 0 {
+	        ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "You do not have the necessary permissions to perform this action."})
 		    return
 		}
-		
+
 		ctx.Next()
 	}
 }
