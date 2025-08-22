@@ -126,7 +126,7 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 	}
 
 	// Update user details if necessary
-	if oauthDetail.UserID != 0 {
+	if oauthDetail.UserID != "" {
 		h.DB.Model(&oauthDetail).Updates(model.GoogleOAuthDetails{
 			FirstName: userInfo.GivenName,
 			LastName:  userInfo.FamilyName,

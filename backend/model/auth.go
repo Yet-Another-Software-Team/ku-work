@@ -11,13 +11,13 @@ import (
 // Represent JWT refresh token and its details.
 type RefreshToken struct {
 	gorm.Model
-	UserID    uint
+	UserID    string `gorm:"type:uuid;foreignkey:UserID"`
 	Token     string `gorm:"unique"`
 	ExpiresAt time.Time
 }
 
 // JWT Payload (NOT DATABASE INSTANCE)
 type UserClaims struct {
-	UserID uint `json:"user_id"`
+	UserID string `json:"user_id"`
 	jwt.RegisteredClaims
 }

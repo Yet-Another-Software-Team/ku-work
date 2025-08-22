@@ -32,7 +32,7 @@ func NewJWTHandlers(db *gorm.DB) *JWTHandlers {
 }
 
 // Generate JWT and Refresh Tokens
-func (h *JWTHandlers) generateTokens(userID uint) (string, string, error) {
+func (h *JWTHandlers) generateTokens(userID string) (string, string, error) {
 	// JWT Token
 	jwtClaims := &model.UserClaims{
 		UserID: userID,

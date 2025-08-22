@@ -1,19 +1,26 @@
 // Database Model for Users related entities
 package model
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 // Represents a user in the system.
 type User struct {
-	gorm.Model
-	Username     string `gorm:"unique"`
+	ID        string `gorm:"type:uuid;primarykey;default:gen_random_uuid()"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+	Username  string         `gorm:"unique"`
 	PasswordHash string
 }
 
 // Represents a user's Google OAuth details.
 type GoogleOAuthDetails struct {
 	gorm.Model
-	UserID     uint `gorm:"unique"`
+	UserID     string `gorm:"type:uuid;foreignkey:UserID"`
 	ExternalID string
 	FirstName  string
 	LastName   string
@@ -23,5 +30,5 @@ type GoogleOAuthDetails struct {
 // Represents a user's who is an Admin without any additional fields.
 type Admin struct {
 	gorm.Model
-	UserID uint `gorm:"unique;foreignkey:UserID"`
+	UserID string `gorm:"type:uuid;foreignkey:UserID"`
 }
