@@ -15,10 +15,10 @@ type LocalAuthHandlers struct {
 	JWTHandlers *JWTHandlers
 }
 
-func NewLocalAuthHandlers(db *gorm.DB) *LocalAuthHandlers {
+func NewLocalAuthHandlers(db *gorm.DB, jwtHandlers *JWTHandlers) *LocalAuthHandlers {
 	return &LocalAuthHandlers{
 		DB:          db,
-		JWTHandlers: NewJWTHandlers(db),
+		JWTHandlers: jwtHandlers,
 	}
 }
 

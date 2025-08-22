@@ -26,7 +26,7 @@ type OauthHandlers struct {
 	JWTHandlers       *JWTHandlers
 }
 
-func NewOAuthHandlers(db *gorm.DB) *OauthHandlers {
+func NewOAuthHandlers(db *gorm.DB, jwtHandlers *JWTHandlers) *OauthHandlers {
 	b := make([]byte, 16)
 	rand.Read(b)
 	oauthStateString := base64.URLEncoding.EncodeToString(b)
@@ -47,7 +47,7 @@ func NewOAuthHandlers(db *gorm.DB) *OauthHandlers {
 		DB:                db,
 		OauthStateString:  oauthStateString,
 		GoogleOauthConfig: googleOauthConfig,
-		JWTHandlers:       NewJWTHandlers(db),
+		JWTHandlers:       jwtHandlers,
 	}
 }
 
