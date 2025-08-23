@@ -50,6 +50,7 @@ func LoadDB() (*gorm.DB, error) {
 		&model.Admin{},
 		&model.GoogleOAuthDetails{},
 		&model.RefreshToken{},
+		&model.Job{},
 	}
 
 	db.AutoMigrate(allModels...)
