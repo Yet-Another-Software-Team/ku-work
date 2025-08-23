@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"ku-work/backend/model"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -69,7 +68,6 @@ func (h *JobHandlers) CreateJob(ctx *gin.Context) {
 
 func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 	type FetchJobsInput struct {
-		Name       string   `json:"name" binding:"max=128"`
 		Limit      uint     `json:"limit" binding:"max=128"`
 		Offset     uint     `json:"offset" binding:"max=128"`
 		Location   string   `json:"location" binding:"max=128"`
@@ -90,11 +88,11 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 		ctx.String(http.StatusBadRequest, err.Error())
 		return
 	}
-	capitalizedKeyword := fmt.Sprintf("%%%s%%", strings.ToUpper(input.Keyword))
+	keywordPattern := fmt.Sprintf("%%%s%%", input.Keyword)
 	query := h.DB.Model(&model.Job{})
-	query = query.Where(h.DB.Where("UPPER(name) LIKE ?", capitalizedKeyword).Or("UPPER(description) LIKE ?", capitalizedKeyword))
-	query = query.Where("min_salary <= ?", input.MinSalary)
-	query = query.Where("max_salary >= ?", input.MaxSalary)
+	query = query.Where(h.DB.Where("name ILIKE ?", keywordPattern).Or("description ILIKE ?", keywordPattern))
+	query = query.Where("min_salary >= ?", input.MinSalary)
+	query = query.Where("max_salary <= ?", input.MaxSalary)
 	if len(input.Location) != 0 {
 		query = query.Where("location = ?", input.Location)
 	}
