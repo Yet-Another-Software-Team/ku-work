@@ -58,6 +58,13 @@ Copy `sample.env` to `.env` and configure the following variables:
 - `CORS_ALLOW_CREDENTIALS`: Allow credentials (true/false)
 - `CORS_MAX_AGE`: Preflight cache duration in seconds
 
+### JWT Configuration
+- `JWT_SECRET`: Secret key for JWT token generation
+
+### GoogleOauth Configuration
+- `GOOGLE_CLIENT_ID`: Client ID for Google OAuth
+- `GOOGLE_CLIENT_SECRET`: Client secret for Google OAuth
+
 ## Running the Application
 
 ### Development Mode

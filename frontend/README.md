@@ -34,6 +34,7 @@ Copy the sample environment file and configure your API settings:
 Edit `.env` with your backend API URL:
 ```env
 API_BASE_URL=http://localhost:8000
+GOOGLE_CLIENT_ID=your_google_client_id_here
 ```
 
 ## Development
