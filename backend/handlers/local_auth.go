@@ -64,7 +64,7 @@ func (h *LocalAuthHandlers) RegisterHandler(ctx *gin.Context) {
 		return
 	}
 
-	ctx = h.JWTHandlers.HandleToken(ctx, newUser)
+	h.JWTHandlers.HandleToken(ctx, newUser)
 }
 
 // struct to handle incoming login data.
@@ -93,5 +93,5 @@ func (h *LocalAuthHandlers) LoginHandler(ctx *gin.Context) {
 		return
 	}
 
-	ctx = h.JWTHandlers.HandleToken(ctx, user)
+	h.JWTHandlers.HandleToken(ctx, user)
 }
