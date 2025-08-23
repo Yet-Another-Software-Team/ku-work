@@ -58,6 +58,7 @@
 
 <script setup>
 const isCompany = ref(false);
+const isLoggingIn = ref(false);
 
 function setTailwindClasses(activeCondition) {
     if (isCompany.value == activeCondition) {
@@ -74,4 +75,6 @@ function selectCompany() {
 function selectRecruit() {
     isCompany.value = false;
 }
+
+
 </script>

@@ -21,6 +21,7 @@
     "typescript": "^5.6.3",
     "vue": "^3.5.18",
     "vue-router": "^4.5.1",
-    "vue3-google-login": "^2.0.34"
+    "vue3-google-login": "^2.0.34",
+    "zod": "^4.1.0"
   }
 }
