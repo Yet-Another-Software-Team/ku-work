@@ -33,6 +33,6 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	})
 
 	// Job routes
-	router.POST("/fetch_jobs", jobHandlers.FetchJobs)
-	admin.POST("/create_job", jobHandlers.CreateJob)
+	router.GET("/job", jobHandlers.FetchJobs)
+	admin.POST("/job", jobHandlers.CreateJob)
 }

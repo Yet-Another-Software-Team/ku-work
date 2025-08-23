@@ -68,14 +68,14 @@ func (h *JobHandlers) CreateJob(ctx *gin.Context) {
 
 func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 	type FetchJobsInput struct {
-		Limit      uint     `json:"limit" binding:"max=128"`
-		Offset     uint     `json:"offset" binding:"max=128"`
-		Location   string   `json:"location" binding:"max=128"`
-		Keyword    string   `json:"keyword" binding:"max=256"`
-		JobType    []string `json:"jobtype" binding:"max=5,dive,max=32"`
-		Experience []string `json:"experience" binding:"max=5,dive,max=32"`
-		MinSalary  uint     `json:"minsalary"`
-		MaxSalary  uint     `json:"maxsalary"`
+		Limit      uint     `form:"limit" binding:"max=128"`
+		Offset     uint     `form:"offset" binding:"max=128"`
+		Location   string   `form:"location" binding:"max=128"`
+		Keyword    string   `form:"keyword" binding:"max=256"`
+		JobType    []string `form:"jobtype" binding:"max=5,dive,max=32"`
+		Experience []string `form:"experience" binding:"max=5,dive,max=32"`
+		MinSalary  uint     `form:"minsalary"`
+		MaxSalary  uint     `form:"maxsalary"`
 	}
 	input := FetchJobsInput{
 		MinSalary: 0,
