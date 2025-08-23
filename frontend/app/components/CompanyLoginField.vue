@@ -107,10 +107,31 @@ async function onSubmit(_: FormSubmitEvent<Schema>) {
         state.username = "";
         state.password = "";
         show.value = false;
-    } catch {
+    } catch (error: unknown) {
+        let description = "Incorrect username or password. Please try again.";
+        interface ErrorWithStatus {
+            status?: number;
+            message?: string;
+        }
+        const status =
+            typeof error === "object" && error !== null && "status" in error
+                ? (error as ErrorWithStatus).status
+                : undefined;
+        const message =
+            typeof error === "object" && error !== null && "message" in error
+                ? (error as ErrorWithStatus).message
+                : undefined;
+
+        if (status === 401) {
+            description = "Incorrect username or password. Please try again.";
+        } else if (status === 500) {
+            description = "Server error. Please try again later.";
+        } else if (message) {
+            description = message;
+        }
         toast.add({
-            title: "Error",
-            description: "Invalid User or Password",
+            title: "Login Failed",
+            description,
             color: "error",
         });
     } finally {
