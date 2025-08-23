@@ -3,6 +3,7 @@ package handlers
 import (
 	"mime/multipart"
 	"net/http"
+	"os"
 	"time"
 
 	"fmt"
@@ -88,6 +89,70 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 	result := h.DB.Create(&student)
 	if result.Error != nil {
 		ctx.String(http.StatusInternalServerError, result.Error.Error())
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "ok",
+	})
+}
+
+func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
+	userId := ctx.MustGet("userID").(string)
+	type StudentEditProfileInput struct {
+		Phone             string                `form:"phone" binding:"max=20"`
+		BirthDate         string                `form:"birthDate" binding:"max=27"`
+		AboutMe           string                `form:"aboutMe" binding:"max=16384"`
+		GitHub            string                `form:"github" binding:"max=256"`
+		LinkedIn          string                `form:"linkedIn" binding:"max=256"`
+		StudentStatus     string                `form:"studentStatus" binding:"required,oneof='Graduated' 'Current Student'"`
+		Photo             *multipart.FileHeader `form:"photo"`
+	}
+	input := StudentEditProfileInput{}
+	err := ctx.MustBindWith(&input, binding.FormMultipart)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	student := model.Student{}
+	if err := h.DB.First(&student, userId).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if input.BirthDate != "" {
+		parsedBirthDate, err := time.Parse(time.RFC3339, input.BirthDate)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		student.BirthDate = datatypes.Date(parsedBirthDate)
+	}
+	if input.Phone != "" {
+		student.Phone = input.Phone
+	}
+	if input.AboutMe != "" {
+		student.AboutMe = input.AboutMe
+	}
+	if input.GitHub != "" {
+		student.GitHub = input.GitHub
+	}
+	if input.LinkedIn != "" {
+		student.LinkedIn = input.LinkedIn
+	}
+	if input.StudentStatus != "" {
+		student.StudentStatus = input.StudentStatus
+	}
+	if input.Photo != nil {
+		photoPath, err := handleFile(ctx, input.Photo, "student_photo", userId)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		os.Remove(student.Photo)
+		student.Photo = photoPath
+	}
+	result := h.DB.Save(&student)
+	if result.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{
