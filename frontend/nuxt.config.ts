@@ -11,10 +11,10 @@ export default defineNuxtConfig({
     "@nuxt/ui",
   ],
   css: ["~/assets/css/main.css"],
-
   runtimeConfig: {
     public: {
       apiBaseUrl: process.env.API_BASE_URL || "http://localhost:8000",
+      googleClientId: process.env.GOOGLE_CLIENT_ID,
     },
   },
 });

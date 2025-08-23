@@ -1,23 +1,38 @@
 package handlers
 
 import (
+	"ku-work/backend/middlewares"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	// Initialize handlers
-	userHandlers := NewUserHandlers(db)
+	jwtHandler := NewJWTHandlers(db)
+	localAuthHandlers := NewLocalAuthHandlers(db,jwtHandler)
+	googleAuthHandlers := NewOAuthHandlers(db,jwtHandler)
 	jobHandlers := NewJobHandlers(db)
 
-	// Health check route
-	router.GET("/", userHandlers.HealthCheck)
+	router.POST("/register", localAuthHandlers.RegisterHandler)
+	router.POST("/google/login", googleAuthHandlers.GoogleOauthHandler)
+	router.POST("/login", localAuthHandlers.LoginHandler)
+	router.POST("/refresh", jwtHandler.RefreshTokenHandler)
+	router.POST("/logout", jwtHandler.LogoutHandler)
 
-	// User routes
-	router.GET("/users", userHandlers.GetUsers)
-	router.POST("/create_user", userHandlers.CreateUser)
+	// Authentication Protected Routes
+	authed := router.Use(middlewares.AuthMiddleware(jwtHandler.JWTSecret))
+	authed.GET("/protected", func(ctx *gin.Context) {
+		ctx.JSON(200, gin.H{"message": "Protected route"})
+	})
+
+	// Admin Routes
+	admin := authed.Use(middlewares.AdminPermissionMiddleware(db))
+	admin.GET("/admin", func(ctx *gin.Context) {
+		ctx.JSON(200, gin.H{"message": "Admin route"})
+	})
 
 	// Job routes
-	router.POST("/create_job", jobHandlers.CreateJob)
 	router.POST("/fetch_jobs", jobHandlers.FetchJobs)
+	admin.POST("/create_job", jobHandlers.CreateJob)
 }
