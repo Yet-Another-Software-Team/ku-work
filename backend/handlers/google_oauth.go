@@ -142,6 +142,6 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 	h.DB.Model(&user).Where("id = ?", oauthDetail.UserID).First(&user)
 
 	//Return JWT Token to context
-	ctx = h.JWTHandlers.HandleToken(ctx, user)
+	h.JWTHandlers.HandleToken(ctx, user)
 
 }

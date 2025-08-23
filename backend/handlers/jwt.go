@@ -120,12 +120,11 @@ func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
 }
 
 // Handle Token sending
-func (h *JWTHandlers) HandleToken(req_ctx *gin.Context, user model.User) *gin.Context {
-	ctx := req_ctx
+func (h *JWTHandlers) HandleToken(ctx *gin.Context, user model.User) {
 	jwtToken, refreshToken, err := h.generateTokens(user.ID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
-		return ctx
+		return
 	}
 
 	// Set the refresh token cookie with a max age of 30 days
@@ -135,5 +134,4 @@ func (h *JWTHandlers) HandleToken(req_ctx *gin.Context, user model.User) *gin.Co
 	// Return the JWT token in the JSON response body.
 	ctx.JSON(http.StatusOK, gin.H{"token": jwtToken})
 
-	return ctx
 }
