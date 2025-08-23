@@ -10,7 +10,6 @@ type Student struct {
 	User              User   `gorm:"foreignKey:UserID"`
 	Approved          bool
 	CreatedAt         time.Time
-	FullName          string
 	Phone             string
 	Photo             string
 	BirthDate         datatypes.Date

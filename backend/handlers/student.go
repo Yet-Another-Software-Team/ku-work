@@ -36,7 +36,6 @@ func handleFile(ctx *gin.Context, file *multipart.FileHeader, directoryName stri
 func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 	userId := ctx.MustGet("userID").(string)
 	type StudentRegistrationInput struct {
-		FullName          string                `form:"fullName" binding:"required,max=256"`
 		Phone             string                `form:"phone" binding:"max=20"`
 		BirthDate         string                `form:"birthDate" binding:"max=27"`
 		AboutMe           string                `form:"aboutMe" binding:"max=16384"`
@@ -75,7 +74,6 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 	student := model.Student{
 		UserID:            userId,
 		Approved:          false,
-		FullName:          input.FullName,
 		Phone:             input.Phone,
 		Photo:             photoPath,
 		BirthDate:         datatypes.Date(parsedBirthDate),
