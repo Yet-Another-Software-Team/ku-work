@@ -25,18 +25,18 @@ const (
 )
 
 type Job struct {
-	ID          uint `gorm:"primaryKey"`
-	CreatedAt   time.Time
-	Name        string
-	CompanyID   string `gorm:"type:uuid"`
-	Company     User   `gorm:"foreignKey:CompanyID"`
-	Position    string
-	Duration    string
-	Description string
-	Location    string
-	JobType     JobType
-	Experience  ExperienceType
-	MinSalary   uint
-	MaxSalary   uint
-	IsApproved  bool
+	ID          uint           `gorm:"primaryKey" json:"id"`
+	CreatedAt   time.Time      `json:"createdAt"`
+	Name        string         `json:"name"`
+	CompanyID   string         `gorm:"type:uuid" json:"companyId"`
+	Company     User           `gorm:"foreignKey:CompanyID" json:"-"`
+	Position    string         `json:"position"`
+	Duration    string         `json:"duration"`
+	Description string         `json:"description"`
+	Location    string         `json:"location"`
+	JobType     JobType        `json:"jobType"`
+	Experience  ExperienceType `json:"experienceType"`
+	MinSalary   uint           `json:"minSalary"`
+	MaxSalary   uint           `json:"maxSalary"`
+	IsApproved  bool           `json:"approved"`
 }
