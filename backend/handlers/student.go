@@ -26,8 +26,7 @@ func NewStudentHandler(db *gorm.DB) *StudentHandler {
 }
 
 func handleFile(ctx *gin.Context, file *multipart.FileHeader, directoryName string, fileName string) (string, error) {
-	var path string
-	path = fmt.Sprintf("./files/%s/%s", directoryName, fileName)
+	path := fmt.Sprintf("./files/%s/%s", directoryName, fileName)
 	if err := ctx.SaveUploadedFile(file, path); err != nil {
 		return "", err
 	}
