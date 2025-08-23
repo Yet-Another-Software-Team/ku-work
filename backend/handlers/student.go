@@ -39,13 +39,13 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 	type StudentRegistrationInput struct {
 		FullName          string                `form:"fullName" binding:"required,max=256"`
 		Phone             string                `form:"phone" binding:"max=20"`
-		BirthDate         string                `form:"birthDate"`
+		BirthDate         string                `form:"birthDate" binding:"max=27"`
 		AboutMe           string                `form:"aboutMe" binding:"max=16384"`
 		GitHub            string                `form:"github" binding:"max=256"`
 		LinkedIn          string                `form:"linkedIn" binding:"max=256"`
 		StudentID         string                `form:"studentId" binding:"required,len=10"`
-		Major             string                `form:"major" binding:"required"`
-		StudentStatus     string                `form:"studentStatus" binding:"required"`
+		Major             string                `form:"major" binding:"required,oneof='Software and Knowledge Engineering' 'Computer Engineering'"`
+		StudentStatus     string                `form:"studentStatus" binding:"required,oneof='Graduated' 'Current Student'"`
 		Photo             *multipart.FileHeader `form:"photo" binding:"required"`
 		StudentStatusFile *multipart.FileHeader `form:"statusPhoto" binding:"required"`
 	}
@@ -55,10 +55,13 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	parsedBirthDate, err := time.Parse(time.RFC3339, input.BirthDate)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	var parsedBirthDate time.Time
+	if input.BirthDate != "" {
+		parsedBirthDate, err = time.Parse(time.RFC3339, input.BirthDate)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 	}
 	photoPath, err := handleFile(ctx, input.Photo, "student_photo", userId)
 	if err != nil {
