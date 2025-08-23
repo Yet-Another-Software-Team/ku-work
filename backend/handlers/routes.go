@@ -33,9 +33,10 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 		ctx.JSON(200, gin.H{"message": "Admin route"})
 	})
 
-	// Job routes
-	admin.POST("/create_job", jobHandlers.CreateJob)
-
 	// Student routes
 	authed.POST("/register_student", studentHandler.RegisterHandler)
+
+	// Job routes
+	router.GET("/job", jobHandlers.FetchJobs)
+	admin.POST("/job", jobHandlers.CreateJob)
 }

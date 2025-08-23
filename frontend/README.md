@@ -13,6 +13,7 @@ A modern Vue.js frontend application built with Nuxt 3, providing a user-friendl
 ### 1. Install Dependencies
 
 Using Bun:
+
 ```bash
 bun install
 ```
@@ -21,17 +22,18 @@ bun install
 
 Copy the sample environment file and configure your API settings:
 
-   ```bash
-   # Linux/Unix/MacOS
-   cp sample.env .env
+```bash
+# Linux/Unix/MacOS
+cp sample.env .env
 
-   # Windows
-   copy sample.env .env
+# Windows
+copy sample.env .env
 
-   # Edit .env with your configuration
-   ```
+# Edit .env with your configuration
+```
 
 Edit `.env` with your backend API URL:
+
 ```env
 API_BASE_URL=http://localhost:8000
 GOOGLE_CLIENT_ID=your_google_client_id_here
@@ -49,12 +51,16 @@ The application will be available at `http://localhost:3000`
 
 ### Available Scripts
 
-| Command | Description |
-|---------|-------------|
-| `bun run dev` | Start development server |
-| `bun run build` | Build for production |
-| `bun run preview` | Preview production build |
-| `bun run generate` | Generate static site |
+| Command            | Description                             |
+| ------------------ | --------------------------------------- |
+| `bun run dev`      | Start development server                |
+| `bun run build`    | Build for production                    |
+| `bun run preview`  | Preview production build                |
+| `bun run generate` | Generate static site                    |
+| `bun lint`         | Check project file with eslint          |
+| `bun lint:fix`     | Fix project file formatting with eslint |
+| `bun format`       | Check project file format with prettier |
+| `bun format:fix`   | Fix project file format with prettier   |
 
 ## Production Deployment
 
@@ -73,6 +79,7 @@ bun run preview
 ### Static Generation (Optional)
 
 For static hosting:
+
 ```bash
 bun run generate
 ```

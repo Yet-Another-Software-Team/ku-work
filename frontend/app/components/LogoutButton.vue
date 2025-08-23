@@ -1,13 +1,8 @@
 <template>
-<UButton
-    label="Logout"
-    color="primary"
-    @click="logout"
-/>
+    <UButton label="Logout" color="primary" @click="logout" />
 </template>
 
-<script setup>
-const emit = defineEmits(["logout"]);
+<script setup lang="ts">
 const config = useRuntimeConfig();
 const toast = useToast();
 
@@ -16,7 +11,7 @@ const logout = async () => {
         const _ = await $fetch("/logout", {
             method: "POST",
             baseURL: config.public.apiBaseUrl,
-            credentials: 'include'
+            credentials: "include",
         });
         localStorage.removeItem("jwt_token");
 
@@ -25,7 +20,6 @@ const logout = async () => {
             description: "You have been successfully logged out.",
             color: "neutral",
         });
-        emit('logout');
     } catch (error) {
         console.error("Error during logout:", error);
     }
