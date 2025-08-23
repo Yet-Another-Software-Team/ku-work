@@ -1,8 +1,6 @@
 <template>
     <div class="relative translate-y-[-2em] mb-10">
-        <div
-            class="flex flex-row gap-2 h-[7em] w-[28em] absolute left-1/2 -translate-x-1/2 top-0"
-        >
+        <div class="flex flex-row gap-2 h-[7em] w-[28em] absolute left-1/2 -translate-x-1/2 top-0">
             <div
                 class="hover:cursor-pointer transition-all duraion-150"
                 :class="setTailwindClasses(false)"
@@ -23,9 +21,7 @@
             class="h-[30em] w-[28em] rounded-xl bg-white pt-10 text-black relative top-[3.5em] mx-auto z-10"
         >
             <div v-if="!isCompany" class="flex flex-col h-full w-full">
-                <h2 class="text-xl font-semibold mx-auto mb-5">
-                    KU Students/Staffs Login
-                </h2>
+                <h2 class="text-xl font-semibold mx-auto mb-5">KU Students/Staffs Login</h2>
                 <GoogleOauthButton class="mx-auto text-white" />
                 <p class="text-center w-full mt-auto mb-2">
                     Don't have an account?
@@ -38,9 +34,7 @@
                 </p>
             </div>
             <div v-else class="flex flex-col h-full w-full">
-                <h2 class="text-xl font-semibold mx-auto mb-5">
-                    Company Login
-                </h2>
+                <h2 class="text-xl font-semibold mx-auto mb-5">Company Login</h2>
                 <CompanyLoginField />
                 <p class="text-center w-full mt-auto mb-2">
                     Don't have an account?
@@ -58,7 +52,6 @@
 
 <script setup>
 const isCompany = ref(false);
-const isLoggingIn = ref(false);
 
 function setTailwindClasses(activeCondition) {
     if (isCompany.value == activeCondition) {
@@ -75,6 +68,4 @@ function selectCompany() {
 function selectRecruit() {
     isCompany.value = false;
 }
-
-
 </script>
