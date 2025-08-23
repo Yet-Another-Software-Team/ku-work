@@ -99,13 +99,13 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 	userId := ctx.MustGet("userID").(string)
 	type StudentEditProfileInput struct {
-		Phone             string                `form:"phone" binding:"max=20"`
-		BirthDate         string                `form:"birthDate" binding:"max=27"`
-		AboutMe           string                `form:"aboutMe" binding:"max=16384"`
-		GitHub            string                `form:"github" binding:"max=256"`
-		LinkedIn          string                `form:"linkedIn" binding:"max=256"`
-		StudentStatus     string                `form:"studentStatus" binding:"required,oneof='Graduated' 'Current Student'"`
-		Photo             *multipart.FileHeader `form:"photo"`
+		Phone         string                `form:"phone" binding:"max=20"`
+		BirthDate     string                `form:"birthDate" binding:"max=27"`
+		AboutMe       string                `form:"aboutMe" binding:"max=16384"`
+		GitHub        string                `form:"github" binding:"max=256"`
+		LinkedIn      string                `form:"linkedIn" binding:"max=256"`
+		StudentStatus string                `form:"studentStatus" binding:"required,oneof='Graduated' 'Current Student'"`
+		Photo         *multipart.FileHeader `form:"photo"`
 	}
 	input := StudentEditProfileInput{}
 	err := ctx.MustBindWith(&input, binding.FormMultipart)
@@ -157,5 +157,29 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "ok",
+	})
+}
+
+func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
+	userId := ctx.MustGet("userID").(string)
+	type GetStudentProfileInput struct {
+		UserID string `form:"id" binding:"max=128"`
+	}
+	input := GetStudentProfileInput{}
+	err := ctx.MustBindWith(&input, binding.Form)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if input.UserID != "" {
+		userId = input.UserID
+	}
+	student := model.Student{}
+	if err := h.DB.First(&student, userId).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"profile": student,
 	})
 }
