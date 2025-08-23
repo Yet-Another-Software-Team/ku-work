@@ -73,7 +73,7 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 		Limit      uint     `json:"limit" binding:"max=128"`
 		Offset     uint     `json:"offset" binding:"max=128"`
 		Location   string   `json:"location" binding:"max=128"`
-		Keyword    string   `json:"description" binding:"max=16384"`
+		Keyword    string   `json:"keyword" binding:"max=256"`
 		JobType    []string `json:"jobtype" binding:"max=5,dive,max=32"`
 		Experience []string `json:"experience" binding:"max=5,dive,max=32"`
 		MinSalary  uint     `json:"minsalary"`
