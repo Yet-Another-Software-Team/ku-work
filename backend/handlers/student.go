@@ -1,0 +1,96 @@
+package handlers
+
+import (
+	"mime/multipart"
+	"net/http"
+	"time"
+
+	"fmt"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"gorm.io/datatypes"
+	"gorm.io/gorm"
+
+	"ku-work/backend/model"
+)
+
+type StudentHandler struct {
+	DB *gorm.DB
+}
+
+func NewStudentHandler(db *gorm.DB) *StudentHandler {
+	return &StudentHandler{
+		DB: db,
+	}
+}
+
+func handleFile(ctx *gin.Context, file *multipart.FileHeader, directoryName string, fileName string) (string, error) {
+	var path string
+	path = fmt.Sprintf("./files/%s/%s", directoryName, fileName)
+	if err := ctx.SaveUploadedFile(file, path); err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
+	userId := ctx.MustGet("userID").(string)
+	type StudentRegistrationInput struct {
+		FullName          string                `form:"fullName" binding:"required,max=256"`
+		Phone             string                `form:"phone" binding:"max=20"`
+		BirthDate         string                `form:"birthDate"`
+		AboutMe           string                `form:"aboutMe" binding:"max=16384"`
+		GitHub            string                `form:"github" binding:"max=256"`
+		LinkedIn          string                `form:"linkedIn" binding:"max=256"`
+		StudentID         string                `form:"studentId" binding:"required,len=10"`
+		Major             string                `form:"major" binding:"required"`
+		StudentStatus     string                `form:"studentStatus" binding:"required"`
+		Photo             *multipart.FileHeader `form:"photo" binding:"required"`
+		StudentStatusFile *multipart.FileHeader `form:"statusPhoto" binding:"required"`
+	}
+	input := StudentRegistrationInput{}
+	err := ctx.MustBindWith(&input, binding.FormMultipart)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	parsedBirthDate, err := time.Parse(time.RFC3339, input.BirthDate)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	photoPath, err := handleFile(ctx, input.Photo, "student_photo", userId)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	statusPhotoPath, err := handleFile(ctx, input.StudentStatusFile, "status_photo", userId)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	student := model.Student{
+		UserID:            userId,
+		Approved:          false,
+		FullName:          input.FullName,
+		Phone:             input.Phone,
+		Photo:             photoPath,
+		BirthDate:         datatypes.Date(parsedBirthDate),
+		AboutMe:           input.AboutMe,
+		GitHub:            input.GitHub,
+		LinkedIn:          input.LinkedIn,
+		StudentID:         input.StudentID,
+		Major:             input.Major,
+		StudentStatus:     input.StudentStatus,
+		StudentStatusFile: statusPhotoPath,
+	}
+	result := h.DB.Create(&student)
+	if result.Error != nil {
+		ctx.String(http.StatusInternalServerError, result.Error.Error())
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "ok",
+	})
+}
