@@ -3,7 +3,6 @@ package handlers
 import (
 	"mime/multipart"
 	"net/http"
-	"os"
 	"time"
 
 	"fmt"
@@ -113,8 +112,10 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	student := model.Student{}
-	if err := h.DB.First(&student, userId).Error; err != nil {
+	student := model.Student{
+		UserID: userId,
+	}
+	if err := h.DB.First(&student).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -147,7 +148,6 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		os.Remove(student.Photo)
 		student.Photo = photoPath
 	}
 	result := h.DB.Save(&student)
@@ -174,8 +174,10 @@ func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 	if input.UserID != "" {
 		userId = input.UserID
 	}
-	student := model.Student{}
-	if err := h.DB.First(&student, userId).Error; err != nil {
+	student := model.Student{
+		UserID: userId,
+	}
+	if err := h.DB.First(&student).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
