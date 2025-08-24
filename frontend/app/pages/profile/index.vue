@@ -1,6 +1,6 @@
 <script setup lang="ts">
 definePageMeta({
-	layout: "student",
+	layout: "with-sidebar",
 });
 </script>
 

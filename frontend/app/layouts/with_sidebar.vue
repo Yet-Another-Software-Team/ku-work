@@ -1,7 +1,6 @@
 <template>
-  <div>
-    <SideBar />
-    <h1>Student Layout test</h1>
+  <div class="block md:flex">
+    <SideBar :is-viewer="true" />
     <slot />
   </div>
 </template>
