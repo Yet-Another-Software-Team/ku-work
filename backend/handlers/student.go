@@ -30,7 +30,7 @@ func handleFile(ctx *gin.Context, file *multipart.FileHeader, directoryName stri
 	if err := ctx.SaveUploadedFile(file, path); err != nil {
 		return "", err
 	}
-	return path, nil
+	return path[1:], nil
 }
 
 func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
