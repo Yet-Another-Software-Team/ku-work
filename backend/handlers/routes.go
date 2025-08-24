@@ -13,6 +13,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	localAuthHandlers := NewLocalAuthHandlers(db,jwtHandler)
 	googleAuthHandlers := NewOAuthHandlers(db,jwtHandler)
 	jobHandlers := NewJobHandlers(db)
+	studentHandler := NewStudentHandler(db)
 
 	router.POST("/register", localAuthHandlers.RegisterHandler)
 	router.POST("/google/login", googleAuthHandlers.GoogleOauthHandler)
@@ -31,6 +32,9 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	admin.GET("/admin", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{"message": "Admin route"})
 	})
+
+	// Student routes
+	authed.POST("/students/register", studentHandler.RegisterHandler)
 
 	// Job routes
 	router.GET("/job", jobHandlers.FetchJobs)
