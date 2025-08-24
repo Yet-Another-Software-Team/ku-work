@@ -1,71 +1,41 @@
 <template>
-    <div>
-        <h1 class="text-3xl font-bold w-full text-center">
-            Welcome to KU-Work
-        </h1>
-        <p class="text-lg w-full text-center">
-            This is the homepage of KU-Work.
-        </p>
-
-        <div v-if="!login">
-            <LoginCard @login-success="handleLoginSuccess" />
-            <RegisterCard @login-success="handleLoginSuccess" />
-            <GoogleOauthButton @login-success="handleLoginSuccess" />
+    <div class="main-container px-[12vw] h-fit">
+        <div class="h-[8em] pt-2">
+            <Icon name="meteocons:umbrella-wind-alt" class="size-[8em] text-white" />
         </div>
-        <div v-else>
-            <h2>Welcome back!</h2>
-            <p>You are logged in.</p>
-            <p v-if="isAdmin">You are an admin.</p>
-            <LogoutButton @logout="handleLogoutSuccess" />
+        <div class="w-full flex flex-col md:flex-row justify-center items-center gap-[5em] pb-5">
+            <div class="text-white">
+                <h1 class="text-5xl font-bold">
+                    Here in <span class="text-primary">KU-Work</span>,
+                </h1>
+                <h2 class="text-3xl font-semibold mt-3">Great job awaits for you</h2>
+                <p class="text-base font-light mt-5 hidden lg:block">
+                    A platform connecting KU's SKE/CPE students with<br />companies, offering direct
+                    access to relevant tech-<br />jobs and internships.
+                </p>
+            </div>
+            <LoginCard />
         </div>
     </div>
 </template>
 
-<script setup>
-const login = ref(false);
-const isAdmin = ref(false);
-const isRefreshing = ref(false);
-const config = useRuntimeConfig();
+<script setup></script>
 
-onMounted(() => {
-    // Try to refresh the token
-    refreshToken();
-});
-
-const refreshToken = async () => {
-    if (isRefreshing.value) return;
-    isRefreshing.value = true;
-    try {
-        const response = await $fetch("/refresh", {
-            method: "POST",
-            baseURL: config.public.apiBaseUrl,
-            credentials: "include",
-        });
-
-        localStorage.setItem("jwt_token", response.token);
-        login.value = true;
-
-        const _ = await $fetch("/admin", {
-            baseURL: config.public.apiBaseUrl,
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("jwt_token")}`,
-            },
-            credentials: "include",
-        });
-        isAdmin.value = true;
-    } catch (error) {
-        isAdmin.value = false;
-        console.error(error);
-    } finally {
-        isRefreshing.value = false;
-    }
-};
-
-function handleLoginSuccess() {
-    login.value = true;
+<style>
+.main-container {
+    position: relative;
 }
 
-function handleLogoutSuccess() {
-    login.value = false;
+.main-container::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("/images/background.png");
+    background-size: cover;
+    background-position: center;
+    z-index: -1;
 }
-</script>
+</style>

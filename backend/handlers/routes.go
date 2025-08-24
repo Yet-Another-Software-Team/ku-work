@@ -12,6 +12,8 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	jwtHandler := NewJWTHandlers(db)
 	localAuthHandlers := NewLocalAuthHandlers(db,jwtHandler)
 	googleAuthHandlers := NewOAuthHandlers(db,jwtHandler)
+	jobHandlers := NewJobHandlers(db)
+	studentHandler := NewStudentHandler(db)
 
 	router.POST("/register", localAuthHandlers.RegisterHandler)
 	router.POST("/google/login", googleAuthHandlers.GoogleOauthHandler)
@@ -20,14 +22,21 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	router.POST("/logout", jwtHandler.LogoutHandler)
 
 	// Authentication Protected Routes
-	authed := router.Use(middlewares.AuthMiddleware(jwtHandler.JWTSecret))
+	authed := router.Group("/", middlewares.AuthMiddleware(jwtHandler.JWTSecret))
 	authed.GET("/protected", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{"message": "Protected route"})
 	})
-	
+
 	// Admin Routes
-	admin := authed.Use(middlewares.AdminPermissionMiddleware(db))
+	admin := authed.Group("/", middlewares.AdminPermissionMiddleware(db))
 	admin.GET("/admin", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{"message": "Admin route"})
 	})
+
+	// Student routes
+	authed.POST("/students/register", studentHandler.RegisterHandler)
+
+	// Job routes
+	router.GET("/job", jobHandlers.FetchJobs)
+	admin.POST("/job", jobHandlers.CreateJob)
 }
