@@ -1,9 +1,9 @@
 <template>
-  <div>
-    <UApp>
-      <NuxtLayout>
-        <NuxtPage />
-      </NuxtLayout>
-    </UApp>
-  </div>
+    <div>
+        <UApp>
+            <NuxtLayout>
+                <NuxtPage />
+            </NuxtLayout>
+        </UApp>
+    </div>
 </template>

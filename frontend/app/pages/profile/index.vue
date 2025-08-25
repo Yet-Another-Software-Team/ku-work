@@ -1,5 +1,5 @@
 <template>
-    <div class="m-5">
+    <div class="m-10 relative">
         <ProfileCard />
     </div>
 </template>

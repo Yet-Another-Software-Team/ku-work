@@ -1,5 +1,5 @@
 <template>
-    <section class="w-64">
+    <section class="min-w-64">
         <!-- Sidebar toggle with button (mobile, ipad, small screens) -->
         <USlideover
             side="left"

@@ -1,11 +1,11 @@
 <template>
     <UButton
         label="Logout"
-        @click="logout"
         variant="ghost"
         size="xl"
         icon="ic:round-logout"
         :ui="{ base: 'justify-start text-left text-white hover:bg-white/10' }"
+        @click="logout"
     />
 </template>
 
