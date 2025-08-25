@@ -1,6 +1,6 @@
 <template>
-  <div class="block md:flex">
-    <SideBar :is-viewer="true" />
-    <slot />
-  </div>
+    <div class="block md:flex">
+        <Sidebar :is-viewer="false" />
+        <slot />
+    </div>
 </template>
