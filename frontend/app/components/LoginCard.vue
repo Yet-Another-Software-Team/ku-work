@@ -27,7 +27,7 @@
                     Don't have an account?
                     <a
                         class="text-primary-600 font-semibold underline hover:text-primary-800"
-                        href="/register"
+                        href="students/register"
                     >
                         Sign Up
                     </a>
