@@ -1,12 +1,12 @@
-<script setup lang="ts">
-definePageMeta({
-	layout: "with-sidebar",
-});
-</script>
-
 <template>
-    <div>
-        <h1>Student Profile</h1>
+    <div class="m-5">
+        <ProfileCard />
         <p>Welcome to your profile page!</p>
     </div>
 </template>
+
+<script setup lang="ts">
+definePageMeta({
+    layout: "with-sidebar",
+});
+</script>
