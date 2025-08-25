@@ -44,9 +44,9 @@
 </template>
 
 <script setup lang="ts">
-const props = withDefaults(
+withDefaults(
     defineProps<{
-        isViewer: boolean;
+        isViewer?: boolean;
     }>(),
     {
         isViewer: false,
@@ -56,7 +56,7 @@ const props = withDefaults(
 function getSidebarItems(
     isViewer: boolean
 ): Array<{ label: string; icon: string; to: string; disable: boolean }> {
-    let items = [
+    const items = [
         {
             label: "Job Board",
             icon: "ic:baseline-work",
