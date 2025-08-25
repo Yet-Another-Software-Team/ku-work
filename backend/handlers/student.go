@@ -160,6 +160,35 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 	})
 }
 
+func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
+	type StudentRegistrationApprovalInput struct {
+		UserID string `json:"id" binding:"max=128"`
+	}
+	input := StudentRegistrationApprovalInput{}
+	err := ctx.Bind(&input)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	student := model.Student{
+		UserID: input.UserID,
+	}
+	result := h.DB.First(&student)
+	if result.Error != nil {
+		ctx.String(http.StatusInternalServerError, result.Error.Error())
+		return
+	}
+	student.Approved = true
+	result = h.DB.Save(&student)
+	if result.Error != nil {
+		ctx.String(http.StatusInternalServerError, result.Error.Error())
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "ok",
+	})
+}
+
 func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 	userId := ctx.MustGet("userID").(string)
 	type GetStudentProfileInput struct {
