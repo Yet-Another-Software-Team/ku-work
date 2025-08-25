@@ -1,5 +1,5 @@
 <template>
-    <div class="block md:flex">
+    <div class="block lg:flex">
         <Sidebar :is-viewer="false" />
         <slot />
     </div>

@@ -5,7 +5,7 @@
             side="left"
             :ui="{
                 content:
-                    'bg-linear-to-bl from-[#013B49] from-50% to-[#40DC7A] w-64 flex flex-col h-full p-4 md:hidden',
+                    'bg-linear-to-bl from-[#013B49] from-50% to-[#40DC7A] w-64 flex flex-col h-full p-4 lg:hidden',
             }"
         >
             <UButton
@@ -29,7 +29,7 @@
         </USlideover>
         <!-- Sidebar expanded (desktop) -->
         <div
-            class="fixed top-0 left-0 w-64 hidden md:flex flex-col h-full p-4 bg-linear-to-bl from-[#013B49] from-50% to-[#40DC7A]/90 shadow-md space-y-2"
+            class="fixed top-0 left-0 w-64 hidden lg:flex flex-col h-full p-4 bg-linear-to-bl from-[#013B49] from-50% to-[#40DC7A]/90 shadow-md space-y-2"
         >
             <header class="flex items-center justify-between mb-4">
                 <h1 class="text-2xl font-bold text-white mb-4">Icon here</h1>
