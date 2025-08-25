@@ -1,14 +1,12 @@
 <template>
-    <div class="max-w-4xl mx-auto bg-white dark:bg-gray-800 p-8 rounded-lg shadow">
+    <div class="rounded-lg">
         <!-- Header -->
-        <h1 class="text-3xl text-primary-800 dark:text-primary font-bold mb-6">Profile</h1>
+        <h1 class="text-5xl text-primary-800 dark:text-primary font-bold mb-6">Profile</h1>
 
         <!-- Top Section -->
-        <div class="grid grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             <!-- Profile Image -->
-            <div
-                class="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden"
-            >
+            <div class="size-fit rounded-full flex items-center justify-center overflow-hidden">
                 <div v-if="mockData.profile.photo">
                     <img
                         :src="mockData.profile.photo"
@@ -22,7 +20,7 @@
             </div>
 
             <!-- Info -->
-            <div class="col-span-2">
+            <div class="col-span-1 lg:col-span-2 text-xl">
                 <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">
                     {{ mockData.profile.name }}
                 </h2>
@@ -43,7 +41,7 @@
 
             <!-- Edit Button -->
             <button
-                class="m-auto mt-0 px-4 py-2 border border-gray-400 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                class="mb-auto mr-auto px-4 py-2 border border-gray-400 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
             >
                 <Icon name="material-symbols:edit-square-outline-rounded" class="size-[1.5em]" />
                 Edit Profile
@@ -54,7 +52,7 @@
         <hr class="my-6 border-gray-300 dark:border-gray-600" />
 
         <!-- Bottom Section -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 text-xl">
             <!-- Connections -->
             <div>
                 <h3 class="font-semibold text-gray-800 dark:text-white mb-2">Connections</h3>
@@ -65,8 +63,7 @@
                             target="_blank"
                             class="flex items-center gap-2 hover:underline"
                         >
-                            <Icon name="devicon:linkedin"
-                            class="size-[1.5em]"/>
+                            <Icon name="devicon:linkedin" class="size-[1.5em]" />
                             {{ mockData.profile.name }}
                         </a>
                     </li>
@@ -76,8 +73,10 @@
                             target="_blank"
                             class="flex items-center gap-2 hover:underline"
                         >
-                        <Icon name="devicon:github"
-                        class="size-[1.5em] bg-white rounded-full"/>
+                            <Icon
+                                name="devicon:github"
+                                class="size-[1.5em] bg-white rounded-full"
+                            />
                             {{ mockData.profile.name }}
                         </a>
                     </li>
@@ -85,7 +84,7 @@
             </div>
 
             <!-- About Me -->
-            <div class="col-span-3">
+            <div class="col-span-1 md:col-span-2 lg:col-span-3">
                 <h3 class="font-semibold text-gray-800 dark:text-white mb-2">About me</h3>
                 <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
                     {{ mockData.profile.aboutMe }}
@@ -127,7 +126,7 @@ const mockData: Profile = {
         photo: "",
         birthDate: "2003-01-01",
         aboutMe:
-            "Lorem ipsum dolor sit amet consectetur adipiscing elit. Amet consectetur adipiscing elit quisque faucibus ex sapien. Quisque faucibus ex sapien vitae pellentesque sem placerat. Vitae pellentesque sem placerat in id cursus mi.",
+            "Hello! I'm John, a passionate software engineering student with a love for coding and problem-solving. I enjoy working on innovative projects and collaborating with others to create impactful solutions. REALLY LONG TEXT TO TEST THE LAYOUT. Hello! I'm John, a passionate software engineering student with a love for coding and problem-solving. I enjoy working on innovative projects and collaborating with others to create impactful solutions.",
         github: "https://github.com",
         linkedIn: "https://linkedin.com/",
         studentId: "6xxxxxxxxx",
