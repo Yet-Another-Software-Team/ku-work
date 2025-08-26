@@ -3,7 +3,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="col-span-2 space-y-4">
                 <div class="flex flex-col space-y-1">
-                    <label class="text-green-800 font-semibold">Full Name *</label>
+                    <label class="text-primary-800 font-semibold">Full Name *</label>
                     <UInput
                         :model-value="fullName"
                         placeholder="John Doe"
@@ -16,7 +16,7 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="flex flex-col space-y-1">
-                        <label class="text-green-800 font-semibold">Date of Birth</label>
+                        <label class="text-primary-800 font-semibold">Date of Birth</label>
                         <UInput
                             :model-value="dateOfBirth"
                             placeholder="Optional: MM/DD/YYYY"
@@ -27,21 +27,21 @@
                             :ui="{ base: 'rounded-lg bg-white text-black' }"
                             @update:model-value="updateDateOfBirth"
                         />
-                        <span v-if="errors.dateOfBirth" class="text-red-500 text-sm">
+                        <span v-if="errors.dateOfBirth" class="text-error text-sm">
                             {{ errors.dateOfBirth }}
                         </span>
                     </div>
                     <div class="flex flex-col space-y-1">
-                        <label class="text-green-800 font-semibold">Phone</label>
+                        <label class="text-primary-800 font-semibold">Phone</label>
                         <UInput
                             :model-value="phone"
-                            placeholder="Optional: +1234567890"
+                            placeholder="Optional: 0919999999"
                             size="xl"
                             :error="!!errors.phone"
                             :ui="{ base: 'rounded-lg bg-white text-black' }"
                             @update:model-value="updatePhone"
                         />
-                        <span v-if="errors.phone" class="text-red-500 text-sm">
+                        <span v-if="errors.phone" class="text-error text-sm">
                             {{ errors.phone }}
                         </span>
                     </div>
@@ -50,12 +50,12 @@
 
             <div class="flex flex-col items-center justify-center">
                 <div class="flex flex-col items-center gap-3">
-                    <label class="text-green-800 font-semibold"
-                        >Profile Picture * (JPEG, PNG, GIF - Max 5MB)</label
+                    <label class="text-primary-800 font-semibold"
+                        >Profile Picture * (JPEG, PNG - Max 5MB)</label
                     >
                     <button
                         class="size-[5em] rounded-full bg-gray-200 flex items-center justify-center text-4xl text-gray-500 outline-1 outline-primary overflow-hidden hover:cursor-pointer"
-                        :class="{ 'border-2 border-red-500': errors.avatar }"
+                        :class="{ 'border-2 border-error': errors.avatar }"
                         @click="fileInputRef?.click()"
                     >
                         <span v-if="!previewUrl">+</span>
@@ -66,14 +66,14 @@
                             class="w-full h-full object-cover"
                         />
                     </button>
-                    <span v-if="errors.avatar" class="text-red-500 text-sm text-center">
+                    <span v-if="errors.avatar" class="text-error text-sm text-center">
                         {{ errors.avatar }}
                     </span>
 
                     <input
                         ref="fileInputRef"
                         type="file"
-                        accept="image/jpeg,image/jpg,image/png,image/gif"
+                        accept="image/jpeg,image/jpg,image/png"
                         class="hidden"
                         @change="onFileChange"
                     />
@@ -82,7 +82,7 @@
         </div>
 
         <div class="flex flex-col space-y-1">
-            <label class="text-green-800 font-semibold">About me</label>
+            <label class="text-primary-800 font-semibold">About me</label>
             <UTextarea
                 :model-value="aboutMe"
                 placeholder="Optional: Tell us about yourself, your interests, skills, and career goals"
@@ -91,7 +91,7 @@
                 @update:model-value="updateAboutMe"
             />
             <div class="flex justify-between items-center">
-                <span v-if="errors.aboutMe" class="text-red-500 text-sm">
+                <span v-if="errors.aboutMe" class="text-error text-sm">
                     {{ errors.aboutMe }}
                 </span>
                 <span class="text-gray-500 text-sm ml-auto">
@@ -102,7 +102,7 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="flex flex-col space-y-1">
-                <label class="text-green-800 font-semibold">GitHub URL</label>
+                <label class="text-primary-800 font-semibold">GitHub URL</label>
                 <UInput
                     type="url"
                     :model-value="githubURL"
@@ -112,12 +112,12 @@
                     :ui="{ base: 'rounded-lg bg-white text-black' }"
                     @update:model-value="updateGithubURL"
                 />
-                <span v-if="errors.githubURL" class="text-red-500 text-sm">
+                <span v-if="errors.githubURL" class="text-error text-sm">
                     {{ errors.githubURL }}
                 </span>
             </div>
             <div class="flex flex-col space-y-1">
-                <label class="text-green-800 font-semibold">LinkedIn URL</label>
+                <label class="text-primary-800 font-semibold">LinkedIn URL</label>
                 <UInput
                     type="url"
                     :model-value="linkedinURL"
@@ -127,7 +127,7 @@
                     :ui="{ base: 'rounded-lg bg-white text-black' }"
                     @update:model-value="updateLinkedinURL"
                 />
-                <span v-if="errors.linkedinURL" class="text-red-500 text-sm">
+                <span v-if="errors.linkedinURL" class="text-error text-sm">
                     {{ errors.linkedinURL }}
                 </span>
             </div>
@@ -200,7 +200,7 @@ const schema = z.object({
         .string()
         .optional()
         .refine((date) => {
-            if (!date) return true; // Optional field
+            if (!date) return true;
             const birthDate = new Date(date);
             const today = new Date();
             const age = today.getFullYear() - birthDate.getFullYear();
@@ -211,7 +211,7 @@ const schema = z.object({
         .max(20, "Phone number must be 20 characters or less")
         .optional()
         .refine((phone) => {
-            if (!phone) return true; // Optional field
+            if (!phone) return true;
             return /^[+]?[0-9\-()\s]+$/.test(phone);
         }, "Invalid phone number format"),
     aboutMe: z.string().max(16384, "About me must be 16,384 characters or less").optional(),
@@ -220,7 +220,7 @@ const schema = z.object({
         .max(256, "GitHub URL must be 256 characters or less")
         .optional()
         .refine((url) => {
-            if (!url) return true; // Optional field
+            if (!url) return true;
             try {
                 const validUrl = new URL(url);
                 return validUrl.hostname.includes("github.com");
@@ -233,7 +233,7 @@ const schema = z.object({
         .max(256, "LinkedIn URL must be 256 characters or less")
         .optional()
         .refine((url) => {
-            if (!url) return true; // Optional field
+            if (!url) return true;
             try {
                 const validUrl = new URL(url);
                 return validUrl.hostname.includes("linkedin.com");
@@ -254,9 +254,9 @@ const validateField = (fieldName, value) => {
                 errors.avatar = "File size must be less than 5MB";
                 return false;
             }
-            const allowedTypes = ["image/jpeg", "image/png", "image/jpg", "image/gif"];
+            const allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
             if (!allowedTypes.includes(value.type)) {
-                errors.avatar = "Only JPEG, JPG, PNG, and GIF files are allowed";
+                errors.avatar = "Only JPEG, JPG, and PNG files are allowed";
                 return false;
             }
             errors.avatar = "";
@@ -313,19 +313,13 @@ const updateLinkedinURL = (value) => {
 
 const onFileChange = (event) => {
     const file = event.target.files[0];
-    if (file && file.size <= TWO_MB) {
+    if (file && file.size <= FIVE_MB) {
         if (previewUrl.value) {
             URL.revokeObjectURL(previewUrl.value);
         }
         previewUrl.value = URL.createObjectURL(file);
         emit("update:avatar", file);
         validateField("avatar", file);
-
-        toast.add({
-            title: "File uploaded",
-            description: "Profile picture uploaded successfully",
-            color: "success",
-        });
     }
 };
 

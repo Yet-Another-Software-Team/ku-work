@@ -2,29 +2,29 @@
     <div class="space-y-6 my-5">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="flex flex-col space-y-1">
-                <label class="text-green-800 font-semibold">Student ID *</label>
+                <label class="text-primary-800 font-semibold">Student ID *</label>
                 <div class="relative">
                     <input
                         :value="studentId"
                         type="text"
                         placeholder="Enter your Student ID"
                         class="w-full px-4 py-3 text-black bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                        :class="{ 'border-red-500': errors.studentId }"
+                        :class="{ 'border-error': errors.studentId }"
                         @input="updateStudentId"
                     />
                 </div>
-                <span v-if="errors.studentId" class="text-red-500 text-sm">
+                <span v-if="errors.studentId" class="text-error text-sm">
                     {{ errors.studentId }}
                 </span>
             </div>
 
             <div class="flex flex-col space-y-1">
-                <label class="text-green-800 font-semibold">Major *</label>
+                <label class="text-primary-800 font-semibold">Major *</label>
                 <div class="relative">
                     <select
                         :value="major"
                         class="w-full px-4 py-3 text-black bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
-                        :class="{ 'border-red-500': errors.major }"
+                        :class="{ 'border-error': errors.major }"
                         @change="updateMajor"
                     >
                         <option value="" disabled>Select your Major</option>
@@ -50,13 +50,13 @@
                         </svg>
                     </div>
                 </div>
-                <span v-if="errors.major" class="text-red-500 text-sm">
+                <span v-if="errors.major" class="text-error text-sm">
                     {{ errors.major }}
                 </span>
             </div>
 
             <div class="flex flex-col space-y-1">
-                <label class="text-green-800 font-semibold">Student Status *</label>
+                <label class="text-primary-800 font-semibold">Student Status *</label>
                 <div class="relative">
                     <select
                         :value="studentStatus"
@@ -85,13 +85,13 @@
                         </svg>
                     </div>
                 </div>
-                <span v-if="errors.studentStatus" class="text-red-500 text-sm">
+                <span v-if="errors.studentStatus" class="text-error text-sm">
                     {{ errors.studentStatus }}
                 </span>
             </div>
 
             <div class="flex flex-col space-y-1">
-                <label class="text-green-800 font-semibold">Verify Student Status *</label>
+                <label class="text-primary-800 font-semibold">Verify Student Status *</label>
                 <div>
                     <button
                         type="button"
@@ -127,7 +127,7 @@
                     Upload transcript, student ID card, or graduation certificate (PDF, JPEG, PNG,
                     GIF - Max 10MB)
                 </div>
-                <span v-if="errors.verificationFile" class="text-red-500 text-sm">
+                <span v-if="errors.verificationFile" class="text-error text-sm">
                     {{ errors.verificationFile }}
                 </span>
                 <div
@@ -135,7 +135,7 @@
                     class="mt-2 flex items-center justify-between p-2 rounded-lg bg-gray-100 text-sm text-black"
                 >
                     <div class="flex items-center">
-                        <icon name="material-symbols:description" class="text-green-600 mr-2" />
+                        <icon name="material-symbols:description" class="text-primary-600 mr-2" />
                         <span>{{ verificationFileName }}</span>
                         <span class="ml-2 text-gray-500">({{ formatFileSize(fileSize) }})</span>
                     </div>

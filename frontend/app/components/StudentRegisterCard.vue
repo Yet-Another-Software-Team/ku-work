@@ -5,7 +5,8 @@
                 <h1 class="text-xl md:text-3xl font-bold text-left text-black py-4">
                     Student Registration
                 </h1>
-                <router-link to="/jobs">
+                <!-- Skip -->
+                <router-link v-if="currentStep == 1" to="/jobs">
                     <icon
                         name="material-symbols:skip-next-rounded"
                         class="text-2xl md:text-4xl text-gray-500 hover:text-primary transition-all duration-150 ease-in-out"
@@ -42,10 +43,11 @@
                 @update:verification-file="onVerificationFileUpdate"
             />
             <div v-if="currentStep === 3" class="text-center py-8">
-                <icon name="material-symbols:check-circle" class="text-6xl text-green-500 mb-4" />
-                <h2 class="text-2xl font-bold text-green-600 mb-2">Registration Successful!</h2>
+                <icon name="hugeicons:checkmark-circle-03" class="text-[15em] text-primary mb-4" />
+                <h2 class="text-4xl font-bold text-primary mb-2">You’re All Set</h2>
                 <p class="text-gray-600">
-                    Your student registration has been submitted successfully.
+                    You have successfully registered your account. When admin approve your profile,
+                    you will be notified in your email
                 </p>
             </div>
         </div>
@@ -233,12 +235,6 @@ const onSubmit = async () => {
         });
 
         currentStep.value++;
-
-        toast.add({
-            title: "Registration Successful",
-            description: "Your student registration has been submitted successfully!",
-            color: "success",
-        });
     } catch (error: unknown) {
         console.error("Submission error:", error);
 
@@ -246,12 +242,12 @@ const onSubmit = async () => {
         const apiError = error as { status?: number; data?: { error?: string }; message?: string };
 
         if (apiError.status === 401) {
-            errorMessage = "Authentication failed. Please log in again.";
+            errorMessage = "Authentication failed. Please try again.";
             localStorage.removeItem("jwt_token");
-            navigateTo("/login");
+            navigateTo("/");
             return;
         } else if (apiError.status === 409) {
-            errorMessage = "Student registration already exists or Student ID is already taken.";
+            errorMessage = "Student registration already exists.";
         } else if (apiError.data?.error) {
             errorMessage = apiError.data.error;
         }
