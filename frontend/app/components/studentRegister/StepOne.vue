@@ -139,7 +139,6 @@
 import { ref, reactive, computed, watch, onUnmounted } from "vue";
 import * as z from "zod";
 
-const toast = useToast();
 const FIVE_MB = 2 * 1024 * 1024;
 
 const props = defineProps({
