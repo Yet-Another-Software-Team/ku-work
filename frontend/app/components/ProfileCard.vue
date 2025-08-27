@@ -57,7 +57,7 @@
             <div>
                 <h3 class="font-semibold text-gray-800 dark:text-white mb-2">Connections</h3>
                 <ul class="space-y-2 text-primary-600">
-                    <li>
+                    <li class="w-fit">
                         <a
                             :href="mockData.profile.linkedIn"
                             target="_blank"
@@ -67,7 +67,7 @@
                             {{ mockData.profile.name }}
                         </a>
                     </li>
-                    <li>
+                    <li class="w-fit">
                         <a
                             :href="mockData.profile.github"
                             target="_blank"
