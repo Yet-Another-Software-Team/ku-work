@@ -5,6 +5,7 @@ import (
 	"ku-work/backend/handlers"
 	"ku-work/backend/middlewares"
 	"os"
+	"log"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -12,10 +13,13 @@ import (
 )
 
 func main() {
-	godotenv.Load()
+	env_err := godotenv.Load()
+	if env_err != nil {
+		return
+	}
 
-	db, err := database.LoadDB()
-	if err != nil {
+	db, db_err := database.LoadDB()
+	if db_err != nil {
 		return
 	}
 
@@ -32,5 +36,8 @@ func main() {
 	if !has_listen_address {
 		listen_address = ":8000"
 	}
-	router.Run(listen_address)
+	run_err := router.Run(listen_address)
+	if run_err != nil {
+		log.Fatal("Server is Failed to Run")
+	}
 }

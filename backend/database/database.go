@@ -54,6 +54,9 @@ func LoadDB() (*gorm.DB, error) {
 		&model.Student{},
 	}
 
-	db.AutoMigrate(allModels...)
+	db_err := db.AutoMigrate(allModels...)
+	if db_err != nil {
+		return nil, err
+	}
 	return db, nil
 }
