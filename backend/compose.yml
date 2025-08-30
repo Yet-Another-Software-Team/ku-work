@@ -21,5 +21,30 @@ services:
       start_period: 10s
       interval: 10s
       retries: 6
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - '8000:8000'
+    depends_on:
+      - db
+    environment:
+      LISTEN_ADDRESS: ${LISTEN_ADDRESS}
+      DB_PORT: ${DB_PORT}
+      DB_HOST: db
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      CORS_ALLOWED_METHODS: ${CORS_ALLOWED_METHODS}
+      CORS_ALLOWED_HEADERS: ${CORS_ALLOWED_HEADERS}
+      CORS_ALLOW_CREDENTIALS: ${CORS_ALLOW_CREDENTIALS}
+      CORS_MAX_AGE: ${CORS_MAX_AGE}
+      JWT_SECRET: ${JWT_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+
 volumes:
   db:
