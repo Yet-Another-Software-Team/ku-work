@@ -13,13 +13,11 @@ import (
 )
 
 func main() {
-	env_err := godotenv.Load()
-	if env_err != nil {
-		return
-	}
+	_ = godotenv.Load()
 
 	db, db_err := database.LoadDB()
 	if db_err != nil {
+		log.Printf("%v", db_err)
 		return
 	}
 

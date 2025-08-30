@@ -1,0 +1,15 @@
+# Ignore your local environment variables
+*.env
+.env
+
+
+# Ignore IDE-specific files (e.g., from VS Code)
+.vscode
+.idea
+
+# Ignore the docker compose file itself
+docker-compose.yml
+
+# Ignore other Docker-related files
+Dockerfile
+.dockerignore
