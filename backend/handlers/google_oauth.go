@@ -88,10 +88,10 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 
 	// Close API body
 	defer func() {
-        if err := api_res.Body.Close(); err != nil {
-            fmt.Println("Error closing response body:", err)
-        }
-    }()
+		if err := api_res.Body.Close(); err != nil {
+			fmt.Println("Error closing response body:", err)
+		}
+	}()
 
 	if api_res.StatusCode != http.StatusOK {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Access Token is invalid, expired or insufficient"})
