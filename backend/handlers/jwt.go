@@ -49,7 +49,10 @@ func (h *JWTHandlers) generateTokens(userID string) (string, string, error) {
 
 	// Refresh Token
 	refreshTokenBytes := make([]byte, 32)
-	rand.Read(refreshTokenBytes)
+	_, rand_err := rand.Read(refreshTokenBytes)
+	if rand_err != nil {
+		return "", "", err
+	}
 	refreshTokenString := base64.URLEncoding.EncodeToString(refreshTokenBytes)
 
 	// Create or update the refresh token in the database.
