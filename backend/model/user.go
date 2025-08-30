@@ -9,11 +9,11 @@ import (
 
 // Represents a user in the system.
 type User struct {
-	ID        string `gorm:"type:uuid;primarykey;default:gen_random_uuid()"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
-	Username  string         `gorm:"unique"`
+	ID           string `gorm:"type:uuid;primarykey;default:gen_random_uuid()"`
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	DeletedAt    gorm.DeletedAt `gorm:"index"`
+	Username     string         `gorm:"unique"`
 	PasswordHash string
 }
 

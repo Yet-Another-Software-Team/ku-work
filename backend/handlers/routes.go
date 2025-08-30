@@ -10,8 +10,8 @@ import (
 func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	// Initialize handlers
 	jwtHandler := NewJWTHandlers(db)
-	localAuthHandlers := NewLocalAuthHandlers(db,jwtHandler)
-	googleAuthHandlers := NewOAuthHandlers(db,jwtHandler)
+	localAuthHandlers := NewLocalAuthHandlers(db, jwtHandler)
+	googleAuthHandlers := NewOAuthHandlers(db, jwtHandler)
 	jobHandlers := NewJobHandlers(db)
 	studentHandler := NewStudentHandler(db)
 

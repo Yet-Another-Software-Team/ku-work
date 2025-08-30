@@ -28,7 +28,10 @@ type OauthHandlers struct {
 
 func NewOAuthHandlers(db *gorm.DB, jwtHandlers *JWTHandlers) *OauthHandlers {
 	b := make([]byte, 16)
-	rand.Read(b)
+	_, rand_err := rand.Read(b)
+	if rand_err != nil {
+		log.Fatalf("Failed to generate random oauth state %v", rand_err)
+	}
 	oauthStateString := base64.URLEncoding.EncodeToString(b)
 
 	googleOauthConfig := &oauth2.Config{
@@ -82,7 +85,13 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	defer api_res.Body.Close()
+
+	// Close API body
+	defer func() {
+		if err := api_res.Body.Close(); err != nil {
+			fmt.Println("Error closing response body:", err)
+		}
+	}()
 
 	if api_res.StatusCode != http.StatusOK {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Access Token is invalid, expired or insufficient"})
