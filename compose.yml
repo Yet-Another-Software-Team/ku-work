@@ -29,7 +29,8 @@ services:
     ports:
       - '8000:8000'
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       LISTEN_ADDRESS: :8000
       DB_PORT: 5432
@@ -50,13 +51,13 @@ services:
     build:
       context: ./frontend
       dockerfile: ./Dockerfile
+      args:
+        GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+        API_BASE_URL: http://backend:8000
     ports:
       - '3000:3000'
     depends_on:
       - backend
-    environment:
-      API_BASE_URL: http://backend:8000
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
     
 
 volumes:
