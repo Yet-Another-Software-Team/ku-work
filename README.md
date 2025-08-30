@@ -13,21 +13,9 @@ A full-stack web application with Go backend and Nuxt.js frontend, featuring use
 ### Optional (Recommended)
 - **Docker** and **Docker Compose** for containerized development
 
-## Installation (Devlelopment)
+## How to run
 
-### 1. Clone the Repository
-
-### 2. Backend Setup
-
-#### Navigate to Backend Directory
-```bash
-cd backend
-```
-
-#### Install Go Dependencies
-```bash
-go mod download
-```
+### Clone the Repository
 
 #### Environment Configuration
 1. Copy the sample environment file:
@@ -65,100 +53,16 @@ go mod download
    
    ```
 
-### 3. Frontend Setup
-
-#### Navigate to Frontend Directory
+#### Run Docker Compose
 ```bash
-cd ../frontend
+docker compose up
 ```
 
-#### Install Dependencies
-Using Bun:
-```bash
-bun install
-```
 
-#### Environment Configuration
-1. Copy the sample environment file:
-   ```bash
-   # Linux/Unix/MacOS
-   cp sample.env .env
-   
-   # Windows
-   copy sample.env .env
-   
-   # Edit .env with your configuration
-   ```
-
-2. Edit `.env` file with your backend URL (default should work for local development):
-   ```env
-   API_BASE_URL=http://localhost:8000
-   GOOGLE_CLIENT_ID=your_google_client_id_here
-   ```
-
-## How to Run
-
-### Option 1: Using Docker Compose (Recommended)
-
-1. **Start all services**:
-   ```bash
-   cd backend
-   docker compose up -d
-   ```
-   and
-   ```bash
-   cd frontend
-   bun run dev
-   ```
-
-2. **Access the application**:
-   - Backend API: http://localhost:8000
-   - Frontend: http://localhost:3000
-
-### Option 2: Manual Setup
-
-#### 1. Start PostgreSQL Database
-Make sure PostgreSQL is running and create a database:
-```sql
-CREATE DATABASE ku_work_db;
-```
-replace `ku_work_db` with your desired database name
-
-#### 2. Start Backend Server
-```bash
-cd backend
-go run .
-```
-The backend will start on **http://localhost:8000**
-
-#### 3. Start Frontend Development Server
-In a new terminal:
-```bash
-cd frontend
-bun run dev
-```
-The frontend will start on **http://localhost:3000**
-
-### Access Frontend
-Open your browser and navigate to `http://localhost:3000`
-
-## Development Commands
-
-### Backend
-```bash
-cd backend
-go run main.go          # Run development server
-go build               # Build executable
-```
-
-### Frontend
-```bash
-cd frontend
-bun run dev            # Start development server
-bun run build          # Build for production
-bun run preview        # Preview production build
-```
-
+### Alternatives
+You can also run frontend and backend service seprately by following the specific service guide
+- [frontend](./frontend/README.md)
+- [backend](./backend/README.md)
 
 ---
 
