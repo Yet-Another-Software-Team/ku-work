@@ -18,9 +18,11 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: '1.24'
+
     - name: Download Dependencies
       run: go mod tidy
       working-directory: ./backend
+
     - name: Check Code formatting
       run: gofmt -s -l . 
       working-directory: ./backend
