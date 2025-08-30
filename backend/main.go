@@ -15,7 +15,6 @@ import (
 func main() {
 	_ = godotenv.Load()
 
-
 	db, db_err := database.LoadDB()
 	if db_err != nil {
 		log.Printf("%v", db_err)
