@@ -13,13 +13,15 @@ import (
 )
 
 func main() {
+	log.Print("Starting Server")
 	env_err := godotenv.Load()
 	if env_err != nil {
-		return
+		log.Printf("%v, use system env", env_err)
 	}
 
 	db, db_err := database.LoadDB()
 	if db_err != nil {
+		log.Printf("%v", db_err)
 		return
 	}
 

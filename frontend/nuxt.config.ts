@@ -11,4 +11,7 @@ export default defineNuxtConfig({
             googleClientId: process.env.GOOGLE_CLIENT_ID,
         },
     },
+    nitro: {
+        preset: 'bun',
+    }
 });

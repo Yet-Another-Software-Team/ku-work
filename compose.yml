@@ -46,18 +46,17 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
 
-  # Disabled (until all link is worked)
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: ./Dockerfile
-  #   ports:
-  #     - '3000:3000'
-  #   depends_on:
-  #     - backend
-  #   environment:
-  #     API_BASE_URL: http://backend:8000
-  #     GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ./Dockerfile
+    ports:
+      - '3000:3000'
+    depends_on:
+      - backend
+    environment:
+      API_BASE_URL: http://backend:8000
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
     
 
 volumes:
