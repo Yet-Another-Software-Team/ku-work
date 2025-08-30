@@ -1,5 +1,4 @@
-# This workflow will check code formatting of golang project
-name: Check Formatting of Go Project
+name: Check Formatting and Linting of Go Project
 
 on:
   push:
@@ -8,26 +7,32 @@ on:
     branches: [ "main" ]
 
 jobs:
-
-  build:
+  lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.24'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
 
-    - name: Download Dependencies
-      run: go mod tidy
-      working-directory: ./backend
+      - name: Download Dependencies
+        run: go mod tidy
+        working-directory: ./backend
 
-    - name: Check Code formatting
-      run: |
-        if [ $(gofmt -l .) ]; then
-        echo "Go files must be formatted. Run 'gofmt -s -w .' to fix."
-        gofmt -d .
-        exit 1
-        fi
-      working-directory: ./backend
+      - name: Check Code formatting
+        run: |
+          unformatted_files=$(gofmt -l -e .)
+          if [[ -n "$unformatted_files" ]]; then
+            echo "::error::Go files are not formatted. Please run 'gofmt -s -w .' to fix."
+            echo "$unformatted_files"
+            exit 1
+          fi
+        working-directory: ./backend
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v8.0.0
+        with:
+          working-directory: ./backend
+          version: latest
