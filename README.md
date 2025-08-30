@@ -102,9 +102,7 @@ bun install
 
 1. **Start all services**:
    ```bash
-   cd backend
    docker compose up -d
-   go run .
    ```
    and
    ```bash
