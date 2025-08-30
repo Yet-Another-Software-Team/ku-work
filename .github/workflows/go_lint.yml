@@ -1,5 +1,5 @@
-# This workflow will test a golang project's unittest
-name: Go Test
+# This workflow will check code formatting of golang project
+name: Go Code Format
 
 on:
   push:
@@ -21,10 +21,6 @@ jobs:
     - name: Download Dependencies
       run: go mod tidy
       working-directory: ./backend
-    - name: Build
-      run: go build -v ./...
-      working-directory: ./backend
-
-    - name: Test
-      run: go test -v ./...
+    - name: Check Code formatting
+      run: gofmt -s -l . 
       working-directory: ./backend
