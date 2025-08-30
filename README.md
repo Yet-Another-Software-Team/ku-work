@@ -140,32 +140,8 @@ bun run dev
 ```
 The frontend will start on **http://localhost:3000**
 
-## Verify Installation
-
-### Test Backend API
-```bash
-# Health check
-curl http://localhost:8000/
-
-# Get users (initially empty)
-curl http://localhost:8000/users
-
-# Create a test user
-curl -X POST http://localhost:8000/create_user \
-  -H "Content-Type: application/json" \
-  -d '{"usr": "testuser", "passwd": "password123"}'
-```
-
 ### Access Frontend
 Open your browser and navigate to `http://localhost:3000`
-
-## Available Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/` | Health check |
-| GET | `/users` | Get all users |
-| POST | `/create_user` | Create new user |
 
 ## Development Commands
 
@@ -183,6 +159,7 @@ bun run dev            # Start development server
 bun run build          # Build for production
 bun run preview        # Preview production build
 ```
+
 
 ---
 
