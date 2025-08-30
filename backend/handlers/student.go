@@ -98,11 +98,11 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 	userId := ctx.MustGet("userID").(string)
 	type StudentEditProfileInput struct {
-		Phone         string                `form:"phone" binding:"max=20"`
-		BirthDate     string                `form:"birthDate" binding:"max=27"`
-		AboutMe       string                `form:"aboutMe" binding:"max=16384"`
-		GitHub        string                `form:"github" binding:"max=256"`
-		LinkedIn      string                `form:"linkedIn" binding:"max=256"`
+		Phone         *string               `form:"phone" binding:"omitempty,max=20"`
+		BirthDate     *string               `form:"birthDate" binding:"omitempty,max=27"`
+		AboutMe       *string               `form:"aboutMe" binding:"omitempty,max=16384"`
+		GitHub        *string               `form:"github" binding:"omitempty,max=256"`
+		LinkedIn      *string               `form:"linkedIn" binding:"omitempty,max=256"`
 		StudentStatus string                `form:"studentStatus" binding:"required,oneof='Graduated' 'Current Student'"`
 		Photo         *multipart.FileHeader `form:"photo"`
 	}
@@ -119,25 +119,25 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if input.BirthDate != "" {
-		parsedBirthDate, err := time.Parse(time.RFC3339, input.BirthDate)
+	if input.BirthDate != nil {
+		parsedBirthDate, err := time.Parse(time.RFC3339, *input.BirthDate)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 		student.BirthDate = datatypes.Date(parsedBirthDate)
 	}
-	if input.Phone != "" {
-		student.Phone = input.Phone
+	if input.Phone != nil {
+		student.Phone = *input.Phone
 	}
-	if input.AboutMe != "" {
-		student.AboutMe = input.AboutMe
+	if input.AboutMe != nil {
+		student.AboutMe = *input.AboutMe
 	}
-	if input.GitHub != "" {
-		student.GitHub = input.GitHub
+	if input.GitHub != nil {
+		student.GitHub = *input.GitHub
 	}
-	if input.LinkedIn != "" {
-		student.LinkedIn = input.LinkedIn
+	if input.LinkedIn != nil {
+		student.LinkedIn = *input.LinkedIn
 	}
 	if input.StudentStatus != "" {
 		student.StudentStatus = input.StudentStatus
