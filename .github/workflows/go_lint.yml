@@ -1,5 +1,5 @@
 # This workflow will check code formatting of golang project
-name: Lint Go Project
+name: Check Formatting of Go Project
 
 on:
   push:
@@ -24,5 +24,10 @@ jobs:
       working-directory: ./backend
 
     - name: Check Code formatting
-      run: gofmt -s -l . 
+      run: |
+        if [ $(gofmt -l .) ]; then
+        echo "Go files must be formatted. Run 'gofmt -s -w .' to fix."
+        gofmt -d .
+        exit 1
+        fi
       working-directory: ./backend
