@@ -13,7 +13,7 @@ A full-stack web application with Go backend and Nuxt.js frontend, featuring use
 ### Optional (Recommended)
 - **Docker** and **Docker Compose** for containerized development
 
-## Installation
+## Installation (Devlelopment)
 
 ### 1. Clone the Repository
 
@@ -102,6 +102,7 @@ bun install
 
 1. **Start all services**:
    ```bash
+   cd backend
    docker compose up -d
    ```
    and
