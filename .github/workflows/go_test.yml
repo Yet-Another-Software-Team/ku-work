@@ -1,5 +1,5 @@
 # This workflow will test a golang project's unittest
-name: Go Test
+name: Test Go Project
 
 on:
   push:

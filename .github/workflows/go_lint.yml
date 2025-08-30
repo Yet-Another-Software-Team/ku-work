@@ -1,5 +1,5 @@
 # This workflow will check code formatting of golang project
-name: Go Code Format
+name: Lint Go Project
 
 on:
   push:
