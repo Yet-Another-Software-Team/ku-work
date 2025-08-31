@@ -1,5 +1,12 @@
 <template>
-    <UButton label="Logout" color="primary" @click="logout" />
+    <UButton
+        label="Logout"
+        variant="ghost"
+        size="xl"
+        icon="ic:round-logout"
+        :ui="{ base: 'justify-start text-left text-white hover:bg-white/10' }"
+        @click="logout"
+    />
 </template>
 
 <script setup lang="ts">
@@ -20,6 +27,9 @@ const logout = async () => {
             description: "You have been successfully logged out.",
             color: "neutral",
         });
+
+        // Redirect to the home page after logout
+        window.location.href = "/";
     } catch (error) {
         console.error("Error during logout:", error);
     }

@@ -24,7 +24,7 @@ services:
 
   backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: ./Dockerfile
     ports:
       - '8000:8000'
@@ -32,13 +32,13 @@ services:
       db:
         condition: service_healthy
     environment:
-      LISTEN_ADDRESS: ${LISTEN_ADDRESS}
-      DB_PORT: ${DB_PORT}
+      LISTEN_ADDRESS: :8000
+      DB_PORT: 5432
       DB_HOST: db
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://frontend:3000
       CORS_ALLOWED_METHODS: ${CORS_ALLOWED_METHODS}
       CORS_ALLOWED_HEADERS: ${CORS_ALLOWED_HEADERS}
       CORS_ALLOW_CREDENTIALS: ${CORS_ALLOW_CREDENTIALS}
@@ -46,6 +46,19 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ./Dockerfile
+      args:
+        GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+        API_BASE_URL: http://backend:8000
+    ports:
+      - '3000:3000'
+    depends_on:
+      - backend
+    
 
 volumes:
   db:

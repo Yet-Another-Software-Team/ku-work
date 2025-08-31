@@ -39,7 +39,7 @@ func (h *LocalAuthHandlers) RegisterHandler(ctx *gin.Context) {
 	// Check if a user with the same username already exists.
 	var count int64 = 0
 	h.DB.Model(&model.User{}).Where("username = ?", req.Username).Count(&count)
-	
+
 	if count > 0 {
 		ctx.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
 		return

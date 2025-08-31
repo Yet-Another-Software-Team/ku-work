@@ -44,10 +44,10 @@ func (h *JobHandlers) CreateJob(ctx *gin.Context) {
 		return
 	}
 	job := model.Job{
-		Name: input.Name,
-		CompanyID: userid,
-		Position: input.Position,
-		Duration: input.Duration,
+		Name:        input.Name,
+		CompanyID:   userid,
+		Position:    input.Position,
+		Duration:    input.Duration,
 		Description: input.Description,
 		Location:    input.Location,
 		JobType:     model.JobType(input.JobType),

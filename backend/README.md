@@ -91,50 +91,21 @@ Copy `sample.env` to `.env` and configure the following variables:
    ./bin/api
    ```
 
-## API Endpoints
-
-### Health Check
-- **GET** `/`
-  - Description: Health check endpoint
-  - Response: `{"message": "Simple response"}`
-
-### User Management
-
-#### Get All Users
-- **GET** `/users`
-  - Description: Retrieve all users
-
-#### Create User
-- **POST** `/create_user`
-  - Description: Create a new user
-  - Request Body:
-    ```json
-    {
-      "user": "username",
-      "password": "password"
-    }
-    ```
-  - Response: `"OK ;)"`
-  - Status Codes:
-    - `200`: User created successfully
-    - `400`: Invalid request body
-    - `500`: Internal server error
-
-## Docker Usage
+## Docker Compose Usage
 
 The project includes Docker Compose configuration for easy database usage:
 
-1. **Start the database**
+1. **Start the backend services**
    ```bash
-   docker compose up -d db
+   docker compose up -d
    ```
 
-2. **Stop the database**
+2. **Stop the server**
    ```bash
    docker compose down
    ```
 
-3. **Reset database (remove volumes)**
+3. **Reset server (remove volumes)**
    ```bash
    docker compose down -v
    ```

@@ -19,13 +19,13 @@ func AdminPermissionMiddleware(db *gorm.DB) gin.HandlerFunc {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 			return
 		}
-		
+
 		var count int64
 		db.Model(&model.Admin{}).Where("user_id = ?", userID).Count(&count)
 
 		if count == 0 {
-	        ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "You do not have the necessary permissions to perform this action."})
-		    return
+			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "You do not have the necessary permissions to perform this action."})
+			return
 		}
 
 		ctx.Next()
