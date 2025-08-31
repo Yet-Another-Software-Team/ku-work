@@ -21,7 +21,7 @@ var router *gin.Engine
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
-	os.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
+	_ = os.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 	req := testcontainers.ContainerRequest{
 		Name:         "kuwork-test-database",
 		Image:        "postgres:17-alpine",
@@ -43,28 +43,28 @@ func TestMain(m *testing.M) {
 	}
 	port, err := postgresContainer.MappedPort(ctx, "5432/tcp")
 	if err != nil {
-		testcontainers.TerminateContainer(postgresContainer)
+		_ = testcontainers.TerminateContainer(postgresContainer)
 		panic(err)
 	}
 	// idk why but sometimes it couldn't connect to db even though it said ready to accept connections in the logs
 	time.Sleep(500000000)
-	os.Setenv("DB_USERNAME", "tester")
-	os.Setenv("DB_PASSWORD", "1234")
-	os.Setenv("DB_HOST", "127.0.0.1")
-	os.Setenv("DB_PORT", port.Port())
-	os.Setenv("DB_NAME", "kuwork")
+	_ = os.Setenv("DB_USERNAME", "tester")
+	_ = os.Setenv("DB_PASSWORD", "1234")
+	_ = os.Setenv("DB_HOST", "127.0.0.1")
+	_ = os.Setenv("DB_PORT", port.Port())
+	_ = os.Setenv("DB_NAME", "kuwork")
 	db, err = database.LoadDB()
 	if err != nil {
-		testcontainers.TerminateContainer(postgresContainer)
+		_ = testcontainers.TerminateContainer(postgresContainer)
 		panic(err)
 	}
-	os.Setenv("JWT_SECRET", "1234")
-	os.Setenv("GOOGLE_CLIENT_SECRET", "GOCSPX-idklmao")
-	os.Setenv("GOOGLE_CLIENT_ID", "012345678901-1md5idklmao.apps.googleusercontent.com")
+	_ = os.Setenv("JWT_SECRET", "1234")
+	_ = os.Setenv("GOOGLE_CLIENT_SECRET", "GOCSPX-idklmao")
+	_ = os.Setenv("GOOGLE_CLIENT_ID", "012345678901-1md5idklmao.apps.googleusercontent.com")
 	router = gin.Default()
 	handlers.SetupRoutes(router, db)
 	code := m.Run()
-	testcontainers.TerminateContainer(postgresContainer)
+	_ = testcontainers.TerminateContainer(postgresContainer)
 	os.Exit(code)
 }
 
