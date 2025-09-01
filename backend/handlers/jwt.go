@@ -32,7 +32,7 @@ func NewJWTHandlers(db *gorm.DB) *JWTHandlers {
 }
 
 // Generate JWT and Refresh Tokens
-func (h *JWTHandlers) generateTokens(userID string) (string, string, error) {
+func (h *JWTHandlers) GenerateTokens(userID string) (string, string, error) {
 	// JWT Token
 	jwtClaims := &model.UserClaims{
 		UserID: userID,
@@ -93,7 +93,7 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	h.DB.Unscoped().Where("user_id = ? AND expires_at < ?", refreshTokenDB.UserID, time.Now()).Delete(&model.RefreshToken{})
 
 	h.DB.Unscoped().Delete(&refreshTokenDB)
-	jwtToken, newRefreshToken, err := h.generateTokens(refreshTokenDB.UserID)
+	jwtToken, newRefreshToken, err := h.GenerateTokens(refreshTokenDB.UserID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate new tokens"})
 		return
@@ -124,7 +124,7 @@ func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
 
 // Handle Token sending
 func (h *JWTHandlers) HandleToken(ctx *gin.Context, user model.User) {
-	jwtToken, refreshToken, err := h.generateTokens(user.ID)
+	jwtToken, refreshToken, err := h.GenerateTokens(user.ID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
 		return
