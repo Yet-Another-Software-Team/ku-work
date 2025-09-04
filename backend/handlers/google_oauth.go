@@ -113,13 +113,15 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 	}
 
 	// Check if this user already exists on the DB via their external ID.
+	var userCount int64
+	h.DB.Model(&model.GoogleOAuthDetails{}).Where("external_id = ?", userInfo.ID).Count(&userCount)
+
 	var oauthDetail model.GoogleOAuthDetails
-	err = h.DB.Where("external_id = ?", userInfo.ID).First(&oauthDetail).Error
 
 	// User is not exist, registerings
 	status := http.StatusOK
 
-	if err != nil {
+	if userCount == 0 {
 		var newUser model.User
 		h.DB.FirstOrCreate(&newUser, model.User{
 			Username: userInfo.Email,
@@ -146,7 +148,7 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 	}
 
 	// Get updated oauthDetail
-	h.DB.Where("external_id = ?", userInfo.ID).First(&oauthDetail)
+	h.DB.Model(&model.GoogleOAuthDetails{}).Where("external_id = ?", userInfo.ID).First(&oauthDetail)
 
 	// getUser model and return JWT Token to frontend.
 	var user model.User
@@ -164,6 +166,7 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 
 	username := oauthDetail.FirstName + " " + oauthDetail.LastName
 	isStudent := false
+
 
 	if status == http.StatusOK {
 		// Check if user is a valid and approved student
