@@ -2,3 +2,4 @@
 files/**
 .air.toml
 tmp/**
+.dbonly-compose.yml
