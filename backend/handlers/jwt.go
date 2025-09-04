@@ -117,9 +117,9 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	isStudent := sCount > 0
 
 	isCompany := false
-	if !isStudent {
-		// Add Company Check Here after implementation of Company model
-	}
+	// if !isStudent {
+	// 	// Add Company Check Here after implementation of Company model
+	// }
 
 	ctx.SetCookie("refresh_token", newRefreshToken, int(time.Hour*24*30/time.Second), "/", "", true, true)
 
