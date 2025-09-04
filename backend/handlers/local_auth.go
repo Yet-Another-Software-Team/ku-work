@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"ku-work/backend/model"
 
@@ -64,7 +65,18 @@ func (h *LocalAuthHandlers) RegisterHandler(ctx *gin.Context) {
 		return
 	}
 
-	h.JWTHandlers.HandleToken(ctx, newUser)
+	jwtToken, refreshToken, err := h.JWTHandlers.HandleToken(newUser)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate JWT token"})
+		return
+	}
+
+	maxAge := int(time.Hour * 24 * 30 / time.Second)
+	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", true, true)
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"token": jwtToken,
+	})
 }
 
 // struct to handle incoming login data.
@@ -93,5 +105,16 @@ func (h *LocalAuthHandlers) LoginHandler(ctx *gin.Context) {
 		return
 	}
 
-	h.JWTHandlers.HandleToken(ctx, user)
+	jwtToken, refreshToken, err := h.JWTHandlers.HandleToken(user)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate JWT token"})
+		return
+	}
+
+	maxAge := int(time.Hour * 24 * 30 / time.Second)
+	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", true, true)
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"token": jwtToken,
+	})
 }
