@@ -19,8 +19,10 @@ type User struct {
 
 // Represents a user's Google OAuth details.
 type GoogleOAuthDetails struct {
-	gorm.Model
-	UserID     string `gorm:"type:uuid;foreignkey:UserID"`
+	UserID     string `gorm:"type:uuid;foreignkey:UserID;primarykey"`
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	DeletedAt  gorm.DeletedAt `gorm:"index"`
 	ExternalID string
 	FirstName  string
 	LastName   string
@@ -29,6 +31,5 @@ type GoogleOAuthDetails struct {
 
 // Represents a user's who is an Admin without any additional fields.
 type Admin struct {
-	gorm.Model
-	UserID string `gorm:"type:uuid;foreignkey:UserID"`
+	UserID string `gorm:"type:uuid;foreignkey:UserID;primarykey"`
 }
