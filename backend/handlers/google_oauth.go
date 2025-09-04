@@ -167,7 +167,6 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 	username := oauthDetail.FirstName + " " + oauthDetail.LastName
 	isStudent := false
 
-
 	if status == http.StatusOK {
 		// Check if user is a valid and approved student
 		var count int64

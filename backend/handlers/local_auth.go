@@ -75,8 +75,8 @@ func (h *LocalAuthHandlers) RegisterHandler(ctx *gin.Context) {
 	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", true, true)
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"token": jwtToken,
-		"username": newUser.Username,
+		"token":     jwtToken,
+		"username":  newUser.Username,
 		"isStudent": false,
 		"isCompany": false,
 	})
@@ -118,8 +118,8 @@ func (h *LocalAuthHandlers) LoginHandler(ctx *gin.Context) {
 	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", true, true)
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"token": jwtToken,
-		"username": user.Username,
+		"token":     jwtToken,
+		"username":  user.Username,
 		"isStudent": false,
 		"isCompany": false,
 	})
