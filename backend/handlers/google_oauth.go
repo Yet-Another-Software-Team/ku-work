@@ -113,11 +113,15 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 	}
 
 	// Check if this user already exists on the DB via their external ID.
-	var oauthDetail model.GoogleOAuthDetails
-	h.DB.Where("external_id = ?", userInfo.ID).First(&oauthDetail)
+	var userCount int64
+	h.DB.Model(&model.GoogleOAuthDetails{}).Where("external_id = ?", userInfo.ID).Count(&userCount)
 
-	// User is not exist, registering
-	if oauthDetail.ID == 0 {
+	var oauthDetail model.GoogleOAuthDetails
+
+	// User is not exist, registerings
+	status := http.StatusOK
+
+	if userCount == 0 {
 		var newUser model.User
 		h.DB.FirstOrCreate(&newUser, model.User{
 			Username: userInfo.Email,
@@ -130,8 +134,8 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 			LastName:   userInfo.FamilyName,
 			Email:      userInfo.Email,
 		}
-
 		h.DB.Create(&oauthDetail)
+		status = http.StatusCreated
 	}
 
 	// Update user details if necessary
@@ -144,13 +148,37 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 	}
 
 	// Get updated oauthDetail
-	h.DB.Where("external_id = ?", userInfo.ID).First(&oauthDetail)
+	h.DB.Model(&model.GoogleOAuthDetails{}).Where("external_id = ?", userInfo.ID).First(&oauthDetail)
 
 	// getUser model and return JWT Token to frontend.
 	var user model.User
 	h.DB.Model(&user).Where("id = ?", oauthDetail.UserID).First(&user)
 
 	//Return JWT Token to context
-	h.JWTHandlers.HandleToken(ctx, user)
+	jwtToken, refreshToken, err := h.JWTHandlers.HandleToken(user)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate JWT token"})
+		return
+	}
+
+	maxAge := int(time.Hour * 24 * 30 / time.Second)
+	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", true, true)
+
+	username := oauthDetail.FirstName + " " + oauthDetail.LastName
+	isStudent := false
+
+	if status == http.StatusOK {
+		// Check if user is a valid and approved student
+		var count int64
+		h.DB.Model(&model.Student{}).Where("user_id = ? AND approved = ?", user.ID, true).Count(&count)
+		isStudent = count > 0
+	}
+
+	ctx.JSON(status, gin.H{
+		"token":     jwtToken,
+		"username":  username,
+		"isCompany": false, // Company doesn't have OAuth Login option
+		"isStudent": isStudent,
+	})
 
 }

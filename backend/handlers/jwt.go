@@ -99,9 +99,36 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 		return
 	}
 
+	var user model.User
+	if err := h.DB.Where("id = ?", refreshTokenDB.UserID).First(&user).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user"})
+		return
+	}
+
+	username := user.Username
+
+	var oauthDetail model.GoogleOAuthDetails
+	if err := h.DB.Model(&oauthDetail).Where("id = ?", user.ID).First(&oauthDetail); err == nil {
+		username = oauthDetail.FirstName + " " + oauthDetail.LastName
+	}
+
+	var sCount int64
+	h.DB.Model(&model.Student{}).Where("user_id = ? AND approved = ?", user.ID, true).Count(&sCount)
+	isStudent := sCount > 0
+
+	isCompany := false
+	// if !isStudent {
+	// 	// Add Company Check Here after implementation of Company model
+	// }
+
 	ctx.SetCookie("refresh_token", newRefreshToken, int(time.Hour*24*30/time.Second), "/", "", true, true)
 
-	ctx.JSON(http.StatusOK, gin.H{"token": jwtToken})
+	ctx.JSON(http.StatusOK, gin.H{
+		"token":      jwtToken,
+		"username":   username,
+		"is_student": isStudent,
+		"is_company": isCompany,
+	})
 }
 
 // LogoutHandler invalidates the user's session.
@@ -123,18 +150,12 @@ func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
 }
 
 // Handle Token sending
-func (h *JWTHandlers) HandleToken(ctx *gin.Context, user model.User) {
+func (h *JWTHandlers) HandleToken(user model.User) (string, string, error) {
 	jwtToken, refreshToken, err := h.GenerateTokens(user.ID)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
-		return
+		return "", "", err
 	}
 
-	// Set the refresh token cookie with a max age of 30 days
-	maxAge := int(time.Hour * 24 * 30 / time.Second)
-	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", true, true)
-
-	// Return the JWT token in the JSON response body.
-	ctx.JSON(http.StatusOK, gin.H{"token": jwtToken})
+	return jwtToken, refreshToken, nil
 
 }
