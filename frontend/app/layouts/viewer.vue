@@ -1,6 +1,8 @@
 <template>
     <div class="block lg:flex">
         <SidebarComponent :is-viewer="false" />
-        <slot />
+        <div class="m-10">
+            <slot />
+        </div>
     </div>
 </template>
