@@ -1,10 +1,13 @@
 package tests
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"ku-work/backend/handlers"
 	"ku-work/backend/model"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -211,4 +214,105 @@ func TestJob(t *testing.T) {
 		assert.Equal(t, edited_job.MinSalary, uint(10))
 		assert.Equal(t, edited_job.MaxSalary, uint(100))
 	})
+	t.Run("Apply", func(t *testing.T) {
+		user := model.User{
+			Username: "applyjobtester",
+		}
+		if result := db.Create(&user); result.Error != nil {
+			t.Error(result.Error)
+			return
+		}
+		student := model.Student{
+			UserID:   user.ID,
+			Approved: true,
+		}
+		if result := db.Create(&student); result.Error != nil {
+			t.Error(result.Error)
+			return
+		}
+		job := model.Job{
+			CompanyID:  user.ID,
+			IsApproved: true,
+		}
+		if result := db.Create(&job); result.Error != nil {
+			t.Error(result.Error)
+			return
+		}
+		values := map[string]string{
+			"phone": "0123456789",
+			"id":    fmt.Sprintf("%d", job.ID),
+			"email": "cool@localhost",
+		}
+		w := httptest.NewRecorder()
+		var b bytes.Buffer
+		fw := multipart.NewWriter(&b)
+		for key, val := range values {
+			fiw, err := fw.CreateFormField(key)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if _, err := io.WriteString(fiw, val); err != nil {
+				t.Error(err)
+				return
+			}
+		}
+		var fiw io.Writer
+		var err error
+		if fiw, err = fw.CreateFormFile("files", "cv.pdf"); err != nil {
+			t.Error(err)
+			return
+		}
+		if _, err := io.WriteString(fiw, "[cv content]"); err != nil {
+			t.Error(err)
+			return
+		}
+		if fiw, err = fw.CreateFormFile("files", "cv2.pdf"); err != nil {
+			t.Error(err)
+			return
+		}
+		if _, err := io.WriteString(fiw, "[cv2 content]"); err != nil {
+			t.Error(err)
+			return
+		}
+		if err := fw.Close(); err != nil {
+			t.Error(err)
+			return
+		}
+		req, _ := http.NewRequest("POST", "/job/apply", &b)
+		jwtHandler := handlers.NewJWTHandlers(db)
+		jwtToken, _, err := jwtHandler.GenerateTokens(user.ID)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", jwtToken))
+		req.Header.Set("Content-Type", fw.FormDataContentType())
+		router.ServeHTTP(w, req)
+		assert.Equal(t, w.Code, 200)
+		type Result struct {
+			Error         string `json:"error"`
+			ApplicationID uint   `json:"id"`
+		}
+		result := Result{}
+		err = json.Unmarshal(w.Body.Bytes(), &result)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if result.Error != "" {
+			t.Error(result.Error)
+			return
+		}
+		jobApp := model.JobApplication{
+			ID: result.ApplicationID,
+		}
+		if err := db.First(&jobApp).Error; err != nil {
+			t.Error(err)
+			return
+		}
+		assert.Equal(t, jobApp.AltPhone, "0123456789")
+		assert.Equal(t, jobApp.AltEmail, "cool@localhost")
+	})
+
 }
