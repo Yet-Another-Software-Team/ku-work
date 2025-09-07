@@ -96,45 +96,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-
-interface Profile {
-    profile: {
-        name: string;
-        id: string;
-        approved: boolean;
-        created: string;
-        phone: string;
-        photo: string;
-        birthDate: string;
-        aboutMe: string;
-        github: string;
-        linkedIn: string;
-        studentId: string;
-        major: "Software Engineering" | "Computer Science";
-        status: "Graduated" | "Undergraduate";
-        statusFile: string;
-    };
-}
-
-const mockData: Profile = {
-    profile: {
-        name: "John Doe",
-        id: "123456",
-        approved: true,
-        created: "2023-01-01",
-        phone: "012-345-6789",
-        photo: "",
-        birthDate: "2003-01-01",
-        aboutMe:
-            "Hello! I'm John, a passionate software engineering student with a love for coding and problem-solving. I enjoy working on innovative projects and collaborating with others to create impactful solutions. REALLY LONG TEXT TO TEST THE LAYOUT. Hello! I'm John, a passionate software engineering student with a love for coding and problem-solving. I enjoy working on innovative projects and collaborating with others to create impactful solutions.",
-        github: "https://github.com",
-        linkedIn: "https://linkedin.com/",
-        studentId: "6xxxxxxxxx",
-        major: "Software Engineering",
-        status: "Undergraduate",
-        statusFile: "https://example.com/status.pdf",
-    },
-};
+import { mockData } from "~/data/mockData";
 
 // Compute age
 const age = computed(() => {
