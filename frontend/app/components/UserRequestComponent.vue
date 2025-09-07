@@ -1,6 +1,10 @@
 <template>
     <div :id="'Component-' + requestId" class="flex justify-center items-center w-[20em] h-full">
-        <div class="flex w-full h-[7em] m-2 shadow-md/20 bg-white dark:bg-gray-500 rounded-md">
+        <!-- card container is clickable -->
+        <div
+            class="flex w-full h-[7em] m-2 shadow-md/20 bg-white dark:bg-gray-500 rounded-md cursor-pointer"
+            @click="() => navigateToProfile(requestId % 3)"
+        >
             <!-- profile pic -->
             <div v-if="data.profile.photo" class="w-20 h-20 flex-shrink-0">
                 <img
@@ -25,6 +29,7 @@
                         class="font-bold p-1 rounded flex items-center gap-1 w-fit px-2"
                         variant="outline"
                         color="error"
+                        @click.stop="declineRequest"
                     >
                         <Icon name="iconoir:xmark" />
                         <span>Decline</span>
@@ -33,6 +38,7 @@
                         class="font-bold p-1 rounded flex items-center gap-1 w-fit px-2"
                         variant="outline"
                         color="primary"
+                        @click.stop="acceptRequest"
                     >
                         <Icon name="iconoir:check" />
                         <span>Accept</span>
@@ -46,8 +52,35 @@
 <script setup lang="ts">
 import type { mockData } from "~/data/mockData";
 
-defineProps<{
+const props = defineProps<{
     requestId: number;
     data: typeof mockData;
 }>();
+
+const toast = useToast();
+const router = useRouter();
+
+function navigateToProfile(id: number) {
+    console.log("Navigating to profile of request:", props.requestId);
+    router.push(`/admin/dashboard/profile?id=${id}`);
+}
+
+// add function later
+function acceptRequest() {
+    console.log("Accepted request:", props.requestId);
+    toast.add({
+        title: "Request accepted!",
+        description: props.data.profile.name,
+        color: "success",
+    });
+}
+
+function declineRequest() {
+    console.log("Declined request:", props.requestId);
+    toast.add({
+        title: "Request accepted!",
+        description: props.data.profile.name,
+        color: "error",
+    });
+}
 </script>
