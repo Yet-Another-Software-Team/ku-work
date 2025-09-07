@@ -6,14 +6,17 @@
             @click="() => navigateToProfile(requestId % 3)"
         >
             <!-- profile pic -->
-            <div v-if="data.profile.photo" class="w-20 h-20 flex-shrink-0">
+            <div
+                v-if="data.profile.photo"
+                class="flex items-center justify-center w-20 h-full flex-shrink-0"
+            >
                 <img
                     :src="data.profile.photo"
                     alt="Profile photo"
                     class="w-17 h-17 object-cover rounded-full justify-center items-center m-2"
                 />
             </div>
-            <div v-else class="flex items-center justify-center w-20 h-20 flex-shrink-0">
+            <div v-else class="flex items-center justify-center w-20 h-full flex-shrink-0">
                 <Icon name="ic:baseline-account-circle" class="size-full" />
             </div>
 
