@@ -29,20 +29,18 @@
                         class="font-bold p-1 rounded flex items-center gap-1 w-fit px-2"
                         variant="outline"
                         color="error"
+                        label="Decline"
+                        :icon="'iconoir:xmark'"
                         @click.stop="declineRequest"
-                    >
-                        <Icon name="iconoir:xmark" />
-                        <span>Decline</span>
-                    </UButton>
+                    />
                     <UButton
                         class="font-bold p-1 rounded flex items-center gap-1 w-fit px-2"
                         variant="outline"
                         color="primary"
+                        label="Accept"
+                        :icon="'iconoir:check'"
                         @click.stop="acceptRequest"
-                    >
-                        <Icon name="iconoir:check" />
-                        <span>Accept</span>
-                    </UButton>
+                    />
                 </div>
             </div>
         </div>
