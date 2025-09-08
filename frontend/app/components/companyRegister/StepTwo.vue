@@ -94,7 +94,7 @@
 import { ref, reactive, computed, watch, onUnmounted } from "vue";
 import * as z from "zod";
 
-const ONE_MB = 1 * 1024 * 1024;
+const FIVE_MB = 5 * 1024 * 1024;
 
 const props = defineProps({
     about: {
@@ -135,8 +135,8 @@ const validateField = (fieldName, value) => {
                 errors.companyLogo = "Company logo is required";
                 return false;
             }
-            if (value.size > ONE_MB) {
-                errors.companyLogo = "File size must be less than 1MB";
+            if (value.size > FIVE_MB) {
+                errors.companyLogo = "File size must be less than 5MB";
                 return false;
             }
             const allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
@@ -152,8 +152,8 @@ const validateField = (fieldName, value) => {
                 errors.banner = "Banner picture is required";
                 return false;
             }
-            if (value.size > ONE_MB) {
-                errors.banner = "File size must be less than 1MB";
+            if (value.size > FIVE_MB) {
+                errors.banner = "File size must be less than 5MB";
                 return false;
             }
             const allowedTypes = ["image/jpeg", "image/png", "image/jpg"];

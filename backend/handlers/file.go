@@ -24,9 +24,9 @@ import (
 
 const (
 	MAX_DOCS_SIZE    = 10 * 1024 * 1024 // 10MB
-	MAX_IMAGE_SIZE   = 1 * 1024 * 1024  // 1MB
-	MAX_IMAGE_WIDTH  = 2048             // 2048 pixels
-	MAX_IMAGE_HEIGHT = 2048             // 2048 pixels
+	MAX_IMAGE_SIZE   = 5 * 1024 * 1024  // 5MB
+	MAX_IMAGE_WIDTH  = 4096             // 4096 pixels
+	MAX_IMAGE_HEIGHT = 4096             // 4096 pixels
 )
 
 type FileHandlers struct {
@@ -59,7 +59,7 @@ func (h *FileHandlers) SaveFile(ctx *gin.Context, userId string, file *multipart
 	} else if fileCategory == model.FileCategoryImage {
 		// Check Image file size
 		if file.Size > MAX_IMAGE_SIZE {
-			return "", fmt.Errorf("image file size exceeds limit of 1MB")
+			return "", fmt.Errorf("image file size exceeds limit of 5MB")
 		}
 
 		// Check Image dimensions
