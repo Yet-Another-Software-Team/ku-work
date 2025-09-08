@@ -51,7 +51,7 @@
             <div class="flex flex-col items-center justify-center">
                 <div class="flex flex-col items-center gap-3">
                     <label class="text-primary-800 font-semibold"
-                        >Profile Picture * (JPEG, PNG - Max 5MB)</label
+                        >Profile Picture * (JPEG, PNG - Max 1MB)</label
                     >
                     <button
                         class="size-[5em] rounded-full bg-gray-200 flex items-center justify-center text-4xl text-gray-500 outline-1 outline-primary overflow-hidden hover:cursor-pointer"
@@ -139,7 +139,7 @@
 import { ref, reactive, computed, watch, onUnmounted } from "vue";
 import * as z from "zod";
 
-const FIVE_MB = 2 * 1024 * 1024;
+const ONE_MB = 1 * 1024 * 1024;
 
 const props = defineProps({
     fullName: {
@@ -249,8 +249,8 @@ const validateField = (fieldName, value) => {
                 errors.avatar = "Profile picture is required";
                 return false;
             }
-            if (value.size > FIVE_MB) {
-                errors.avatar = "File size must be less than 5MB";
+            if (value.size > ONE_MB) {
+                errors.avatar = "File size must be less than 1MB";
                 return false;
             }
             const allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
@@ -312,7 +312,7 @@ const updateLinkedinURL = (value) => {
 
 const onFileChange = (event) => {
     const file = event.target.files[0];
-    if (file && file.size <= FIVE_MB) {
+    if (file && file.size <= ONE_MB) {
         if (previewUrl.value) {
             URL.revokeObjectURL(previewUrl.value);
         }
