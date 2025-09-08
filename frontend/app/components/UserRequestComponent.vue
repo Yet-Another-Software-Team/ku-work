@@ -2,7 +2,7 @@
     <div :id="'Component-' + requestId" class="flex justify-center items-center w-[20em] h-full">
         <!-- card container is clickable -->
         <div
-            class="flex w-full h-[7em] m-2 shadow-md/20 bg-white dark:bg-gray-500 rounded-md cursor-pointer"
+            class="flex w-full h-[7em] m-2 shadow-md/20 bg-[#fdfdfd] dark:bg-[#1f2937] rounded-md cursor-pointer"
             @click="() => navigateToProfile(requestId % 3)"
         >
             <!-- profile pic -->
