@@ -1,11 +1,11 @@
 <template>
     <div class="relative">
-        <ProfileCard />
+        <RequestedProfileCard />
     </div>
 </template>
 
 <script setup lang="ts">
 definePageMeta({
-    layout: "viewer",
+    layout: "admin",
 });
 </script>

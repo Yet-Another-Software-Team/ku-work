@@ -20,7 +20,7 @@
                     <h1 class="text-2xl font-bold text-white mb-4">Icon here</h1>
                     <ThemeToggle />
                 </header>
-                <SidebarMenu :items="getSidebarItems(isViewer)" />
+                <SidebarMenu :items="getSidebarItems(isViewer, isAdmin)" />
                 <!-- bottom -->
                 <div class="mt-auto">
                     <LogoutButton />
@@ -35,7 +35,7 @@
                 <h1 class="text-2xl font-bold text-white mb-4">Icon here</h1>
                 <ThemeToggle />
             </header>
-            <SidebarMenu :items="getSidebarItems(isViewer)" />
+            <SidebarMenu :items="getSidebarItems(isViewer, isAdmin)" />
             <div class="mt-auto">
                 <LogoutButton />
             </div>
@@ -47,15 +47,29 @@
 withDefaults(
     defineProps<{
         isViewer?: boolean;
+        isAdmin?: boolean;
     }>(),
     {
         isViewer: false,
+        isAdmin: false,
     }
 );
 
 function getSidebarItems(
-    isViewer: boolean
+    isViewer: boolean,
+    isAdmin: boolean
 ): Array<{ label: string; icon: string; to: string; disable: boolean }> {
+    if (isAdmin) {
+        return [
+            {
+                label: "Admin",
+                icon: "ic:baseline-person",
+                to: "/admin/dashboard",
+                disable: false,
+            },
+        ];
+    }
+
     const items = [
         {
             label: "Job Board",
