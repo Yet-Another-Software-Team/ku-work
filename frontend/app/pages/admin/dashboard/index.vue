@@ -3,14 +3,14 @@
         <section class="h-[3em] overflow-hidden border-b-1 my-5">
             <div class="flex flex-row gap-2 h-[6em] w-[28em] left-0 top-0">
                 <div
-                    class="hover:cursor-pointer transition-all duration-150"
+                    class="hover:cursor-pointer transition-all duration-150 text-center"
                     :class="setTailwindClasses(false)"
                     @click="selectRecruit"
                 >
                     <p class="font-bold px-5 py-1 text-2xl">Students</p>
                 </div>
                 <div
-                    class="hover:cursor-pointer transition-all duration-150"
+                    class="hover:cursor-pointer transition-all duration-150 text-center"
                     :class="setTailwindClasses(true)"
                     @click="selectCompany"
                 >
