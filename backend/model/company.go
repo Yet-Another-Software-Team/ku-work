@@ -10,8 +10,10 @@ type Company struct {
 	CreatedAt time.Time `json:"created"`
 	Email     string    `json:"email"`
 	Phone     string    `json:"phone"`
-	Photo     string    `json:"photo"`
-	Banner    string    `json:"banner"`
+	PhotoID   string    `gorm:"type:uuid" json:"photoId"`
+	Photo     File      `gorm:"foreignKey:PhotoID" json:"photo,omitempty"`
+	BannerID  string    `gorm:"type:uuid" json:"bannerId"`
+	Banner    File      `gorm:"foreignKey:BannerID" json:"banner,omitempty"`
 	Address   string    `json:"address"`
 	City      string    `json:"city"`
 	Country   string    `json:"country"`

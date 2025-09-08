@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"fmt"
-
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"gorm.io/datatypes"
@@ -17,20 +15,14 @@ import (
 
 type StudentHandler struct {
 	DB *gorm.DB
+	fileHandlers *FileHandlers
 }
 
-func NewStudentHandler(db *gorm.DB) *StudentHandler {
+func NewStudentHandler(db *gorm.DB, fileHandlers *FileHandlers) *StudentHandler {
 	return &StudentHandler{
 		DB: db,
+		fileHandlers: fileHandlers,
 	}
-}
-
-func handleFile(ctx *gin.Context, file *multipart.FileHeader, directoryName string, fileName string) (string, error) {
-	path := fmt.Sprintf("./files/%s/%s", directoryName, fileName)
-	if err := ctx.SaveUploadedFile(file, path); err != nil {
-		return "", err
-	}
-	return path[1:], nil
 }
 
 func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
@@ -61,29 +53,32 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 			return
 		}
 	}
-	photoPath, err := handleFile(ctx, input.Photo, "student_photo", userId)
+	// Create file handler
+	fileHandler := NewFileHandlers(h.DB)
+
+	photoID, err := fileHandler.SaveFile(ctx, userId, input.Photo, model.FileCategoryImage)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	statusPhotoPath, err := handleFile(ctx, input.StudentStatusFile, "status_photo", userId)
+	statusPhotoID, err := fileHandler.SaveFile(ctx, userId, input.StudentStatusFile, model.FileCategoryImage)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	student := model.Student{
-		UserID:            userId,
-		Approved:          false,
-		Phone:             input.Phone,
-		Photo:             photoPath,
-		BirthDate:         datatypes.Date(parsedBirthDate),
-		AboutMe:           input.AboutMe,
-		GitHub:            input.GitHub,
-		LinkedIn:          input.LinkedIn,
-		StudentID:         input.StudentID,
-		Major:             input.Major,
-		StudentStatus:     input.StudentStatus,
-		StudentStatusFile: statusPhotoPath,
+		UserID:              userId,
+		Approved:            false,
+		Phone:               input.Phone,
+		PhotoID:             photoID,
+		BirthDate:           datatypes.Date(parsedBirthDate),
+		AboutMe:             input.AboutMe,
+		GitHub:              input.GitHub,
+		LinkedIn:            input.LinkedIn,
+		StudentID:           input.StudentID,
+		Major:               input.Major,
+		StudentStatus:       input.StudentStatus,
+		StudentStatusFileID: statusPhotoID,
 	}
 	result := h.DB.Create(&student)
 	if result.Error != nil {
@@ -143,12 +138,13 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 		student.StudentStatus = input.StudentStatus
 	}
 	if input.Photo != nil {
-		photoPath, err := handleFile(ctx, input.Photo, "student_photo", userId)
+		// Create file handler
+		photoID, err := h.fileHandlers.SaveFile(ctx, userId, input.Photo, model.FileCategoryImage)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		student.Photo = photoPath
+		student.PhotoID = photoID
 	}
 	result := h.DB.Save(&student)
 	if result.Error != nil {
