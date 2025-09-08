@@ -22,7 +22,7 @@ const (
 type FileCategory string
 
 const (
-	FileCategoryImage FileCategory = "image"
+	FileCategoryImage    FileCategory = "image"
 	FileCategoryDocument FileCategory = "document"
 )
 

@@ -157,10 +157,10 @@ func (h *LocalAuthHandlers) CompanyLoginHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
-	
+
 	var companyCount int64
 	h.DB.Model(&model.Company{}).Where("user_id = ?", user.ID).Count(&companyCount)
-	if companyCount == 0{
+	if companyCount == 0 {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
@@ -201,10 +201,10 @@ func (h *LocalAuthHandlers) AdminLoginHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
-	
+
 	var adminCount int64
 	h.DB.Model(&model.Admin{}).Where("user_id = ?", user.ID).Count(&adminCount)
-	if adminCount == 0{
+	if adminCount == 0 {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}

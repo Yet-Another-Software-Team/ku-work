@@ -14,13 +14,13 @@ import (
 )
 
 type StudentHandler struct {
-	DB *gorm.DB
+	DB           *gorm.DB
 	fileHandlers *FileHandlers
 }
 
 func NewStudentHandler(db *gorm.DB, fileHandlers *FileHandlers) *StudentHandler {
 	return &StudentHandler{
-		DB: db,
+		DB:           db,
 		fileHandlers: fileHandlers,
 	}
 }

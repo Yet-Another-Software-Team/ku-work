@@ -56,8 +56,7 @@ func (h *FileHandlers) SaveFile(ctx *gin.Context, userId string, file *multipart
 	// Check Docs file size
 	if fileCategory == model.FileCategoryDocument && file.Size > MAX_DOCS_SIZE {
 		return "", fmt.Errorf("file size exceeds limit")
-	} else 
-	if fileCategory == model.FileCategoryImage {
+	} else if fileCategory == model.FileCategoryImage {
 		// Check Image file size
 		if file.Size > MAX_IMAGE_SIZE {
 			return "", fmt.Errorf("image file size exceeds limit of 1MB")
@@ -92,7 +91,6 @@ func (h *FileHandlers) SaveFile(ctx *gin.Context, userId string, file *multipart
 
 	filePath := filepath.Join("./files", fileRecord.ID)
 
-	
 	if err := ctx.SaveUploadedFile(file, filePath); err != nil {
 		h.DB.Delete(&fileRecord)
 		return "", fmt.Errorf("failed to save file to disk: %s", err)
@@ -219,11 +217,9 @@ func (h *FileHandlers) ServeFile(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read file"})
 		return
 	}
-	
+
 	mimeType := http.DetectContentType(buffer[:n])
 	ctx.Header("Content-Type", mimeType)
 
 	ctx.File(filePath)
 }
-
-

@@ -115,7 +115,7 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 		if err := h.DB.Model(&oauthDetail).Where("user_id = ?", user.ID).First(&oauthDetail); err == nil {
 			username = oauthDetail.FirstName + " " + oauthDetail.LastName
 		}
-	
+
 		var sCount int64
 		h.DB.Model(&model.Student{}).Where("user_id = ? AND approved = ?", user.ID, true).Count(&sCount)
 		isStudent = sCount > 0

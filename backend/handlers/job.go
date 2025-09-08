@@ -5,7 +5,6 @@ import (
 	"ku-work/backend/model"
 	"mime/multipart"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"

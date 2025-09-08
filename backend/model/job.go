@@ -49,5 +49,5 @@ type JobApplication struct {
 	UserID    string    `gorm:"type:uuid" json:"userId"`
 	AltPhone  string    `json:"phone"`
 	AltEmail  string    `json:"email"`
-	Files	  []File    `json:"files"`
+	Files     []File    `json:"files"`
 }
