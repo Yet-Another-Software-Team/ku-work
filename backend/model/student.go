@@ -23,4 +23,5 @@ type Student struct {
 	StudentStatus       string         `json:"status"`
 	StudentStatusFileID string         `gorm:"type:uuid" json:"statusFileId"`
 	StudentStatusFile   File           `gorm:"foreignKey:StudentStatusFileID" json:"statusFile,omitempty"`
+	JobApplications   []JobApplication `gorm:"foreignkey:UserID" json:"-"`
 }
