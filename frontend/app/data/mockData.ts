@@ -17,7 +17,28 @@ interface Profile {
     };
 }
 
-const mockData: Profile = {
+interface JobApplication {
+    id: string;
+    createdAt: string;
+    name: string;
+    companyId: string;
+    position: string;
+    duration: string;
+    description: string;
+    location: string;
+    jobType: string;
+    experienceType: string;
+    minSalary: number;
+    maxSalary: number;
+    approved: boolean;
+    logo: string;
+}
+
+interface Job {
+    jobs: JobApplication[];
+}
+
+const mockUserData: Profile = {
     profile: {
         name: "John Doe",
         id: "123456",
@@ -37,7 +58,7 @@ const mockData: Profile = {
     },
 };
 
-const multipleMockData: Profile[] = [
+const multipleMockUserData: Profile[] = [
     {
         profile: {
             name: "John Doe",
@@ -95,4 +116,59 @@ const multipleMockData: Profile[] = [
     },
 ];
 
-export { mockData, multipleMockData };
+const mockJobData: Job = {
+    jobs: [
+        {
+            id: "1",
+            createdAt: "2025-08-23T18:17:51.746604+07:00",
+            name: "IT",
+            companyId: "2d7f403e-8831-4805-a15b-65d48f6db46e",
+            position: "it",
+            duration: "forever",
+            description: "it position",
+            location: "thailand",
+            jobType: "casual",
+            experienceType: "newgrad",
+            minSalary: 1,
+            maxSalary: 1,
+            approved: false,
+            logo: "",
+        },
+        {
+            id: "2",
+            createdAt: "2025-08-20T12:05:21.123456+07:00",
+            name: "Software Engineering",
+            companyId: "3e5d27c1-98f2-4b6b-a3c9-7e0f32e8f888",
+            position: "Frontend Developer",
+            duration: "Contract",
+            description: "Work on building modern web applications with Vue.js and TypeScript.",
+            location: "Remote",
+            jobType: "Contract",
+            experienceType: "Junior",
+            minSalary: 30000,
+            maxSalary: 45000,
+            approved: true,
+            logo: "/images/logo2.png",
+        },
+        {
+            id: "3",
+            createdAt: "2025-07-15T09:45:00.654321+07:00",
+            name: "Finance",
+            companyId: "7a1e3f0a-43c7-4f2e-9b19-11234d9abc99",
+            position: "Financial Analyst",
+            duration: "Permanent",
+            description:
+                "Analyze financial data and create reports to assist management decisions.",
+            location: "Singapore",
+            jobType: "Full Time",
+            experienceType: "Mid-level",
+            minSalary: 50000,
+            maxSalary: 70000,
+            approved: true,
+            logo: "/images/logo3.png",
+        },
+    ],
+};
+
+export { mockUserData, multipleMockUserData, mockJobData };
+export type { Profile, JobApplication, Job };

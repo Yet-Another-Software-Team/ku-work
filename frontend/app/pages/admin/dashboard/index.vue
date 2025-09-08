@@ -52,7 +52,7 @@
                     v-for="rid in totalRequests"
                     :key="rid"
                     :request-id="rid"
-                    :data="multipleMockData[rid % 3] ?? mockData"
+                    :data="multipleMockUserData[rid % 3] ?? mockUserData"
                 />
             </template>
             <!-- Company acc req -->
@@ -65,7 +65,7 @@
 
 <script setup lang="ts">
 import type { DropdownMenuItem } from "@nuxt/ui";
-import { mockData, multipleMockData } from "~/data/mockData";
+import { mockUserData, multipleMockUserData } from "~/data/mockData";
 
 definePageMeta({
     layout: "admin",

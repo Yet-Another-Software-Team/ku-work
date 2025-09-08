@@ -93,9 +93,9 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { mockData } from "~/data/mockData";
+import { mockUserData } from "~/data/mockData";
 
-const data = mockData;
+const data = mockUserData;
 
 // Compute age
 const age = computed(() => {
