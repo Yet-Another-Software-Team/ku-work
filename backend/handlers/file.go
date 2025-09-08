@@ -5,6 +5,9 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
+	"io"
+	"net/http"
+
 	"github.com/chai2010/webp"
 
 	"ku-work/backend/model"
@@ -188,6 +191,39 @@ func CleanImageMetadata(filePath string) error {
 	}
 
 	return nil
+}
+
+func (h *FileHandlers) ServeFile(ctx *gin.Context) {
+	fileID := ctx.Param("fileID")
+	if strings.Contains(fileID, "/") || strings.Contains(fileID, `\`) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file identifier"})
+		return
+	}
+
+	filePath := filepath.Join("./files", fileID)
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+		} else {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open file"})
+		}
+		return
+	}
+	defer file.Close()
+
+	buffer := make([]byte, 512)
+	n, err := file.Read(buffer)
+	if err != nil && err != io.EOF {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read file"})
+		return
+	}
+	
+	mimeType := http.DetectContentType(buffer[:n])
+	ctx.Header("Content-Type", mimeType)
+
+	ctx.File(filePath)
 }
 
 

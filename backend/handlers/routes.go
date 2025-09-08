@@ -23,6 +23,8 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	router.POST("/google/login", googleAuthHandlers.GoogleOauthHandler)
 	router.POST("/refresh", jwtHandler.RefreshTokenHandler)
 	router.POST("/logout", jwtHandler.LogoutHandler)
+	
+	router.GET("/files/:fileID", fileHandlers.ServeFile)
 
 	// Authentication Protected Routes
 	authed := router.Group("/", middlewares.AuthMiddleware(jwtHandler.JWTSecret))
