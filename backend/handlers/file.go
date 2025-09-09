@@ -42,7 +42,6 @@ func NewFileHandlers(db *gorm.DB) *FileHandlers {
 // SaveFile saves a file to disk and creates a File record in the database
 // Returns the file ID for referencing in other models
 func SaveFile(ctx *gin.Context, db *gorm.DB, userId string, file *multipart.FileHeader, fileCategory model.FileCategory) (string, error) {
-	log.Println("Saving file...")
 	// Validate file category
 	isValidCategory := fileCategory == model.FileCategoryImage || fileCategory == model.FileCategoryDocument
 	if !isValidCategory {

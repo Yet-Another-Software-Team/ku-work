@@ -311,7 +311,7 @@ func (h *JobHandlers) ApplyJob(ctx *gin.Context) {
 			return
 		}
 	}
-	
+
 	if err := tx.Commit().Error; err != nil {
 		ctx.String(http.StatusInternalServerError, err.Error())
 		return

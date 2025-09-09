@@ -86,12 +86,12 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 		ctx.String(http.StatusInternalServerError, result.Error.Error())
 		return
 	}
-	
+
 	if err := tx.Commit().Error; err != nil {
 		ctx.String(http.StatusInternalServerError, err.Error())
 		return
 	}
-	
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "ok",
 	})
