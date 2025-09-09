@@ -41,7 +41,8 @@ func NewFileHandlers(db *gorm.DB) *FileHandlers {
 
 // SaveFile saves a file to disk and creates a File record in the database
 // Returns the file ID for referencing in other models
-func (h *FileHandlers) SaveFile(ctx *gin.Context, userId string, file *multipart.FileHeader, fileCategory model.FileCategory) (string, error) {
+func SaveFile(ctx *gin.Context, db *gorm.DB, userId string, file *multipart.FileHeader, fileCategory model.FileCategory) (string, error) {
+	log.Println("Saving file...")
 	// Validate file category
 	isValidCategory := fileCategory == model.FileCategoryImage || fileCategory == model.FileCategoryDocument
 	if !isValidCategory {
@@ -85,14 +86,14 @@ func (h *FileHandlers) SaveFile(ctx *gin.Context, userId string, file *multipart
 		Category: fileCategory,
 	}
 
-	if err := h.DB.Create(&fileRecord).Error; err != nil {
+	if err := db.Create(&fileRecord).Error; err != nil {
 		return "", fmt.Errorf("failed to create file record: %s", err)
 	}
 
 	filePath := filepath.Join("./files", fileRecord.ID)
 
 	if err := ctx.SaveUploadedFile(file, filePath); err != nil {
-		h.DB.Delete(&fileRecord)
+		db.Delete(&fileRecord)
 		return "", fmt.Errorf("failed to save file to disk: %s", err)
 	}
 
@@ -193,7 +194,7 @@ func CleanImageMetadata(filePath string) error {
 
 func (h *FileHandlers) ServeFile(ctx *gin.Context) {
 	fileID := ctx.Param("fileID")
-	if strings.Contains(fileID, "/") || strings.Contains(fileID, `\`) || strings.Contains(fileID, ".."){
+	if strings.Contains(fileID, "/") || strings.Contains(fileID, `\`) || strings.Contains(fileID, "..") {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file identifier"})
 		return
 	}

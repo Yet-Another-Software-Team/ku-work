@@ -53,15 +53,16 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 			return
 		}
 	}
-	// Create file handler
-	fileHandler := NewFileHandlers(h.DB)
 
-	photoID, err := fileHandler.SaveFile(ctx, userId, input.Photo, model.FileCategoryImage)
+	tx := h.DB.Begin()
+	defer tx.Rollback()
+
+	photoID, err := SaveFile(ctx, tx, userId, input.Photo, model.FileCategoryImage)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	statusPhotoID, err := fileHandler.SaveFile(ctx, userId, input.StudentStatusFile, model.FileCategoryImage)
+	statusPhotoID, err := SaveFile(ctx, tx, userId, input.StudentStatusFile, model.FileCategoryImage)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -80,7 +81,7 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 		StudentStatus:       input.StudentStatus,
 		StudentStatusFileID: statusPhotoID,
 	}
-	result := h.DB.Create(&student)
+	result := tx.Create(&student)
 	if result.Error != nil {
 		ctx.String(http.StatusInternalServerError, result.Error.Error())
 		return
@@ -138,8 +139,7 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 		student.StudentStatus = input.StudentStatus
 	}
 	if input.Photo != nil {
-		// Create file handler
-		photoID, err := h.fileHandlers.SaveFile(ctx, userId, input.Photo, model.FileCategoryImage)
+		photoID, err := SaveFile(ctx, h.DB, userId, input.Photo, model.FileCategoryImage)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return

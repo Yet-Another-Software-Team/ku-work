@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"mime/multipart"
 	"net/http"
 	"time"
@@ -42,6 +43,7 @@ type RegisterRequest struct {
 func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 	var req RegisterRequest
 	if err := ctx.MustBindWith(&req, binding.FormMultipart); err != nil {
+		log.Printf("Error binding request: %v", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
@@ -78,17 +80,14 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 		return
 	}
 
-	// Create file handler
-	fileHandler := NewFileHandlers(tx)
-
 	// Create Company
-	photoID, err := fileHandler.SaveFile(ctx, newUser.ID, req.Photo, model.FileCategoryImage)
+	photoID, err := SaveFile(ctx, tx, newUser.ID, req.Photo, model.FileCategoryImage)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	bannerID, err := fileHandler.SaveFile(ctx, newUser.ID, req.Banner, model.FileCategoryImage)
+	bannerID, err := SaveFile(ctx, tx, newUser.ID, req.Banner, model.FileCategoryImage)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

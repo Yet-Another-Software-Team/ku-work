@@ -278,38 +278,38 @@ func (h *JobHandlers) ApplyJob(ctx *gin.Context) {
 		return
 	}
 
-	var fileIDs []string
-	for _, file := range input.Files {
-		fileID, err := h.FileHandlers.SaveFile(ctx, userid, file, model.FileCategoryDocument)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to save file %s: %s", file.Filename, err.Error())})
-			return
-		}
-		fileIDs = append(fileIDs, fileID)
-	}
-
-	var applicationFiles []model.File
-	for _, file := range input.Files {
-		fileID, err := h.FileHandlers.SaveFile(ctx, userid, file, model.FileCategoryDocument)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to save file %s: %s", file.Filename, err.Error())})
-			return
-		}
-		// Create a File struct with just the ID to establish the relationship for GORM.
-		applicationFiles = append(applicationFiles, model.File{ID: fileID})
-	}
+	tx := h.DB.Begin()
+	defer tx.Rollback()
 
 	jobApplication := model.JobApplication{
 		UserID:   student.UserID,
 		JobID:    job.ID,
 		AltPhone: input.AltPhone,
 		AltEmail: input.AltEmail,
-		Files:    applicationFiles,
 	}
+
 	result = h.DB.Create(&jobApplication)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
+	}
+
+	for _, file := range input.Files {
+		fileID, err := SaveFile(ctx, tx, student.UserID, file, model.FileCategoryDocument)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to save file %s: %s", file.Filename, err.Error())})
+			return
+		}
+		fileDBO := model.File{
+			ID: fileID,
+		}
+
+		tx.Model(&fileDBO).Update("job_application_id", jobApplication.ID)
+		fileDBO.JobApplicationID = jobApplication.ID
+		if tx.Model(&fileDBO) == nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err})
+			return
+		}
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
