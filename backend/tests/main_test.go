@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"fmt"
 	"ku-work/backend/database"
 	"ku-work/backend/handlers"
 	"ku-work/backend/model"
@@ -21,6 +22,11 @@ var router *gin.Engine
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
+	// Check for podman socket and set DOCKER_HOST if present to make it compatible with podman
+	podmanSocketPath := fmt.Sprintf("/run/user/%d/podman/podman.sock", os.Getuid())
+	if _, err := os.Stat(podmanSocketPath); err == nil {
+		os.Setenv("DOCKER_HOST", "unix://"+podmanSocketPath)
+	}
 	_ = os.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 	req := testcontainers.ContainerRequest{
 		Name:         "kuwork-test-database",
