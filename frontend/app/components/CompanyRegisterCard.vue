@@ -182,7 +182,14 @@ const onSubmit = async () => {
             formData.append("banner", form.banner);
         }
 
-        const response = await $fetch("/company/register", {
+        type authResponse = {
+            token: string;
+            username: string;
+            isCompany: boolean;
+            isStudent: boolean;
+        };
+
+        const response: authResponse = await $fetch("/company/register", {
             method: "POST",
             baseURL: config.public.apiBaseUrl,
             body: formData,
