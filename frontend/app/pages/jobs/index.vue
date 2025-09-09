@@ -1,6 +1,6 @@
 <template>
     <div class="flex">
-        <span class="w-full">
+        <span class="w-full" :class="selectedIndex ? 'hidden sm:block' : ''">
             <h1
                 class="flex items-center text-5xl text-primary-800 dark:text-primary font-bold mb-6 gap-2 cursor-pointer"
             >
@@ -23,6 +23,7 @@
                 <ExpandedJobApplication
                     :is-selected="selectedIndex === index"
                     :data="jobs[selectedIndex % 3] || jobs[0]!"
+                    @close="selectedIndex = null"
                 />
             </section>
         </span>

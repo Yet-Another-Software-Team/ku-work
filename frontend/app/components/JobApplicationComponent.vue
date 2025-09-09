@@ -1,6 +1,6 @@
 <template>
     <div
-        class="flex items-center justify-between w-full h-[8em] border-b-1 border-gray-400"
+        class="flex flex-wrap items-center justify-between w-full h-[8em] border-b-1 border-gray-400"
         :class="
             !isSelected
                 ? 'bg-transparent hover:bg-gray-50 dark:hover:bg-[#1f2937] cursor-pointer'
