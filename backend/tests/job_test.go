@@ -173,9 +173,7 @@ func TestJob(t *testing.T) {
 			return
 		}
 		w := httptest.NewRecorder()
-		payload := fmt.Sprintf(`{
-	"id": %d
-}`, job.ID)
+		payload := fmt.Sprintf(`{"id": %d}`, job.ID)
 		req, _ := http.NewRequest("POST", "/job/approve", strings.NewReader(payload))
 		jwtHandler := handlers.NewJWTHandlers(db)
 		jwtToken, _, err := jwtHandler.GenerateTokens(user.ID)
@@ -217,16 +215,31 @@ func TestJob(t *testing.T) {
 		assert.Equal(t, edited_job.MaxSalary, uint(100))
 	})
 	t.Run("Apply", func(t *testing.T) {
+
 		user := model.User{
 			Username: fmt.Sprintf("applyjobtester-%d", time.Now().UnixNano()),
 		}
-		if result := db.Create(&user); result.Error != nil {
-			t.Error(result.Error)
+		
+		if err := db.Create(&user).Error; err != nil {
+			t.Error(err)
+			return
+		}
+		// Create dummy files for photo and status photo
+		photoFile := model.File{UserID: user.ID, FileType: model.FileTypeJPEG, Category: model.FileCategoryImage}
+		if err := db.Create(&photoFile).Error; err != nil {
+			t.Error(err)
+			return
+		}
+		statusFile := model.File{UserID: user.ID, FileType: model.FileTypePDF, Category: model.FileCategoryImage}
+		if err := db.Create(&statusFile).Error; err != nil {
+			t.Error(err)
 			return
 		}
 		student := model.Student{
-			UserID:   user.ID,
-			Approved: true,
+			UserID:              user.ID,
+			Approved:            true,
+			PhotoID:             photoFile.ID,
+			StudentStatusFileID: statusFile.ID,
 		}
 		if result := db.Create(&student); result.Error != nil {
 			t.Error(result.Error)
