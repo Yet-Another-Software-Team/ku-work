@@ -1,14 +1,18 @@
 <template>
     <div
         class="flex items-center justify-between w-full h-[8em] border-b-1 border-gray-400"
-        :class="!isSelected ? 'bg-transparent hover:bg-gray-50 cursor-pointer' : 'bg-[#fdfdfd]'"
+        :class="
+            !isSelected
+                ? 'bg-transparent hover:bg-gray-50 dark:hover:bg-[#1f2937] cursor-pointer'
+                : 'bg-[#fdfdfd] dark:bg-[#013B49]'
+        "
         @click="$emit('click')"
     >
         <!-- Left side -->
         <div class="flex flex-row items-center gap-4 h-full">
             <!-- Green line -->
             <div
-                class="w-[0.5em] h-full"
+                class="w-[0.3em] h-full"
                 :class="isSelected ? 'bg-green-500' : 'bg-transparent'"
             ></div>
 
@@ -30,8 +34,8 @@
 
             <!-- Job info -->
             <div class="flex flex-col h-full py-5">
-                <h2 class="font-semibold text-gray-900">{{ data.name }}</h2>
-                <p class="text-sm text-gray-500">{{ data.location }}</p>
+                <h2 class="font-semibold text-gray-900 dark:text-[#fdfdfd]">{{ data.name }}</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-200">{{ data.location }}</p>
                 <div class="flex space-x-2 mt-2">
                     <span class="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">
                         {{ data.jobType }}
