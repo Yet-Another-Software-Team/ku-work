@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/magiconair/properties/assert"
 )
@@ -28,7 +29,7 @@ var pixel = []byte{
 func TestStudent(t *testing.T) {
 	t.Run("Register", func(t *testing.T) {
 		user := model.User{
-			Username: "registerstudenttester",
+			Username: fmt.Sprintf("registerstudenttester-%d", time.Now().UnixNano()),
 		}
 		if result := db.Create(&user); result.Error != nil {
 			t.Error(result.Error)
