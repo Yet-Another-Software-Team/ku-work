@@ -7,8 +7,8 @@
         </h1>
         <section v-for="index in 10" :key="index">
             <JobApplicationComponent
-                :data="(jobs[index % 3] || jobs[0]) as JobApplication"
                 :is-selected="selectedIndex === index"
+                :data="jobs[index % 3] || jobs[0]!"
                 @click="selectedIndex = index"
             />
         </section>
