@@ -193,14 +193,30 @@ func CleanImageMetadata(filePath string) error {
 
 func (h *FileHandlers) ServeFile(ctx *gin.Context) {
 	fileID := ctx.Param("fileID")
-	if strings.Contains(fileID, "/") || strings.Contains(fileID, `\`) {
+	if strings.Contains(fileID, "/") || strings.Contains(fileID, `\`) || strings.Contains(fileID, ".."){
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file identifier"})
 		return
 	}
 
-	filePath := filepath.Join("./files", fileID)
+	baseDir := "./files"
+	filePath := filepath.Join(baseDir, fileID)
+	absBaseDir, err := filepath.Abs(baseDir)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	absFilePath, err := filepath.Abs(filePath)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file path"})
+		return
+	}
+	// Ensure that absFilePath is inside absBaseDir
+	if !strings.HasPrefix(absFilePath, absBaseDir+string(os.PathSeparator)) && absFilePath != absBaseDir {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "File path traversal detected"})
+		return
+	}
 
-	file, err := os.Open(filePath)
+	file, err := os.Open(absFilePath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
@@ -221,5 +237,5 @@ func (h *FileHandlers) ServeFile(ctx *gin.Context) {
 	mimeType := http.DetectContentType(buffer[:n])
 	ctx.Header("Content-Type", mimeType)
 
-	ctx.File(filePath)
+	ctx.File(absFilePath)
 }
