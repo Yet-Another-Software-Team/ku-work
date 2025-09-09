@@ -1,51 +1,48 @@
 <template>
-    <div class="flex flex-wrap sm:flex-nowrap gap-3">
-        <!-- Search Menu -->
-        <UInput
-            v-model="searchValue"
-            color="primary"
-            highlight
-            placeholder="Enter Keyword"
-            icon="material-symbols:search-rounded"
-            class="w-full"
-        >
-            <template v-if="searchValue?.length" #trailing>
-                <UButton
-                    color="neutral"
-                    variant="link"
-                    icon="iconoir:xmark"
-                    aria-label="Clear input"
-                    @click="searchValue = ''"
-                />
-            </template>
-        </UInput>
-        <!-- Location Picker -->
-        <USelectMenu
-            v-model="selectedValue"
-            color="primary"
-            highlight
-            placeholder="Location"
-            value-key="id"
-            :items="items"
-            class="w-[10em]"
-            icon="material-symbols:location-on-outline-rounded"
-        />
+    <div>
+        <div class="flex flex-wrap sm:flex-nowrap gap-3">
+            <!-- Search Menu -->
+            <UInput
+                v-model="searchValue"
+                color="primary"
+                highlight
+                placeholder="Enter Keyword"
+                icon="material-symbols:search-rounded"
+                class="w-full"
+            >
+                <template v-if="searchValue?.length" #trailing>
+                    <UButton
+                        color="neutral"
+                        variant="link"
+                        icon="iconoir:xmark"
+                        aria-label="Clear input"
+                        @click="searchValue = ''"
+                    />
+                </template>
+            </UInput>
+            <!-- Location Picker -->
+            <USelectMenu
+                v-model="selectedValue"
+                color="primary"
+                highlight
+                placeholder="Location"
+                value-key="id"
+                :items="items"
+                class="w-[10em]"
+                icon="material-symbols:location-on-outline-rounded"
+            />
+        </div>
 
         <!-- More options -->
         <div>
-            <UButton
-                label="More"
-                color="primary"
-                variant="solid"
-                class="h-full"
-                trailing-icon="i-lucide:chevron-down"
-            />
+            <SearchMoreButton />
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
 import { UButton } from "#components";
+import SearchMoreButton from "./SearchMoreButton.vue";
 
 const items = ref([
     {
