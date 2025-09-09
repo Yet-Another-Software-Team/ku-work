@@ -145,8 +145,8 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { mockUserData } from "~/data/mockUserData";
-import { multipleMockUserData } from "~/data/mockUserData";
+import type { mockUserData } from "~/data/mockData";
+import { multipleMockUserData } from "~/data/mockData";
 
 const route = useRoute();
 const query = route.query.id ?? 0;
