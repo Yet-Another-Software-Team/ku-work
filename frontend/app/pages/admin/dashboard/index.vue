@@ -23,24 +23,13 @@
                 <h1 class="text-2xl font-semibold mb-2">{{ totalRequests }} Applicants</h1>
                 <div class="flex gap-5">
                     <h1 class="text-2xl font-semibold mb-2">Sort by:</h1>
-                    <UDropdownMenu
+                    <USelectMenu
+                        v-model="selectedValue"
+                        value-key="id"
                         :items="items"
-                        :content="{
-                            align: 'end',
-                            side: 'bottom',
-                            sideOffset: 0,
-                        }"
-                        :ui="{
-                            content: 'w-48',
-                        }"
-                    >
-                        <UButton
-                            label="Open"
-                            icon="ic:baseline-keyboard-arrow-down"
-                            color="neutral"
-                            variant="outline"
-                        />
-                    </UDropdownMenu>
+                        placement="bottom-end"
+                        class="w-[10em]"
+                    />
                 </div>
             </div>
             <hr class="w-full my-5" />
@@ -64,7 +53,6 @@
 </template>
 
 <script setup lang="ts">
-import type { DropdownMenuItem } from "@nuxt/ui";
 import { mockUserData, multipleMockUserData } from "~/data/mockData";
 
 definePageMeta({
@@ -74,20 +62,24 @@ definePageMeta({
 const totalRequests = 50;
 const isCompany = ref(false);
 
-const items = ref<DropdownMenuItem[]>([
+const items = ref([
     {
         label: "Item1",
+        id: "item1",
         icon: "eos-icons:rotating-gear",
     },
     {
         label: "Item2",
+        id: "item2",
         icon: "eos-icons:rotating-gear",
     },
     {
         label: "Item3",
+        id: "item3",
         icon: "eos-icons:rotating-gear",
     },
 ]);
+const selectedValue = ref("item1");
 
 function setTailwindClasses(activeCondition: boolean) {
     if (isCompany.value == activeCondition) {
