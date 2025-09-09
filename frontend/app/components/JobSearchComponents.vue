@@ -28,7 +28,7 @@
                 placeholder="Location"
                 value-key="id"
                 :items="items"
-                class="w-[10em]"
+                class="w-[15em]"
                 icon="material-symbols:location-on-outline-rounded"
             />
         </div>

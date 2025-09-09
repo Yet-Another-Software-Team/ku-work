@@ -1,6 +1,6 @@
 <template>
     <div
-        class="flex flex-wrap items-center justify-between w-full h-[8em] border-b-1 border-gray-400"
+        class="relative flex flex-wrap justify-between w-full min-h-[8em] border-b border-gray-400"
         :class="
             !isSelected
                 ? 'bg-transparent hover:bg-gray-50 dark:hover:bg-[#1f2937] cursor-pointer'
@@ -8,14 +8,14 @@
         "
         @click="$emit('click')"
     >
-        <!-- Left side -->
-        <div class="flex flex-row items-center gap-4 h-full">
-            <!-- Green line -->
-            <div
-                class="w-[0.3em] h-full"
-                :class="isSelected ? 'bg-green-500' : 'bg-transparent'"
-            ></div>
+        <!-- Green line positioned outside the flow -->
+        <div
+            class="absolute left-0 top-0 w-[0.3em] h-full"
+            :class="isSelected ? 'bg-green-500' : 'bg-transparent'"
+        ></div>
 
+        <!-- Left side -->
+        <div class="flex flex-row items-center gap-4 pl-[1em]">
             <!-- Icon -->
             <div class="flex items-center justify-center w-20 h-20 rounded-md">
                 <img
@@ -33,8 +33,8 @@
             </div>
 
             <!-- Job info -->
-            <div class="flex flex-col h-full py-5">
-                <h2 class="font-semibold text-gray-900 dark:text-[#fdfdfd]">{{ data.name }}</h2>
+            <div class="flex flex-col py-5">
+                <h2 class="font-semibold text-gray-900 dark:text-[#fdfdfd]">{{ data.position }}</h2>
                 <p class="text-sm text-gray-500 dark:text-gray-200">{{ data.location }}</p>
                 <div class="flex space-x-2 mt-2">
                     <span class="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">
@@ -48,7 +48,7 @@
         </div>
 
         <!-- Right side -->
-        <div class="text-xs text-gray-400 whitespace-nowrap h-full p-5">
+        <div class="text-xs text-gray-400 whitespace-nowrap p-5 pb-1">
             {{ timeAgo(data.createdAt) }}
         </div>
     </div>

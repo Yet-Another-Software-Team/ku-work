@@ -1,6 +1,6 @@
 <template>
     <div class="flex">
-        <span class="w-full" :class="selectedIndex ? 'hidden sm:block' : ''">
+        <span class="w-full">
             <h1
                 class="flex items-center text-5xl text-primary-800 dark:text-primary font-bold mb-6 gap-2 cursor-pointer"
             >
@@ -18,12 +18,11 @@
             </section>
         </span>
         <span v-if="selectedIndex" class="flex">
-            <USeparator orientation="vertical" color="neutral" class="w-fit px-5" size="lg" />
+            <USeparator orientation="vertical" class="w-fit mx-5" color="neutral" size="lg" />
             <section v-for="index in totalJob" :key="index">
                 <ExpandedJobApplication
                     :is-selected="selectedIndex === index"
                     :data="jobs[selectedIndex % 3] || jobs[0]!"
-                    @close="selectedIndex = null"
                 />
             </section>
         </span>
