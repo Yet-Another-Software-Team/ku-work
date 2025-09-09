@@ -219,7 +219,7 @@ func TestJob(t *testing.T) {
 		user := model.User{
 			Username: fmt.Sprintf("applyjobtester-%d", time.Now().UnixNano()),
 		}
-		
+
 		if err := db.Create(&user).Error; err != nil {
 			t.Error(err)
 			return
