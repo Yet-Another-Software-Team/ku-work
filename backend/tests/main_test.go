@@ -25,7 +25,7 @@ func TestMain(m *testing.M) {
 	// Check for podman socket and set DOCKER_HOST if present to make it compatible with podman
 	podmanSocketPath := fmt.Sprintf("/run/user/%d/podman/podman.sock", os.Getuid())
 	if _, err := os.Stat(podmanSocketPath); err == nil {
-		os.Setenv("DOCKER_HOST", "unix://"+podmanSocketPath)
+		_ = os.Setenv("DOCKER_HOST", "unix://"+podmanSocketPath)
 	}
 	_ = os.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 	req := testcontainers.ContainerRequest{

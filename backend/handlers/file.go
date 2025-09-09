@@ -67,7 +67,7 @@ func SaveFile(ctx *gin.Context, db *gorm.DB, userId string, file *multipart.File
 		if err != nil {
 			return "", fmt.Errorf("could not open image file to check dimensions: %w", err)
 		}
-		defer src.Close()
+		defer func() { _ = src.Close() }()
 
 		config, _, err := image.DecodeConfig(src)
 		if err != nil {
@@ -142,10 +142,10 @@ func CleanImageMetadata(filePath string) error {
 
 	img, format, err := image.Decode(file)
 	if err != nil {
-		file.Close()
+		_ = file.Close()
 		return fmt.Errorf("could not decode image: %w", err)
 	}
-	file.Close()
+	_ = file.Close()
 
 	isSupported := format == "jpeg" || format == "png" || format == "webp"
 	if !isSupported {
@@ -158,22 +158,22 @@ func CleanImageMetadata(filePath string) error {
 	if err != nil {
 		return fmt.Errorf("could not create temp file: %w", err)
 	}
-	defer os.Remove(tempFile.Name()) // Ensure temp file is cleaned up on error
+	defer func() { _ = os.Remove(tempFile.Name()) }() // Ensure temp file is cleaned up on error
 
 	switch format {
 	case "jpeg":
 		if err := jpeg.Encode(tempFile, img, nil); err != nil {
-			tempFile.Close()
+			_ = tempFile.Close()
 			return fmt.Errorf("could not encode jpeg: %w", err)
 		}
 	case "png":
 		if err := png.Encode(tempFile, img); err != nil {
-			tempFile.Close()
+			_ = tempFile.Close()
 			return fmt.Errorf("could not encode png: %w", err)
 		}
 	case "webp":
 		if err := webp.Encode(tempFile, img, &webp.Options{Lossless: true}); err != nil {
-			tempFile.Close()
+			_ = tempFile.Close()
 			return fmt.Errorf("could not encode webp: %w", err)
 		}
 	}
@@ -225,7 +225,7 @@ func (h *FileHandlers) ServeFile(ctx *gin.Context) {
 		}
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	buffer := make([]byte, 512)
 	n, err := file.Read(buffer)
