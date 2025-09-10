@@ -1,28 +1,24 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
-	"io/fs"
 	"ku-work/backend/model"
 	"mime/multipart"
 	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type JobHandlers struct {
-	DB *gorm.DB
+	DB           *gorm.DB
+	FileHandlers *FileHandlers
 }
 
 func NewJobHandlers(db *gorm.DB) *JobHandlers {
 	return &JobHandlers{
-		DB: db,
+		DB:           db,
+		FileHandlers: NewFileHandlers(db),
 	}
 }
 
@@ -249,7 +245,7 @@ func (h *JobHandlers) ApplyJob(ctx *gin.Context) {
 		JobID    uint                    `form:"id" binding:"required"`
 		AltPhone string                  `form:"phone" binding:"max=20"`
 		AltEmail string                  `form:"email" binding:"max=128"`
-		Files    []*multipart.FileHeader `form:"files" binding:"max=2"`
+		Files    []*multipart.FileHeader `form:"files" binding:"max=2,required"`
 	}
 	input := ApplyJobInput{}
 	err := ctx.Bind(&input)
@@ -281,39 +277,45 @@ func (h *JobHandlers) ApplyJob(ctx *gin.Context) {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "job is not approved yet"})
 		return
 	}
-	var fileUUID uuid.UUID
-	for {
-		fileUUID, err = uuid.NewV7()
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		if _, err := os.Stat(fmt.Sprintf("./files/application_files/%s", fileUUID.String())); err == nil || !errors.Is(err, fs.ErrNotExist) {
-			continue
-		}
-		break
-	}
-	var fileNames []string
-	for i := range input.Files {
-		path := fmt.Sprintf("./files/application_files/%s/file_%s", fileUUID.String(), filepath.Base(input.Files[i].Filename))
-		if err := ctx.SaveUploadedFile(input.Files[i], path); err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		fileNames = append(fileNames, path[1:])
-	}
+
+	tx := h.DB.Begin()
+	defer tx.Rollback()
+
 	jobApplication := model.JobApplication{
-		UserID:    student.UserID,
-		JobID:     job.ID,
-		AltPhone:  input.AltPhone,
-		AltEmail:  input.AltEmail,
-		FilePaths: strings.Join(fileNames, ":"),
+		UserID:   student.UserID,
+		JobID:    job.ID,
+		AltPhone: input.AltPhone,
+		AltEmail: input.AltEmail,
 	}
+
 	result = h.DB.Create(&jobApplication)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
+
+	for _, file := range input.Files {
+		fileID, err := SaveFile(ctx, tx, student.UserID, file, model.FileCategoryDocument)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to save file %s: %s", file.Filename, err.Error())})
+			return
+		}
+		fileDBO := model.File{
+			ID: fileID,
+		}
+
+		updateResult := tx.Model(&fileDBO).Update("job_application_id", jobApplication.ID)
+		if updateResult.Error != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err})
+			return
+		}
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		ctx.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"id": jobApplication.ID,
 	})
