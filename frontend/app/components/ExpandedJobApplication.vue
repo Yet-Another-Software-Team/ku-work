@@ -1,7 +1,7 @@
 <template>
     <div v-if="isSelected" class="w-[20em] mt-[4.5rem] sticky top-0 overflow-y-auto max-h-dvh">
         <!-- First section -->
-        <div class="flex my-7">
+        <div class="flex mb-7">
             <!-- Profile -->
             <span>
                 <img
@@ -73,7 +73,7 @@
                 {{ data.description }}
             </p>
         </div>
-        <UButton label="Apply" class="w-full justify-center my-5 p-2 text-xl" />
+        <UButton v-if="!isViewer" label="Apply" class="w-full justify-center my-5 p-2 text-xl" />
     </div>
 </template>
 
@@ -84,6 +84,7 @@ import type { JobApplication } from "~/data/mockData";
 defineProps<{
     data: JobApplication;
     isSelected: boolean;
+    isViewer: boolean;
 }>();
 
 function timeAgo(createdAt: string): string {

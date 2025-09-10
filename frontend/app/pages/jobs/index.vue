@@ -21,6 +21,7 @@
             <USeparator orientation="vertical" class="w-fit mx-5" color="neutral" size="lg" />
             <section v-for="index in totalJob" :key="index">
                 <ExpandedJobApplication
+                    :is-viewer="false"
                     :is-selected="selectedIndex === index"
                     :data="jobs[selectedIndex % 3] || jobs[0]!"
                 />

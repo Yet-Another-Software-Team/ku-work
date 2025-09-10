@@ -148,7 +148,7 @@ const mockJobData: Job = {
             minSalary: 30000,
             maxSalary: 45000,
             approved: true,
-            logo: "/images/logo2.png",
+            logo: "",
         },
         {
             id: "3",
@@ -165,7 +165,7 @@ const mockJobData: Job = {
             minSalary: 50000,
             maxSalary: 70000,
             approved: true,
-            logo: "/images/logo3.png",
+            logo: "",
         },
     ],
 };
