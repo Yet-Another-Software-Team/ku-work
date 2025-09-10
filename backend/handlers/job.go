@@ -304,9 +304,8 @@ func (h *JobHandlers) ApplyJob(ctx *gin.Context) {
 			ID: fileID,
 		}
 
-		tx.Model(&fileDBO).Update("job_application_id", jobApplication.ID)
-		fileDBO.JobApplicationID = jobApplication.ID
-		if tx.Model(&fileDBO) == nil {
+		updateResult := tx.Model(&fileDBO).Update("job_application_id", jobApplication.ID)
+		if updateResult.Error != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err})
 			return
 		}
