@@ -118,14 +118,14 @@
                     <input
                         ref="fileInputRef"
                         type="file"
-                        accept="application/pdf,image/jpeg,image/jpg,image/png,image/gif"
+                        accept="application/pdf,image/jpeg,image/jpg,image/png"
                         class="hidden"
                         @change="onFileChange"
                     />
                 </div>
                 <div class="text-sm text-gray-600">
-                    Upload transcript, student ID card, or graduation certificate (PDF, JPEG, PNG,
-                    GIF - Max 10MB)
+                    Upload transcript, student ID card, or graduation certificate (PDF, JPEG, PNG
+                     - Max 10MB)
                 </div>
                 <span v-if="errors.verificationFile" class="text-error text-sm">
                     {{ errors.verificationFile }}
@@ -230,10 +230,9 @@ const validateField = (fieldName: keyof typeof errors, value: unknown) => {
                 "image/jpeg",
                 "image/png",
                 "image/jpg",
-                "image/gif",
             ];
             if (!allowedTypes.includes(file.type)) {
-                errors.verificationFile = "Only PDF, JPEG, JPG, PNG, and GIF files are allowed";
+                errors.verificationFile = "Only PDF, JPEG, JPG, and PNG files are allowed";
                 return false;
             }
             errors.verificationFile = "";
