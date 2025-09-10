@@ -35,7 +35,7 @@
                         <label class="text-primary-800 font-semibold">Phone</label>
                         <UInput
                             :model-value="phone"
-                            placeholder="Optional: 0919999999"
+                            placeholder="Optional: +66919999999"
                             size="xl"
                             :error="!!errors.phone"
                             :ui="{ base: 'rounded-lg bg-white text-black' }"
@@ -51,8 +51,9 @@
             <div class="flex flex-col items-center justify-center">
                 <div class="flex flex-col items-center gap-3">
                     <label class="text-primary-800 font-semibold"
-                        >Profile Picture * (JPEG, PNG - Max 5MB)</label
-                    >
+                        >Profile Picture * <br />
+                        <span class="font-normal text-sm">(JPEG, PNG, WEBP - Max 5MB)</span>
+                    </label>
                     <button
                         class="size-[5em] rounded-full bg-gray-200 flex items-center justify-center text-4xl text-gray-500 outline-1 outline-primary overflow-hidden hover:cursor-pointer"
                         :class="{ 'border-2 border-error': errors.avatar }"
@@ -73,7 +74,7 @@
                     <input
                         ref="fileInputRef"
                         type="file"
-                        accept="image/jpeg,image/jpg,image/png"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
                         class="hidden"
                         @change="onFileChange"
                     />
@@ -207,12 +208,8 @@ const schema = z.object({
         }, "Age must be between 16 and 80 years"),
     phone: z
         .string()
-        .max(20, "Phone number must be 20 characters or less")
-        .optional()
-        .refine((phone) => {
-            if (!phone) return true;
-            return /^[+]?[0-9\-()\s]+$/.test(phone);
-        }, "Invalid phone number format"),
+        .regex(/^\+(?:[1-9]\d{0,2})\d{4,14}$/, "Please enter a valid phone number")
+        .optional(),
     aboutMe: z.string().max(16384, "About me must be 16,384 characters or less").optional(),
     githubURL: z
         .string()
@@ -266,10 +263,10 @@ const validateField = (fieldName, value) => {
         errors[fieldName] = "";
         return true;
     } catch (error) {
-        if (error.errors?.[0]?.message) {
-            errors[fieldName] = error.errors[0].message;
+        if (error instanceof z.ZodError) {
+            errors[fieldName] = error.issues[0]?.message || "Invalid value";
         } else {
-            errors[fieldName] = "Invalid value";
+            errors[fieldName] = "Unexpected Error Occurered";
         }
         return false;
     }

@@ -24,8 +24,9 @@
             <div class="flex flex-col items-center justify-center">
                 <div class="flex flex-col items-center gap-3">
                     <label class="text-primary-800 font-semibold"
-                        >Company Logo * (JPEG, PNG - Max 5MB)</label
-                    >
+                        >Company Logo * <br />
+                        <span class="font-normal text-sm">(JPEG, PNG, WEBP - Max 5MB)</span>
+                    </label>
                     <button
                         class="size-[5em] rounded-full bg-gray-200 flex items-center justify-center text-4xl text-gray-500 outline-1 outline-primary overflow-hidden hover:cursor-pointer"
                         :class="{ 'border-2 border-error': errors.companyLogo }"
@@ -46,7 +47,7 @@
                     <input
                         ref="logoFileInputRef"
                         type="file"
-                        accept="image/jpeg,image/jpg,image/png"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
                         class="hidden"
                         @change="onLogoFileChange"
                     />
@@ -57,9 +58,10 @@
         <div>
             <div class="flex flex-col items-center justify-center">
                 <div class="flex flex-col items-center gap-3 w-full">
-                    <label class="text-primary-800 font-semibold w-full">
-                        Banner Picture * (JPEG, PNG - Max 5MB)</label
-                    >
+                    <label class="text-primary-800 font-semibold"
+                        >Company Banner * <br />
+                        <span class="font-normal text-sm">(JPEG, PNG, WEBP - Max 5MB)</span>
+                    </label>
                     <button
                         class="w-full h-[5em] rounded-lg bg-gray-200 flex items-center justify-center text-4xl text-gray-500 outline-1 outline-primary overflow-hidden hover:cursor-pointer"
                         :class="{ 'border-2 border-error': errors.banner }"
@@ -80,7 +82,7 @@
                     <input
                         ref="bannerFileInputRef"
                         type="file"
-                        accept="image/jpeg,image/jpg,image/png"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
                         class="hidden"
                         @change="onBannerFileChange"
                     />
@@ -139,9 +141,9 @@ const validateField = (fieldName, value) => {
                 errors.companyLogo = "File size must be less than 5MB";
                 return false;
             }
-            const allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
+            const allowedTypes = ["image/jpeg", "image/png", "image/jpg", "impage/webp"];
             if (!allowedTypes.includes(value.type)) {
-                errors.companyLogo = "Only JPEG, JPG, and PNG files are allowed";
+                errors.companyLogo = "Only JPEG, JPG, PNG, and WEBP files are allowed";
                 return false;
             }
             errors.companyLogo = "";
@@ -156,9 +158,9 @@ const validateField = (fieldName, value) => {
                 errors.banner = "File size must be less than 5MB";
                 return false;
             }
-            const allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
+            const allowedTypes = ["image/jpeg", "image/png", "image/jpg", "impage/webp"];
             if (!allowedTypes.includes(value.type)) {
-                errors.banner = "Only JPEG, JPG, and PNG files are allowed";
+                errors.companyLogo = "Only JPEG, JPG, PNG, and WEBP files are allowed";
                 return false;
             }
             errors.banner = "";
@@ -169,10 +171,10 @@ const validateField = (fieldName, value) => {
         errors[fieldName] = "";
         return true;
     } catch (error) {
-        if (error.errors?.[0]?.message) {
-            errors[fieldName] = error.errors[0].message;
+        if (error instanceof z.ZodError) {
+            errors[fieldName] = error.issues[0]?.message || "Invalid value";
         } else {
-            errors[fieldName] = "Invalid value";
+            errors[fieldName] = "Unexpected Error Occured";
         }
         return false;
     }
