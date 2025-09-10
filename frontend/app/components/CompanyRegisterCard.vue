@@ -166,8 +166,11 @@ const onSubmit = async () => {
     isSubmitting.value = true;
 
     try {
+        if (!form.companyLogo || !form.banner) {
+            return;
+        }
         const formData = new FormData();
-        formData.append("name", form.companyName);
+        formData.append("username", form.companyName);
         formData.append("email", form.companyEmail);
         formData.append("password", form.password);
         formData.append("phone", form.phone);
@@ -175,12 +178,8 @@ const onSubmit = async () => {
         formData.append("city", form.city);
         formData.append("country", form.country);
         formData.append("about", form.about);
-        if (form.companyLogo) {
-            formData.append("logo", form.companyLogo);
-        }
-        if (form.banner) {
-            formData.append("banner", form.banner);
-        }
+        formData.append("photo", form.companyLogo);
+        formData.append("banner", form.banner);
 
         type authResponse = {
             token: string;
