@@ -24,7 +24,7 @@
             <div class="flex flex-col items-center justify-center">
                 <div class="flex flex-col items-center gap-3">
                     <label class="text-primary-800 font-semibold"
-                        >Company Logo * (JPEG, PNG - Max 1MB)</label
+                        >Company Logo * (JPEG, PNG - Max 5MB)</label
                     >
                     <button
                         class="size-[5em] rounded-full bg-gray-200 flex items-center justify-center text-4xl text-gray-500 outline-1 outline-primary overflow-hidden hover:cursor-pointer"
@@ -58,7 +58,7 @@
             <div class="flex flex-col items-center justify-center">
                 <div class="flex flex-col items-center gap-3 w-full">
                     <label class="text-primary-800 font-semibold w-full">
-                        Banner Picture * (JPEG, PNG - Max 1MB)</label
+                        Banner Picture * (JPEG, PNG - Max 5MB)</label
                     >
                     <button
                         class="w-full h-[5em] rounded-lg bg-gray-200 flex items-center justify-center text-4xl text-gray-500 outline-1 outline-primary overflow-hidden hover:cursor-pointer"

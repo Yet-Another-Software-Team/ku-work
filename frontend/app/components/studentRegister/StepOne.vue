@@ -51,7 +51,7 @@
             <div class="flex flex-col items-center justify-center">
                 <div class="flex flex-col items-center gap-3">
                     <label class="text-primary-800 font-semibold"
-                        >Profile Picture * (JPEG, PNG - Max 1MB)</label
+                        >Profile Picture * (JPEG, PNG - Max 5MB)</label
                     >
                     <button
                         class="size-[5em] rounded-full bg-gray-200 flex items-center justify-center text-4xl text-gray-500 outline-1 outline-primary overflow-hidden hover:cursor-pointer"
@@ -312,7 +312,7 @@ const updateLinkedinURL = (value) => {
 
 const onFileChange = (event) => {
     const file = event.target.files[0];
-    if (file && file.size <= ONE_MB) {
+    if (file && file.size <= FIVE_MB) {
         if (previewUrl.value) {
             URL.revokeObjectURL(previewUrl.value);
         }
