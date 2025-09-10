@@ -172,7 +172,7 @@ func CleanImageMetadata(filePath string) error {
 			return fmt.Errorf("could not encode png: %w", err)
 		}
 	case "webp":
-		if err := webp.Encode(tempFile, img, &webp.Options{Lossless: true}); err != nil {
+		if err := webp.Encode(tempFile, img, &webp.Options{Lossless: false}); err != nil {
 			_ = tempFile.Close()
 			return fmt.Errorf("could not encode webp: %w", err)
 		}
