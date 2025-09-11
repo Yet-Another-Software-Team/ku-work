@@ -43,7 +43,7 @@
                         ref="fileInput"
                         type="file"
                         class="hidden"
-                        accept=".pdf,image/png,image/jpeg"
+                        accept="application/pdf,image/png,image/jpeg,image/jpg"
                         multiple
                         @change="onPick"
                     />
@@ -251,7 +251,7 @@ function onDrop(e: DragEvent) {
 function addFiles(incoming: File[]) {
     let blockedReason = "";
     for (const f of incoming) {
-        const okType = /pdf|jpeg|jpg|png/i.test(f.type);
+        const okType = /\/(pdf|jpeg|jpg|png)$/i.test(f.type);
         const okSize = f.size <= 10 * 1024 * 1024;
         if (!okType) blockedReason = "Only PDF, PNG, JPG, and JPEG files are allowed";
         if (!okSize) blockedReason = "File size must be less than 10MB";
