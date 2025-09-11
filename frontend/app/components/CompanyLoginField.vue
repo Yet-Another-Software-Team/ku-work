@@ -61,6 +61,9 @@ type Schema = z.output<typeof schema>;
 
 type loginResponse = {
     token: string;
+    username: string;
+    isStudent: boolean;
+    isCompany: boolean;
 };
 
 const show = ref(false);
@@ -97,6 +100,12 @@ async function onSubmit(_: FormSubmitEvent<Schema>) {
         });
 
         localStorage.setItem("jwt_token", response.token);
+        localStorage.setItem("username", response.username);
+        if (response.isCompany) {
+            localStorage.setItem("role", "company");
+        } else if (response.isStudent) {
+            localStorage.setItem("role", "student");
+        }
 
         toast.add({
             title: "Success",

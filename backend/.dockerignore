@@ -13,3 +13,7 @@ docker-compose.yml
 # Ignore other Docker-related files
 Dockerfile
 .dockerignore
+
+# Ignore file folder
+file/**
+tests/file/**
