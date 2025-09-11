@@ -23,7 +23,7 @@
                 <ExpandedJobApplication
                     :is-viewer="false"
                     :is-selected="true"
-                    :data="jobs[selectedIndex % 3] || jobs[0]!"
+                    :data="jobs[selectedIndex % jobs.length] || jobs[0]"
                 />
             </section>
         </span>
