@@ -47,8 +47,12 @@
                 <!-- Salary Range -->
                 <div>
                     <h3 class="font-bold mb-2">Salary Range</h3>
-                    <input type="range" class="w-full accent-green-500" />
-                    <div class="text-sm text-right">$0-100</div>
+                    <USlider v-model="sliderValues" :max="maxSalary" :step="1000" class="w-full" />
+                    <div class="text-sm text-right pt-2">
+                        {{ formatSalary(sliderValues[0] ?? 0) }}
+                        -
+                        {{ formatSalary(sliderValues[1] ?? 0) }} ฿
+                    </div>
                 </div>
             </div>
         </transition>
@@ -70,7 +74,13 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
+const maxSalary = 2000000;
+const sliderValues = ref([0, 750000]);
 const showFilters = ref(false);
+
+function formatSalary(salary: number): string {
+    return new Intl.NumberFormat("en", { notation: "compact" }).format(salary);
+}
 </script>
 
 <style scoped>
