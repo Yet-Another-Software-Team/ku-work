@@ -51,11 +51,11 @@
 </template>
 
 <script setup lang="ts">
-import type { mockData } from "~/data/mockData";
+import type { mockUserData } from "~/data/mockData";
 
 const props = defineProps<{
     requestId: number;
-    data: typeof mockData;
+    data: typeof mockUserData;
 }>();
 
 const toast = useToast();
