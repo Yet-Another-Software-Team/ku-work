@@ -1,18 +1,12 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
-	"io/fs"
 	"ku-work/backend/model"
 	"mime/multipart"
 	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
