@@ -215,7 +215,6 @@ func TestJob(t *testing.T) {
 		assert.Equal(t, edited_job.MaxSalary, uint(100))
 	})
 	t.Run("Apply", func(t *testing.T) {
-
 		user := model.User{
 			Username: fmt.Sprintf("applyjobtester-%d", time.Now().UnixNano()),
 		}
