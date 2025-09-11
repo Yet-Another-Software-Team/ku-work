@@ -19,10 +19,10 @@
         </span>
         <span v-if="selectedIndex" class="flex">
             <USeparator orientation="vertical" class="w-fit mx-5" color="neutral" size="lg" />
-            <section v-for="index in totalJob" :key="index">
+            <section>
                 <ExpandedJobApplication
                     :is-viewer="false"
-                    :is-selected="selectedIndex === index"
+                    :is-selected="true"
                     :data="jobs[selectedIndex % 3] || jobs[0]!"
                 />
             </section>
