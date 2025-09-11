@@ -73,7 +73,7 @@
                 {{ data.description }}
             </p>
         </div>
-        <StudentApplyButton v-if="!isViewer" label="Apply"/>
+        <StudentApplyButton v-if="!isViewer" label="Apply" />
     </div>
 </template>
 

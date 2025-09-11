@@ -1,11 +1,7 @@
 <template>
     <!-- Button -->
     <!-- Need change when apply to job board -->
-    <UButton
-        class="w-full justify-center my-5 p-2 text-xl"
-        label="Apply"
-        @click="openForm"
-    />
+    <UButton class="w-full justify-center my-5 p-2 text-xl" label="Apply" @click="openForm" />
 
     <!-- Overlay -->
     <div
