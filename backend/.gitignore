@@ -1,5 +1,6 @@
 .env
 files/**
+tests/files/**
 .air.toml
 tmp/**
 .dbonly-compose.yml

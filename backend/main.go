@@ -15,6 +15,12 @@ import (
 func main() {
 	_ = godotenv.Load()
 
+	// Create files directory if it doesn't exist
+	if err := os.MkdirAll("./files", 0755); err != nil {
+		log.Printf("Failed to create files directory: %v", err)
+		return
+	}
+
 	db, db_err := database.LoadDB()
 	if db_err != nil {
 		log.Printf("%v", db_err)

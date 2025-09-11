@@ -106,20 +106,27 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	}
 
 	username := user.Username
+	isStudent := false
 
-	var oauthDetail model.GoogleOAuthDetails
-	if err := h.DB.Model(&oauthDetail).Where("id = ?", user.ID).First(&oauthDetail); err == nil {
-		username = oauthDetail.FirstName + " " + oauthDetail.LastName
+	var oauthCount int64
+	h.DB.Model(&model.GoogleOAuthDetails{}).Where("user_id = ?", user.ID).Count(&oauthCount)
+	if oauthCount > 0 {
+		var oauthDetail model.GoogleOAuthDetails
+		if err := h.DB.Model(&oauthDetail).Where("user_id = ?", user.ID).First(&oauthDetail); err == nil {
+			username = oauthDetail.FirstName + " " + oauthDetail.LastName
+		}
+
+		var sCount int64
+		h.DB.Model(&model.Student{}).Where("user_id = ? AND approved = ?", user.ID, true).Count(&sCount)
+		isStudent = sCount > 0
 	}
 
-	var sCount int64
-	h.DB.Model(&model.Student{}).Where("user_id = ? AND approved = ?", user.ID, true).Count(&sCount)
-	isStudent := sCount > 0
-
 	isCompany := false
-	// if !isStudent {
-	// 	// Add Company Check Here after implementation of Company model
-	// }
+	if !isStudent {
+		var cCount int64
+		h.DB.Model(&model.Company{}).Where("user_id = ?", user.ID).Count(&cCount)
+		isCompany = cCount > 0
+	}
 
 	ctx.SetCookie("refresh_token", newRefreshToken, int(time.Hour*24*30/time.Second), "/", "", true, true)
 

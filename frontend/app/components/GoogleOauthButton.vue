@@ -18,6 +18,9 @@ const toast = useToast();
 
 type loginResponse = {
     token: string;
+    username: string;
+    isStudent: boolean;
+    isCompany: boolean;
 };
 
 const login = async () => {
@@ -41,6 +44,12 @@ const login = async () => {
             });
 
             localStorage.setItem("jwt_token", response.token);
+            localStorage.setItem("username", response.username);
+            if (response.isCompany) {
+                localStorage.setItem("role", "company");
+            } else if (response.isStudent) {
+                localStorage.setItem("role", "student");
+            }
 
             toast.add({
                 title: "Login Successful",

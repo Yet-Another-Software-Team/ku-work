@@ -10,16 +10,21 @@ import (
 func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	// Initialize handlers
 	jwtHandler := NewJWTHandlers(db)
+	fileHandlers := NewFileHandlers(db)
 	localAuthHandlers := NewLocalAuthHandlers(db, jwtHandler)
 	googleAuthHandlers := NewOAuthHandlers(db, jwtHandler)
 	jobHandlers := NewJobHandlers(db)
-	studentHandler := NewStudentHandler(db)
+	studentHandler := NewStudentHandler(db, fileHandlers)
 
-	router.POST("/register", localAuthHandlers.RegisterHandler)
+	//Authentication Routes
+	router.POST("/admin/login", localAuthHandlers.CompanyLoginHandler)
+	router.POST("/company/register", localAuthHandlers.CompanyRegisterHandler)
+	router.POST("/company/login", localAuthHandlers.CompanyLoginHandler)
 	router.POST("/google/login", googleAuthHandlers.GoogleOauthHandler)
-	router.POST("/login", localAuthHandlers.LoginHandler)
 	router.POST("/refresh", jwtHandler.RefreshTokenHandler)
 	router.POST("/logout", jwtHandler.LogoutHandler)
+
+	router.GET("/files/:fileID", fileHandlers.ServeFile)
 
 	// Authentication Protected Routes
 	authed := router.Group("/", middlewares.AuthMiddleware(jwtHandler.JWTSecret))

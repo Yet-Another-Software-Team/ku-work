@@ -52,6 +52,8 @@ func LoadDB() (*gorm.DB, error) {
 		&model.RefreshToken{},
 		&model.Job{},
 		&model.Student{},
+		&model.Company{},
+		&model.File{},
 		&model.JobApplication{},
 	}
 

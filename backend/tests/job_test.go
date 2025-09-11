@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/magiconair/properties/assert"
 )
@@ -20,13 +21,14 @@ func TestJob(t *testing.T) {
 	t.Run("Create", func(t *testing.T) {
 		var user *model.User
 		var err error
-		if user, err = CreateAdminUser("createjobtester"); err != nil {
+		if user, err = CreateAdminUser(fmt.Sprintf("createjobtester-%d", time.Now().UnixNano())); err != nil {
 			t.Error(err)
 			return
 		}
 		w := httptest.NewRecorder()
-		payload := `{
-	"name": "testjob1",
+		jobName := fmt.Sprintf("testjob1-%d", time.Now().UnixNano())
+		payload := fmt.Sprintf(`{
+	"name": "%s",
 	"position": "testposition",
 	"duration": "forever",
 	"description": "ass",
@@ -35,7 +37,7 @@ func TestJob(t *testing.T) {
 	"experience": "internship",
 	"minsalary": 1,
 	"maxsalary": 2
-}`
+}`, jobName)
 		req, _ := http.NewRequest("POST", "/job", strings.NewReader(payload))
 		jwtHandler := handlers.NewJWTHandlers(db)
 		jwtToken, _, err := jwtHandler.GenerateTokens(user.ID)
@@ -65,7 +67,7 @@ func TestJob(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		assert.Equal(t, job.Name, "testjob1")
+		assert.Equal(t, job.Name, jobName)
 		assert.Equal(t, job.Position, "testposition")
 		assert.Equal(t, job.Duration, "forever")
 		assert.Equal(t, job.Description, "ass")
@@ -78,12 +80,12 @@ func TestJob(t *testing.T) {
 	t.Run("Edit", func(t *testing.T) {
 		var user *model.User
 		var err error
-		if user, err = CreateAdminUser("editjobtester"); err != nil {
+		if user, err = CreateAdminUser(fmt.Sprintf("editjobtester-%d", time.Now().UnixNano())); err != nil {
 			t.Error(err)
 			return
 		}
 		job := model.Job{
-			Name:        "nice job",
+			Name:        fmt.Sprintf("nice-job-%d", time.Now().UnixNano()),
 			CompanyID:   user.ID,
 			Position:    "software engineer",
 			Duration:    "6 months",
@@ -149,12 +151,12 @@ func TestJob(t *testing.T) {
 	t.Run("Approve", func(t *testing.T) {
 		var user *model.User
 		var err error
-		if user, err = CreateAdminUser("approvejobtester"); err != nil {
+		if user, err = CreateAdminUser(fmt.Sprintf("approvejobtester-%d", time.Now().UnixNano())); err != nil {
 			t.Error(err)
 			return
 		}
 		job := model.Job{
-			Name:        "nice job",
+			Name:        fmt.Sprintf("nice-job-%d", time.Now().UnixNano()),
 			CompanyID:   user.ID,
 			Position:    "software engineer",
 			Duration:    "6 months",
@@ -171,9 +173,7 @@ func TestJob(t *testing.T) {
 			return
 		}
 		w := httptest.NewRecorder()
-		payload := fmt.Sprintf(`{
-	"id": %d
-}`, job.ID)
+		payload := fmt.Sprintf(`{"id": %d}`, job.ID)
 		req, _ := http.NewRequest("POST", "/job/approve", strings.NewReader(payload))
 		jwtHandler := handlers.NewJWTHandlers(db)
 		jwtToken, _, err := jwtHandler.GenerateTokens(user.ID)
@@ -204,7 +204,7 @@ func TestJob(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		assert.Equal(t, edited_job.Name, "nice job")
+		assert.Equal(t, edited_job.Name, job.Name)
 		assert.Equal(t, edited_job.Position, "software engineer")
 		assert.Equal(t, edited_job.Duration, "6 months")
 		assert.Equal(t, edited_job.Description, "make software")
@@ -216,15 +216,29 @@ func TestJob(t *testing.T) {
 	})
 	t.Run("Apply", func(t *testing.T) {
 		user := model.User{
-			Username: "applyjobtester",
+			Username: fmt.Sprintf("applyjobtester-%d", time.Now().UnixNano()),
 		}
-		if result := db.Create(&user); result.Error != nil {
-			t.Error(result.Error)
+
+		if err := db.Create(&user).Error; err != nil {
+			t.Error(err)
+			return
+		}
+		// Create dummy files for photo and status photo
+		photoFile := model.File{UserID: user.ID, FileType: model.FileTypeJPEG, Category: model.FileCategoryImage}
+		if err := db.Create(&photoFile).Error; err != nil {
+			t.Error(err)
+			return
+		}
+		statusFile := model.File{UserID: user.ID, FileType: model.FileTypePDF, Category: model.FileCategoryImage}
+		if err := db.Create(&statusFile).Error; err != nil {
+			t.Error(err)
 			return
 		}
 		student := model.Student{
-			UserID:   user.ID,
-			Approved: true,
+			UserID:              user.ID,
+			Approved:            true,
+			PhotoID:             photoFile.ID,
+			StudentStatusFileID: statusFile.ID,
 		}
 		if result := db.Create(&student); result.Error != nil {
 			t.Error(result.Error)

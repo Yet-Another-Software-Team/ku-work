@@ -21,6 +21,8 @@ const logout = async () => {
             credentials: "include",
         });
         localStorage.removeItem("jwt_token");
+        localStorage.removeItem("username");
+        localStorage.removeItem("role");
 
         toast.add({
             title: "Logged Out",
