@@ -196,15 +196,19 @@ function validateField(fieldName: keyof typeof errors, value: unknown) {
     }
 
     try {
-        schema.pick({ [fieldName]: true as any }).parse({ [fieldName]: value });
+        schema.pick({ [fieldName]: true }).parse({ [fieldName]: value });
         if (typeof value === "string" && value.trim() === "") {
             errors[fieldName] = "This field is required";
             return false;
         }
         errors[fieldName] = "";
         return true;
-    } catch (e: any) {
-        errors[fieldName] = e?.errors?.[0]?.message || "Invalid value";
+    } catch (error: unknown) {
+        if (error instanceof z.ZodError) {
+            errors[fieldName] = error.issues[0]?.message ?? "Invalid value";
+        } else {
+            errors[fieldName] = "Invalid value";
+        }
         return false;
     }
 }
