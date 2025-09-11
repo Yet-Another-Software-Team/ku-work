@@ -12,7 +12,7 @@
             <section v-for="index in totalJob" :key="index">
                 <JobApplicationComponent
                     :is-selected="selectedIndex === index"
-                    :data="jobs[index % 3] || jobs[0]!"
+                    :data="jobs[index % jobs.length] || jobs[0]!"
                     @click="selectedIndex = index"
                 />
             </section>
