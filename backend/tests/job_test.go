@@ -17,39 +17,6 @@ import (
 	"github.com/magiconair/properties/assert"
 )
 
-func CreateAdminCompany(username string) (*model.Company, error) {
-	var user *model.User
-	var err error
-	if user, err = CreateAdminUser(fmt.Sprintf("createjobtester-%d", time.Now().UnixNano())); err != nil {
-		return nil, err
-	}
-	companyPhoto := model.File{
-		UserID:   user.ID,
-		FileType: model.FileTypePNG,
-		Category: model.FileCategoryDocument,
-	}
-	if err = db.Create(&companyPhoto).Error; err != nil {
-		return nil, err
-	}
-	companyBanner := model.File{
-		UserID:   user.ID,
-		FileType: model.FileTypePNG,
-		Category: model.FileCategoryDocument,
-	}
-	if err = db.Create(&companyBanner).Error; err != nil {
-		return nil, err
-	}
-	company := model.Company{
-		UserID:   user.ID,
-		BannerID: companyBanner.ID,
-		PhotoID:  companyPhoto.ID,
-	}
-	if err = db.Create(&company).Error; err != nil {
-		return nil, err
-	}
-	return &company, nil
-}
-
 func TestJob(t *testing.T) {
 	t.Run("Create", func(t *testing.T) {
 		var company *model.Company

@@ -24,11 +24,11 @@ func (h *CompanyHandlers) EditProfileHandler(ctx *gin.Context) {
 	userId := ctx.MustGet("userID").(string)
 	type CompanyEditProfileInput struct {
 		Phone   *string               `form:"phone" binding:"omitempty,max=20"`
-		Address *string               `form:"birthDate" binding:"omitempty,max=27"`
-		City    *string               `form:"aboutMe" binding:"omitempty,max=16384"`
-		Country *string               `form:"github" binding:"omitempty,max=256"`
-		Photo   *multipart.FileHeader `form:"photo"`
-		Banner  *multipart.FileHeader `form:"photo"`
+		Address *string               `form:"address" binding:"omitempty,max=512"`
+		City    *string               `form:"city" binding:"omitempty,max=128"`
+		Country *string               `form:"country" binding:"omitempty,max=128"`
+		Photo   *multipart.FileHeader `form:"photo" binding:"omitempty"`
+		Banner  *multipart.FileHeader `form:"banner" binding:"omitempty"`
 	}
 	input := CompanyEditProfileInput{}
 	err := ctx.MustBindWith(&input, binding.FormMultipart)
@@ -101,7 +101,7 @@ func (h *CompanyHandlers) GetProfileHandler(ctx *gin.Context) {
 		ID string `form:"id" binding:"max=64"`
 	}
 	input := CompanyGetProfileInput{}
-	err := ctx.MustBindWith(&input, binding.FormMultipart)
+	err := ctx.MustBindWith(&input, binding.Form)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -113,7 +113,5 @@ func (h *CompanyHandlers) GetProfileHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{
-		"company": company,
-	})
+	ctx.JSON(http.StatusOK, company)
 }
