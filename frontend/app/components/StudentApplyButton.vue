@@ -62,8 +62,7 @@
             <p class="text-[10px] text-neutral-400">
               PDF, PNG, JPG, JPEG (max 10MB each, 2 files)
             </p>
-            <p type="button" class="text-xs text-gray" @click="triggerPick">
-            </p>
+            <p type="button" class="text-xs text-gray" @click="triggerPick"></p>
           </div>
         </label>
 
@@ -274,7 +273,7 @@ function addFiles(incoming: File[]) {
         if (!okType) blockedReason = 'Only PDF, PNG, JPG, and JPEG files are allowed'
         if (!okSize) blockedReason = 'File size must be less than 10MB'
         if (okType && okSize && files.value.length < 2) {
-        files.value.push(f as FileLike)
+            files.value.push(f as FileLike)
         }
     }
     if (files.value.length === 0) {
@@ -285,38 +284,38 @@ function addFiles(incoming: File[]) {
 }
 
 function removeFile(idx: number) {
-  files.value.splice(idx, 1)
-  if (files.value.length === 0) errors.resumeFile = 'Resume file is required'
-  toast.add({
-    title: 'File removed',
-    description: 'Resume has been removed',
-    color: 'warning'
-  })
+    files.value.splice(idx, 1)
+    if (files.value.length === 0) errors.resumeFile = 'Resume file is required'
+    toast.add({
+        title: 'File removed',
+        description: 'Resume has been removed',
+        color: 'warning'
+    })
 }
 
 function onNext() {
-  const okPhone = validateField('contactPhone', contactPhone.value)
-  const okMail = validateField('contactMail', contactMail.value)
-  const okResume = validateField('resumeFile', null)
+    const okPhone = validateField('contactPhone', contactPhone.value)
+    const okMail = validateField('contactMail', contactMail.value)
+    const okResume = validateField('resumeFile', null)
 
-  if (!(okPhone && okMail && okResume)) return
+    if (!(okPhone && okMail && okResume)) return
 
-  currentStep.value = 2
-  toast.add({
-    title: 'Apply Successfully',
-    description: 'Your application response will be sent to your contact email',
-    color: 'success'
-  })
+    currentStep.value = 2
+    toast.add({
+        title: 'Apply Successfully',
+        description: 'Your application response will be sent to your contact email',
+        color: 'success'
+    })
 }
 
 function handleDone() {
-  contactPhone.value = ''
-  contactMail.value = ''
-  files.value = []
-  errors.contactPhone = ''
-  errors.contactMail = ''
-  errors.resumeFile = ''
-  currentStep.value = 1
-  closeForm()
+    contactPhone.value = ''
+    contactMail.value = ''
+    files.value = []
+    errors.contactPhone = ''
+    errors.contactMail = ''
+    errors.resumeFile = ''
+    currentStep.value = 1
+    closeForm()
 }
 </script>
