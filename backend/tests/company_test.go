@@ -110,6 +110,7 @@ func TestCompany(t *testing.T) {
 		assert.Equal(t, company.Address, "123 Test St")
 		assert.Equal(t, company.City, "Testville")
 		assert.Equal(t, company.Country, "Testland")
+		_ = db.Delete(&user)
 	})
 
 	t.Run("Duplicate Company Creation", func(t *testing.T) {
@@ -181,5 +182,6 @@ func TestCompany(t *testing.T) {
 			t.Fatal(err)
 		}
 		assert.Equal(t, result.Error, "Username already exists")
+		_ = db.Delete(&user)
 	})
 }

@@ -39,6 +39,7 @@ func (h *JobHandlers) CreateJob(ctx *gin.Context) {
 		Experience  string `json:"experience" binding:"required,oneof='newgrad' 'junior' 'senior' 'manager' 'internship'"`
 		MinSalary   uint   `json:"minsalary" binding:"required"`
 		MaxSalary   uint   `json:"maxsalary" binding:"required"`
+		Open        bool   `json:"open"`
 	}
 	input := CreateJobInput{}
 	err := ctx.Bind(&input)
@@ -50,9 +51,16 @@ func (h *JobHandlers) CreateJob(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "minsalary must be lower than or equal to maxsalary"})
 		return
 	}
+	company := model.Company{
+		UserID: userid,
+	}
+	if result := h.DB.First(&company); result.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
 	job := model.Job{
 		Name:        input.Name,
-		CompanyID:   userid,
+		CompanyID:   company.UserID,
 		Position:    input.Position,
 		Duration:    input.Duration,
 		Description: input.Description,
@@ -62,9 +70,9 @@ func (h *JobHandlers) CreateJob(ctx *gin.Context) {
 		MinSalary:   input.MinSalary,
 		MaxSalary:   input.MaxSalary,
 		IsApproved:  false,
+		IsOpen:      input.Open,
 	}
-	result := h.DB.Create(&job)
-	if result.Error != nil {
+	if result := h.DB.Create(&job); result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
@@ -75,14 +83,16 @@ func (h *JobHandlers) CreateJob(ctx *gin.Context) {
 
 func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 	type FetchJobsInput struct {
-		Limit      uint     `form:"limit" binding:"max=128"`
-		Offset     uint     `form:"offset" binding:"max=128"`
-		Location   string   `form:"location" binding:"max=128"`
-		Keyword    string   `form:"keyword" binding:"max=256"`
-		JobType    []string `form:"jobtype" binding:"max=5,dive,max=32"`
-		Experience []string `form:"experience" binding:"max=5,dive,max=32"`
-		MinSalary  uint     `form:"minsalary"`
-		MaxSalary  uint     `form:"maxsalary"`
+		Limit      uint     `json:"limit" form:"limit" binding:"max=128"`
+		Offset     uint     `json:"offset" form:"offset"`
+		Location   string   `json:"location" form:"location" binding:"max=128"`
+		Keyword    string   `json:"keyword" form:"keyword" binding:"max=256"`
+		JobType    []string `json:"jobtype" form:"jobtype" binding:"max=5,dive,max=32"`
+		Experience []string `json:"experience" form:"experience" binding:"max=5,dive,max=32"`
+		MinSalary  uint     `json:"minsalary" form:"minsalary"`
+		MaxSalary  uint     `json:"maxsalary" form:"maxsalary"`
+		Open       *bool    `json:"open" form:"open"`
+		CompanyID  *string  `json:"companyId" form:"companyId" binding:"omitempty,max=64"`
 	}
 	input := FetchJobsInput{
 		MinSalary: 0,
@@ -100,6 +110,14 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 	query = query.Where(h.DB.Where("name ILIKE ?", keywordPattern).Or("description ILIKE ?", keywordPattern))
 	query = query.Where("min_salary >= ?", input.MinSalary)
 	query = query.Where("max_salary <= ?", input.MaxSalary)
+	if input.CompanyID != nil {
+		query = query.Where("company_id = ?", *input.CompanyID)
+		if input.Open != nil {
+			query = query.Where("is_open = ?", *input.Open)
+		}
+	} else {
+		query = query.Where("is_open = ?", true)
+	}
 	if len(input.Location) != 0 {
 		query = query.Where("location = ?", input.Location)
 	}
@@ -111,7 +129,7 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 	}
 	query = query.Where(&model.Job{IsApproved: true})
 	query = query.Offset(int(input.Offset))
-	query = query.Limit(int(input.Limit))
+	query = query.Limit(int(input.Limit)).Preload("Company")
 	var jobs []model.Job
 	result := query.Find(&jobs)
 	if result.Error != nil {
@@ -141,6 +159,7 @@ func (h *JobHandlers) EditJob(ctx *gin.Context) {
 		Experience  *string `json:"experience" binding:"omitempty,oneof='newgrad' 'junior' 'senior' 'manager' 'internship'"`
 		MinSalary   *uint   `json:"minsalary" binding:"omitempty"`
 		MaxSalary   *uint   `json:"maxsalary" binding:"omitempty"`
+		Open        *bool   `json:"open" binding:"omitempty"`
 	}
 	var input EditJobInput
 	if err := ctx.ShouldBindJSON(&input); err != nil {
@@ -180,6 +199,9 @@ func (h *JobHandlers) EditJob(ctx *gin.Context) {
 	}
 	if input.JobType != nil {
 		job.JobType = model.JobType(*input.JobType)
+	}
+	if input.Open != nil {
+		job.IsOpen = *input.Open
 	}
 	if input.Experience != nil {
 		job.Experience = model.ExperienceType(*input.Experience)
@@ -277,45 +299,33 @@ func (h *JobHandlers) ApplyJob(ctx *gin.Context) {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "job is not approved yet"})
 		return
 	}
-
-	tx := h.DB.Begin()
-	defer tx.Rollback()
-
 	jobApplication := model.JobApplication{
 		UserID:   student.UserID,
 		JobID:    job.ID,
 		AltPhone: input.AltPhone,
 		AltEmail: input.AltEmail,
 	}
-
-	result = h.DB.Create(&jobApplication)
-	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
-		return
-	}
-
+	success := false
+	defer (func() {
+		if !success {
+			for _, file := range jobApplication.Files {
+				_ = h.DB.Delete(&file)
+			}
+		}
+	})()
 	for _, file := range input.Files {
-		fileID, err := SaveFile(ctx, tx, student.UserID, file, model.FileCategoryDocument)
+		fileObject, err := SaveFile(ctx, h.DB, student.UserID, file, model.FileCategoryDocument)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to save file %s: %s", file.Filename, err.Error())})
 			return
 		}
-		fileDBO := model.File{
-			ID: fileID,
-		}
-
-		updateResult := tx.Model(&fileDBO).Update("job_application_id", jobApplication.ID)
-		if updateResult.Error != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err})
-			return
-		}
+		jobApplication.Files = append(jobApplication.Files, *fileObject)
 	}
-
-	if err := tx.Commit().Error; err != nil {
-		ctx.String(http.StatusInternalServerError, err.Error())
+	if err := h.DB.Create(&jobApplication).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
-
+	success = true
 	ctx.JSON(http.StatusOK, gin.H{
 		"id": jobApplication.ID,
 	})
