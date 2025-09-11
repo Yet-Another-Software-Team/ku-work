@@ -77,7 +77,7 @@
               name="material-symbols:description"
               class="text-primary-600 mr-2"
             />
-            <span>{{ f.name }}</span>
+            <span>{{ truncateName(f.name, 25) }}</span>
             <span class="ml-2 text-gray-500"
               >({{ formatFileSize(f.size) }})</span
             >
@@ -292,6 +292,12 @@ function removeFile(idx: number) {
         color: 'warning'
     })
 }
+
+function truncateName(name: string, limit = 25): string {
+  if (!name) return ''
+  return name.length > limit ? name.slice(0, limit) + '...' : name
+}
+
 
 function onNext() {
     const okPhone = validateField('contactPhone', contactPhone.value)
