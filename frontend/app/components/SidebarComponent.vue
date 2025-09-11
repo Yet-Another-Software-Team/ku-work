@@ -74,7 +74,7 @@ function getSidebarItems(
         {
             label: "Job Board",
             icon: "ic:baseline-work",
-            to: "/jobboard",
+            to: "/jobs",
             disable: false,
         },
     ];

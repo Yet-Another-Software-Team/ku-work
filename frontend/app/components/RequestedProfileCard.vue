@@ -145,13 +145,13 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { mockData } from "~/data/mockData";
-import { multipleMockData } from "~/data/mockData";
+import type { mockUserData } from "~/data/mockData";
+import { multipleMockUserData } from "~/data/mockData";
 
 const route = useRoute();
 const query = route.query.id ?? 0;
-const data: typeof mockData =
-    multipleMockData[Number(query) % 3] ?? (multipleMockData[0] as typeof mockData);
+const data: typeof mockUserData =
+    multipleMockUserData[Number(query) % 3] ?? (multipleMockUserData[0] as typeof mockUserData);
 const toast = useToast();
 
 // Compute age
