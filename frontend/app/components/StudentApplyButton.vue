@@ -2,7 +2,7 @@
     <!-- Button -->
     <!-- Need change when apply to job board -->
     <UButton
-        class="size-fit text-xl rounded-md px-10 gap-2 font-small py-3 bg-primary-500 hover:bg-primary-700 hover:cursor-pointer active:bg-primary-800"
+        class="w-full justify-center my-5 p-2 text-xl"
         label="Apply"
         @click="openForm"
     />
