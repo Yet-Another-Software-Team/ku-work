@@ -73,13 +73,14 @@
                 {{ data.description }}
             </p>
         </div>
-        <UButton v-if="!isViewer" label="Apply" class="w-full justify-center my-5 p-2 text-xl" />
+        <StudentApplyButton v-if="!isViewer" label="Apply" />
     </div>
 </template>
 
 <script setup lang="ts">
 import { USeparator } from "#components";
 import type { JobApplication } from "~/data/mockData";
+import StudentApplyButton from "./StudentApplyButton.vue";
 
 defineProps<{
     data: JobApplication;

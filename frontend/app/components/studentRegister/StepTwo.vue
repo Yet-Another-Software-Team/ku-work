@@ -136,7 +136,7 @@
                 >
                     <div class="flex items-center">
                         <icon name="material-symbols:description" class="text-primary-600 mr-2" />
-                        <span>{{ verificationFileName }}</span>
+                        <span>{{ truncateName(verificationFileName, 30) }}</span>
                         <span class="ml-2 text-gray-500">({{ formatFileSize(fileSize) }})</span>
                     </div>
                     <UIcon
@@ -299,6 +299,11 @@ const onFileChange = (event: Event) => {
         validateField("verificationFile", file);
     }
 };
+
+function truncateName(name: string, limit = 30): string {
+    if (!name) return "";
+    return name.length > limit ? name.slice(0, limit) + "..." : name;
+}
 
 watch(
     () => props.verificationFile,
