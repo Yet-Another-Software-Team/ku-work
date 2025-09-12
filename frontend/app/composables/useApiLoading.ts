@@ -120,7 +120,7 @@ export const useApiLoading = () => {
     };
 
     // Auto cleanup stale requests every 30 seconds
-    if (process.client) {
+    if (import.meta.client) {
         setInterval(clearStaleRequests, 30000);
     }
 

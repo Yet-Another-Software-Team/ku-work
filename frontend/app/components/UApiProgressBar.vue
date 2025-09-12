@@ -23,22 +23,6 @@
                     />
                 </template>
             </UProgress>
-
-            <!-- Optional: Request Counter Badge -->
-            <UBadge
-                v-if="showRequestCount && requestCount > 0"
-                :color="color"
-                variant="soft"
-                size="xs"
-                :class="badgeClass"
-            >
-                {{ requestCount }} active request{{ requestCount !== 1 ? "s" : "" }}
-            </UBadge>
-
-            <!-- Optional: Loading Text -->
-            <div v-if="showLoadingText && loadingText" :class="textClass">
-                {{ loadingText }}
-            </div>
         </div>
     </Transition>
 </template>
@@ -68,7 +52,7 @@ const props = withDefaults(defineProps<Props>(), {
     variant: "default",
 });
 
-const { showProgress, progressValue, requestCount } = useApiLoading();
+const { showProgress, progressValue } = useApiLoading();
 
 // Container class based on variant and position
 const containerClass = computed(() => {
@@ -111,34 +95,6 @@ const progressClass = computed(() => {
     return classes.join(" ");
 });
 
-// Badge positioning classes
-const badgeClass = computed(() => {
-    const classes = ["absolute"];
-
-    if (props.variant === "floating") {
-        classes.push("top-2 right-2");
-    } else {
-        classes.push("top-2 right-4");
-    }
-
-    return classes.join(" ");
-});
-
-// Loading text classes
-const textClass = computed(() => {
-    const classes = [
-        "absolute text-xs font-medium",
-        `text-${props.color}-600 dark:text-${props.color}-400`,
-    ];
-
-    if (props.variant === "floating") {
-        classes.push("top-2 left-2");
-    } else {
-        classes.push("top-2 left-4");
-    }
-
-    return classes.join(" ");
-});
 </script>
 
 <style scoped>

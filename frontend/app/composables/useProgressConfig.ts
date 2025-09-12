@@ -1,23 +1,23 @@
 export interface ProgressConfig {
     color: string;
-    size: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-    position: 'top' | 'bottom';
-    variant: 'default' | 'floating' | 'embedded';
-    animation: 'carousel' | 'swing' | 'elastic' | 'pulse';
+    size: "xs" | "sm" | "md" | "lg" | "xl";
+    position: "top" | "bottom";
+    variant: "default" | "floating" | "embedded";
+    animation: "carousel" | "swing" | "elastic" | "pulse";
     showRequestCount: boolean;
     showLoadingText: boolean;
     loadingText: string;
 }
 
 const defaultConfig: ProgressConfig = {
-    color: 'secondary',
-    size: 'sm',
-    position: 'top',
-    variant: 'default',
-    animation: 'carousel',
+    color: "secondary",
+    size: "sm",
+    position: "top",
+    variant: "default",
+    animation: "carousel",
     showRequestCount: false,
     showLoadingText: false,
-    loadingText: 'Loading...'
+    loadingText: "Loading...",
 };
 
 // Global configuration state
@@ -29,13 +29,13 @@ export const useProgressConfig = () => {
 
     // Get theme-aware color based on current color mode
     const getThemeAwareColor = (baseColor: string): string => {
-        if (colorMode.value === 'dark') {
+        if (colorMode.value === "dark") {
             // Adjust colors for dark mode if needed
             switch (baseColor) {
-                case 'secondary':
-                    return 'secondary';
-                case 'primary':
-                    return 'primary';
+                case "secondary":
+                    return "secondary";
+                case "primary":
+                    return "primary";
                 default:
                     return baseColor;
             }
@@ -71,36 +71,36 @@ export const useProgressConfig = () => {
     // Preset configurations
     const presets = {
         minimal: {
-            color: 'secondary',
-            size: 'xs' as const,
-            variant: 'default' as const,
+            color: "secondary",
+            size: "xs" as const,
+            variant: "default" as const,
             showRequestCount: false,
-            showLoadingText: false
+            showLoadingText: false,
         },
         detailed: {
-            color: 'secondary',
-            size: 'sm' as const,
-            variant: 'floating' as const,
+            color: "secondary",
+            size: "sm" as const,
+            variant: "floating" as const,
             showRequestCount: true,
             showLoadingText: true,
-            loadingText: 'Processing request...'
+            loadingText: "Processing request...",
         },
         embedded: {
-            color: 'primary',
-            size: 'md' as const,
-            variant: 'embedded' as const,
+            color: "primary",
+            size: "md" as const,
+            variant: "embedded" as const,
             showRequestCount: false,
             showLoadingText: true,
-            loadingText: 'Loading content...'
+            loadingText: "Loading content...",
         },
         elegant: {
-            color: 'secondary',
-            size: 'sm' as const,
-            variant: 'floating' as const,
-            animation: 'swing' as const,
+            color: "secondary",
+            size: "sm" as const,
+            variant: "floating" as const,
+            animation: "swing" as const,
             showRequestCount: false,
-            showLoadingText: false
-        }
+            showLoadingText: false,
+        },
     };
 
     // Apply preset
@@ -110,8 +110,8 @@ export const useProgressConfig = () => {
 
     // Reactive getters
     const currentConfig = computed(() => getProgressConfig());
-    const isMinimalMode = computed(() =>
-        !currentConfig.value.showRequestCount && !currentConfig.value.showLoadingText
+    const isMinimalMode = computed(
+        () => !currentConfig.value.showRequestCount && !currentConfig.value.showLoadingText
     );
 
     return {
@@ -127,9 +127,9 @@ export const useProgressConfig = () => {
         getThemeAwareColor,
 
         // Presets
-        presets: readonly(presets)
+        presets: readonly(presets),
     };
 };
 
 // Export types
-export type { ProgressConfig };
+export type { ProgressConfig as ProgressConfigType };
