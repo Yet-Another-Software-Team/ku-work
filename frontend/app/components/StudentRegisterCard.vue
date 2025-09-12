@@ -126,6 +126,15 @@ const form = reactive({
     verificationFile: null as File | null,
 });
 
+onMounted(() => {
+    const username = localStorage.getItem("username");
+    const role = localStorage.getItem("role");
+    if (role != "viewer" || username == "" || username == null) {
+        navigateTo("/");
+    }
+    form.fullName = username || "";
+});
+
 const canProceedToNext = computed(() => {
     if (currentStep.value === 1 && stepOneRef.value) {
         return stepOneRef.value.isValid;

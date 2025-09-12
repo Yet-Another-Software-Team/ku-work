@@ -2,7 +2,7 @@
     <UButton
         class="size-fit text-xl rounded-md px-10 gap-2 font-medium py-3 bg-primary-500 hover:bg-primary-700 hover:cursor-pointer active:bg-primary-800"
         icon="cib:google"
-        label="Sign In with Google"
+        label="Continue with Google"
         :loading="isLoggingIn"
         @click="login"
     />
@@ -44,12 +44,17 @@ const login = async () => {
                 localStorage.setItem("role", "company");
             } else if (response.data.isStudent) {
                 localStorage.setItem("role", "student");
+            } else {
+                localStorage.setItem("role", "viewer");
             }
 
-            api.showSuccessToast(
-                "You have successfully logged in with Google.",
-                "Login Successful"
-            );
+            if (response.status == 201) {
+                // User is not registered, redirect to registration page
+                navigateTo("/register/student");
+            } else {
+                navigateTo("/jobs");
+            }
+
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             let description = "Failed to log in with Google.";
