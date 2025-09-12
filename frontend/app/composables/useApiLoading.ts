@@ -16,7 +16,7 @@ let progressTimer: NodeJS.Timeout | null = null;
 export const useApiLoading = () => {
     // Generate unique request ID
     const generateRequestId = (): string => {
-        return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     };
 
     // Computed values
