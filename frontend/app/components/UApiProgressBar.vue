@@ -94,7 +94,6 @@ const progressClass = computed(() => {
 
     return classes.join(" ");
 });
-
 </script>
 
 <style scoped>

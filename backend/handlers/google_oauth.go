@@ -170,7 +170,7 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 	if status == http.StatusOK {
 		// Check if user is a valid and approved student
 		var count int64
-		h.DB.Model(&model.Student{}).Where("user_id = ?", user.ID, true).Count(&count)
+		h.DB.Model(&model.Student{}).Where("user_id = ?", user.ID).Count(&count)
 		isRegistered = true
 		if count > 0 {
 			var student model.Student

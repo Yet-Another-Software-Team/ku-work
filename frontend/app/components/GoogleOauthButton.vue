@@ -23,12 +23,16 @@ const login = async () => {
 
     isLoggingIn.value = true;
 
+    interface oauthLoginResponse extends LoginResponse {
+        isRegistered: boolean;
+    }
+
     try {
         const oauth_response = await googleAuthCodeLogin();
 
         try {
             const api = useApi();
-            const response = await api.post<LoginResponse>(
+            const response = await api.post<oauthLoginResponse>(
                 "/google/login",
                 {
                     code: oauth_response.code,
@@ -40,6 +44,8 @@ const login = async () => {
 
             localStorage.setItem("jwt_token", response.data.token);
             localStorage.setItem("username", response.data.username);
+            localStorage.setItem("isRegistered", response.data.isRegistered.toString());
+
             if (response.data.isCompany) {
                 localStorage.setItem("role", "company");
             } else if (response.data.isStudent) {
@@ -49,7 +55,7 @@ const login = async () => {
             }
 
             if (response.status == 201) {
-                // User is not registered, redirect to registration page
+                // Account is new, navigate to registration page
                 navigateTo("/register/student");
             } else {
                 navigateTo("/jobs");
