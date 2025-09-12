@@ -100,9 +100,10 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed } from "vue";
+import { useApi } from "@/composables/useApi";
 
+const api = useApi();
 const toast = useToast();
-const config = useRuntimeConfig();
 const totalSteps = 3;
 const currentStep = ref(1);
 const isSubmitting = ref(false);
@@ -225,38 +226,13 @@ const onSubmit = async () => {
             formData.append("linkedIn", form.linkedinURL);
         }
 
-        await $fetch("/students/register", {
-            method: "POST",
-            baseURL: config.public.apiBaseUrl,
-            body: formData,
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        });
+        await api.postFormData("/students/register", formData);
 
         currentStep.value++;
-    } catch (error: unknown) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
         console.error("Submission error:", error);
-
-        let errorMessage = "There was an error submitting your registration. Please try again.";
-        const apiError = error as { status?: number; data?: { error?: string }; message?: string };
-
-        if (apiError.status === 401) {
-            errorMessage = "Authentication failed. Please try again.";
-            localStorage.removeItem("jwt_token");
-            navigateTo("/");
-            return;
-        } else if (apiError.status === 409) {
-            errorMessage = "Student registration already exists.";
-        } else if (apiError.data?.error) {
-            errorMessage = apiError.data.error;
-        }
-
-        toast.add({
-            title: "Submission Failed",
-            description: errorMessage,
-            color: "error",
-        });
+        api.showErrorToast(error, "Submission Failed");
     } finally {
         isSubmitting.value = false;
     }

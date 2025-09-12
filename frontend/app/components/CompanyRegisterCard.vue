@@ -87,9 +87,11 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed } from "vue";
+import { useApi, type AuthResponse } from "~/composables/useApi";
 
 const toast = useToast();
-const config = useRuntimeConfig();
+const api = useApi();
+
 const totalSteps = 3;
 const currentStep = ref(1);
 const isSubmitting = ref(false);
@@ -181,45 +183,23 @@ const onSubmit = async () => {
         formData.append("photo", form.companyLogo);
         formData.append("banner", form.banner);
 
-        type authResponse = {
-            token: string;
-            username: string;
-            isCompany: boolean;
-            isStudent: boolean;
-        };
+        const response = await api.postFormData<AuthResponse>("/company/register", formData);
 
-        const response: authResponse = await $fetch("/company/register", {
-            method: "POST",
-            baseURL: config.public.apiBaseUrl,
-            body: formData,
-        });
-
-        if (response.token) {
-            localStorage.setItem("jwt_token", response.token);
-            localStorage.setItem("username", response.username);
-            if (response.isCompany) {
+        if (response.data.token) {
+            localStorage.setItem("jwt_token", response.data.token);
+            localStorage.setItem("username", response.data.username as string);
+            if (response.data.isCompany) {
                 localStorage.setItem("role", "company");
-            } else if (response.isStudent) {
+            } else if (response.data.isStudent) {
                 localStorage.setItem("role", "student");
             }
         }
 
         currentStep.value++;
-    } catch (error: unknown) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
         console.error("Submission error:", error);
-
-        let errorMessage = "There was an error submitting your registration. Please try again.";
-        const apiError = error as { status?: number; data?: { error?: string }; message?: string };
-
-        if (apiError.data?.error) {
-            errorMessage = apiError.data.error;
-        }
-
-        toast.add({
-            title: "Submission Failed",
-            description: errorMessage,
-            color: "error",
-        });
+        api.showErrorToast(error, "Submission Failed");
     } finally {
         isSubmitting.value = false;
     }

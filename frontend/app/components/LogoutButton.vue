@@ -10,16 +10,21 @@
 </template>
 
 <script setup lang="ts">
-const config = useRuntimeConfig();
+import { useApi } from "~/composables/useApi";
+
 const toast = useToast();
 
 const logout = async () => {
     try {
-        const _ = await $fetch("/logout", {
-            method: "POST",
-            baseURL: config.public.apiBaseUrl,
-            credentials: "include",
-        });
+        const api = useApi();
+        await api.post(
+            "/logout",
+            {},
+            {
+                withCredentials: true,
+            }
+        );
+
         localStorage.removeItem("jwt_token");
         localStorage.removeItem("username");
         localStorage.removeItem("role");
