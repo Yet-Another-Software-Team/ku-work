@@ -166,19 +166,29 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 
 	username := oauthDetail.FirstName + " " + oauthDetail.LastName
 	isStudent := false
-
+	isRegistered := false
 	if status == http.StatusOK {
 		// Check if user is a valid and approved student
 		var count int64
-		h.DB.Model(&model.Student{}).Where("user_id = ? AND approved = ?", user.ID, true).Count(&count)
-		isStudent = count > 0
+		h.DB.Model(&model.Student{}).Where("user_id = ?", user.ID).Count(&count)
+		isRegistered = true
+		if count > 0 {
+			var student model.Student
+			h.DB.Model(&student).Where("user_id = ?", user.ID).First(&student)
+			if student.Approved {
+				isStudent = true
+			} else {
+				isStudent = false
+			}
+		}
 	}
 
 	ctx.JSON(status, gin.H{
-		"token":     jwtToken,
-		"username":  username,
-		"isCompany": false, // Company doesn't have OAuth Login option
-		"isStudent": isStudent,
+		"token":        jwtToken,
+		"username":     username,
+		"isCompany":    false, // Company doesn't have OAuth Login option
+		"isStudent":    isStudent,
+		"isRegistered": isRegistered, // To tell frontend whether user is registered or not
 	})
 
 }
