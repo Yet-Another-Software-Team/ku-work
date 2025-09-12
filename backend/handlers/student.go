@@ -39,14 +39,14 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 		Photo             *multipart.FileHeader `form:"photo" binding:"required"`
 		StudentStatusFile *multipart.FileHeader `form:"statusPhoto" binding:"required"`
 	}
-	
+
 	var count int64
 	h.DB.Model(&model.Student{}).Where("user_id = ?", userId).Count(&count)
 	if count > 0 {
 		ctx.JSON(http.StatusConflict, gin.H{"error": "user already registered to be student"})
 		return
 	}
-	
+
 	input := StudentRegistrationInput{}
 	err := ctx.MustBindWith(&input, binding.FormMultipart)
 	if err != nil {

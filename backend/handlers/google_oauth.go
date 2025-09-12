@@ -182,14 +182,12 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 			}
 		}
 	}
-	
-	
 
 	ctx.JSON(status, gin.H{
-		"token":     jwtToken,
-		"username":  username,
-		"isCompany": false, // Company doesn't have OAuth Login option
-		"isStudent": isStudent,
+		"token":        jwtToken,
+		"username":     username,
+		"isCompany":    false, // Company doesn't have OAuth Login option
+		"isStudent":    isStudent,
 		"isRegistered": isRegistered, // To tell frontend whether user is registered or not
 	})
 
