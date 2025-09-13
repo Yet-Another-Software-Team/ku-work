@@ -26,7 +26,9 @@ func (company *Company) BeforeDelete(tx *gorm.DB) (err error) {
 	newCompany := Company{
 		UserID: company.UserID,
 	}
-	tx.Preload("Photo").Preload("Banner").First(&newCompany)
+	if err := tx.Preload("Photo").Preload("Banner").First(&newCompany).Error; err != nil {
+		return err
+	}
 	if err := newCompany.Photo.AfterDelete(tx); err != nil {
 		return err
 	}

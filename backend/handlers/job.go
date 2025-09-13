@@ -322,7 +322,7 @@ func (h *JobHandlers) ApplyJob(ctx *gin.Context) {
 		jobApplication.Files = append(jobApplication.Files, *fileObject)
 	}
 	if err := h.DB.Create(&jobApplication).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	success = true
