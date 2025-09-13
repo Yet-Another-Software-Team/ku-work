@@ -17,6 +17,32 @@ type User struct {
 	PasswordHash string
 }
 
+func (user *User) BeforeDelete(tx *gorm.DB) (err error) {
+	company := Company{
+		UserID: user.ID,
+	}
+	result := tx.Limit(1).Find(&company)
+	if result.Error != nil {
+		return result.Error
+	} else if result.RowsAffected != 0 {
+		if err := company.BeforeDelete(tx); err != nil {
+			return err
+		}
+	}
+	student := Student{
+		UserID: user.ID,
+	}
+	result = tx.Limit(1).Find(&student)
+	if result.Error != nil {
+		return result.Error
+	} else if result.RowsAffected != 0 {
+		if err := student.BeforeDelete(tx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // Represents a user's Google OAuth details.
 type GoogleOAuthDetails struct {
 	UserID     string `gorm:"type:uuid;foreignkey:UserID;primarykey"`

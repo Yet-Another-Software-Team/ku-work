@@ -81,13 +81,13 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 	}
 
 	// Create Company
-	photoID, err := SaveFile(ctx, tx, newUser.ID, req.Photo, model.FileCategoryImage)
+	photo, err := SaveFile(ctx, tx, newUser.ID, req.Photo, model.FileCategoryImage)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	bannerID, err := SaveFile(ctx, tx, newUser.ID, req.Banner, model.FileCategoryImage)
+	banner, err := SaveFile(ctx, tx, newUser.ID, req.Banner, model.FileCategoryImage)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -97,8 +97,8 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 		UserID:   newUser.ID,
 		Email:    req.Email,
 		Phone:    req.Phone,
-		PhotoID:  photoID,
-		BannerID: bannerID,
+		PhotoID:  photo.ID,
+		BannerID: banner.ID,
 		Address:  req.Address,
 		City:     req.City,
 		Country:  req.Country,

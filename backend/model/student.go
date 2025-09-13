@@ -4,16 +4,17 @@ import (
 	"time"
 
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 type Student struct {
 	UserID              string           `gorm:"type:uuid;primarykey" json:"id"`
-	User                User             `gorm:"foreignKey:UserID" json:"-"`
+	User                User             `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE;" json:"-"`
 	Approved            bool             `json:"approved"`
 	CreatedAt           time.Time        `json:"created"`
 	Phone               string           `json:"phone"`
 	PhotoID             string           `gorm:"type:uuid" json:"photoId"`
-	Photo               File             `gorm:"foreignKey:PhotoID" json:"photo,omitempty"`
+	Photo               File             `gorm:"foreignKey:PhotoID;constraint:OnDelete:CASCADE;" json:"photo,omitempty"`
 	BirthDate           datatypes.Date   `json:"birthDate"`
 	AboutMe             string           `json:"aboutMe"`
 	GitHub              string           `json:"github"`
@@ -22,6 +23,27 @@ type Student struct {
 	Major               string           `json:"major"`
 	StudentStatus       string           `json:"status"`
 	StudentStatusFileID string           `gorm:"type:uuid" json:"statusFileId"`
-	StudentStatusFile   File             `gorm:"foreignKey:StudentStatusFileID" json:"statusFile,omitempty"`
-	JobApplications     []JobApplication `gorm:"foreignkey:UserID" json:"-"`
+	StudentStatusFile   File             `gorm:"foreignKey:StudentStatusFileID;constraint:OnDelete:CASCADE;" json:"statusFile,omitempty"`
+	JobApplications     []JobApplication `gorm:"foreignkey:UserID;constraint:OnDelete:CASCADE;" json:"-"`
+}
+
+func (student *Student) BeforeDelete(tx *gorm.DB) (err error) {
+	newStudent := Student{
+		UserID: student.UserID,
+	}
+	if err := tx.Preload("Photo").Preload("StudentStatusFile").Preload("JobApplications").First(&newStudent).Error; err != nil {
+		return err
+	}
+	for _, application := range newStudent.JobApplications {
+		if err := application.BeforeDelete(tx); err != nil {
+			return err
+		}
+	}
+	if err := newStudent.Photo.AfterDelete(tx); err != nil {
+		return err
+	}
+	if err := newStudent.StudentStatusFile.AfterDelete(tx); err != nil {
+		return err
+	}
+	return nil
 }

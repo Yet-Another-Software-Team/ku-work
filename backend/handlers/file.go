@@ -41,59 +41,59 @@ func NewFileHandlers(db *gorm.DB) *FileHandlers {
 
 // SaveFile saves a file to disk and creates a File record in the database
 // Returns the file ID for referencing in other models
-func SaveFile(ctx *gin.Context, db *gorm.DB, userId string, file *multipart.FileHeader, fileCategory model.FileCategory) (string, error) {
+func SaveFile(ctx *gin.Context, db *gorm.DB, userId string, file *multipart.FileHeader, fileCategory model.FileCategory) (*model.File, error) {
 	// Validate file category
 	isValidCategory := fileCategory == model.FileCategoryImage || fileCategory == model.FileCategoryDocument
 	if !isValidCategory {
-		return "", fmt.Errorf("invalid file category: %s", fileCategory)
+		return nil, fmt.Errorf("invalid file category: %s", fileCategory)
 	}
 
 	fileType, err := ExtractFileType(file.Filename)
 	if err != nil {
-		return "", fmt.Errorf("unsupported file type: %s", err)
+		return nil, fmt.Errorf("unsupported file type: %s", err)
 	}
 
 	// Check Docs file size
 	if fileCategory == model.FileCategoryDocument && file.Size > MAX_DOCS_SIZE {
-		return "", fmt.Errorf("file size exceeds limit")
+		return nil, fmt.Errorf("file size exceeds limit")
 	} else if fileCategory == model.FileCategoryImage {
 		// Check Image file size
 		if file.Size > MAX_IMAGE_SIZE {
-			return "", fmt.Errorf("image file size exceeds limit of 5MB")
+			return nil, fmt.Errorf("image file size exceeds limit of 5MB")
 		}
 
 		// Check Image dimensions
 		src, err := file.Open()
 		if err != nil {
-			return "", fmt.Errorf("could not open image file to check dimensions: %w", err)
+			return nil, fmt.Errorf("could not open image file to check dimensions: %w", err)
 		}
 		defer func() { _ = src.Close() }()
 
 		config, _, err := image.DecodeConfig(src)
 		if err != nil {
-			return "", fmt.Errorf("invalid image file: could not read dimensions")
+			return nil, fmt.Errorf("invalid image file: could not read dimensions")
 		}
 
 		if config.Width > MAX_IMAGE_WIDTH || config.Height > MAX_IMAGE_HEIGHT {
-			return "", fmt.Errorf("image dimensions exceed the maximum limit of %dx%d pixels", MAX_IMAGE_WIDTH, MAX_IMAGE_HEIGHT)
+			return nil, fmt.Errorf("image dimensions exceed the maximum limit of %dx%d pixels", MAX_IMAGE_WIDTH, MAX_IMAGE_HEIGHT)
 		}
 	}
 
-	fileRecord := model.File{
+	fileRecord := &model.File{
 		UserID:   userId,
 		FileType: fileType,
 		Category: fileCategory,
 	}
 
-	if err := db.Create(&fileRecord).Error; err != nil {
-		return "", fmt.Errorf("failed to create file record: %s", err)
+	if err := db.Create(fileRecord).Error; err != nil {
+		return nil, fmt.Errorf("failed to create file record: %s", err)
 	}
 
 	filePath := filepath.Join("./files", fileRecord.ID)
 
 	if err := ctx.SaveUploadedFile(file, filePath); err != nil {
-		db.Delete(&fileRecord)
-		return "", fmt.Errorf("failed to save file to disk: %s", err)
+		db.Delete(fileRecord)
+		return nil, fmt.Errorf("failed to save file to disk: %s", err)
 	}
 
 	if fileCategory == model.FileCategoryImage {
@@ -103,7 +103,7 @@ func SaveFile(ctx *gin.Context, db *gorm.DB, userId string, file *multipart.File
 		}
 	}
 
-	return fileRecord.ID, nil
+	return fileRecord, nil
 }
 
 func ExtractFileType(filename string) (model.FileType, error) {

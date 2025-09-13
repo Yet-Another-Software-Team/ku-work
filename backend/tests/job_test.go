@@ -19,12 +19,15 @@ import (
 
 func TestJob(t *testing.T) {
 	t.Run("Create", func(t *testing.T) {
-		var user *model.User
+		var company *model.Company
 		var err error
-		if user, err = CreateAdminUser(fmt.Sprintf("createjobtester-%d", time.Now().UnixNano())); err != nil {
+		if company, err = CreateAdminCompany(fmt.Sprintf("createjobtester-%d", time.Now().UnixNano())); err != nil {
 			t.Error(err)
 			return
 		}
+		defer (func() {
+			_ = db.Delete(&company)
+		})()
 		w := httptest.NewRecorder()
 		jobName := fmt.Sprintf("testjob1-%d", time.Now().UnixNano())
 		payload := fmt.Sprintf(`{
@@ -40,7 +43,7 @@ func TestJob(t *testing.T) {
 }`, jobName)
 		req, _ := http.NewRequest("POST", "/job", strings.NewReader(payload))
 		jwtHandler := handlers.NewJWTHandlers(db)
-		jwtToken, _, err := jwtHandler.GenerateTokens(user.ID)
+		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
 		if err != nil {
 			t.Error(err)
 			return
@@ -78,15 +81,18 @@ func TestJob(t *testing.T) {
 		assert.Equal(t, job.MaxSalary, uint(2))
 	})
 	t.Run("Edit", func(t *testing.T) {
-		var user *model.User
+		var company *model.Company
 		var err error
-		if user, err = CreateAdminUser(fmt.Sprintf("editjobtester-%d", time.Now().UnixNano())); err != nil {
+		if company, err = CreateAdminCompany(fmt.Sprintf("createjobtester-%d", time.Now().UnixNano())); err != nil {
 			t.Error(err)
 			return
 		}
+		defer (func() {
+			_ = db.Delete(&company)
+		})()
 		job := model.Job{
 			Name:        fmt.Sprintf("nice-job-%d", time.Now().UnixNano()),
-			CompanyID:   user.ID,
+			CompanyID:   company.UserID,
 			Position:    "software engineer",
 			Duration:    "6 months",
 			Description: "make software",
@@ -110,7 +116,7 @@ func TestJob(t *testing.T) {
 }`, job.ID)
 		req, _ := http.NewRequest("PATCH", "/job", strings.NewReader(payload))
 		jwtHandler := handlers.NewJWTHandlers(db)
-		jwtToken, _, err := jwtHandler.GenerateTokens(user.ID)
+		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
 		if err != nil {
 			t.Error(err)
 			return
@@ -148,16 +154,70 @@ func TestJob(t *testing.T) {
 		assert.Equal(t, edited_job.MinSalary, uint(10))
 		assert.Equal(t, edited_job.MaxSalary, uint(100))
 	})
-	t.Run("Approve", func(t *testing.T) {
-		var user *model.User
+	t.Run("Fetch", func(t *testing.T) {
+		var company *model.Company
 		var err error
-		if user, err = CreateAdminUser(fmt.Sprintf("approvejobtester-%d", time.Now().UnixNano())); err != nil {
+		if company, err = CreateAdminCompany(fmt.Sprintf("createjobtester-%d", time.Now().UnixNano())); err != nil {
 			t.Error(err)
 			return
 		}
+		defer (func() {
+			_ = db.Delete(&company)
+		})()
 		job := model.Job{
 			Name:        fmt.Sprintf("nice-job-%d", time.Now().UnixNano()),
-			CompanyID:   user.ID,
+			CompanyID:   company.UserID,
+			Position:    "software engineer",
+			Duration:    "6 months",
+			Description: "make software",
+			Location:    "bangkok",
+			JobType:     model.JobTypeInternship,
+			Experience:  model.ExperienceInternship,
+			MinSalary:   10,
+			MaxSalary:   100,
+			IsOpen:      true,
+			IsApproved:  true,
+		}
+		err = db.Create(&job).Error
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/job?keyword=nice", strings.NewReader(""))
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		router.ServeHTTP(w, req)
+		assert.Equal(t, w.Code, 200)
+		type Result struct {
+			Jobs  []model.Job `json:"jobs"`
+			Error string      `json:"error"`
+		}
+		result := Result{}
+		err = json.Unmarshal(w.Body.Bytes(), &result)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if result.Error != "" {
+			t.Error(result.Error)
+			return
+		}
+		assert.Equal(t, len(result.Jobs), 1)
+		assert.Equal(t, result.Jobs[0].Position, "software engineer")
+	})
+	t.Run("Approve", func(t *testing.T) {
+		var company *model.Company
+		var err error
+		if company, err = CreateAdminCompany(fmt.Sprintf("createjobtester-%d", time.Now().UnixNano())); err != nil {
+			t.Error(err)
+			return
+		}
+		defer (func() {
+			_ = db.Delete(&company)
+		})()
+		job := model.Job{
+			Name:        fmt.Sprintf("nice-job-%d", time.Now().UnixNano()),
+			CompanyID:   company.UserID,
 			Position:    "software engineer",
 			Duration:    "6 months",
 			Description: "make software",
@@ -176,7 +236,7 @@ func TestJob(t *testing.T) {
 		payload := fmt.Sprintf(`{"id": %d}`, job.ID)
 		req, _ := http.NewRequest("POST", "/job/approve", strings.NewReader(payload))
 		jwtHandler := handlers.NewJWTHandlers(db)
-		jwtToken, _, err := jwtHandler.GenerateTokens(user.ID)
+		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
 		if err != nil {
 			t.Error(err)
 			return
@@ -215,14 +275,25 @@ func TestJob(t *testing.T) {
 		assert.Equal(t, edited_job.MaxSalary, uint(100))
 	})
 	t.Run("Apply", func(t *testing.T) {
+		var company *model.Company
+		var err error
+		if company, err = CreateAdminCompany(fmt.Sprintf("applyjobtestercom-%d", time.Now().UnixNano())); err != nil {
+			t.Error(err)
+			return
+		}
+		defer (func() {
+			_ = db.Delete(&company)
+		})()
 		user := model.User{
 			Username: fmt.Sprintf("applyjobtester-%d", time.Now().UnixNano()),
 		}
-
 		if err := db.Create(&user).Error; err != nil {
 			t.Error(err)
 			return
 		}
+		defer (func() {
+			_ = db.Delete(&user)
+		})()
 		// Create dummy files for photo and status photo
 		photoFile := model.File{UserID: user.ID, FileType: model.FileTypeJPEG, Category: model.FileCategoryImage}
 		if err := db.Create(&photoFile).Error; err != nil {
@@ -245,7 +316,7 @@ func TestJob(t *testing.T) {
 			return
 		}
 		job := model.Job{
-			CompanyID:  user.ID,
+			CompanyID:  company.UserID,
 			IsApproved: true,
 		}
 		if result := db.Create(&job); result.Error != nil {
@@ -272,7 +343,6 @@ func TestJob(t *testing.T) {
 			}
 		}
 		var fiw io.Writer
-		var err error
 		if fiw, err = fw.CreateFormFile("files", "cv.pdf"); err != nil {
 			t.Error(err)
 			return

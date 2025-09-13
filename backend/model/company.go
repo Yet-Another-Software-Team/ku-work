@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Company struct {
@@ -17,4 +19,21 @@ type Company struct {
 	Address   string    `json:"address"`
 	City      string    `json:"city"`
 	Country   string    `json:"country"`
+	Jobs      []Job     `gorm:"foreignkey:CompanyID;constraint:OnDelete:CASCADE;" json:"-"`
+}
+
+func (company *Company) BeforeDelete(tx *gorm.DB) (err error) {
+	newCompany := Company{
+		UserID: company.UserID,
+	}
+	if err := tx.Preload("Photo").Preload("Banner").First(&newCompany).Error; err != nil {
+		return err
+	}
+	if err := newCompany.Photo.AfterDelete(tx); err != nil {
+		return err
+	}
+	if err := newCompany.Banner.AfterDelete(tx); err != nil {
+		return err
+	}
+	return nil
 }
