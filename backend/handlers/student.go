@@ -62,7 +62,7 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	statusPhoto, err := SaveFile(ctx, tx, userId, input.StudentStatusFile, model.FileCategoryImage)
+	statusPhoto, err := SaveFile(ctx, tx, userId, input.StudentStatusFile, model.FileCategoryDocument)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
