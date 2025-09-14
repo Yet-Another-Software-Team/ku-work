@@ -20,11 +20,11 @@
             <span class="mx-3 space-y-1">
                 <h1 class="text-xl font-bold">{{ data.position }}</h1>
                 <span>
-                    <a href="/jobs/company">
+                    <NuxtLink to="/jobs/company">
                         <h2 class="text-[#15543A] text-md font-semibold">
                             {{ data.name }}
                         </h2>
-                    </a>
+                    </NuxtLink>
                     <p class="text-xs">{{ timeAgo(data.createdAt) }}</p>
                 </span>
             </span>
