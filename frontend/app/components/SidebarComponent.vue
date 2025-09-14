@@ -1,6 +1,9 @@
 <template>
     <section class="min-w-64">
-        <div v-if="loading" class="fixed inset-0 flex items-center justify-center bg-white z-50" />
+        <div
+            v-if="loading"
+            class="fixed inset-0 flex items-center justify-center bg-white z-50"
+        ></div>
         <!-- Sidebar toggle with button (mobile, ipad, small screens) -->
         <USlideover
             side="left"
