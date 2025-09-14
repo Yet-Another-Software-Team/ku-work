@@ -1,56 +1,99 @@
 <template>
-    <div class="flex">
-        <!-- Main Content -->
-        <main class="flex-1 p-8 overflow-y-auto">
-            <h2 class="text-3xl font-bold text-green-700 mb-6">Profile</h2>
+    <div class="rounded-lg">
+        <!-- Header -->
+        <h1 class="text-5xl text-primary-800 dark:text-primary font-bold mb-6">Profile</h1>
+        <!-- Banner -->
+        <div class="bg-gray-300 h-32 rounded-t-lg relative overflow-hidden">
+            <img :src="data.profile.banner" alt="Banner" />
+        </div>
 
-            <!-- Banner -->
-            <div class="bg-gray-300 h-32 rounded-lg relative overflow-hidden -z-1">
-                <!-- Banner image placeholder -->
+        <!-- Top Section -->
+        <div class="flex flex-wrap relative">
+            <!-- Profile Image -->
+            <div class="w-[12em] mr-5 -mt-20">
+                <div v-if="data.profile.logo" class="w-40 h-40 flex-shrink-0">
+                    <img
+                        :src="data.profile.logo"
+                        alt="Profile photo"
+                        class="w-40 h-40 object-cover rounded-full justify-center items-center m-2"
+                    />
+                </div>
+                <div v-else class="flex items-center justify-center w-40 h-40 flex-shrink-0">
+                    <Icon name="ic:baseline-account-circle" class="size-full" />
+                </div>
             </div>
 
-            <!-- Company Info -->
-            <div class="flex items-center gap-4 -mt-10 mb-6">
-                <div class="w-24 h-24 rounded-full bg-gray-400 border-4 border-white"></div>
-                <div>
-                    <h3 class="text-xl font-bold">Roblox Corp.</h3>
-                    <p class="text-gray-600">San Mateo, CA, United States</p>
-                </div>
-                <div class="ml-auto">
-                    <UButton label="Edit Profile" variant="outline" />
-                </div>
+            <!-- Info -->
+            <div class="text-xl">
+                <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">
+                    {{ data.profile.name }}
+                </h2>
+                <p class="text-gray-600 dark:text-gray-300">
+                    {{ data.profile.address }}
+                </p>
             </div>
 
-            <hr class="my-6" />
+            <!-- Edit Button -->
+            <button
+                class="px-4 py-2 border border-gray-400 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center mt-4 ml-auto mb-auto"
+            >
+                <Icon name="material-symbols:edit-square-outline-rounded" class="size-[1.5em]" />
+                Edit Profile
+            </button>
+        </div>
 
-            <!-- Contact + About -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <!-- Contact -->
-                <div>
-                    <h4 class="font-bold mb-2">Contact</h4>
-                    <p class="flex items-center gap-2 text-gray-700">
-                        <Icon name="ic:baseline-link" />
-                        <a href="https://www.roblox.com" class="text-blue-600 hover:underline"
-                            >https://www.roblox.com</a
+        <!-- Divider -->
+        <hr class="my-6 border-gray-300 dark:border-gray-600" />
+
+        <!-- Bottom Section -->
+        <div class="flex flex-wrap md:flex-nowrap text-xl">
+            <!-- Connections -->
+            <div class="w-[12rem] mr-5 mb-5">
+                <h3 class="font-semibold text-gray-800 dark:text-white mb-2">Connections</h3>
+                <ul class="space-y-2 text-primary-600">
+                    <li>
+                        <a
+                            :href="data.profile.website"
+                            target="_blank"
+                            class="flex items-center gap-2 hover:underline"
                         >
-                    </p>
-                    <p class="flex items-center gap-2 text-gray-700 mt-2">
-                        <Icon name="ic:baseline-email" /> roblox.kid@co.com
-                    </p>
-                </div>
-
-                <!-- About -->
-                <div>
-                    <h4 class="font-bold mb-2">About us</h4>
-                    <p class="text-gray-600 text-sm leading-relaxed">
-                        Lorem ipsum dolor sit amet consectetur adipiscing elit. Amet consectetur
-                        adipiscing elit quisque faucibus ex sapien. Quisque faucibus ex sapien vitae
-                        pellentesque sem placerat. Vitae pellentesque sem placerat in id cursus mi.
-                    </p>
-                </div>
+                            <Icon
+                                name="material-symbols:link-rounded"
+                                class="size-[2em] text-black dark:text-white"
+                            />
+                            <span class="w-[10em] truncate">{{ data.profile.website }}</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a
+                            :href="email"
+                            target="_blank"
+                            class="flex items-center gap-2 hover:underline"
+                        >
+                            <Icon
+                                name="material-symbols:mail-outline"
+                                class="size-[2em] text-black dark:text-white"
+                            />
+                            <span class="w-[10em] truncate">{{ email }}</span>
+                        </a>
+                    </li>
+                </ul>
             </div>
-        </main>
+
+            <!-- About Me -->
+            <div class="flex-1">
+                <h3 class="font-semibold text-gray-800 dark:text-white mb-2">About us</h3>
+                <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+                    {{ data.profile.aboutUs }}
+                </p>
+            </div>
+        </div>
     </div>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { mockCompanyData } from "~/data/mockData";
+
+const data = mockCompanyData;
+const email = "john.doe@ku.th";
+</script>
