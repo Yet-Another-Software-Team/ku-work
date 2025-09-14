@@ -29,7 +29,6 @@ onMounted(() => {
         isCompany.value = false;
         isViewer.value = false;
     }
-    console.log("Role:", role);
     loading.value = false;
 });
 
