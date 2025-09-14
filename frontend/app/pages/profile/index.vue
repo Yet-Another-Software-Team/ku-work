@@ -8,8 +8,11 @@
         </div>
 
         <!-- Content -->
-        <ProfileCard v-if="!isCompany" />
-        <CompanyProfileCard v-if="isCompany" />
+        <ProfileCard v-if="!isCompany && !isViewer" />
+        <CompanyProfileCard v-if="isCompany && !isViewer" />
+        <div v-if="isViewer" class="text-center items-center text-5xl">
+            <h1>You are a Viewer and doesn't have profile page</h1>
+        </div>
     </div>
 </template>
 
