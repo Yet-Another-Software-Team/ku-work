@@ -95,3 +95,36 @@ func CreateAdminUser(name string) (*model.User, error) {
 	}
 	return &user, nil
 }
+
+func CreateAdminCompany(username string) (*model.Company, error) {
+	var user *model.User
+	var err error
+	if user, err = CreateAdminUser(username); err != nil {
+		return nil, err
+	}
+	companyPhoto := model.File{
+		UserID:   user.ID,
+		FileType: model.FileTypePNG,
+		Category: model.FileCategoryDocument,
+	}
+	if err = db.Create(&companyPhoto).Error; err != nil {
+		return nil, err
+	}
+	companyBanner := model.File{
+		UserID:   user.ID,
+		FileType: model.FileTypePNG,
+		Category: model.FileCategoryDocument,
+	}
+	if err = db.Create(&companyBanner).Error; err != nil {
+		return nil, err
+	}
+	company := model.Company{
+		UserID:   user.ID,
+		BannerID: companyBanner.ID,
+		PhotoID:  companyPhoto.ID,
+	}
+	if err = db.Create(&company).Error; err != nil {
+		return nil, err
+	}
+	return &company, nil
+}

@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type ExperienceType string
@@ -29,7 +31,7 @@ type Job struct {
 	CreatedAt       time.Time        `json:"createdAt"`
 	Name            string           `json:"name"`
 	CompanyID       string           `gorm:"type:uuid" json:"companyId"`
-	Company         User             `gorm:"foreignKey:CompanyID" json:"-"`
+	Company         Company          `gorm:"foreignKey:CompanyID;constraint:OnDelete:CASCADE;" json:"company"`
 	Position        string           `json:"position"`
 	Duration        string           `json:"duration"`
 	Description     string           `json:"description"`
@@ -39,7 +41,8 @@ type Job struct {
 	MinSalary       uint             `json:"minSalary"`
 	MaxSalary       uint             `json:"maxSalary"`
 	IsApproved      bool             `json:"approved"`
-	JobApplications []JobApplication `gorm:"foreignkey:JobID" json:"-"`
+	IsOpen          bool             `json:"open"`
+	JobApplications []JobApplication `gorm:"foreignkey:JobID;constraint:OnDelete:CASCADE;" json:"-"`
 }
 
 type JobApplication struct {
@@ -49,4 +52,20 @@ type JobApplication struct {
 	UserID    string    `gorm:"type:uuid" json:"userId"`
 	AltPhone  string    `json:"phone"`
 	AltEmail  string    `json:"email"`
+	Files     []File    `gorm:"many2many:job_application_has_file;constraint:OnDelete:CASCADE;" json:"files"`
+}
+
+func (jobApplication *JobApplication) BeforeDelete(tx *gorm.DB) (err error) {
+	newJobApplication := JobApplication{
+		ID: jobApplication.ID,
+	}
+	if err := tx.Preload("Files").First(&newJobApplication).Error; err != nil {
+		return err
+	}
+	for _, file := range newJobApplication.Files {
+		if err := file.AfterDelete(tx); err != nil {
+			return err
+		}
+	}
+	return nil
 }
