@@ -35,6 +35,7 @@
 
             <!-- Edit Button -->
             <button
+                v-if="isOwner"
                 class="px-4 py-2 border border-gray-400 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center mt-4 ml-auto mb-auto"
             >
                 <Icon name="material-symbols:edit-square-outline-rounded" class="size-[1.5em]" />
@@ -93,6 +94,15 @@
 
 <script setup lang="ts">
 import { mockCompanyData } from "~/data/mockData";
+
+withDefaults(
+    defineProps<{
+        isOwner?: boolean;
+    }>(),
+    {
+        isOwner: true,
+    }
+);
 
 const data = mockCompanyData;
 const email = "john.doe@ku.th";
