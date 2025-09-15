@@ -14,9 +14,7 @@
     <form @submit.prevent="onSubmit" class="space-y-4 w-full flex-1">
       <!-- Job Title -->
       <div class="grid grid-cols-12 gap-4 items-center w-full">
-        <label
-          class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
-        >
+        <label class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold">
           Job Title
         </label>
         <div class="col-span-12 md:col-span-8">
@@ -31,9 +29,7 @@
 
       <!-- Job Location -->
       <div class="grid grid-cols-12 gap-4 items-center w-full">
-        <label
-          class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
-        >
+        <label class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold">
           Job Location
         </label>
         <div class="col-span-12 md:col-span-8 bg-white">
@@ -49,9 +45,7 @@
 
       <!-- Job Type -->
       <div class="grid grid-cols-12 gap-4 items-center w-full">
-        <label
-          class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
-        >
+        <label class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold">
           Job Type
         </label>
         <div class="col-span-12 md:col-span-8 relative z-50">
@@ -70,9 +64,7 @@
 
       <!-- Required Experience -->
       <div class="grid grid-cols-12 gap-4 items-center w-full">
-        <label
-          class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
-        >
+        <label class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold">
           Required Experience
         </label>
         <div class="col-span-12 md:col-span-8 relative z-50">
@@ -91,9 +83,7 @@
 
       <!-- Salary -->
       <div class="grid grid-cols-12 gap-4 items-center w-full">
-        <label
-          class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
-        >
+        <label class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold">
           Salary
         </label>
         <div class="col-span-12 md:col-span-8">
@@ -115,15 +105,15 @@
               <template #trailing>Baht</template>
             </UInput>
           </div>
-          <span class="text-error text-sm">{{ errors.salary || errors.minSalary || errors.maxSalary }}</span>
+          <span class="text-error text-sm">
+            {{ errors.salary || errors.minSalary || errors.maxSalary }}
+          </span>
         </div>
       </div>
 
       <!-- Job Description -->
       <div class="grid grid-cols-12 gap-4 items-start w-full">
-        <label
-          class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
-        >
+        <label class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold">
           Job Description
         </label>
         <div class="col-span-12 md:col-span-8">
@@ -152,10 +142,10 @@
 </template>
 
 <script setup>
-import { ref, reactive } from "vue";
+import { ref, reactive, watch } from "vue";
 import * as z from "zod";
 
-const toast = useToast();
+const { add: addToast } = useToast();
 
 const form = ref({
   title: "",
@@ -207,12 +197,55 @@ const schema = z
     path: ["salary"],
   });
 
-function resetErrors() {
-  for (const k in errors) errors[k] = "";
+function validateField(fieldName, value) {
+  try {
+    schema.pick({ [fieldName]: true }).parse({ [fieldName]: value });
+
+    if (typeof value === "string" && value.trim() === "") {
+      errors[fieldName] = "This field is required";
+      return false;
+    }
+
+    errors[fieldName] = "";
+    return true;
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      errors[fieldName] = error.issues[0]?.message ?? "Invalid value";
+    } else {
+      errors[fieldName] = "Invalid value";
+    }
+    return false;
+  }
 }
 
+function validateSalaryCross() {
+  errors.salary = "";
+  const min = Number(form.value.minSalary);
+  const max = Number(form.value.maxSalary);
+
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return;
+
+  if (min > max) {
+    errors.salary = "Minimum salary must be less than or equal to maximum salary";
+  }
+}
+
+watch(() => form.value.title, (v) => validateField("title", v));
+watch(() => form.value.location, (v) => validateField("location", v));
+watch(() => form.value.type, (v) => validateField("type", v));
+watch(() => form.value.experience, (v) => validateField("experience", v));
+watch(() => form.value.description, (v) => validateField("description", v));
+
+watch(() => form.value.minSalary, (v) => {
+  validateField("minSalary", v);
+  validateSalaryCross();
+});
+watch(() => form.value.maxSalary, (v) => {
+  validateField("maxSalary", v);
+  validateSalaryCross();
+});
+
 function onSubmit() {
-  resetErrors();
   const result = schema.safeParse(form.value);
 
   if (!result.success) {
@@ -224,16 +257,15 @@ function onSubmit() {
         errors.salary = issue.message;
       }
     }
-
-    toast.add({
+    addToast({
       title: "Form submission failed",
-      description: "Please check the errors and try again.",
+      description: "Please check the highlighted errors and try again.",
       color: "warning",
     });
     return;
   }
 
-  toast.add({
+  addToast({
     title: "Form submitted",
     description: "Your job post has been saved successfully.",
     color: "success",
