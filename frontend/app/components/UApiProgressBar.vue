@@ -34,10 +34,10 @@ interface Props {
     showRequestCount?: boolean;
     showLoadingText?: boolean;
     loadingText?: string;
-    color?: string;
+    color?: "primary" | "secondary" | "success" | "info" | "warning" | "error" | "neutral";
     size?: "xs" | "sm" | "md" | "lg" | "xl";
     position?: "top" | "bottom";
-    animation?: "carousel" | "swing" | "elastic" | "pulse";
+    animation?: "carousel" | "carousel-inverse" | "swing" | "elastic";
     variant?: "default" | "floating" | "embedded";
 }
 
