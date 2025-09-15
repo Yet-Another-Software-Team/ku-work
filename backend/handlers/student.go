@@ -39,6 +39,14 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 		Photo             *multipart.FileHeader `form:"photo" binding:"required"`
 		StudentStatusFile *multipart.FileHeader `form:"statusPhoto" binding:"required"`
 	}
+
+	var count int64
+	h.DB.Model(&model.Student{}).Where("user_id = ?", userId).Count(&count)
+	if count > 0 {
+		ctx.JSON(http.StatusConflict, gin.H{"error": "user already registered to be student"})
+		return
+	}
+
 	input := StudentRegistrationInput{}
 	err := ctx.MustBindWith(&input, binding.FormMultipart)
 	if err != nil {
@@ -62,7 +70,7 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	statusPhoto, err := SaveFile(ctx, tx, userId, input.StudentStatusFile, model.FileCategoryDocument)
+	statusDocument, err := SaveFile(ctx, tx, userId, input.StudentStatusFile, model.FileCategoryDocument)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -79,7 +87,7 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 		StudentID:           input.StudentID,
 		Major:               input.Major,
 		StudentStatus:       input.StudentStatus,
-		StudentStatusFileID: statusPhoto.ID,
+		StudentStatusFileID: statusDocument.ID,
 	}
 	result := tx.Create(&student)
 	if result.Error != nil {

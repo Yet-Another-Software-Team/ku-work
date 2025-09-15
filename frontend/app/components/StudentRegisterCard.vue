@@ -1,16 +1,26 @@
 <template>
-    <div class="bg-white w-full min-h-[50em] rounded-lg p-5 flex flex-col justify-between">
+    <div
+        v-if="isLoading"
+        class="bg-white w-full min-h-[50em] rounded-lg p-5 flex flex-col justify-center items-center"
+    >
+        <icon name="svg-spinners:180-ring-with-bg" class="text-[10em] text-primary mb-4" />
+        <h2 class="text-4xl font-bold text-primary mb-2">Loading...</h2>
+        <p class="text-neutral-500">Checking your registration status.</p>
+    </div>
+    <div v-else class="bg-white w-full min-h-[50em] rounded-lg p-5 flex flex-col justify-between">
         <div>
             <div class="flex justify-between items-center">
                 <h1 class="text-xl md:text-3xl font-bold text-left text-black py-4">
                     Student Registration
                 </h1>
                 <!-- Skip -->
-                <router-link v-if="currentStep == 1" to="/jobs">
-                    <icon
-                        name="material-symbols:skip-next-rounded"
-                        class="text-2xl md:text-4xl text-gray-500 hover:text-primary transition-all duration-150 ease-in-out"
-                    />
+                <router-link
+                    v-if="currentStep == 1"
+                    to="/jobs"
+                    class="flex items-center text-neutral-500 hover:text-primary transition-all duration-150 ease-in-out"
+                >
+                    <p class="text-sm font-bold uppercase">Skip</p>
+                    <icon name="material-symbols:skip-next-rounded" class="text-2xl md:text-4xl" />
                 </router-link>
             </div>
             <div class="flex flex-1 justify-center items-center gap-x-2">
@@ -99,13 +109,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from "vue";
+import { ref, reactive, computed, onMounted } from "vue";
+import { useApi } from "@/composables/useApi";
 
+const api = useApi();
 const toast = useToast();
-const config = useRuntimeConfig();
 const totalSteps = 3;
 const currentStep = ref(1);
 const isSubmitting = ref(false);
+const isLoading = ref(true);
 
 const stepOneRef = ref<{ isValid: boolean } | null>(null);
 const stepTwoRef = ref<{ isValid: boolean } | null>(null);
@@ -123,6 +135,29 @@ const form = reactive({
     major: "",
     studentStatus: "",
     verificationFile: null as File | null,
+});
+
+onMounted(() => {
+    const username = localStorage.getItem("username");
+    const role = localStorage.getItem("role");
+    const isRegistered = localStorage.getItem("isRegistered");
+
+    if (role === "viewer" && isRegistered === "true") {
+        toast.add({
+            title: "Already Registered",
+            description: "Redirecting to jobs page...",
+            color: "success",
+        });
+        navigateTo("/jobs");
+        return;
+    }
+
+    if (role !== "viewer" || !username) {
+        navigateTo("/");
+        return;
+    }
+    form.fullName = username || "";
+    isLoading.value = false;
 });
 
 const canProceedToNext = computed(() => {
@@ -225,38 +260,13 @@ const onSubmit = async () => {
             formData.append("linkedIn", form.linkedinURL);
         }
 
-        await $fetch("/students/register", {
-            method: "POST",
-            baseURL: config.public.apiBaseUrl,
-            body: formData,
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
+        await api.postFormData("/students/register", formData);
+        localStorage.setItem("isRegistered", "true"); // Set isRegistered to True.
         currentStep.value++;
-    } catch (error: unknown) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
         console.error("Submission error:", error);
-
-        let errorMessage = "There was an error submitting your registration. Please try again.";
-        const apiError = error as { status?: number; data?: { error?: string }; message?: string };
-
-        if (apiError.status === 401) {
-            errorMessage = "Authentication failed. Please try again.";
-            localStorage.removeItem("jwt_token");
-            navigateTo("/");
-            return;
-        } else if (apiError.status === 409) {
-            errorMessage = "Student registration already exists.";
-        } else if (apiError.data?.error) {
-            errorMessage = apiError.data.error;
-        }
-
-        toast.add({
-            title: "Submission Failed",
-            description: errorMessage,
-            color: "error",
-        });
+        api.showErrorToast(error, "Submission Failed");
     } finally {
         isSubmitting.value = false;
     }

@@ -23,15 +23,6 @@
             <div v-if="!isCompany" class="flex flex-col h-full w-full">
                 <h2 class="text-xl font-semibold mx-auto mb-5">KU Students/Staffs Login</h2>
                 <GoogleOauthButton class="mx-auto text-white" />
-                <p class="text-center w-full mt-auto mb-2">
-                    Don't have an account?
-                    <a
-                        class="text-primary-600 font-semibold underline hover:text-primary-800"
-                        href="/register/students"
-                    >
-                        Sign Up
-                    </a>
-                </p>
             </div>
             <div v-else class="flex flex-col h-full w-full">
                 <h2 class="text-xl font-semibold mx-auto mb-5">Company Login</h2>
