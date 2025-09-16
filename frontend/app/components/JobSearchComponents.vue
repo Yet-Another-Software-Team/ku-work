@@ -49,23 +49,17 @@ const emit = defineEmits<{
     (e: "update:location", value: string | null): void;
 }>();
 
-const items = ref([
-    {
-        label: "Item1",
-        id: "item1",
-        icon: "eos-icons:rotating-gear",
-    },
-    {
-        label: "Item2",
-        id: "item2",
-        icon: "eos-icons:rotating-gear",
-    },
-    {
-        label: "Item3",
-        id: "item3",
-        icon: "eos-icons:rotating-gear",
-    },
-]);
+const props = defineProps<{
+    locations?: string[];
+}>();
+
+const items = computed(() => {
+    const unique = [...new Set(props.locations)];
+    return unique.map((loc) => ({
+        label: loc,
+        id: loc.toLowerCase().replace(/\s+/g, "-"),
+    }));
+});
 
 const selectedValue = ref("");
 const searchValue = ref("");

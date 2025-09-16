@@ -10,6 +10,7 @@
             <!-- Search component -->
             <div class="my-5">
                 <JobSearchComponents
+                    :locations="jobs.map((job) => job.location)"
                     @update:search="search = $event"
                     @update:location="location = $event"
                 />
