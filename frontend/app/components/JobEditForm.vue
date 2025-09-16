@@ -151,7 +151,7 @@
                         }"
                     >
                         <UButton
-                            class="size-fit text-xl rounded-md px-15 font-medium hover:bg-primary-700 hover:cursor-pointer"
+                            class="size-fit text-xl rounded-md px-15 font-medium hover:bg-gray-200 hover:cursor-pointer"
                             color="neutral"
                             variant="outline"
                             label="Discard"
