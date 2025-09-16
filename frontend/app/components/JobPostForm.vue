@@ -192,28 +192,15 @@ const errors = reactive({
     salary: "",
 });
 
-const schema = z.object({
-    title: z
-        .string()
-        .min(1, "Job Title is required"),
-    location: z
-        .string()
-        .min(1, "Job Location is required"),
-    type: z
-        .string()
-        .min(1, "Job Type is required"),
-    experience: z
-        .string()
-        .min(1, "Experience is required"),
-    minSalary: z
-        .coerce.number()
-        .min(0, "Minimum salary cannot be negative"),
-    maxSalary: z
-        .coerce.number()
-        .min(0, "Maximum salary cannot be negative"),
-    description: z
-        .string()
-        .min(1, "Job Description is required"),
+const schema = z
+    .object({
+        title: z.string().min(1, "Job Title is required"),
+        location: z.string().min(1, "Job Location is required"),
+        type: z.string().min(1, "Job Type is required"),
+        experience: z.string().min(1, "Experience is required"),
+        minSalary: z.coerce.number().min(0, "Minimum salary cannot be negative"),
+        maxSalary: z.coerce.number().min(0, "Maximum salary cannot be negative"),
+        description: z.string().min(1, "Job Description is required"),
     })
     .refine((d) => d.minSalary <= d.maxSalary, {
         message: "Minimum salary must be less than or equal to maximum salary",
