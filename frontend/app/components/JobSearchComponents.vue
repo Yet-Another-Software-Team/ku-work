@@ -28,9 +28,22 @@
                 placeholder="Location"
                 value-key="id"
                 :items="items"
-                class="w-[15em]"
+                :search-input="{
+                    placeholder: 'Filter...',
+                    icon: 'i-lucide-search',
+                }"
+                class="w-[15em] capitalize"
                 icon="material-symbols:location-on-outline-rounded"
-            />
+            >
+                <template v-if="selectedValue" #trailing>
+                    <UButton
+                        icon="i-lucide:x"
+                        variant="link"
+                        color="neutral"
+                        @click.stop="selectedValue = undefined"
+                    />
+                </template>
+            </USelectMenu>
         </div>
 
         <!-- More options -->
@@ -58,12 +71,13 @@ const items = computed(() => {
     return unique.map((loc) => ({
         label: loc,
         id: loc.toLowerCase().replace(/\s+/g, "-"),
+        class: "capitalize",
     }));
 });
 
-const selectedValue = ref("");
+const selectedValue = ref<string | undefined>(undefined);
 const searchValue = ref("");
 
 watch(searchValue, (val) => emit("update:search", val));
-watch(selectedValue, (val) => emit("update:location", val));
+watch(selectedValue, (val) => emit("update:location", val ?? null));
 </script>
