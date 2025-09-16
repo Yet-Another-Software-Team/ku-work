@@ -44,6 +44,11 @@
 import { UButton } from "#components";
 import SearchMoreButton from "./SearchMoreButton.vue";
 
+const emit = defineEmits<{
+    (e: "update:search", value: string): void;
+    (e: "update:location", value: string | null): void;
+}>();
+
 const items = ref([
     {
         label: "Item1",
@@ -62,6 +67,9 @@ const items = ref([
     },
 ]);
 
-const selectedValue = ref();
+const selectedValue = ref("");
 const searchValue = ref("");
+
+watch(searchValue, (val) => emit("update:search", val));
+watch(selectedValue, (val) => emit("update:location", val));
 </script>
