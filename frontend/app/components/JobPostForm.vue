@@ -137,7 +137,7 @@
                 </div>
             </div>
 
-            <!-- Actions -->
+            <!-- Submit -->
             <div class="grid grid-cols-12 w-full">
                 <div class="col-span-12 md:col-start-9 md:col-span-4 flex justify-end">
                     <UButton
