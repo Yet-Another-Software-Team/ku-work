@@ -1,6 +1,6 @@
 <template>
     <div class="flex">
-        <span class="w-full">
+        <section class="w-full">
             <h1
                 class="flex items-center text-5xl text-primary-800 dark:text-primary font-bold mb-6 gap-2 cursor-pointer"
             >
@@ -9,15 +9,15 @@
             <div class="my-5">
                 <JobSearchComponents />
             </div>
-            <section v-for="index in totalJob" :key="index">
+            <section v-for="(job, index) in jobs" :key="index">
                 <JobApplicationComponent
                     :is-selected="selectedIndex === index"
-                    :data="jobs[index % jobs.length] || jobs[0]!"
+                    :data="job"
                     @click="selectedIndex = index"
                 />
             </section>
-        </span>
-        <span v-if="selectedIndex" class="flex">
+        </section>
+        <section v-if="selectedIndex !== null" class="flex">
             <USeparator orientation="vertical" class="w-fit mx-5" color="neutral" size="lg" />
             <section>
                 <ExpandedJobApplication
@@ -26,7 +26,7 @@
                     :data="jobs[selectedIndex % jobs.length] || jobs[0]!"
                 />
             </section>
-        </span>
+        </section>
     </div>
 </template>
 
@@ -39,7 +39,6 @@ definePageMeta({
     layout: "viewer",
 });
 
-const totalJob = 10;
 const jobs: JobApplication[] = mockJobData.jobs;
 const selectedIndex = ref<number | null>(null);
 </script>
