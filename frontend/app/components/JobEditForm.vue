@@ -275,6 +275,7 @@ function validateSalaryCross() {
 }
 
 function confirmDiscard() {
+    // Need to load old data here
     showDiscardConfirm.value = false;
     addToast({
         title: "Changes discarded",
