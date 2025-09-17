@@ -14,6 +14,15 @@
                     @update:search="search = $event"
                     @update:location="location = $event"
                 />
+
+                <!-- More options -->
+                <div>
+                    <SearchMoreButton
+                        @update:salary-range="salaryRange = $event"
+                        @update:job-type="jobType = $event"
+                        @update:exp-type="expType = $event"
+                    />
+                </div>
             </div>
             <!-- Job applications -->
             <section v-for="(job, index) in filteredJobs" :key="index">
@@ -42,6 +51,7 @@
 import { ref } from "vue";
 import ExpandedJobApplication from "~/components/ExpandedJobApplication.vue";
 import { mockJobData, type JobApplication } from "~/data/mockData";
+import type { CheckboxGroupValue } from "@nuxt/ui";
 
 definePageMeta({
     layout: "viewer",
@@ -54,6 +64,10 @@ const selectedIndex = ref<number | null>(null);
 // Search and Location
 const search = ref("");
 const location = ref<string | null>(null);
+// More filters
+const jobType = ref<CheckboxGroupValue[] | null>(null);
+const expType = ref<CheckboxGroupValue[] | null>(null);
+const salaryRange = ref<number[] | null>(null);
 
 const filteredJobs = computed(() => {
     return jobs.filter((job) => {
@@ -64,7 +78,22 @@ const filteredJobs = computed(() => {
         const matchesLocation =
             !location.value || job.location.toLowerCase().includes(location.value.toLowerCase());
 
-        return matchesSearch && matchesLocation;
+        const matchesSalary =
+            !salaryRange.value ||
+            (job.minSalary >= (salaryRange.value[0] ?? 0) &&
+                job.maxSalary <= (salaryRange.value[1] ?? Infinity));
+
+        const matchesJobType =
+            !jobType.value || jobType.value.length === 0 || jobType.value.includes(job.jobType);
+
+        const matchesExpType =
+            !expType.value ||
+            expType.value.length === 0 ||
+            expType.value.includes(job.experienceType);
+
+        return (
+            matchesSearch && matchesLocation && matchesSalary && matchesJobType && matchesExpType
+        );
     });
 });
 </script>

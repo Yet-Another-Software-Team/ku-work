@@ -45,17 +45,11 @@
                 </template>
             </USelectMenu>
         </div>
-
-        <!-- More options -->
-        <div>
-            <SearchMoreButton />
-        </div>
     </div>
 </template>
 
 <script setup lang="ts">
 import { UButton } from "#components";
-import SearchMoreButton from "./SearchMoreButton.vue";
 
 const emit = defineEmits<{
     (e: "update:search", value: string): void;
