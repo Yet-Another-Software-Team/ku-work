@@ -97,4 +97,41 @@ const filteredJobs = computed(() => {
         );
     });
 });
+
+// API call to fetch jobs
+const api = useApi();
+
+interface jobApplicationForm {
+    limit: number;
+    offset: number;
+    location?: string;
+    keyword?: string;
+    jobtype?: string[];
+    experience?: string[];
+    minsalary?: number;
+    maxsalary?: number;
+}
+
+const fetchJobs = async () => {
+    const jobForm: jobApplicationForm = {
+        limit: 10,
+        offset: 0,
+        location: location.value ?? "",
+        keyword: search.value ?? "",
+        jobtype: jobType.value ? jobType.value.map(String) : [""],
+        experience: expType.value ? expType.value.map(String) : undefined,
+        minsalary: salaryRange.value ? salaryRange.value[0] : 0,
+        maxsalary: salaryRange.value ? salaryRange.value[1] : 99999999,
+    };
+    try {
+        const response = await api.get("/job", {
+            params: { jobForm },
+        });
+        console.log("Jobs fetched:", response.data);
+        jobs.push(...response.data.jobs);
+    } catch (error) {
+        console.error("Error fetching jobs:", error);
+    }
+};
+await fetchJobs();
 </script>
