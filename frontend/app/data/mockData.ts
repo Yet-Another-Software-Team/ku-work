@@ -142,7 +142,7 @@ const mockJobData: Job = {
             position: "Frontend Developer",
             duration: "Contract",
             description: "Work on building modern web applications with Vue.js and TypeScript.",
-            location: "Remote",
+            location: "Thailand",
             jobType: "Contract",
             experienceType: "Junior",
             minSalary: 30000,

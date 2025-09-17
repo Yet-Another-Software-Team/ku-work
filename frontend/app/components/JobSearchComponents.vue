@@ -61,10 +61,10 @@ const props = defineProps<{
 }>();
 
 const items = computed(() => {
-    const unique = [...new Set(props.locations)];
+    const unique = [...new Set(props.locations?.map((loc) => loc.toLowerCase()) ?? [])].sort();
     return unique.map((loc) => ({
         label: loc,
-        id: loc.toLowerCase().replace(/\s+/g, "-"),
+        id: loc,
         class: "capitalize",
     }));
 });
