@@ -110,4 +110,21 @@ const age = computed(() => {
 });
 
 const email = "john.doe@ku.th";
+
+// const api = useApi();
+
+// onMounted(async () => {
+//     try {
+//         const response = await api.get("/students", {
+//             params: { userId: localStorage.getItem("userId") },
+//         });
+//         if (response.status === 200) {
+//             console.log("Successfully fetched student profile:", response.data);
+//         } else {
+//             console.error("Failed to fetch student profile:", response.message);
+//         }
+//     } catch (error) {
+//         console.error("Error fetching student profile:", error);
+//     }
+// });
 </script>

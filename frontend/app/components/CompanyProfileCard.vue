@@ -106,4 +106,19 @@ withDefaults(
 
 const data = mockCompanyData;
 const email = "john.doe@ku.th";
+
+// const api = useApi();
+
+// onMounted(async () => {
+//     try {
+//         const response = await api.get("/company");
+//         if (response.status === 200) {
+//             console.log("Successfully fetched company profile:", response.data);
+//         } else {
+//             console.error("Failed to fetch company profile:", response.message);
+//         }
+//     } catch (error) {
+//         console.error("Error fetching company profile:", error);
+//     }
+// });
 </script>
