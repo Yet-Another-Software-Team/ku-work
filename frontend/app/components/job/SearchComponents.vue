@@ -42,7 +42,6 @@
 
 <script setup lang="ts">
 import { UButton } from "#components";
-import SearchMoreButton from "./SearchMoreButton.vue";
 
 const items = ref([
     {

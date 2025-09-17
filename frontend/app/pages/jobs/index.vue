@@ -20,7 +20,7 @@
         <span v-if="selectedIndex" class="flex">
             <USeparator orientation="vertical" class="w-fit mx-5" color="neutral" size="lg" />
             <section>
-                <ExpandedJobApplication
+                <JobApplicationExpanded
                     :is-viewer="false"
                     :is-selected="true"
                     :data="jobs[selectedIndex % jobs.length] || jobs[0]!"
@@ -32,7 +32,6 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import ExpandedJobApplication from "~/components/ExpandedJobApplication.vue";
 import { mockJobData, type JobApplication } from "~/data/mockData";
 
 definePageMeta({
