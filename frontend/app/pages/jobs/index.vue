@@ -38,6 +38,7 @@
             <USeparator orientation="vertical" class="w-fit mx-5" color="neutral" size="lg" />
             <section>
                 <ExpandedJobApplication
+                    v-if="filteredJobs.length > 0"
                     :is-viewer="false"
                     :is-selected="true"
                     :data="filteredJobs[selectedIndex % filteredJobs.length] || filteredJobs[0]!"
