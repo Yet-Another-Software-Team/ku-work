@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"ku-work/backend/handlers"
 	"ku-work/backend/model"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -110,8 +112,8 @@ func TestCompany(t *testing.T) {
 		assert.Equal(t, company.Address, "123 Test St")
 		assert.Equal(t, company.City, "Testville")
 		assert.Equal(t, company.Country, "Testland")
+		_ = db.Delete(&user)
 	})
-
 	t.Run("Duplicate Company Creation", func(t *testing.T) {
 		username := fmt.Sprintf("companytester-%d", time.Now().UnixNano())
 		// Create a user first
@@ -181,5 +183,104 @@ func TestCompany(t *testing.T) {
 			t.Fatal(err)
 		}
 		assert.Equal(t, result.Error, "Username already exists")
+		_ = db.Delete(&user)
+	})
+	t.Run("Edit Profile", func(t *testing.T) {
+		username := fmt.Sprintf("companytester-%d", time.Now().UnixNano())
+		var company *model.Company
+		var err error
+		if company, err = CreateAdminCompany(username); err != nil {
+			t.Error(err)
+			return
+		}
+		defer (func() {
+			_ = db.Delete(&company)
+		})()
+		values := map[string]string{
+			"phone":   "0123456789",
+			"address": "1234 gay street bangcock thailand",
+		}
+		w := httptest.NewRecorder()
+		var b bytes.Buffer
+		fw := multipart.NewWriter(&b)
+		for key, val := range values {
+			fiw, err := fw.CreateFormField(key)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if _, err := io.WriteString(fiw, val); err != nil {
+				t.Error(err)
+				return
+			}
+		}
+		if err := fw.Close(); err != nil {
+			t.Error(err)
+			return
+		}
+		req, err := http.NewRequest("PATCH", "/company", &b)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		jwtHandler := handlers.NewJWTHandlers(db)
+		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		req.Header.Add("Content-Type", fw.FormDataContentType())
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", jwtToken))
+		router.ServeHTTP(w, req)
+		assert.Equal(t, w.Code, 200)
+		resCompany := model.Company{
+			UserID: company.UserID,
+		}
+		if err := db.First(&resCompany).Error; err != nil {
+			t.Error(err)
+			return
+		}
+		assert.Equal(t, resCompany.Phone, "0123456789")
+		assert.Equal(t, resCompany.Address, "1234 gay street bangcock thailand")
+	})
+
+	t.Run("Get Profile", func(t *testing.T) {
+		username := fmt.Sprintf("companytester-%d", time.Now().UnixNano())
+		var company *model.Company
+		var err error
+		if company, err = CreateAdminCompany(username); err != nil {
+			t.Error(err)
+			return
+		}
+		defer (func() {
+			_ = db.Delete(&company)
+		})()
+		company.Phone = "0123456789"
+		company.Address = "1234 gay street bangcock thailand"
+		if err := db.Save(&company).Error; err != nil {
+			t.Error(err)
+			return
+		}
+		w := httptest.NewRecorder()
+		req, err := http.NewRequest("GET", fmt.Sprintf("/company?id=%s", company.UserID), strings.NewReader(""))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		router.ServeHTTP(w, req)
+		assert.Equal(t, w.Code, 200)
+		type Result struct {
+			Phone   string `json:"phone"`
+			Address string `json:"address"`
+		}
+		result := Result{}
+		err = json.Unmarshal(w.Body.Bytes(), &result)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		assert.Equal(t, result.Address, "1234 gay street bangcock thailand")
+		assert.Equal(t, result.Phone, "0123456789")
 	})
 }

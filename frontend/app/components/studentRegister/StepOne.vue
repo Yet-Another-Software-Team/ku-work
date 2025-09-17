@@ -250,9 +250,9 @@ const validateField = (fieldName, value) => {
                 errors.avatar = "File size must be less than 5MB";
                 return false;
             }
-            const allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
+            const allowedTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
             if (!allowedTypes.includes(value.type)) {
-                errors.avatar = "Only JPEG, JPG, and PNG files are allowed";
+                errors.avatar = "Only JPEG, JPG, WEBP and PNG files are allowed";
                 return false;
             }
             errors.avatar = "";

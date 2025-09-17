@@ -124,5 +124,6 @@ func TestStudent(t *testing.T) {
 		assert.Equal(t, student.StudentID, "6612345678")
 		assert.Equal(t, student.Major, "Software and Knowledge Engineering")
 		assert.Equal(t, student.StudentStatus, "Graduated")
+		_ = db.Delete(&user)
 	})
 }

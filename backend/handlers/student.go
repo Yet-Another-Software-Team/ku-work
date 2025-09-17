@@ -39,6 +39,14 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 		Photo             *multipart.FileHeader `form:"photo" binding:"required"`
 		StudentStatusFile *multipart.FileHeader `form:"statusPhoto" binding:"required"`
 	}
+
+	var count int64
+	h.DB.Model(&model.Student{}).Where("user_id = ?", userId).Count(&count)
+	if count > 0 {
+		ctx.JSON(http.StatusConflict, gin.H{"error": "user already registered to be student"})
+		return
+	}
+
 	input := StudentRegistrationInput{}
 	err := ctx.MustBindWith(&input, binding.FormMultipart)
 	if err != nil {
@@ -57,12 +65,12 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 	tx := h.DB.Begin()
 	defer tx.Rollback()
 
-	photoID, err := SaveFile(ctx, tx, userId, input.Photo, model.FileCategoryImage)
+	photo, err := SaveFile(ctx, tx, userId, input.Photo, model.FileCategoryImage)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	statusPhotoID, err := SaveFile(ctx, tx, userId, input.StudentStatusFile, model.FileCategoryImage)
+	statusDocument, err := SaveFile(ctx, tx, userId, input.StudentStatusFile, model.FileCategoryDocument)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -71,7 +79,7 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 		UserID:              userId,
 		Approved:            false,
 		Phone:               input.Phone,
-		PhotoID:             photoID,
+		PhotoID:             photo.ID,
 		BirthDate:           datatypes.Date(parsedBirthDate),
 		AboutMe:             input.AboutMe,
 		GitHub:              input.GitHub,
@@ -79,7 +87,7 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 		StudentID:           input.StudentID,
 		Major:               input.Major,
 		StudentStatus:       input.StudentStatus,
-		StudentStatusFileID: statusPhotoID,
+		StudentStatusFileID: statusDocument.ID,
 	}
 	result := tx.Create(&student)
 	if result.Error != nil {
@@ -145,12 +153,12 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 		student.StudentStatus = input.StudentStatus
 	}
 	if input.Photo != nil {
-		photoID, err := SaveFile(ctx, h.DB, userId, input.Photo, model.FileCategoryImage)
+		photo, err := SaveFile(ctx, h.DB, userId, input.Photo, model.FileCategoryImage)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		student.PhotoID = photoID
+		student.PhotoID = photo.ID
 	}
 	result := h.DB.Save(&student)
 	if result.Error != nil {

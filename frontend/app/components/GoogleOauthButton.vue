@@ -2,7 +2,7 @@
     <UButton
         class="size-fit text-xl rounded-md px-10 gap-2 font-medium py-3 bg-primary-500 hover:bg-primary-700 hover:cursor-pointer active:bg-primary-800"
         icon="cib:google"
-        label="Sign In with Google"
+        label="Continue with Google"
         :loading="isLoggingIn"
         @click="login"
     />
@@ -10,18 +10,11 @@
 
 <script setup lang="ts">
 import { googleAuthCodeLogin } from "vue3-google-login";
+import { useApi, type LoginResponse } from "~/composables/useApi";
 
 const isLoggingIn = ref(false);
 
-const config = useRuntimeConfig();
 const toast = useToast();
-
-type loginResponse = {
-    token: string;
-    username: string;
-    isStudent: boolean;
-    isCompany: boolean;
-};
 
 const login = async () => {
     if (isLoggingIn.value) {
@@ -30,55 +23,56 @@ const login = async () => {
 
     isLoggingIn.value = true;
 
+    interface oauthLoginResponse extends LoginResponse {
+        isRegistered: boolean;
+    }
+
     try {
         const oauth_response = await googleAuthCodeLogin();
 
         try {
-            const response: loginResponse = await $fetch("/google/login", {
-                method: "POST",
-                baseURL: config.public.apiBaseUrl,
-                body: {
+            const api = useApi();
+            const response = await api.post<oauthLoginResponse>(
+                "/google/login",
+                {
                     code: oauth_response.code,
                 },
-                credentials: "include",
-            });
+                {
+                    withCredentials: true,
+                }
+            );
 
-            localStorage.setItem("jwt_token", response.token);
-            localStorage.setItem("username", response.username);
-            if (response.isCompany) {
+            localStorage.setItem("jwt_token", response.data.token);
+            localStorage.setItem("username", response.data.username);
+            localStorage.setItem("isRegistered", response.data.isRegistered.toString());
+
+            if (response.data.isCompany) {
                 localStorage.setItem("role", "company");
-            } else if (response.isStudent) {
+            } else if (response.data.isStudent) {
                 localStorage.setItem("role", "student");
+            } else {
+                localStorage.setItem("role", "viewer");
             }
 
-            toast.add({
-                title: "Login Successful",
-                description: "You have successfully logged in with Google.",
-                color: "success",
-            });
-        } catch (error: unknown) {
+            if (response.status == 201) {
+                // Account is new, navigate to registration page
+                navigateTo("/register/student");
+            } else {
+                navigateTo("/jobs");
+            }
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (error: any) {
             let description = "Failed to log in with Google.";
 
-            interface ErrorWithStatus {
-                status?: number;
-                message?: string;
-            }
-            const status =
-                typeof error === "object" && error !== null && "status" in error
-                    ? (error as ErrorWithStatus).status
-                    : undefined;
-            const message =
-                typeof error === "object" && error !== null && "message" in error
-                    ? (error as ErrorWithStatus).message
-                    : undefined;
-
-            if (status === 401) {
+            if (error.status === 401) {
                 description = "Google account not authorized. Please use a valid account.";
-            } else if (status === 500) {
+            } else if (error.status === 500) {
                 description = "Server error. Please try again later.";
-            } else if (message) {
-                description = message;
+            } else if (error.message) {
+                description = error.message;
             }
+
             toast.add({
                 title: "Login Failed",
                 description,

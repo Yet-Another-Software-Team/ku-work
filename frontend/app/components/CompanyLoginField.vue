@@ -48,9 +48,10 @@
 <script setup lang="ts">
 import * as z from "zod";
 import type { FormSubmitEvent } from "@nuxt/ui";
+import { useApi, type LoginResponse } from "~/composables/useApi";
 
 const toast = useToast();
-const config = useRuntimeConfig();
+const api = useApi();
 
 const schema = z.object({
     username: z.string().min(1, "Username is required."),
@@ -58,13 +59,6 @@ const schema = z.object({
 });
 
 type Schema = z.output<typeof schema>;
-
-type loginResponse = {
-    token: string;
-    username: string;
-    isStudent: boolean;
-    isCompany: boolean;
-};
 
 const show = ref(false);
 const isLoggingIn = ref(false);
@@ -86,58 +80,42 @@ async function onSubmit(_: FormSubmitEvent<Schema>) {
     isLoggingIn.value = true;
 
     try {
-        const response: loginResponse = await $fetch("/login", {
-            method: "POST",
-            baseURL: config.public.apiBaseUrl,
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: {
+        const response = await api.post<LoginResponse>(
+            "/login",
+            {
                 username: state.username,
                 password: state.password,
             },
-            credentials: "include",
-        });
+            {
+                withCredentials: true,
+            }
+        );
 
-        localStorage.setItem("jwt_token", response.token);
-        localStorage.setItem("username", response.username);
-        if (response.isCompany) {
+        localStorage.setItem("jwt_token", response.data.token);
+        localStorage.setItem("username", response.data.username);
+        if (response.data.isCompany) {
             localStorage.setItem("role", "company");
-        } else if (response.isStudent) {
+        } else if (response.data.isStudent) {
             localStorage.setItem("role", "student");
         }
 
-        toast.add({
-            title: "Success",
-            description: "User logged in successfully!",
-            color: "success",
-        });
+        api.showSuccessToast("User logged in successfully!");
 
         state.username = "";
         state.password = "";
         show.value = false;
-    } catch (error: unknown) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
         let description = "Incorrect username or password. Please try again.";
-        interface ErrorWithStatus {
-            status?: number;
-            message?: string;
-        }
-        const status =
-            typeof error === "object" && error !== null && "status" in error
-                ? (error as ErrorWithStatus).status
-                : undefined;
-        const message =
-            typeof error === "object" && error !== null && "message" in error
-                ? (error as ErrorWithStatus).message
-                : undefined;
 
-        if (status === 401) {
+        if (error.status === 401) {
             description = "Incorrect username or password. Please try again.";
-        } else if (status === 500) {
+        } else if (error.status === 500) {
             description = "Server error. Please try again later.";
-        } else if (message) {
-            description = message;
+        } else if (error.message) {
+            description = error.message;
         }
+
         toast.add({
             title: "Login Failed",
             description,
