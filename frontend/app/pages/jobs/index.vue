@@ -102,7 +102,7 @@ const api = useApi();
 let currentJobOffset = 0;
 const jobsLimitPerFetch = 10;
 
-interface jobApplicationForm {
+interface getJobApplicationForm {
     limit: number;
     offset: number;
     location?: string;
@@ -114,7 +114,7 @@ interface jobApplicationForm {
 }
 
 const fetchJobs = async () => {
-    const jobForm: jobApplicationForm = {
+    const jobForm: getJobApplicationForm = {
         limit: jobsLimitPerFetch,
         offset: currentJobOffset,
         location: location.value ?? "",
