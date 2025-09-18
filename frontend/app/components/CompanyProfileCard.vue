@@ -62,7 +62,9 @@
                                 name="material-symbols:link-rounded"
                                 class="size-[2em] text-black dark:text-white"
                             />
-                            <span class="w-[10em] truncate">{{ data.profile.website }}</span>
+                            <span class="w-[10rem] text-sm truncate">{{
+                                data.profile.website
+                            }}</span>
                         </a>
                     </li>
                     <li>
@@ -75,7 +77,7 @@
                                 name="material-symbols:mail-outline"
                                 class="size-[2em] text-black dark:text-white"
                             />
-                            <span class="w-[10em] truncate">{{ email }}</span>
+                            <span class="w-[10rem] text-sm truncate">{{ email }}</span>
                         </a>
                     </li>
                 </ul>
