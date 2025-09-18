@@ -1,14 +1,5 @@
 <template>
-    <a href="/dashboard">
-        <h1
-            class="flex items-center text-5xl text-primary-800 dark:text-primary font-bold mb-6 gap-2 cursor-pointer"
-        >
-            <Icon name="iconoir:nav-arrow-left" class="items-center" />
-            <span>Back</span>
-        </h1>
-    </a>
-
-    <div class="flex w-full p-6 bg-white rounded-xl shadow-md mx-auto max-w-4xl overflow-visible">
+    <div class="flex w-full p-6 mt-4 bg-white rounded-xl mx-auto max-w-6xl overflow-visible">
         <form class="space-y-4 w-full flex-1" @submit.prevent="onSubmit">
             <!-- Job Title -->
             <div class="grid grid-cols-12 gap-4 items-center w-full">
@@ -137,13 +128,23 @@
                 </div>
             </div>
 
-            <!-- Submit -->
+            <!-- Post & Cancel -->
             <div class="grid grid-cols-12 w-full">
-                <div class="col-span-12 md:col-start-9 md:col-span-4 flex justify-end">
+                <div class="col-span-12 md:col-start-9 md:col-span-4 flex justify-end gap-x-3">
+                    <!-- Cancel -->
+                    <UButton
+                        class="size-fit text-xl rounded-md px-15 font-medium hover:bg-gray-200 hover:cursor-pointer"
+                        color="neutral"
+                        variant="outline"
+                        label="Cancel"
+                        @click="cancel"
+                    />
+
+                    <!-- Post -->
                     <UButton
                         class="size-fit text-xl text-white rounded-md px-15 font-medium bg-primary-500 hover:bg-primary-700 hover:cursor-pointer active:bg-primary-800"
                         type="submit"
-                        label="Submit"
+                        label="Post"
                     />
                 </div>
             </div>
@@ -155,7 +156,11 @@
 import { ref, reactive, watch } from "vue";
 import * as z from "zod";
 
+const emit = defineEmits(["close"]);
+
 const { add: addToast } = useToast();
+
+const showDiscardConfirm = ref(false);
 
 const form = ref({
     title: "",
@@ -210,12 +215,10 @@ const schema = z
 function validateField(fieldName, value) {
     try {
         schema.pick({ [fieldName]: true }).parse({ [fieldName]: value });
-
         if (typeof value === "string" && value.trim() === "") {
             errors[fieldName] = "This field is required";
             return false;
         }
-
         errors[fieldName] = "";
         return true;
     } catch (error) {
@@ -232,12 +235,15 @@ function validateSalaryCross() {
     errors.salary = "";
     const min = Number(form.value.minSalary);
     const max = Number(form.value.maxSalary);
-
     if (!Number.isFinite(min) || !Number.isFinite(max)) return;
-
     if (min > max) {
         errors.salary = "Minimum salary must be less than or equal to maximum salary";
     }
+}
+
+function cancel() {
+    showDiscardConfirm.value = false;
+    emit("close");
 }
 
 watch(
@@ -278,7 +284,6 @@ watch(
 
 function onSubmit() {
     const result = schema.safeParse(form.value);
-
     if (!result.success) {
         for (const issue of result.error.issues) {
             const key = issue.path?.[0];
@@ -301,5 +306,6 @@ function onSubmit() {
         description: "Your job post has been saved successfully.",
         color: "success",
     });
+    emit("close");
 }
 </script>

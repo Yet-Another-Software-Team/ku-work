@@ -1,14 +1,5 @@
 <template>
-    <a href="/dashboard">
-        <h1
-            class="flex items-center text-5xl text-primary-800 dark:text-primary font-bold mb-6 gap-2 cursor-pointer"
-        >
-            <Icon name="iconoir:nav-arrow-left" class="items-center" />
-            <span>Back</span>
-        </h1>
-    </a>
-
-    <div class="flex w-full p-6 bg-white rounded-xl shadow-md mx-auto max-w-4xl overflow-visible">
+    <div class="flex w-full p-6 mt-4 bg-white rounded-xl mx-auto max-w-6xl overflow-visible">
         <form class="space-y-4 w-full flex-1" @submit.prevent="onSubmit">
             <!-- Job Title -->
             <div class="grid grid-cols-12 gap-4 items-center w-full">
@@ -140,6 +131,16 @@
             <!-- Save & Discard -->
             <div class="grid grid-cols-12 w-full">
                 <div class="col-span-12 md:col-start-9 md:col-span-4 flex justify-end gap-x-3">
+                    <!-- Discard (opens confirm modal) -->
+                    <UButton
+                        class="size-fit text-xl rounded-md px-15 font-medium hover:bg-gray-200 hover:cursor-pointer"
+                        color="neutral"
+                        variant="outline"
+                        label="Discard"
+                        @click="showDiscardConfirm = true"
+                    />
+
+                    <!-- Confirm Discard Modal -->
                     <UModal
                         v-model:open="showDiscardConfirm"
                         title="Discard Change?"
@@ -150,18 +151,10 @@
                             overlay: 'fixed inset-0 bg-black/50',
                         }"
                     >
-                        <UButton
-                            class="size-fit text-xl rounded-md px-15 font-medium hover:bg-gray-200 hover:cursor-pointer"
-                            color="neutral"
-                            variant="outline"
-                            label="Discard"
-                            @click="showDiscardConfirm = true"
-                        />
                         <template #body>
                             <div class="space-y-2">
                                 <p class="text-gray-600">
-                                    This will discard your current inputs and reload your old data.
-                                    Are you sure?
+                                    This will discard your current inputs. Are you sure?
                                 </p>
                             </div>
                         </template>
@@ -170,12 +163,12 @@
                                 <UButton variant="outline" color="neutral" @click="cancelDiscard">
                                     Cancel
                                 </UButton>
-                                <UButton color="primary" @click="confirmDiscard">
-                                    Discard & Reload
-                                </UButton>
+                                <UButton color="primary" @click="confirmDiscard"> Discard </UButton>
                             </div>
                         </template>
                     </UModal>
+
+                    <!-- Save -->
                     <UButton
                         class="size-fit text-xl text-white rounded-md px-15 font-medium bg-primary-500 hover:bg-primary-700 hover:cursor-pointer active:bg-primary-800"
                         type="submit"
@@ -190,6 +183,8 @@
 <script setup>
 import { ref, reactive, watch } from "vue";
 import * as z from "zod";
+
+const emit = defineEmits(["close"]);
 
 const { add: addToast } = useToast();
 
@@ -274,14 +269,18 @@ function validateSalaryCross() {
     }
 }
 
+function cancelDiscard() {
+    showDiscardConfirm.value = false;
+}
+
 function confirmDiscard() {
-    // Need to load old data here
     showDiscardConfirm.value = false;
     addToast({
         title: "Changes discarded",
         description: "Old data reloaded.",
         color: "success",
     });
+    emit("close");
 }
 
 watch(
@@ -344,5 +343,6 @@ function onSubmit() {
         description: "Your job post has been saved successfully.",
         color: "success",
     });
+    emit("close");
 }
 </script>
