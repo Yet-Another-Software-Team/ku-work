@@ -35,7 +35,9 @@
             <!-- Job info -->
             <div class="flex flex-col py-5">
                 <h2 class="font-semibold text-gray-900 dark:text-[#fdfdfd]">{{ data.position }}</h2>
-                <p class="text-sm text-gray-500 dark:text-gray-200">{{ data.location }}</p>
+                <p class="capitalize text-sm text-gray-500 dark:text-gray-200">
+                    {{ data.location }}
+                </p>
                 <div class="flex space-x-2 mt-2">
                     <span class="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">
                         {{ data.jobType }}

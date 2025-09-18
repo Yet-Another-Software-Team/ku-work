@@ -1,32 +1,50 @@
 <template>
     <div class="flex">
-        <span class="w-full">
+        <section class="w-full">
+            <!-- Title -->
             <h1
                 class="flex items-center text-5xl text-primary-800 dark:text-primary font-bold mb-6 gap-2 cursor-pointer"
             >
                 <span>Job Board</span>
             </h1>
+            <!-- Search component -->
             <div class="my-5">
-                <JobSearchComponents />
+                <JobSearchComponents
+                    :locations="jobs.map((job) => job.location)"
+                    @update:search="search = $event"
+                    @update:location="location = $event"
+                />
+
+                <!-- More options -->
+                <div>
+                    <SearchMoreButton
+                        @update:salary-range="salaryRange = $event"
+                        @update:job-type="jobType = $event"
+                        @update:exp-type="expType = $event"
+                    />
+                </div>
             </div>
-            <section v-for="index in totalJob" :key="index">
+            <!-- Job applications -->
+            <section v-for="(job, index) in filteredJobs" :key="index">
                 <JobApplicationComponent
                     :is-selected="selectedIndex === index"
-                    :data="jobs[index % jobs.length] || jobs[0]!"
+                    :data="job"
                     @click="selectedIndex = index"
                 />
             </section>
-        </span>
-        <span v-if="selectedIndex" class="flex">
+        </section>
+        <!-- Expanded application -->
+        <section v-if="selectedIndex !== null && selectedIndex < filteredJobs.length" class="flex">
             <USeparator orientation="vertical" class="w-fit mx-5" color="neutral" size="lg" />
             <section>
                 <ExpandedJobApplication
+                    v-if="filteredJobs.length > 0"
                     :is-viewer="false"
                     :is-selected="true"
-                    :data="jobs[selectedIndex % jobs.length] || jobs[0]!"
+                    :data="filteredJobs[selectedIndex]!"
                 />
             </section>
-        </span>
+        </section>
     </div>
 </template>
 
@@ -34,12 +52,89 @@
 import { ref } from "vue";
 import ExpandedJobApplication from "~/components/ExpandedJobApplication.vue";
 import { mockJobData, type JobApplication } from "~/data/mockData";
+import type { CheckboxGroupValue } from "@nuxt/ui";
 
 definePageMeta({
     layout: "viewer",
 });
 
-const totalJob = 10;
+// Jobs
 const jobs: JobApplication[] = mockJobData.jobs;
 const selectedIndex = ref<number | null>(null);
+
+// Search and Location
+const search = ref("");
+const location = ref<string | null>(null);
+// More filters
+const jobType = ref<CheckboxGroupValue[] | null>(null);
+const expType = ref<CheckboxGroupValue[] | null>(null);
+const salaryRange = ref<number[] | null>(null);
+
+const filteredJobs = computed(() => {
+    return jobs.filter((job) => {
+        const matchesSearch =
+            job.position.toLowerCase().includes(search.value.toLowerCase()) ||
+            job.name.toLowerCase().includes(search.value.toLowerCase());
+
+        const matchesLocation =
+            !location.value || job.location.toLowerCase().includes(location.value.toLowerCase());
+
+        const matchesSalary =
+            !salaryRange.value ||
+            (job.minSalary >= (salaryRange.value[0] ?? 0) &&
+                job.maxSalary <= (salaryRange.value[1] ?? Infinity));
+
+        const matchesJobType =
+            !jobType.value || jobType.value.length === 0 || jobType.value.includes(job.jobType);
+
+        const matchesExpType =
+            !expType.value ||
+            expType.value.length === 0 ||
+            expType.value.includes(job.experienceType);
+
+        return (
+            matchesSearch && matchesLocation && matchesSalary && matchesJobType && matchesExpType
+        );
+    });
+});
+
+// API call to fetch jobs
+const api = useApi();
+let currentJobOffset = 0;
+const jobsLimitPerFetch = 10;
+
+interface jobApplicationForm {
+    limit: number;
+    offset: number;
+    location?: string;
+    keyword?: string;
+    jobtype?: string[];
+    experience?: string[];
+    minsalary?: number;
+    maxsalary?: number;
+}
+
+const fetchJobs = async () => {
+    const jobForm: jobApplicationForm = {
+        limit: jobsLimitPerFetch,
+        offset: currentJobOffset,
+        location: location.value ?? "",
+        keyword: search.value ?? "",
+        jobtype: jobType.value ? jobType.value.map(String) : [""],
+        experience: expType.value ? expType.value.map(String) : undefined,
+        minsalary: salaryRange.value ? salaryRange.value[0] : 0,
+        maxsalary: salaryRange.value ? salaryRange.value[1] : 99999999,
+    };
+    try {
+        const response = await api.get("/job", {
+            params: { jobForm },
+        });
+        console.log("Jobs fetched:", response.data);
+        currentJobOffset += jobsLimitPerFetch;
+        jobs.push(...response.data.jobs);
+    } catch (error) {
+        console.error("Error fetching jobs:", error);
+    }
+};
+await fetchJobs();
 </script>

@@ -60,7 +60,7 @@
                 {{ data.position }}
             </p>
             <p>
-                <span class="text-[#15543A] font-semibold">Location: </span>
+                <span class="text-[#15543A] font-semibold capitalize">Location: </span>
                 {{ data.location }}
             </p>
             <p>

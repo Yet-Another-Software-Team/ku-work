@@ -28,40 +28,50 @@
                 placeholder="Location"
                 value-key="id"
                 :items="items"
-                class="w-[15em]"
+                :search-input="{
+                    placeholder: 'Filter...',
+                    icon: 'i-lucide-search',
+                }"
+                class="w-[15em] capitalize"
                 icon="material-symbols:location-on-outline-rounded"
-            />
-        </div>
-
-        <!-- More options -->
-        <div>
-            <SearchMoreButton />
+            >
+                <template v-if="selectedValue" #trailing>
+                    <UButton
+                        icon="i-lucide:x"
+                        variant="link"
+                        color="neutral"
+                        @click.stop="selectedValue = undefined"
+                    />
+                </template>
+            </USelectMenu>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
 import { UButton } from "#components";
-import SearchMoreButton from "./SearchMoreButton.vue";
 
-const items = ref([
-    {
-        label: "Item1",
-        id: "item1",
-        icon: "eos-icons:rotating-gear",
-    },
-    {
-        label: "Item2",
-        id: "item2",
-        icon: "eos-icons:rotating-gear",
-    },
-    {
-        label: "Item3",
-        id: "item3",
-        icon: "eos-icons:rotating-gear",
-    },
-]);
+const emit = defineEmits<{
+    (e: "update:search", value: string): void;
+    (e: "update:location", value: string | null): void;
+}>();
 
-const selectedValue = ref();
+const props = defineProps<{
+    locations?: string[];
+}>();
+
+const items = computed(() => {
+    const unique = [...new Set(props.locations?.map((loc) => loc.toLowerCase()) ?? [])].sort();
+    return unique.map((loc) => ({
+        label: loc,
+        id: loc,
+        class: "capitalize",
+    }));
+});
+
+const selectedValue = ref<string | undefined>(undefined);
 const searchValue = ref("");
+
+watch(searchValue, (val) => emit("update:search", val));
+watch(selectedValue, (val) => emit("update:location", val ?? null));
 </script>
