@@ -93,7 +93,7 @@
                             placeholder="Minimum Salary"
                             class="w-full"
                         >
-                            <template #trailing>Baht</template>
+                            <template #trailing>฿</template>
                         </UInput>
                         <UInput
                             v-model="form.maxSalary"
@@ -101,7 +101,7 @@
                             placeholder="Maximum Salary"
                             class="w-full"
                         >
-                            <template #trailing>Baht</template>
+                            <template #trailing>฿</template>
                         </UInput>
                     </div>
                     <span class="text-error text-sm">
@@ -161,6 +161,8 @@ const emit = defineEmits(["close"]);
 const { add: addToast } = useToast();
 
 const showDiscardConfirm = ref(false);
+
+const api = useApi();
 
 const form = ref({
     title: "",
@@ -282,7 +284,7 @@ watch(
     }
 );
 
-function onSubmit() {
+async function onSubmit() {
     const result = schema.safeParse(form.value);
     if (!result.success) {
         for (const issue of result.error.issues) {
@@ -297,6 +299,15 @@ function onSubmit() {
             title: "Form submission failed",
             description: "Please check the highlighted errors and try again.",
             color: "warning",
+        });
+        return;
+    }
+    const response = await api.post("/job", result.data);
+    if (response.status !== 200) {
+        addToast({
+            title: "Form submission failed",
+            description: response.data?.message || "An error occurred. Please try again.",
+            color: "error",
         });
         return;
     }
