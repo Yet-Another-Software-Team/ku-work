@@ -2,14 +2,18 @@
     <div class="rounded-lg">
         <!-- Header -->
         <h1 class="text-5xl text-primary-800 dark:text-primary font-bold mb-6">Profile</h1>
+        <!-- Banner -->
+        <div class="bg-gray-300 h-32 rounded-t-lg relative overflow-hidden">
+            <img :src="data.profile.banner" alt="Banner" />
+        </div>
 
         <!-- Top Section -->
-        <div class="flex flex-wrap">
+        <div class="flex flex-wrap relative">
             <!-- Profile Image -->
-            <div class="w-[12em] mr-5">
-                <div v-if="data.profile.photo" class="w-40 h-40 flex-shrink-0">
+            <div class="w-[12em] mr-5 -mt-20">
+                <div v-if="data.profile.logo" class="w-40 h-40 flex-shrink-0">
                     <img
-                        :src="data.profile.photo"
+                        :src="data.profile.logo"
                         alt="Profile photo"
                         class="w-40 h-40 object-cover rounded-full justify-center items-center m-2"
                     />
@@ -25,23 +29,14 @@
                     {{ data.profile.name }}
                 </h2>
                 <p class="text-gray-600 dark:text-gray-300">
-                    {{ data.profile.major }}
-                </p>
-
-                <p class="mt-2 text-gray-800 dark:text-gray-200 font-semibold">
-                    Age: <span class="font-normal">{{ age }}</span>
-                </p>
-                <p class="text-gray-800 dark:text-gray-200 font-semibold">
-                    Phone: <span class="font-normal">{{ data.profile.phone }}</span>
-                </p>
-                <p class="text-gray-800 dark:text-gray-200 font-semibold">
-                    Email: <span class="font-normal">{{ email }}</span>
+                    {{ data.profile.address }}
                 </p>
             </div>
 
             <!-- Edit Button -->
             <button
-                class="px-4 py-2 border border-gray-400 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center mt-4 sm:mt-0 sm:ml-10 mr-auto mb-auto"
+                v-if="isOwner"
+                class="px-4 py-2 border border-gray-400 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center mt-4 ml-auto mb-auto"
             >
                 <Icon name="material-symbols:edit-square-outline-rounded" class="size-[1.5em]" />
                 Edit Profile
@@ -59,22 +54,30 @@
                 <ul class="space-y-2 text-primary-600">
                     <li>
                         <a
-                            :href="data.profile.linkedIn"
+                            :href="data.profile.website"
                             target="_blank"
                             class="flex items-center gap-2 hover:underline"
                         >
-                            <Icon name="devicon:linkedin" class="size-[2em]" />
-                            <span class="w-[10em] truncate">{{ data.profile.name }}</span>
+                            <Icon
+                                name="material-symbols:link-rounded"
+                                class="size-[2em] text-black dark:text-white"
+                            />
+                            <span class="w-[10rem] text-sm truncate">{{
+                                data.profile.website
+                            }}</span>
                         </a>
                     </li>
                     <li>
                         <a
-                            :href="data.profile.github"
+                            :href="email"
                             target="_blank"
                             class="flex items-center gap-2 hover:underline"
                         >
-                            <Icon name="devicon:github" class="size-[2em] bg-white rounded-full" />
-                            <span class="w-[10em] truncate">{{ data.profile.name }}</span>
+                            <Icon
+                                name="material-symbols:mail-outline"
+                                class="size-[2em] text-black dark:text-white"
+                            />
+                            <span class="w-[10rem] text-sm truncate">{{ email }}</span>
                         </a>
                     </li>
                 </ul>
@@ -82,9 +85,9 @@
 
             <!-- About Me -->
             <div class="flex-1">
-                <h3 class="font-semibold text-gray-800 dark:text-white mb-2">About me</h3>
+                <h3 class="font-semibold text-gray-800 dark:text-white mb-2">About us</h3>
                 <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
-                    {{ data.profile.aboutMe }}
+                    {{ data.profile.aboutUs }}
                 </p>
             </div>
         </div>
@@ -92,39 +95,32 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import { mockUserData } from "~/data/mockData";
+import { mockCompanyData } from "~/data/mockData";
 
-const data = mockUserData;
-
-// Compute age
-const age = computed(() => {
-    const birth = new Date(data.profile.birthDate);
-    const today = new Date();
-    let years = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-        years--;
+withDefaults(
+    defineProps<{
+        isOwner?: boolean;
+    }>(),
+    {
+        isOwner: true,
     }
-    return years;
-});
+);
 
+const data = mockCompanyData;
 const email = "john.doe@ku.th";
 
 // const api = useApi();
 
 // onMounted(async () => {
 //     try {
-//         const response = await api.get("/students", {
-//             params: { userId: localStorage.getItem("userId") },
-//         });
+//         const response = await api.get("/company");
 //         if (response.status === 200) {
-//             console.log("Successfully fetched student profile:", response.data);
+//             console.log("Successfully fetched company profile:", response.data);
 //         } else {
-//             console.error("Failed to fetch student profile:", response.message);
+//             console.error("Failed to fetch company profile:", response.message);
 //         }
 //     } catch (error) {
-//         console.error("Error fetching student profile:", error);
+//         console.error("Error fetching company profile:", error);
 //     }
 // });
 </script>
