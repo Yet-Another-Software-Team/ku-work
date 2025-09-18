@@ -1,5 +1,9 @@
 <template>
     <section class="min-w-64">
+        <div
+            v-if="loading"
+            class="fixed inset-0 flex items-center justify-center bg-white z-50"
+        ></div>
         <!-- Sidebar toggle with button (mobile, ipad, small screens) -->
         <USlideover
             side="left"
@@ -20,7 +24,7 @@
                     <h1 class="text-2xl font-bold text-white mb-4">Icon here</h1>
                     <ThemeToggle />
                 </header>
-                <SidebarMenu :items="getSidebarItems(isViewer, isAdmin)" />
+                <SidebarMenu :items="getSidebarItems(isViewer, isAdmin, isCompany)" />
                 <!-- bottom -->
                 <div class="mt-auto">
                     <LogoutButton />
@@ -35,7 +39,7 @@
                 <h1 class="text-2xl font-bold text-white mb-4">Icon here</h1>
                 <ThemeToggle />
             </header>
-            <SidebarMenu :items="getSidebarItems(isViewer, isAdmin)" />
+            <SidebarMenu :items="getSidebarItems(isViewer, isAdmin, isCompany)" />
             <div class="mt-auto">
                 <LogoutButton />
             </div>
@@ -44,20 +48,31 @@
 </template>
 
 <script setup lang="ts">
-withDefaults(
-    defineProps<{
-        isViewer?: boolean;
-        isAdmin?: boolean;
-    }>(),
-    {
-        isViewer: false,
-        isAdmin: false,
+const isViewer = ref(true);
+const isCompany = ref(false);
+const isAdmin = ref(false);
+const loading = ref(true);
+
+onMounted(() => {
+    const role = localStorage.getItem("role");
+
+    if (role === "company") {
+        isViewer.value = false;
+        isCompany.value = true;
+        isAdmin.value = false;
     }
-);
+    if (role === "student") {
+        isViewer.value = false;
+        isCompany.value = false;
+        isAdmin.value = false;
+    }
+    loading.value = false;
+});
 
 function getSidebarItems(
     isViewer: boolean,
-    isAdmin: boolean
+    isAdmin: boolean,
+    isCompany: boolean
 ): Array<{ label: string; icon: string; to: string; disable: boolean }> {
     if (isAdmin) {
         return [
@@ -70,14 +85,15 @@ function getSidebarItems(
         ];
     }
 
-    const items = [
-        {
+    const items = [];
+    if (!isCompany) {
+        items.push({
             label: "Job Board",
             icon: "ic:baseline-work",
             to: "/jobs",
             disable: false,
-        },
-    ];
+        });
+    }
     if (!isViewer) {
         items.unshift({
             label: "Profile",

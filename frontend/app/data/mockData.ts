@@ -17,6 +17,21 @@ interface Profile {
     };
 }
 
+interface CompanyProfile {
+    profile: {
+        name: string;
+        id: string;
+        approved: boolean;
+        phone: string;
+        logo: string;
+        banner: string;
+        aboutUs: string;
+        website: string;
+        contact: string;
+        address: string;
+    };
+}
+
 interface JobApplication {
     id: string;
     createdAt: string;
@@ -116,6 +131,22 @@ const multipleMockUserData: Profile[] = [
     },
 ];
 
+const mockCompanyData: CompanyProfile = {
+    profile: {
+        name: "TechNova Solutions Co., Ltd.",
+        id: "COMP-2025-001",
+        approved: true,
+        phone: "+66 2 123 4567",
+        logo: "https://placehold.co/200x200?text=Logo",
+        banner: "https://placehold.co/1200x300?text=Company+Banner",
+        aboutUs:
+            "TechNova Solutions is a leading provider of innovative IT and data analytics solutions. We specialize in cloud computing, business intelligence, and AI-driven platforms to help companies scale efficiently in the digital era.",
+        website: "https://www.technova.co.th",
+        contact: "contact@technova.co.th",
+        address: "99/9 Rama IX Road, Huai Khwang, Bangkok 10310, Thailand",
+    },
+};
+
 const mockJobData: Job = {
     jobs: [
         {
@@ -142,7 +173,7 @@ const mockJobData: Job = {
             position: "Frontend Developer",
             duration: "Contract",
             description: "Work on building modern web applications with Vue.js and TypeScript.",
-            location: "Remote",
+            location: "Thailand",
             jobType: "Contract",
             experienceType: "Junior",
             minSalary: 30000,
@@ -170,5 +201,5 @@ const mockJobData: Job = {
     ],
 };
 
-export { mockUserData, multipleMockUserData, mockJobData };
-export type { Profile, JobApplication, Job };
+export { mockUserData, multipleMockUserData, mockCompanyData, mockJobData };
+export type { Profile, CompanyProfile, JobApplication, Job };

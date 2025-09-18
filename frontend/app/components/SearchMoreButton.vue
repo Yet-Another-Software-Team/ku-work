@@ -69,6 +69,11 @@
 import { ref } from "vue";
 import type { CheckboxGroupItem, CheckboxGroupValue } from "@nuxt/ui";
 
+const emit = defineEmits<{
+    (e: "update:salaryRange", value: number[] | null): void;
+    (e: "update:jobType" | "update:expType", value: CheckboxGroupValue[] | null): void;
+}>();
+
 const maxSalary = 2000000;
 const sliderValues = ref([0, 750000]);
 const showFilters = ref(false);
@@ -76,12 +81,16 @@ const showFilters = ref(false);
 const jobTypeItems = ref<CheckboxGroupItem[]>(["Full Time", "Part Time", "Contract", "Casual"]);
 const jobTypeValue = ref<CheckboxGroupValue[]>([]);
 
-const expTypeItems = ref<CheckboxGroupItem[]>(["Internship", "Freelance", "Temporary"]);
+const expTypeItems = ref<CheckboxGroupItem[]>(["New Grad", "Junior", "Senior", "Lead", "Manager"]);
 const expTypeValue = ref<CheckboxGroupValue[]>([]);
 
 function formatSalary(salary: number): string {
     return new Intl.NumberFormat("en", { notation: "compact" }).format(salary);
 }
+
+watch(sliderValues, (val) => emit("update:salaryRange", val));
+watch(jobTypeValue, (val) => emit("update:jobType", val));
+watch(expTypeValue, (val) => emit("update:expType", val));
 </script>
 
 <style scoped>
