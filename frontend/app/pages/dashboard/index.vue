@@ -16,12 +16,18 @@
             />
         </div>
         <div class="bg-primary p-2 rounded-full size-[4em] fixed bottom-5 right-[6vw]">
-            <Icon
-                name="ic:baseline-plus"
-                size="4em"
-                mode="svg"
-                class="absolute top-0 bottom-0 left-0 right-0 text-white"
-            />
+            <UModal v-model:open="openJobPostForm">
+                <Icon
+                    name="ic:baseline-plus"
+                    size="4em"
+                    mode="svg"
+                    class="absolute top-0 bottom-0 left-0 right-0 text-white"
+                    @click="openJobPostForm = true"
+                />
+                <template #content>
+                    <JobPostForm @close="openJobPostForm = false" />
+                </template>
+            </UModal>
         </div>
     </div>
 </template>
@@ -31,7 +37,9 @@ definePageMeta({
     layout: "viewer",
 });
 
-const data = [
+const openJobPostForm = ref(false);
+
+let data = [
     {
         id: 1,
         position: "Software Quality Assurance Engineer",
@@ -73,6 +81,23 @@ const data = [
         open: false,
     },
 ];
+
+const api = useApi();
+
+onMounted(async () => {
+    const keyword = localStorage.getItem("username") || "";
+    const response = await api.get("/job", {
+        params: {
+            keyword: keyword,
+        },
+    });
+    if (response.status !== 200) {
+        console.error("Failed to fetch jobs:", response.data?.message || "Unknown error");
+        return;
+    }
+    console.log("Fetched jobs:", response.data);
+    data = response.data.jobs;
+});
 
 const updateJobOpen = (id: number, value: boolean) => {
     const job = data.find((job) => job.id === id);
