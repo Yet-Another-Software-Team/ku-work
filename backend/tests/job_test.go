@@ -183,6 +183,37 @@ func TestJob(t *testing.T) {
 			t.Error(err)
 			return
 		}
+		photoFile := model.File{UserID: company.UserID, FileType: model.FileTypeJPEG, Category: model.FileCategoryImage}
+		if err := db.Create(&photoFile).Error; err != nil {
+			t.Error(err)
+			return
+		}
+		statusFile := model.File{UserID: company.UserID, FileType: model.FileTypePDF, Category: model.FileCategoryImage}
+		if err := db.Create(&statusFile).Error; err != nil {
+			t.Error(err)
+			return
+		}
+		student := model.Student{
+			UserID:              company.UserID,
+			Approved:            true,
+			PhotoID:             photoFile.ID,
+			StudentStatusFileID: statusFile.ID,
+		}
+		err = db.Create(&student).Error
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		jobApp := model.JobApplication{
+			JobID:  job.ID,
+			UserID: company.UserID,
+			Status: model.JobApplicationAccepted,
+		}
+		err = db.Create(&jobApp).Error
+		if err != nil {
+			t.Error(err)
+			return
+		}
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/job?keyword=nice", strings.NewReader(""))
 		jwtHandler := handlers.NewJWTHandlers(db)
@@ -203,7 +234,7 @@ func TestJob(t *testing.T) {
 		}
 		type Result struct {
 			Jobs  []JobWithApplicationStatistics `json:"jobs"`
-			Error string      `json:"error"`
+			Error string                         `json:"error"`
 		}
 		result := Result{}
 		err = json.Unmarshal(w.Body.Bytes(), &result)

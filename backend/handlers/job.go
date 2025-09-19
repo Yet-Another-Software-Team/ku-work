@@ -113,8 +113,23 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	isCompany := false
+	company := model.Company{
+		UserID: userId,
+	}
+	result := h.DB.Limit(1).Find(&company)
+	if result.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	} else if result.RowsAffected != 0 {
+		isCompany = true
+	}
 	keywordPattern := fmt.Sprintf("%%%s%%", input.Keyword)
 	query := h.DB.Model(&model.Job{})
+	if isCompany {
+		query = query.Joins("LEFT JOIN job_applications ON job_applications.job_id = jobs.id")
+		query = query.Select("jobs.*, COUNT(job_applications.id) AS total, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'accepted') AS accepted, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'rejected') AS rejected")
+	}
 	query = query.Where(h.DB.Where("name ILIKE ?", keywordPattern).Or("description ILIKE ?", keywordPattern))
 	query = query.Where("min_salary >= ?", input.MinSalary)
 	query = query.Where("max_salary <= ?", input.MaxSalary)
@@ -136,57 +151,30 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 		query = query.Where("experience IN ?", input.Experience)
 	}
 	query = query.Where(&model.Job{IsApproved: true})
+	if isCompany {
+		query = query.Group("jobs.id")
+	}
 	query = query.Offset(int(input.Offset))
 	query = query.Limit(int(input.Limit)).Preload("Company")
-	var jobs []model.Job
-	result := query.Find(&jobs)
-	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
-		return
-	}
-	company := model.Company{
-		UserID: userId,
-	}
-	result = h.DB.Limit(1).Find(&company)
-	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
-		return
-	} else if result.RowsAffected != 0 {
+	if isCompany {
 		var jobsWithStats []JobWithApplicationStatistics
-		for _, job := range jobs {
-			var total int64
-			if err := h.DB.Model(&model.JobApplication{}).Where(&model.JobApplication{
-				JobID: job.ID,
-			}).Count(&total).Error; err != nil {
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-			var accepted int64
-			if err := h.DB.Model(&model.JobApplication{}).Where(&model.JobApplication{
-				JobID:  job.ID,
-				Status: model.JobApplicationAccepted,
-			}).Count(&accepted).Error; err != nil {
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-			var rejected int64
-			if err := h.DB.Model(&model.JobApplication{}).Where(&model.JobApplication{
-				JobID:  job.ID,
-				Status: model.JobApplicationRejected,
-			}).Count(&rejected).Error; err != nil {
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-			jobsWithStats = append(jobsWithStats, JobWithApplicationStatistics{
-				Job:      job,
-				Total:    total,
-				Accepted: accepted,
-				Rejected: rejected,
-			})
+		result = query.Find(&jobsWithStats)
+		for _, job := range jobsWithStats {
+			println(job.ID)
+		}
+		if result.Error != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+			return
 		}
 		ctx.JSON(http.StatusOK, gin.H{
 			"jobs": jobsWithStats,
 		})
+		return
+	}
+	var jobs []model.Job
+	result = query.Find(&jobs)
+	if result.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{
