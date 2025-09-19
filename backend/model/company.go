@@ -13,9 +13,9 @@ type Company struct {
 	Email     string    `json:"email"`
 	Phone     string    `json:"phone"`
 	PhotoID   string    `gorm:"type:uuid" json:"photoId"`
-	Photo     File      `gorm:"foreignKey:PhotoID" json:"photo,omitempty"`
+	Photo     File      `gorm:"foreignKey:PhotoID" json:"-"`
 	BannerID  string    `gorm:"type:uuid" json:"bannerId"`
-	Banner    File      `gorm:"foreignKey:BannerID" json:"banner,omitempty"`
+	Banner    File      `gorm:"foreignKey:BannerID" json:"-"`
 	Address   string    `json:"address"`
 	City      string    `json:"city"`
 	Country   string    `json:"country"`
