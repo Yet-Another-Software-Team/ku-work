@@ -185,11 +185,24 @@ func TestJob(t *testing.T) {
 		}
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/job?keyword=nice", strings.NewReader(""))
+		jwtHandler := handlers.NewJWTHandlers(db)
+		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", jwtToken))
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		router.ServeHTTP(w, req)
 		assert.Equal(t, w.Code, 200)
+		type JobWithApplicationStatistics struct {
+			model.Job
+			Total    int64 `json:"total"`
+			Accepted int64 `json:"accepted"`
+			Rejected int64 `json:"rejected"`
+		}
 		type Result struct {
-			Jobs  []model.Job `json:"jobs"`
+			Jobs  []JobWithApplicationStatistics `json:"jobs"`
 			Error string      `json:"error"`
 		}
 		result := Result{}

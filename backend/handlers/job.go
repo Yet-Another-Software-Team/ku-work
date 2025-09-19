@@ -81,7 +81,15 @@ func (h *JobHandlers) CreateJob(ctx *gin.Context) {
 	})
 }
 
+type JobWithApplicationStatistics struct {
+	model.Job
+	Total    int64 `json:"total"`
+	Accepted int64 `json:"accepted"`
+	Rejected int64 `json:"rejected"`
+}
+
 func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
+	userId := ctx.MustGet("userID").(string)
 	type FetchJobsInput struct {
 		Limit      uint     `json:"limit" form:"limit" binding:"max=128"`
 		Offset     uint     `json:"offset" form:"offset"`
@@ -134,6 +142,51 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 	result := query.Find(&jobs)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+	company := model.Company{
+		UserID: userId,
+	}
+	result = h.DB.Limit(1).Find(&company)
+	if result.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	} else if result.RowsAffected != 0 {
+		var jobsWithStats []JobWithApplicationStatistics
+		for _, job := range jobs {
+			var total int64
+			if err := h.DB.Model(&model.JobApplication{}).Where(&model.JobApplication{
+				JobID: job.ID,
+			}).Count(&total).Error; err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			var accepted int64
+			if err := h.DB.Model(&model.JobApplication{}).Where(&model.JobApplication{
+				JobID:  job.ID,
+				Status: model.JobApplicationAccepted,
+			}).Count(&accepted).Error; err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			var rejected int64
+			if err := h.DB.Model(&model.JobApplication{}).Where(&model.JobApplication{
+				JobID:  job.ID,
+				Status: model.JobApplicationRejected,
+			}).Count(&rejected).Error; err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			jobsWithStats = append(jobsWithStats, JobWithApplicationStatistics{
+				Job:      job,
+				Total:    total,
+				Accepted: accepted,
+				Rejected: rejected,
+			})
+		}
+		ctx.JSON(http.StatusOK, gin.H{
+			"jobs": jobsWithStats,
+		})
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{

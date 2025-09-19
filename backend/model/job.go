@@ -45,14 +45,23 @@ type Job struct {
 	JobApplications []JobApplication `gorm:"foreignkey:JobID;constraint:OnDelete:CASCADE;" json:"-"`
 }
 
+type JobApplicationStatus string
+
+const (
+	JobApplicationAccepted JobApplicationStatus = "accepted"
+	JobApplicationRejected JobApplicationStatus = "rejected"
+	JobApplicationPending  JobApplicationStatus = "pending"
+)
+
 type JobApplication struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
-	CreatedAt time.Time `json:"createdAt"`
-	JobID     uint      `json:"jobId"`
-	UserID    string    `gorm:"type:uuid" json:"userId"`
-	AltPhone  string    `json:"phone"`
-	AltEmail  string    `json:"email"`
-	Files     []File    `gorm:"many2many:job_application_has_file;constraint:OnDelete:CASCADE;" json:"files"`
+	ID        uint                 `gorm:"primaryKey" json:"id"`
+	CreatedAt time.Time            `json:"createdAt"`
+	JobID     uint                 `json:"jobId"`
+	UserID    string               `gorm:"type:uuid" json:"userId"`
+	AltPhone  string               `json:"phone"`
+	AltEmail  string               `json:"email"`
+	Status    JobApplicationStatus `json:"status"`
+	Files     []File               `gorm:"many2many:job_application_has_file;constraint:OnDelete:CASCADE;" json:"files"`
 }
 
 func (jobApplication *JobApplication) BeforeDelete(tx *gorm.DB) (err error) {
