@@ -262,12 +262,19 @@ func TestCompany(t *testing.T) {
 			return
 		}
 		w := httptest.NewRecorder()
-		req, err := http.NewRequest("GET", fmt.Sprintf("/company?id=%s", company.UserID), strings.NewReader(""))
+		req, err := http.NewRequest("GET", "/company", strings.NewReader(""))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		jwtHandler := handlers.NewJWTHandlers(db)
+		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
 		if err != nil {
 			t.Error(err)
 			return
 		}
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", jwtToken))
 		router.ServeHTTP(w, req)
 		assert.Equal(t, w.Code, 200)
 		type Result struct {

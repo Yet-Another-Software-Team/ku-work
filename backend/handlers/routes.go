@@ -54,5 +54,5 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 
 	// Company routes
 	authed.PATCH("/company", companyHandler.EditProfileHandler)
-	router.GET("/company", companyHandler.GetProfileHandler)
+	authed.GET("/company", companyHandler.GetProfileHandler)
 }

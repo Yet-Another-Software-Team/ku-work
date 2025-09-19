@@ -106,6 +106,9 @@ func (h *CompanyHandlers) GetProfileHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	if input.ID == "" {
+		input.ID = ctx.MustGet("userID").(string)
+	}
 	company := model.Company{
 		UserID: input.ID,
 	}
