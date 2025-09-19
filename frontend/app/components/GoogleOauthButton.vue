@@ -44,7 +44,7 @@ const login = async () => {
 
             localStorage.setItem("jwt_token", response.data.token);
             localStorage.setItem("username", response.data.username);
-            localStorage.setItem("isRegistered", response.data.isRegistered.toString());
+            localStorage.setItem("isRegistered", response.data.isRegistered ? "true" : "false");
 
             if (response.data.isCompany) {
                 localStorage.setItem("role", "company");
