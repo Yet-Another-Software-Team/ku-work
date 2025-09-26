@@ -159,8 +159,8 @@ const api = useApi();
 const form = ref({
     title: "",
     location: "",
-    type: undefined,
-    experience: undefined,
+    type: "",
+    experience: "",
     minSalary: "",
     maxSalary: "",
     description: "",
@@ -298,7 +298,7 @@ async function onSubmit() {
     const response = await api.post("/job", result.data, {
         withCredentials: true,
     });
-    if (response.status !== 200) {
+    if (response.status < 200 || response.status >= 300) {
         addToast({
             title: "Form submission failed",
             description: response.data?.message || "An error occurred. Please try again.",
