@@ -81,7 +81,7 @@ async function onSubmit(_: FormSubmitEvent<Schema>) {
 
     try {
         const response = await api.post<LoginResponse>(
-            "/login",
+            "/company/login",
             {
                 username: state.username,
                 password: state.password,
