@@ -44,15 +44,12 @@
                     Job Type
                 </label>
                 <div class="col-span-12 md:col-span-8 relative z-50">
-                    <select
+                    <USelect
                         v-model="form.type"
-                        class="w-full px-2 py-1 text-black bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
-                    >
-                        <option value="" disabled>Select Job Type</option>
-                        <option v-for="opt in jobTypes" :key="opt.value" :value="opt.value">
-                            {{ opt.label }}
-                        </option>
-                    </select>
+                        placeholder="Select Job Type"
+                        class="w-full p-2 text-black bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
+                        :items="jobTypes"
+                    />
                     <span class="text-error text-sm">{{ errors.type }}</span>
                 </div>
             </div>
@@ -65,15 +62,12 @@
                     Required Experience
                 </label>
                 <div class="col-span-12 md:col-span-8 relative z-50">
-                    <select
+                    <USelect
                         v-model="form.experience"
-                        class="w-full px-2 py-1 text-black bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
-                    >
-                        <option value="" disabled>Select Required Experience</option>
-                        <option v-for="opt in experiences" :key="opt.value" :value="opt.value">
-                            {{ opt.label }}
-                        </option>
-                    </select>
+                        placeholder="Select Required Experience"
+                        class="w-full p-2 text-black bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
+                        :items="experiences"
+                    />
                     <span class="text-error text-sm">{{ errors.experience }}</span>
                 </div>
             </div>
@@ -87,22 +81,20 @@
                 </label>
                 <div class="col-span-12 md:col-span-8">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <UInput
+                        <UInputNumber
                             v-model="form.minSalary"
-                            type="number"
                             placeholder="Minimum Salary"
+                            orientation="vertical"
                             class="w-full"
-                        >
-                            <template #trailing>Baht</template>
-                        </UInput>
-                        <UInput
+                            :min="0"
+                        />
+                        <UInputNumber
                             v-model="form.maxSalary"
-                            type="number"
                             placeholder="Maximum Salary"
+                            orientation="vertical"
                             class="w-full"
-                        >
-                            <template #trailing>Baht</template>
-                        </UInput>
+                            :min="0"
+                        />
                     </div>
                     <span class="text-error text-sm">
                         {{ errors.salary || errors.minSalary || errors.maxSalary }}
@@ -161,6 +153,8 @@ const emit = defineEmits(["close"]);
 const { add: addToast } = useToast();
 
 const showDiscardConfirm = ref(false);
+
+const api = useApi();
 
 const form = ref({
     title: "",
@@ -282,7 +276,7 @@ watch(
     }
 );
 
-function onSubmit() {
+async function onSubmit() {
     const result = schema.safeParse(form.value);
     if (!result.success) {
         for (const issue of result.error.issues) {
@@ -297,6 +291,18 @@ function onSubmit() {
             title: "Form submission failed",
             description: "Please check the highlighted errors and try again.",
             color: "warning",
+        });
+        return;
+    }
+    console.log("Form data is valid:", result.data);
+    const response = await api.post("/job", result.data, {
+        withCredentials: true,
+    });
+    if (response.status < 200 || response.status >= 300) {
+        addToast({
+            title: "Form submission failed",
+            description: response.data?.message || "An error occurred. Please try again.",
+            color: "error",
         });
         return;
     }

@@ -37,7 +37,7 @@
         <section v-if="selectedIndex !== null && selectedIndex < filteredJobs.length" class="flex">
             <USeparator orientation="vertical" class="w-fit mx-5" color="neutral" size="lg" />
             <section>
-                <ExpandedJobApplication
+                <JobApplicationExpanded
                     v-if="filteredJobs.length > 0"
                     :is-viewer="false"
                     :is-selected="true"
@@ -50,7 +50,6 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import ExpandedJobApplication from "~/components/ExpandedJobApplication.vue";
 import { mockJobData, type JobApplication } from "~/data/mockData";
 import type { CheckboxGroupValue } from "@nuxt/ui";
 
@@ -103,7 +102,7 @@ const api = useApi();
 let currentJobOffset = 0;
 const jobsLimitPerFetch = 10;
 
-interface jobApplicationForm {
+interface getJobApplicationForm {
     limit: number;
     offset: number;
     location?: string;
@@ -115,7 +114,7 @@ interface jobApplicationForm {
 }
 
 const fetchJobs = async () => {
-    const jobForm: jobApplicationForm = {
+    const jobForm: getJobApplicationForm = {
         limit: jobsLimitPerFetch,
         offset: currentJobOffset,
         location: location.value ?? "",
