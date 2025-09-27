@@ -183,14 +183,58 @@ func TestJob(t *testing.T) {
 			t.Error(err)
 			return
 		}
+		photoFile := model.File{UserID: company.UserID, FileType: model.FileTypeJPEG, Category: model.FileCategoryImage}
+		if err := db.Create(&photoFile).Error; err != nil {
+			t.Error(err)
+			return
+		}
+		statusFile := model.File{UserID: company.UserID, FileType: model.FileTypePDF, Category: model.FileCategoryImage}
+		if err := db.Create(&statusFile).Error; err != nil {
+			t.Error(err)
+			return
+		}
+		student := model.Student{
+			UserID:              company.UserID,
+			Approved:            true,
+			PhotoID:             photoFile.ID,
+			StudentStatusFileID: statusFile.ID,
+		}
+		err = db.Create(&student).Error
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		jobApp := model.JobApplication{
+			JobID:  job.ID,
+			UserID: company.UserID,
+			Status: model.JobApplicationAccepted,
+		}
+		err = db.Create(&jobApp).Error
+		if err != nil {
+			t.Error(err)
+			return
+		}
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/job?keyword=nice", strings.NewReader(""))
+		jwtHandler := handlers.NewJWTHandlers(db)
+		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", jwtToken))
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		router.ServeHTTP(w, req)
 		assert.Equal(t, w.Code, 200)
+		type JobWithApplicationStatistics struct {
+			model.Job
+			Pending  int64 `json:"pending"`
+			Accepted int64 `json:"accepted"`
+			Rejected int64 `json:"rejected"`
+		}
 		type Result struct {
-			Jobs  []model.Job `json:"jobs"`
-			Error string      `json:"error"`
+			Jobs  []JobWithApplicationStatistics `json:"jobs"`
+			Error string                         `json:"error"`
 		}
 		result := Result{}
 		err = json.Unmarshal(w.Body.Bytes(), &result)
@@ -203,6 +247,7 @@ func TestJob(t *testing.T) {
 			return
 		}
 		assert.Equal(t, len(result.Jobs), 1)
+		assert.Equal(t, result.Jobs[0].Accepted, int64(1))
 		assert.Equal(t, result.Jobs[0].Position, "software engineer")
 	})
 	t.Run("Approve", func(t *testing.T) {
