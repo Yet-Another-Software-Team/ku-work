@@ -18,9 +18,9 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	companyHandler := NewCompanyHandlers(db)
 
 	//Authentication Routes
-	router.POST("/admin/login", localAuthHandlers.CompanyLoginHandler)
+	router.POST("/admin/login", localAuthHandlers.AdminLoginHandler)
 	router.POST("/company/register", localAuthHandlers.CompanyRegisterHandler)
-	router.POST("/company/login", localAuthHandlers.AdminLoginHandler)
+	router.POST("/company/login", localAuthHandlers.CompanyLoginHandler)
 	router.POST("/google/login", googleAuthHandlers.GoogleOauthHandler)
 	router.POST("/refresh", jwtHandler.RefreshTokenHandler)
 	router.POST("/logout", jwtHandler.LogoutHandler)
