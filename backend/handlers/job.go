@@ -83,7 +83,7 @@ func (h *JobHandlers) CreateJob(ctx *gin.Context) {
 
 type JobWithApplicationStatistics struct {
 	model.Job
-	Total    int64 `json:"total"`
+	Pending  int64 `json:"pending"`
 	Accepted int64 `json:"accepted"`
 	Rejected int64 `json:"rejected"`
 }
@@ -128,7 +128,7 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 	query := h.DB.Model(&model.Job{})
 	if isCompany {
 		query = query.Joins("LEFT JOIN job_applications ON job_applications.job_id = jobs.id")
-		query = query.Select("jobs.*, COUNT(job_applications.id) AS total, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'accepted') AS accepted, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'rejected') AS rejected")
+		query = query.Select("jobs.*, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'pending') AS pending, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'accepted') AS accepted, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'rejected') AS rejected")
 	}
 	query = query.Where(h.DB.Where("name ILIKE ?", keywordPattern).Or("description ILIKE ?", keywordPattern))
 	query = query.Where("min_salary >= ?", input.MinSalary)

@@ -228,7 +228,7 @@ func TestJob(t *testing.T) {
 		assert.Equal(t, w.Code, 200)
 		type JobWithApplicationStatistics struct {
 			model.Job
-			Total    int64 `json:"total"`
+			Pending  int64 `json:"pending"`
 			Accepted int64 `json:"accepted"`
 			Rejected int64 `json:"rejected"`
 		}
@@ -247,6 +247,7 @@ func TestJob(t *testing.T) {
 			return
 		}
 		assert.Equal(t, len(result.Jobs), 1)
+		assert.Equal(t, result.Jobs[0].Accepted, int64(1))
 		assert.Equal(t, result.Jobs[0].Position, "software engineer")
 	})
 	t.Run("Approve", func(t *testing.T) {
