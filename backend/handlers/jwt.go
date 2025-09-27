@@ -131,10 +131,10 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	ctx.SetCookie("refresh_token", newRefreshToken, int(time.Hour*24*30/time.Second), "/", "", true, true)
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"token":      jwtToken,
-		"username":   username,
-		"is_student": isStudent,
-		"is_company": isCompany,
+		"token":     jwtToken,
+		"username":  username,
+		"isStudent": isStudent,
+		"isCompany": isCompany,
 	})
 }
 
