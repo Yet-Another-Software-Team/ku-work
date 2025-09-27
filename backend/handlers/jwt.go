@@ -133,8 +133,8 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"token":      jwtToken,
 		"username":   username,
-		"is_student": isStudent,
-		"is_company": isCompany,
+		"isStudent": isStudent,
+		"isCompany": isCompany,
 	})
 }
 
