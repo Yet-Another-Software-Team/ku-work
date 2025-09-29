@@ -82,9 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { USeparator } from "#components";
 import type { JobApplication } from "~/data/mockData";
-import StudentApplyButton from "./StudentApplyButton.vue";
 
 defineProps<{
     data: JobApplication;
