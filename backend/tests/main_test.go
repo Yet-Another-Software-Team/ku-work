@@ -74,57 +74,118 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func CreateAdminUser(name string) (*model.User, error) {
-	var user model.User
+type UserCreationInfo struct {
+	Username  string
+	IsAdmin   bool
+	IsCompany bool
+	IsStudent bool
+}
+
+type UserCreationResult struct {
+	User    model.User
+	Admin   *model.Admin
+	Company *model.Company
+	Student *model.Student
+}
+
+func CreateUser(config UserCreationInfo) (*UserCreationResult, error) {
+	var result UserCreationResult
 	if err := db.Transaction(func(tx *gorm.DB) error {
-		user = model.User{
-			Username: name,
-		}
-		if result := tx.Create(&user); result.Error != nil {
+		result.User.Username = config.Username
+		if result := tx.Create(&result.User); result.Error != nil {
 			return result.Error
 		}
-		admin := model.Admin{
-			UserID: user.ID,
-		}
-		if result := tx.Create(&admin); result.Error != nil {
-			return result.Error
+		if config.IsAdmin {
+			admin := model.Admin{
+				UserID: result.User.ID,
+			}
+			if result := tx.Create(&admin); result.Error != nil {
+				return result.Error
+			}
+			result.Admin = &admin
 		}
 		return nil
 	}); err != nil {
 		return nil, err
 	}
-	return &user, nil
-}
-
-func CreateAdminCompany(username string) (*model.Company, error) {
-	var user *model.User
-	var err error
-	if user, err = CreateAdminUser(username); err != nil {
-		return nil, err
+	success := false
+	if config.IsCompany {
+		companyPhoto := model.File{
+			UserID:   result.User.ID,
+			FileType: model.FileTypePNG,
+			Category: model.FileCategoryDocument,
+		}
+		if err := db.Create(&companyPhoto).Error; err != nil {
+			return nil, err
+		}
+		defer (func() {
+			if !success {
+				_ = db.Delete(&companyPhoto)
+			}
+		})()
+		companyBanner := model.File{
+			UserID:   result.User.ID,
+			FileType: model.FileTypePNG,
+			Category: model.FileCategoryDocument,
+		}
+		if err := db.Create(&companyBanner).Error; err != nil {
+			return nil, err
+		}
+		defer (func() {
+			if !success {
+				_ = db.Delete(&companyBanner)
+			}
+		})()
+		company := model.Company{
+			UserID:   result.User.ID,
+			BannerID: companyBanner.ID,
+			PhotoID:  companyPhoto.ID,
+		}
+		if err := db.Create(&company).Error; err != nil {
+			return nil, err
+		}
+		defer (func() {
+			if !success {
+				_ = db.Delete(&company)
+			}
+		})()
+		result.Company = &company
 	}
-	companyPhoto := model.File{
-		UserID:   user.ID,
-		FileType: model.FileTypePNG,
-		Category: model.FileCategoryDocument,
+	if config.IsStudent {
+		photoFile := model.File{UserID: result.User.ID, FileType: model.FileTypeJPEG, Category: model.FileCategoryImage}
+		if err := db.Create(&photoFile).Error; err != nil {
+			return nil, err
+		}
+		defer (func() {
+			if !success {
+				_ = db.Delete(&photoFile)
+			}
+		})()
+		statusFile := model.File{UserID: result.User.ID, FileType: model.FileTypePDF, Category: model.FileCategoryImage}
+		if err := db.Create(&statusFile).Error; err != nil {
+			return nil, err
+		}
+		defer (func() {
+			if !success {
+				_ = db.Delete(&statusFile)
+			}
+		})()
+		student := model.Student{
+			UserID:              result.User.ID,
+			Approved:            true,
+			PhotoID:             photoFile.ID,
+			StudentStatusFileID: statusFile.ID,
+		}
+		if err := db.Create(&student).Error; err != nil {
+			return nil, err
+		}
+		defer (func() {
+			if !success {
+				_ = db.Delete(&student)
+			}
+		})()
+		result.Student = &student
 	}
-	if err = db.Create(&companyPhoto).Error; err != nil {
-		return nil, err
-	}
-	companyBanner := model.File{
-		UserID:   user.ID,
-		FileType: model.FileTypePNG,
-		Category: model.FileCategoryDocument,
-	}
-	if err = db.Create(&companyBanner).Error; err != nil {
-		return nil, err
-	}
-	company := model.Company{
-		UserID:   user.ID,
-		BannerID: companyBanner.ID,
-		PhotoID:  companyPhoto.ID,
-	}
-	if err = db.Create(&company).Error; err != nil {
-		return nil, err
-	}
-	return &company, nil
+	success = true
+	return &result, nil
 }
