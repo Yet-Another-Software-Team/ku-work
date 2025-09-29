@@ -77,7 +77,7 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 	}
 	student := model.Student{
 		UserID:              userId,
-		Approved:            false,
+		ApprovalStatus:      model.StudentApprovalPending,
 		Phone:               input.Phone,
 		PhotoID:             photo.ID,
 		BirthDate:           datatypes.Date(parsedBirthDate),
@@ -172,7 +172,8 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 
 func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 	type StudentRegistrationApprovalInput struct {
-		UserID string `json:"id" binding:"max=128"`
+		UserID  string `json:"id" binding:"max=128"`
+		Approve bool   `json:"approve"`
 	}
 	input := StudentRegistrationApprovalInput{}
 	err := ctx.Bind(&input)
@@ -185,13 +186,17 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 	}
 	result := h.DB.First(&student)
 	if result.Error != nil {
-		ctx.String(http.StatusInternalServerError, result.Error.Error())
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
-	student.Approved = true
+	if input.Approve {
+		student.ApprovalStatus = model.StudentApprovalAccepted
+	} else {
+		student.ApprovalStatus = model.StudentApprovalRejected
+	}
 	result = h.DB.Save(&student)
 	if result.Error != nil {
-		ctx.String(http.StatusInternalServerError, result.Error.Error())
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{
@@ -202,10 +207,10 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 	userId := ctx.MustGet("userID").(string)
 	type GetStudentProfileInput struct {
-		UserID   string `form:"id" binding:"max=128"`
-		Offset   int    `json:"offset" form:"offset"`
-		Limit    int    `json:"limit" form:"limit" binding:"max=64"`
-		Approved *bool  `json:"approved" form:"approved"`
+		UserID         string `form:"id" binding:"max=128"`
+		Offset         int    `json:"offset" form:"offset"`
+		Limit          int    `json:"limit" form:"limit" binding:"max=64"`
+		ApprovalStatus string `json:"approvalStatus" form:"approvalStatus" binding:"max=64"`
 	}
 	input := GetStudentProfileInput{
 		Limit: 64,
@@ -228,9 +233,9 @@ func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 			return
 		} else if result.RowsAffected != 0 {
 			var students []model.Student
-			if input.Approved != nil {
+			if input.ApprovalStatus != "" {
 				query = query.Where(&model.Student{
-					Approved: *input.Approved,
+					ApprovalStatus: model.StudentApprovalStatus(input.ApprovalStatus),
 				})
 			}
 			if err := query.Offset(input.Offset).Limit(input.Limit).Find(&students).Error; err != nil {

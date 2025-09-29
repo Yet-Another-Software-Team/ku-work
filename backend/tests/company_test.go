@@ -190,8 +190,8 @@ func TestCompany(t *testing.T) {
 		var err error
 		var userCreationResult *UserCreationResult
 		if userCreationResult, err = CreateUser(UserCreationInfo{
-			Username: username,
-			IsAdmin: true,
+			Username:  username,
+			IsAdmin:   true,
 			IsCompany: true,
 		}); err != nil {
 			t.Error(err)
@@ -254,8 +254,8 @@ func TestCompany(t *testing.T) {
 		var err error
 		var userCreationResult *UserCreationResult
 		if userCreationResult, err = CreateUser(UserCreationInfo{
-			Username: username,
-			IsAdmin: true,
+			Username:  username,
+			IsAdmin:   true,
 			IsCompany: true,
 		}); err != nil {
 			t.Error(err)
