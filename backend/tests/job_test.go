@@ -19,15 +19,20 @@ import (
 
 func TestJob(t *testing.T) {
 	t.Run("Create", func(t *testing.T) {
-		var company *model.Company
 		var err error
-		if company, err = CreateAdminCompany(fmt.Sprintf("createjobtester-%d", time.Now().UnixNano())); err != nil {
+		var userCreationResult *UserCreationResult
+		if userCreationResult, err = CreateUser(UserCreationInfo{
+			Username: fmt.Sprintf("createjobtester-%d", time.Now().UnixNano()),
+			IsAdmin: true,
+			IsCompany: true,
+		}); err != nil {
 			t.Error(err)
 			return
 		}
 		defer (func() {
-			_ = db.Delete(&company)
+			_ = db.Delete(&userCreationResult.User)
 		})()
+		company := userCreationResult.Company
 		w := httptest.NewRecorder()
 		jobName := fmt.Sprintf("testjob1-%d", time.Now().UnixNano())
 		payload := fmt.Sprintf(`{
@@ -81,15 +86,20 @@ func TestJob(t *testing.T) {
 		assert.Equal(t, job.MaxSalary, uint(2))
 	})
 	t.Run("Edit", func(t *testing.T) {
-		var company *model.Company
 		var err error
-		if company, err = CreateAdminCompany(fmt.Sprintf("createjobtester-%d", time.Now().UnixNano())); err != nil {
+		var userCreationResult *UserCreationResult
+		if userCreationResult, err = CreateUser(UserCreationInfo{
+			Username: fmt.Sprintf("editjobtester-%d", time.Now().UnixNano()),
+			IsAdmin: true,
+			IsCompany: true,
+		}); err != nil {
 			t.Error(err)
 			return
 		}
 		defer (func() {
-			_ = db.Delete(&company)
+			_ = db.Delete(&userCreationResult.User)
 		})()
+		company := userCreationResult.Company
 		job := model.Job{
 			Name:        fmt.Sprintf("nice-job-%d", time.Now().UnixNano()),
 			CompanyID:   company.UserID,
@@ -155,15 +165,20 @@ func TestJob(t *testing.T) {
 		assert.Equal(t, edited_job.MaxSalary, uint(100))
 	})
 	t.Run("Fetch", func(t *testing.T) {
-		var company *model.Company
 		var err error
-		if company, err = CreateAdminCompany(fmt.Sprintf("createjobtester-%d", time.Now().UnixNano())); err != nil {
+		var userCreationResult *UserCreationResult
+		if userCreationResult, err = CreateUser(UserCreationInfo{
+			Username: fmt.Sprintf("fetchjobtester-%d", time.Now().UnixNano()),
+			IsAdmin: true,
+			IsCompany: true,
+		}); err != nil {
 			t.Error(err)
 			return
 		}
 		defer (func() {
-			_ = db.Delete(&company)
+			_ = db.Delete(&userCreationResult.User)
 		})()
+		company := userCreationResult.Company
 		job := model.Job{
 			Name:        fmt.Sprintf("nice-job-%d", time.Now().UnixNano()),
 			CompanyID:   company.UserID,
@@ -251,15 +266,20 @@ func TestJob(t *testing.T) {
 		assert.Equal(t, result.Jobs[0].Position, "software engineer")
 	})
 	t.Run("Approve", func(t *testing.T) {
-		var company *model.Company
 		var err error
-		if company, err = CreateAdminCompany(fmt.Sprintf("createjobtester-%d", time.Now().UnixNano())); err != nil {
+		var userCreationResult *UserCreationResult
+		if userCreationResult, err = CreateUser(UserCreationInfo{
+			Username: fmt.Sprintf("approvejobtester-%d", time.Now().UnixNano()),
+			IsAdmin: true,
+			IsCompany: true,
+		}); err != nil {
 			t.Error(err)
 			return
 		}
 		defer (func() {
-			_ = db.Delete(&company)
+			_ = db.Delete(&userCreationResult.User)
 		})()
+		company := userCreationResult.Company
 		job := model.Job{
 			Name:        fmt.Sprintf("nice-job-%d", time.Now().UnixNano()),
 			CompanyID:   company.UserID,
@@ -320,15 +340,20 @@ func TestJob(t *testing.T) {
 		assert.Equal(t, edited_job.MaxSalary, uint(100))
 	})
 	t.Run("Apply", func(t *testing.T) {
-		var company *model.Company
 		var err error
-		if company, err = CreateAdminCompany(fmt.Sprintf("applyjobtestercom-%d", time.Now().UnixNano())); err != nil {
+		var userCreationResult *UserCreationResult
+		if userCreationResult, err = CreateUser(UserCreationInfo{
+			Username: fmt.Sprintf("applyjobtester-%d", time.Now().UnixNano()),
+			IsAdmin: true,
+			IsCompany: true,
+		}); err != nil {
 			t.Error(err)
 			return
 		}
 		defer (func() {
-			_ = db.Delete(&company)
+			_ = db.Delete(&userCreationResult.User)
 		})()
+		company := userCreationResult.Company
 		user := model.User{
 			Username: fmt.Sprintf("applyjobtester-%d", time.Now().UnixNano()),
 		}
