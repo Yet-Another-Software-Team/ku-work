@@ -21,7 +21,30 @@
             <template #content>
                 <!-- top -->
                 <header class="flex items-center justify-between mb-4 border-none">
-                    <h1 class="text-2xl font-bold text-white mb-4">Icon here</h1>
+                    <img
+                        v-if="isViewer && !isCompany && !isAdmin"
+                        src="~/assets/images/viewer.png"
+                        alt="KU-Work Viewer Logo"
+                        class="h-12 mr-4"
+                    />
+                    <img
+                        v-else-if="isCompany && !isAdmin"
+                        src="~/assets/images/company.png"
+                        alt="KU-Work Company Logo"
+                        class="h-12 mr-4"
+                    />
+                    <img
+                        v-else-if="isAdmin"
+                        src="~/assets/images/admin.png"
+                        alt="KU-Work Admin Logo"
+                        class="h-12 mr-4"
+                    />
+                    <img
+                        v-else
+                        src="~/assets/images/base.png"
+                        alt="KU-Work Logo"
+                        class="h-12 mr-4"
+                    />
                     <ThemeToggle />
                 </header>
                 <SidebarMenu :items="getSidebarItems(isViewer, isAdmin, isCompany)" />
@@ -36,7 +59,25 @@
             class="fixed top-0 left-0 w-64 hidden lg:flex flex-col h-full p-4 bg-linear-to-bl from-[#013B49] from-50% to-[#40DC7A]/90 shadow-md space-y-2"
         >
             <header class="flex items-center justify-between mb-4">
-                <h1 class="text-2xl font-bold text-white mb-4">Icon here</h1>
+                <img
+                    v-if="isViewer && !isCompany && !isAdmin"
+                    src="~/assets/images/viewer.png"
+                    alt="KU-Work Viewer Logo"
+                    class="h-12 mr-4"
+                />
+                <img
+                    v-else-if="isCompany && !isAdmin"
+                    src="~/assets/images/company.png"
+                    alt="KU-Work Company Logo"
+                    class="h-12 mr-4"
+                />
+                <img
+                    v-else-if="isAdmin"
+                    src="~/assets/images/admin.png"
+                    alt="KU-Work Admin Logo"
+                    class="h-12 mr-4"
+                />
+                <img v-else src="~/assets/images/base.png" alt="KU-Work Logo" class="h-12 mr-4" />
                 <ThemeToggle />
             </header>
             <SidebarMenu :items="getSidebarItems(isViewer, isAdmin, isCompany)" />
