@@ -9,7 +9,7 @@ import (
 type Company struct {
 	UserID    string    `gorm:"type:uuid;primarykey" json:"id"`
 	User      User      `gorm:"foreignKey:UserID" json:"-"`
-	CreatedAt time.Time `json:"created"`
+	CreatedAt time.Time `json:"createdAt"`
 	Email     string    `json:"email"`
 	Phone     string    `json:"phone"`
 	PhotoID   string    `gorm:"type:uuid" json:"photoId"`
