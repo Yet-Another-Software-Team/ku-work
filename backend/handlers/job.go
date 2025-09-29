@@ -91,16 +91,17 @@ type JobWithApplicationStatistics struct {
 func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 	userId := ctx.MustGet("userID").(string)
 	type FetchJobsInput struct {
-		Limit      uint     `json:"limit" form:"limit" binding:"max=128"`
-		Offset     uint     `json:"offset" form:"offset"`
-		Location   string   `json:"location" form:"location" binding:"max=128"`
-		Keyword    string   `json:"keyword" form:"keyword" binding:"max=256"`
-		JobType    []string `json:"jobtype" form:"jobtype" binding:"max=5,dive,max=32"`
-		Experience []string `json:"experience" form:"experience" binding:"max=5,dive,max=32"`
-		MinSalary  uint     `json:"minsalary" form:"minsalary"`
-		MaxSalary  uint     `json:"maxsalary" form:"maxsalary"`
-		Open       *bool    `json:"open" form:"open"`
-		CompanyID  *string  `json:"companyId" form:"companyId" binding:"omitempty,max=64"`
+		Limit          uint     `json:"limit" form:"limit" binding:"max=128"`
+		Offset         uint     `json:"offset" form:"offset"`
+		Location       string   `json:"location" form:"location" binding:"max=128"`
+		Keyword        string   `json:"keyword" form:"keyword" binding:"max=256"`
+		JobType        []string `json:"jobtype" form:"jobtype" binding:"max=5,dive,max=32"`
+		Experience     []string `json:"experience" form:"experience" binding:"max=5,dive,max=32"`
+		MinSalary      uint     `json:"minsalary" form:"minsalary"`
+		MaxSalary      uint     `json:"maxsalary" form:"maxsalary"`
+		Open           *bool    `json:"open" form:"open"`
+		CompanyID      *string  `json:"companyId" form:"companyId" binding:"omitempty,max=64"`
+		ApprovalStatus string   `json:"approvalStatus" form:"approvalStatus" binding:"max=64"`
 	}
 	input := FetchJobsInput{
 		MinSalary: 0,
@@ -130,7 +131,9 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 		query = query.Joins("LEFT JOIN job_applications ON job_applications.job_id = jobs.id")
 		query = query.Select("jobs.*, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'pending') AS pending, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'accepted') AS accepted, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'rejected') AS rejected")
 	}
-	query = query.Where(h.DB.Where("name ILIKE ?", keywordPattern).Or("description ILIKE ?", keywordPattern))
+	if input.Keyword != "" {
+		query = query.Where(h.DB.Where("name ILIKE ?", keywordPattern).Or("description ILIKE ?", keywordPattern))
+	}
 	query = query.Where("min_salary >= ?", input.MinSalary)
 	query = query.Where("max_salary <= ?", input.MaxSalary)
 	if input.CompanyID != nil {
@@ -150,7 +153,19 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 	if len(input.Experience) != 0 {
 		query = query.Where("experience IN ?", input.Experience)
 	}
-	query = query.Where(&model.Job{ApprovalStatus: model.JobApprovalAccepted})
+	result = h.DB.Limit(1).Find(&model.Admin{
+		UserID: userId,
+	})
+	if result.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	} else if result.RowsAffected != 0 {
+		if input.ApprovalStatus != "" {
+			query = query.Where(&model.Job{ApprovalStatus: model.JobApprovalStatus(input.ApprovalStatus)})
+		}
+	} else {
+		query = query.Where(&model.Job{ApprovalStatus: model.JobApprovalAccepted})
+	}
 	if isCompany {
 		query = query.Group("jobs.id")
 	}
