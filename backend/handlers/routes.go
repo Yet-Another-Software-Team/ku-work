@@ -18,7 +18,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	companyHandler := NewCompanyHandlers(db)
 
 	//Authentication Routes
-	router.POST("/admin/login", localAuthHandlers.CompanyLoginHandler)
+	router.POST("/admin/login", localAuthHandlers.AdminLoginHandler)
 	router.POST("/company/register", localAuthHandlers.CompanyRegisterHandler)
 	router.POST("/company/login", localAuthHandlers.CompanyLoginHandler)
 	router.POST("/google/login", googleAuthHandlers.GoogleOauthHandler)
@@ -47,7 +47,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 
 	// Job routes
 	authed.GET("/job", jobHandlers.FetchJobs)
-	admin.POST("/job", jobHandlers.CreateJob)
+	authed.POST("/job", jobHandlers.CreateJob)
 	authed.PATCH("/job", jobHandlers.EditJob)
 	admin.POST("/job/approve", jobHandlers.ApproveJob)
 	authed.POST("/job/apply", jobHandlers.ApplyJob)
@@ -55,5 +55,5 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 
 	// Company routes
 	authed.PATCH("/company", companyHandler.EditProfileHandler)
-	router.GET("/company", companyHandler.GetProfileHandler)
+	authed.GET("/company", companyHandler.GetProfileHandler)
 }

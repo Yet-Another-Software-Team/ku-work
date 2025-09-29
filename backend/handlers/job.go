@@ -415,7 +415,7 @@ func (h *JobHandlers) FetchJobApplications(ctx *gin.Context) {
 		}
 	}
 	var jobApplications []model.JobApplication
-	result := query.Offset(int(input.Offset)).Limit(int(input.Limit)).Find(&jobApplications)
+	result := query.Offset(int(input.Offset)).Limit(int(input.Limit)).Preload("Files").Find(&jobApplications)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
