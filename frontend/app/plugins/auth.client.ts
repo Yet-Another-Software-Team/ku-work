@@ -5,7 +5,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     let refreshTimeoutId: NodeJS.Timeout | null = null;
 
     const scheduleTokenRefresh = () => {
-        if (process.server) {
+        if (import.meta.server) {
             return;
         }
 
@@ -49,7 +49,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     };
 
     const logout = () => {
-        if (process.server) return;
+        if (import.meta.server) return;
         localStorage.removeItem("token");
         localStorage.removeItem("username");
         localStorage.removeItem("role");
@@ -57,13 +57,6 @@ export default defineNuxtPlugin((nuxtApp) => {
         if (refreshTimeoutId) {
             clearTimeout(refreshTimeoutId);
         }
-
-        const toast = useToast();
-        toast.add({
-            title: "Session Expired",
-            description: "Please log in again",
-            color: "error",
-        });
 
         // Redirect to login page
         navigateTo("/");
