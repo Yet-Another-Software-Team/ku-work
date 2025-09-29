@@ -11,7 +11,7 @@ type Student struct {
 	UserID              string           `gorm:"type:uuid;primarykey" json:"id"`
 	User                User             `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE;" json:"-"`
 	Approved            bool             `json:"approved"`
-	CreatedAt           time.Time        `json:"created"`
+	CreatedAt           time.Time        `json:"createdAt"`
 	Phone               string           `json:"phone"`
 	PhotoID             string           `gorm:"type:uuid" json:"photoId"`
 	Photo               File             `gorm:"foreignKey:PhotoID;constraint:OnDelete:CASCADE;" json:"photo,omitempty"`
