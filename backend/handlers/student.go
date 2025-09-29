@@ -243,18 +243,46 @@ func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 
 	// Bind input data from request body
 	type GetStudentProfileInput struct {
-		UserID string `form:"id" binding:"max=128"`
+		UserID   string `form:"id" binding:"max=128"`
+		Offset   int    `json:"offset" form:"offset"`
+		Limit    int    `json:"limit" form:"limit" binding:"max=64"`
+		Approved *bool  `json:"approved" form:"approved"`
 	}
-	input := GetStudentProfileInput{}
+	input := GetStudentProfileInput{
+		Limit: 64,
+	}
 	err := ctx.MustBindWith(&input, binding.Form)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	query := h.DB.Model(&model.Student{})
+
 	// If user ID is provided, use the userId from request
 	if input.UserID != "" {
 		userId = input.UserID
+	} else {
+		result := h.DB.Limit(1).Find(&model.Admin{
+			UserID: userId,
+		})
+		if result.Error != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+			return
+		} else if result.RowsAffected != 0 {
+			var students []model.Student
+			if input.Approved != nil {
+				query = query.Where(&model.Student{
+					Approved: *input.Approved,
+				})
+			}
+			if err := query.Offset(input.Offset).Limit(input.Limit).Find(&students).Error; err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			ctx.JSON(http.StatusOK, students)
+			return
+		}
 	}
 
 	// Get Student Profile from database
@@ -265,7 +293,7 @@ func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 		Email     string `json:"email"`
 	}
 	var studentInfo StudentInfo
-	if err := h.DB.Model(&model.Student{}).Select("students.*, google_o_auth_details.first_name as first_name, google_o_auth_details.last_name as last_name, google_o_auth_details.email as email").Joins("INNER JOIN google_o_auth_details on google_o_auth_details.user_id = students.user_id").Where("students.user_id = ?", userId).Take(&studentInfo).Error; err != nil {
+	if err := query.Select("students.*, google_o_auth_details.first_name as first_name, google_o_auth_details.last_name as last_name, google_o_auth_details.email as email").Joins("INNER JOIN google_o_auth_details on google_o_auth_details.user_id = students.user_id").Where("students.user_id = ?", userId).Take(&studentInfo).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

@@ -208,9 +208,6 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 	if isCompany {
 		var jobsWithStats []JobWithApplicationStatistics
 		result = query.Find(&jobsWithStats)
-		for _, job := range jobsWithStats {
-			println(job.ID)
-		}
 		if result.Error != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 			return

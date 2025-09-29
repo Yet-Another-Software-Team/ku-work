@@ -7,6 +7,7 @@ import (
 	"ku-work/backend/handlers"
 	"ku-work/backend/model"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -77,6 +78,7 @@ func TestMain(m *testing.M) {
 type UserCreationInfo struct {
 	Username  string
 	IsAdmin   bool
+	IsOAuth   bool
 	IsCompany bool
 	IsStudent bool
 }
@@ -86,6 +88,7 @@ type UserCreationResult struct {
 	Admin   *model.Admin
 	Company *model.Company
 	Student *model.Student
+	OAuth   *model.GoogleOAuthDetails
 }
 
 func CreateUser(config UserCreationInfo) (*UserCreationResult, error) {
@@ -109,6 +112,24 @@ func CreateUser(config UserCreationInfo) (*UserCreationResult, error) {
 		return nil, err
 	}
 	success := false
+	if config.IsOAuth {
+		oauth := model.GoogleOAuthDetails{
+			UserID:     result.User.ID,
+			ExternalID: "[External ID]",
+			FirstName:  config.Username,
+			LastName:   "LastName",
+			Email:      fmt.Sprintf("%s@email.com", strings.ToLower(config.Username)),
+		}
+		if err := db.Create(&oauth).Error; err != nil {
+			return nil, err
+		}
+		defer (func() {
+			if !success {
+				_ = db.Delete(&oauth)
+			}
+		})()
+		result.OAuth = &oauth
+	}
 	if config.IsCompany {
 		companyPhoto := model.File{
 			UserID:   result.User.ID,
