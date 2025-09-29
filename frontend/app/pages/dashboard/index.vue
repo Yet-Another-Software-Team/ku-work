@@ -25,7 +25,7 @@
                     @click="openJobPostForm = true"
                 />
                 <template #content>
-                    <JobPostForm @close="openJobPostForm = false" />
+                    <JobPostForm @close="handleJobFormClose" />
                 </template>
             </UModal>
         </div>
@@ -39,70 +39,48 @@ definePageMeta({
 
 const openJobPostForm = ref(false);
 
-let data = [
-    {
-        id: 1,
-        position: "Software Quality Assurance Engineer",
-        accepted: 10,
-        rejected: 5,
-        pending: 3,
-        open: true,
-    },
-    {
-        id: 2,
-        position: "Software Engineer",
-        accepted: 15,
-        rejected: 7,
-        pending: 2,
-        open: false,
-    },
-    {
-        id: 3,
-        position: "Product Manager",
-        accepted: 8,
-        rejected: 4,
-        pending: 1,
-        open: true,
-    },
-    {
-        id: 4,
-        position: "Data Scientist",
-        accepted: 12,
-        rejected: 6,
-        pending: 4,
-        open: true,
-    },
-    {
-        id: 5,
-        position: "Security Personnel",
-        accepted: 2,
-        rejected: 199238,
-        pending: 0,
-        open: false,
-    },
-];
+type Job = {
+    id: number;
+    position: string;
+    accepted: number;
+    rejected: number;
+    pending: number;
+    open: boolean;
+};
+
+const data = ref<Job[]>([]);
 
 const api = useApi();
+const { add: addToast } = useToast();
 
-onMounted(async () => {
-    const keyword = localStorage.getItem("username") || "";
-    const response = await api.get("/job", {
-        params: {
-            keyword: keyword,
-        },
-    });
-    if (response.status !== 200) {
-        console.error("Failed to fetch jobs:", response.data?.message || "Unknown error");
-        return;
+const fetchJobs = async () => {
+    try {
+        const response = await api.get("/job");
+        console.log("Fetched jobs:", response.data);
+        data.value = response.data.jobs || [];
+    } catch (error) {
+        const apiError = error as { message?: string };
+        console.error("Failed to fetch jobs:", apiError.message || "Unknown error");
+        addToast({
+            title: "Error",
+            description: "Failed to fetch jobs. Please refresh the page.",
+            color: "error",
+        });
     }
-    console.log("Fetched jobs:", response.data);
-    data = response.data.jobs;
-});
+};
+
+onMounted(fetchJobs);
 
 const updateJobOpen = (id: number, value: boolean) => {
-    const job = data.find((job) => job.id === id);
+    const job = data.value.find((job) => job.id === id);
     if (job) {
         job.open = value;
     }
+};
+
+const handleJobFormClose = () => {
+    openJobPostForm.value = false;
+    // Refresh jobs list after posting
+    fetchJobs();
 };
 </script>

@@ -13,6 +13,14 @@ export interface ApiError {
     data?: any;
 }
 
+// Extend AxiosRequestConfig to include our custom properties
+interface ExtendedAxiosRequestConfig extends AxiosRequestConfig {
+    skipGlobalLoading?: boolean;
+    metadata?: {
+        requestId?: string;
+    };
+}
+
 export const useApi = () => {
     const { $axios } = useNuxtApp();
     const toast = useToast();
@@ -48,7 +56,7 @@ export const useApi = () => {
 
     const get = async <T = any>(
         url: string,
-        config?: AxiosRequestConfig & { skipGlobalLoading?: boolean }
+        config?: ExtendedAxiosRequestConfig
     ): Promise<ApiResponse<T>> => {
         let requestId: string | null = null;
         try {
@@ -75,7 +83,7 @@ export const useApi = () => {
     const post = async <T = any>(
         url: string,
         data?: any,
-        config?: AxiosRequestConfig & { skipGlobalLoading?: boolean }
+        config?: ExtendedAxiosRequestConfig
     ): Promise<ApiResponse<T>> => {
         let requestId: string | null = null;
         try {
@@ -102,7 +110,7 @@ export const useApi = () => {
     const put = async <T = any>(
         url: string,
         data?: any,
-        config?: AxiosRequestConfig & { skipGlobalLoading?: boolean }
+        config?: ExtendedAxiosRequestConfig
     ): Promise<ApiResponse<T>> => {
         let requestId: string | null = null;
         try {
@@ -129,7 +137,7 @@ export const useApi = () => {
     const patch = async <T = any>(
         url: string,
         data?: any,
-        config?: AxiosRequestConfig & { skipGlobalLoading?: boolean }
+        config?: ExtendedAxiosRequestConfig
     ): Promise<ApiResponse<T>> => {
         let requestId: string | null = null;
         try {
@@ -155,7 +163,7 @@ export const useApi = () => {
 
     const del = async <T = any>(
         url: string,
-        config?: AxiosRequestConfig & { skipGlobalLoading?: boolean }
+        config?: ExtendedAxiosRequestConfig
     ): Promise<ApiResponse<T>> => {
         let requestId: string | null = null;
         try {
@@ -183,7 +191,7 @@ export const useApi = () => {
     const postFormData = async <T = any>(
         url: string,
         formData: FormData,
-        config?: AxiosRequestConfig & { skipGlobalLoading?: boolean }
+        config?: ExtendedAxiosRequestConfig
     ): Promise<ApiResponse<T>> => {
         let requestId: string | null = null;
         try {
