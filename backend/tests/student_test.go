@@ -118,6 +118,7 @@ func TestStudent(t *testing.T) {
 			t.Error(err)
 			return
 		}
+		assert.Equal(t, student.ApprovalStatus, model.StudentApprovalPending)
 		assert.Equal(t, student.Phone, "0123456789")
 		assert.Equal(t, student.AboutMe, "I am a software tester")
 		assert.Equal(t, student.GitHub, "localhost")
@@ -241,5 +242,59 @@ func TestStudent(t *testing.T) {
 				t.Errorf("Student %d not found", i)
 			}
 		}
+	})
+	t.Run("Approve", func(t *testing.T) {
+		student, err := CreateUser(UserCreationInfo{
+			Username:  fmt.Sprintf("approvestudenttester-%d", time.Now().UnixNano()),
+			IsAdmin:   true,
+			IsStudent: true,
+		})
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		defer (func() {
+			_ = db.Delete(&student.User)
+		})()
+		student.Student.ApprovalStatus = model.StudentApprovalPending
+		if err = db.Save(&student.Student).Error; err != nil {
+			t.Error(err)
+			return
+		}
+		w := httptest.NewRecorder()
+		payload := fmt.Sprintf(`{"id": "%s","approve": true}`, student.Student.UserID)
+		req, _ := http.NewRequest("POST", "/students/approve", strings.NewReader(payload))
+		jwtHandler := handlers.NewJWTHandlers(db)
+		jwtToken, _, err := jwtHandler.GenerateTokens(student.User.ID)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", jwtToken))
+		req.Header.Add("Content-Type", "application/json")
+		router.ServeHTTP(w, req)
+		assert.Equal(t, w.Code, 200)
+		type Result struct {
+			Message string `json:"message"`
+			Error   string `json:"error"`
+		}
+		result := Result{}
+		err = json.Unmarshal(w.Body.Bytes(), &result)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if result.Error != "" {
+			t.Error(result.Error)
+			return
+		}
+		approvedStudent := &model.Student{
+			UserID: student.User.ID,
+		}
+		if err = db.Find(&approvedStudent).Error; err != nil {
+			t.Error(err)
+			return
+		}
+		assert.Equal(t, approvedStudent.ApprovalStatus, model.StudentApprovalAccepted)
 	})
 }

@@ -69,18 +69,18 @@ func (h *JobHandlers) CreateJob(ctx *gin.Context) {
 		return
 	}
 	job := model.Job{
-		Name:        input.Name,
-		CompanyID:   company.UserID,
-		Position:    input.Position,
-		Duration:    input.Duration,
-		Description: input.Description,
-		Location:    input.Location,
-		JobType:     model.JobType(input.JobType),
-		Experience:  model.ExperienceType(input.Experience),
-		MinSalary:   input.MinSalary,
-		MaxSalary:   input.MaxSalary,
-		IsApproved:  false,
-		IsOpen:      input.Open,
+		Name:           input.Name,
+		CompanyID:      company.UserID,
+		Position:       input.Position,
+		Duration:       input.Duration,
+		Description:    input.Description,
+		Location:       input.Location,
+		JobType:        model.JobType(input.JobType),
+		Experience:     model.ExperienceType(input.Experience),
+		MinSalary:      input.MinSalary,
+		MaxSalary:      input.MaxSalary,
+		ApprovalStatus: model.JobApprovalPending,
+		IsOpen:         input.Open,
 	}
 
 	// Create Job into database
@@ -195,7 +195,7 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 	}
 
 	// Filter only approved jobs
-	query = query.Where(&model.Job{IsApproved: true})
+	query = query.Where(&model.Job{ApprovalStatus: model.JobApprovalAccepted})
 	if isCompany {
 		query = query.Group("jobs.id")
 	}
@@ -337,7 +337,8 @@ func (h *JobHandlers) EditJob(ctx *gin.Context) {
 // Handle approval of a job post using its ID
 func (h *JobHandlers) ApproveJob(ctx *gin.Context) {
 	type ApproveJobInput struct {
-		ID uint `json:"id" binding:"required"`
+		ID      uint `json:"id" binding:"required"`
+		Approve bool `json:"approve"`
 	}
 	input := ApproveJobInput{}
 	err := ctx.Bind(&input)
@@ -353,7 +354,11 @@ func (h *JobHandlers) ApproveJob(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
-	job.IsApproved = true
+	if input.Approve {
+		job.ApprovalStatus = model.JobApprovalAccepted
+	} else {
+		job.ApprovalStatus = model.JobApprovalRejected
+	}
 	result = h.DB.Save(&job)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
@@ -399,24 +404,19 @@ func (h *JobHandlers) ApplyJob(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
-	if !student.Approved {
+	if student.ApprovalStatus != model.StudentApprovalAccepted {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "your student status is not approved yet"})
 		return
 	}
 	job := model.Job{
-		ID: input.JobID,
+		ID:             input.JobID,
+		ApprovalStatus: model.JobApprovalAccepted,
 	}
 	result = h.DB.First(&job)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
-	if !job.IsApproved {
-		ctx.JSON(http.StatusForbidden, gin.H{"error": "job is not approved yet"})
-		return
-	}
-
-	// Create job application
 	jobApplication := model.JobApplication{
 		UserID:   student.UserID,
 		JobID:    job.ID,

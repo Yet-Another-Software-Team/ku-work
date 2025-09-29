@@ -193,7 +193,7 @@ func CreateUser(config UserCreationInfo) (*UserCreationResult, error) {
 		})()
 		student := model.Student{
 			UserID:              result.User.ID,
-			Approved:            true,
+			ApprovalStatus:      model.StudentApprovalAccepted,
 			PhotoID:             photoFile.ID,
 			StudentStatusFileID: statusFile.ID,
 		}
