@@ -30,6 +30,9 @@
         "zod": "^4.1.5"
     },
     "devDependencies": {
+        "@iconify-json/ic": "^1.2.4",
+        "@iconify-json/lucide": "^1.2.68",
+        "@iconify-json/material-symbols": "^1.2.39",
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-prettier": "^5.5.4",
         "prettier": "^3.6.2"
