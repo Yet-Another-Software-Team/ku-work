@@ -202,21 +202,49 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 	userId := ctx.MustGet("userID").(string)
 	type GetStudentProfileInput struct {
-		UserID string `form:"id" binding:"max=128"`
+		UserID   string `form:"id" binding:"max=128"`
+		Offset   int    `json:"offset" form:"offset"`
+		Limit    int    `json:"limit" form:"limit" binding:"max=64"`
+		Approved *bool  `json:"approved" form:"approved"`
 	}
-	input := GetStudentProfileInput{}
+	input := GetStudentProfileInput{
+		Limit: 64,
+	}
 	err := ctx.MustBindWith(&input, binding.Form)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	query := h.DB.Preload("Photo")
 	if input.UserID != "" {
 		userId = input.UserID
+	} else {
+		query = query.Preload("StudentStatusFile")
+		result := h.DB.Limit(1).Find(&model.Admin{
+			UserID: userId,
+		})
+		if result.Error != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+			return
+		} else if result.RowsAffected != 0 {
+			var students []model.Student
+			if input.Approved != nil {
+				query = query.Where(&model.Student{
+					Approved: *input.Approved,
+				})
+			}
+			if err := query.Offset(input.Offset).Limit(input.Limit).Find(&students).Error; err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			ctx.JSON(http.StatusOK, students)
+			return
+		}
 	}
 	student := model.Student{
 		UserID: userId,
 	}
-	if err := h.DB.First(&student).Error; err != nil {
+	if err := query.First(&student).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
