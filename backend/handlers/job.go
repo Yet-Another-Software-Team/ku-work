@@ -110,16 +110,17 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 	userId := ctx.MustGet("userID").(string)
 	// List of query parameters for filtering jobs
 	type FetchJobsInput struct {
-		Limit      uint     `json:"limit" form:"limit" binding:"max=128"`
-		Offset     uint     `json:"offset" form:"offset"`
-		Location   string   `json:"location" form:"location" binding:"max=128"`
-		Keyword    string   `json:"keyword" form:"keyword" binding:"max=256"`
-		JobType    []string `json:"jobtype" form:"jobtype" binding:"max=5,dive,max=32"`
-		Experience []string `json:"experience" form:"experience" binding:"max=5,dive,max=32"`
-		MinSalary  uint     `json:"minsalary" form:"minsalary"`
-		MaxSalary  uint     `json:"maxsalary" form:"maxsalary"`
-		Open       *bool    `json:"open" form:"open"`
-		CompanyID  *string  `json:"companyId" form:"companyId" binding:"omitempty,max=64"`
+		Limit          uint     `json:"limit" form:"limit" binding:"max=128"`
+		Offset         uint     `json:"offset" form:"offset"`
+		Location       string   `json:"location" form:"location" binding:"max=128"`
+		Keyword        string   `json:"keyword" form:"keyword" binding:"max=256"`
+		JobType        []string `json:"jobtype" form:"jobtype" binding:"max=5,dive,max=32"`
+		Experience     []string `json:"experience" form:"experience" binding:"max=5,dive,max=32"`
+		MinSalary      uint     `json:"minsalary" form:"minsalary"`
+		MaxSalary      uint     `json:"maxsalary" form:"maxsalary"`
+		Open           *bool    `json:"open" form:"open"`
+		CompanyID      *string  `json:"companyId" form:"companyId" binding:"omitempty,max=64"`
+		ApprovalStatus string   `json:"approvalStatus" form:"approvalStatus" binding:"max=64"`
 	}
 
 	// Set default values for some fields and bind the input
@@ -194,8 +195,21 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 		query = query.Where("experience IN ?", input.Experience)
 	}
 
-	// Filter only approved jobs
-	query = query.Where(&model.Job{ApprovalStatus: model.JobApprovalAccepted})
+	// Check if current user is Admin
+	result = h.DB.Limit(1).Find(&model.Admin{
+		UserID: userId,
+	})
+	if result.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	} else if result.RowsAffected != 0 || (input.CompanyID != nil && (*input.CompanyID == "self" || *input.CompanyID == userId)) {
+		// If is admin, or same company then consider approval status
+		if input.ApprovalStatus != "" {
+			query = query.Where(&model.Job{ApprovalStatus: model.JobApprovalStatus(input.ApprovalStatus)})
+		}
+	} else {
+		query = query.Where(&model.Job{ApprovalStatus: model.JobApprovalAccepted})
+	}
 	if isCompany {
 		query = query.Group("jobs.id")
 	}
