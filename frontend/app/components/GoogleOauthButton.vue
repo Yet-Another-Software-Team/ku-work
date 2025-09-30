@@ -42,7 +42,7 @@ const login = async () => {
                 }
             );
 
-            localStorage.setItem("jwt_token", response.data.token);
+            localStorage.setItem("token", response.data.token);
             localStorage.setItem("username", response.data.username);
             localStorage.setItem("isRegistered", response.data.isRegistered.toString());
 
@@ -56,9 +56,9 @@ const login = async () => {
 
             if (response.status == 201) {
                 // Account is new, navigate to registration page
-                navigateTo("/register/student");
+                navigateTo("/register/student", { replace: true });
             } else {
-                navigateTo("/jobs");
+                navigateTo("/jobs", { replace: true });
             }
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -91,7 +91,7 @@ async function onSubmit(_: FormSubmitEvent<Schema>) {
             }
         );
 
-        localStorage.setItem("jwt_token", response.data.token);
+        localStorage.setItem("token", response.data.token);
         localStorage.setItem("username", response.data.username);
         if (response.data.isCompany) {
             localStorage.setItem("role", "company");

@@ -5,6 +5,12 @@
     </div>
 </template>
 
+<script setup lang="ts">
+definePageMeta({
+    middleware: "student-register",
+});
+</script>
+
 <style>
 .main-container::before {
     content: "";

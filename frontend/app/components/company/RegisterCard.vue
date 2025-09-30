@@ -186,7 +186,7 @@ const onSubmit = async () => {
         const response = await api.postFormData<AuthResponse>("/company/register", formData);
 
         if (response.data.token) {
-            localStorage.setItem("jwt_token", response.data.token);
+            localStorage.setItem("token", response.data.token);
             localStorage.setItem("username", response.data.username as string);
             if (response.data.isCompany) {
                 localStorage.setItem("role", "company");
@@ -211,6 +211,6 @@ const handleDone = () => {
         description: "Registration complete. Redirecting to dashboard...",
         color: "success",
     });
-    navigateTo("/dashboard");
+    navigateTo("/dashboard", { replace: true });
 };
 </script>

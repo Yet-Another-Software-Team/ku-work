@@ -203,8 +203,8 @@ export const useApi = () => {
             const response: AxiosResponse<T> = await $axios.post(url, formData, {
                 ...config,
                 headers: {
-                    "Content-Type": "multipart/form-data",
                     ...config?.headers,
+                    "Content-Type": "multipart/form-data",
                 },
             });
             return {

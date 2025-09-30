@@ -182,7 +182,7 @@ export default defineNuxtPlugin(() => {
                             color: "error",
                         });
 
-                        await navigateTo("/");
+                        await navigateTo("/", { replace: true });
                     }
 
                     return Promise.reject(refreshError);

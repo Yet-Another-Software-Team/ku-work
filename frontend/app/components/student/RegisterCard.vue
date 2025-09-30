@@ -148,12 +148,12 @@ onMounted(() => {
             description: "Redirecting to jobs page...",
             color: "success",
         });
-        navigateTo("/jobs");
+        navigateTo("/jobs", { replace: true });
         return;
     }
 
     if (role !== "viewer" || !username) {
-        navigateTo("/");
+        navigateTo("/", { replace: true });
         return;
     }
     form.fullName = username || "";
@@ -224,14 +224,14 @@ const onSubmit = async () => {
     isSubmitting.value = true;
 
     try {
-        const token = localStorage.getItem("jwt_token");
+        const token = localStorage.getItem("token");
         if (!token) {
             toast.add({
                 title: "Authentication Error",
                 description: "Please log in to submit your registration",
                 color: "error",
             });
-            navigateTo("/");
+            navigateTo("/", { replace: true });
             return;
         }
 
@@ -278,6 +278,6 @@ const handleDone = () => {
         description: "Registration complete. Redirecting to jobs page...",
         color: "success",
     });
-    navigateTo("/jobs");
+    navigateTo("/jobs", { replace: true });
 };
 </script>

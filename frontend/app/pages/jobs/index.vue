@@ -39,7 +39,7 @@
             <section>
                 <JobApplicationExpanded
                     v-if="filteredJobs.length > 0"
-                    :is-viewer="false"
+                    :is-viewer="userRole === 'viewer'"
                     :is-selected="true"
                     :data="filteredJobs[selectedIndex]!"
                 />
@@ -60,6 +60,7 @@ definePageMeta({
 // Jobs
 const jobs: JobApplication[] = mockJobData.jobs;
 const selectedIndex = ref<number | null>(null);
+const userRole = ref<string>("viewer");
 
 // Search and Location
 const search = ref("");
@@ -135,5 +136,13 @@ const fetchJobs = async () => {
         console.error("Error fetching jobs:", error);
     }
 };
+
+// Get user role from localStorage
+onMounted(() => {
+    if (import.meta.client) {
+        userRole.value = localStorage.getItem("role") || "viewer";
+    }
+});
+
 await fetchJobs();
 </script>

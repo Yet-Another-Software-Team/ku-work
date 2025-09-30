@@ -29,7 +29,9 @@ export default defineNuxtPlugin((nuxtApp) => {
 
             refreshTimeoutId = setTimeout(async () => {
                 try {
-                    const response = await $axios.post("/api/auth/refresh");
+                    const response = await (
+                        $axios as { post: (url: string) => Promise<{ data: { token?: string } }> }
+                    ).post("/refresh");
                     const newToken = response.data.token;
                     if (newToken) {
                         localStorage.setItem("token", newToken);
@@ -59,7 +61,7 @@ export default defineNuxtPlugin((nuxtApp) => {
         }
 
         // Redirect to login page
-        navigateTo("/");
+        navigateTo("/", { replace: true });
     };
 
     // Initial call to schedule refresh when the app loads

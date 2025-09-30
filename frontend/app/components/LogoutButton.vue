@@ -25,7 +25,7 @@ const logout = async () => {
             }
         );
 
-        localStorage.removeItem("jwt_token");
+        localStorage.removeItem("token");
         localStorage.removeItem("username");
         localStorage.removeItem("role");
 
