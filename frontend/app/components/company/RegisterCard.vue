@@ -1,12 +1,12 @@
 <template>
-    <div class="bg-white w-full min-h-[50em] rounded-lg p-5 flex flex-col justify-between">
-        <div
-            v-if="isLoading"
-            class="bg-white w-full min-h-[50em] rounded-lg p-5 flex flex-col justify-center items-center"
-        >
-            <icon name="svg-spinners:180-ring-with-bg" class="text-[10em] text-primary mb-4" />
-            <h2 class="text-4xl font-bold text-primary mb-2">Loading...</h2>
-        </div>
+    <div
+        v-if="isLoading"
+        class="bg-white w-full min-h-[50em] rounded-lg p-5 flex flex-col justify-center items-center"
+    >
+        <icon name="svg-spinners:180-ring-with-bg" class="text-[10em] text-primary mb-4" />
+        <h2 class="text-4xl font-bold text-primary mb-2">Loading...</h2>
+    </div>
+    <div v-else class="bg-white w-full min-h-[50em] rounded-lg p-5 flex flex-col justify-between">
         <div>
             <div class="flex justify-between items-center">
                 <h1 class="text-xl md:text-3xl font-bold text-left text-black py-4">
@@ -153,6 +153,7 @@ onMounted(() => {
                 navigateTo("/", { replace: true });
             }
         }
+        isLoading.value = false;
     }
 });
 

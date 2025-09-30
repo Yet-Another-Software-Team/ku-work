@@ -107,6 +107,8 @@
 </template>
 
 <script setup lang="ts">
+import { logout } from "~/composables/common";
+const username = ref<string | null>(null);
 
 const isViewer = ref(true);
 const isCompany = ref(false);
@@ -116,7 +118,13 @@ const loading = ref(true);
 
 onMounted(() => {
     const role = localStorage.getItem("role");
+    username.value = localStorage.getItem("username");
     isRegistered.value = localStorage.getItem("isRegistered") === "true";
+
+    if (!role || !username.value) {
+        // Data is wrong --> logout
+        logout();
+    }
 
     if (role === "company") {
         isViewer.value = false;
@@ -133,10 +141,6 @@ onMounted(() => {
         isCompany.value = false;
         isAdmin.value = false;
     }
-    console.log("isViewer:", isViewer.value);
-    console.log("isCompany:", isCompany.value);
-    console.log("isAdmin:", isAdmin.value);
-    console.log("isRegistered:", isRegistered.value);
     loading.value = false;
 });
 
@@ -167,7 +171,7 @@ function getSidebarItems(
     }
     if (!isViewer) {
         items.unshift({
-            label: "Profile",
+            label: username.value || "Profile",
             icon: "ic:baseline-person",
             to: "/profile",
             disable: false,
@@ -180,7 +184,7 @@ function getSidebarItems(
         });
     } else {
         items.unshift({
-            label: "Profile",
+            label: username.value || "Profile",
             icon: "ic:baseline-person",
             to: "/profile",
             disable: true,
