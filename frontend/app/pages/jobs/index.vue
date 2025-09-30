@@ -100,12 +100,8 @@ const filteredJobs = computed(() => {
 
 // API call to fetch jobs
 const api = useApi();
-let currentJobOffset = 0;
-const jobsLimitPerFetch = 10;
 
 interface getJobApplicationForm {
-    limit: number;
-    offset: number;
     location?: string;
     keyword?: string;
     jobtype?: string[];
@@ -116,8 +112,6 @@ interface getJobApplicationForm {
 
 const fetchJobs = async () => {
     const jobForm: getJobApplicationForm = {
-        limit: jobsLimitPerFetch,
-        offset: currentJobOffset,
         location: location.value ?? "",
         keyword: search.value ?? "",
         jobtype: jobType.value ? jobType.value.map(String) : [""],
@@ -126,12 +120,16 @@ const fetchJobs = async () => {
         maxsalary: salaryRange.value ? salaryRange.value[1] : 99999999,
     };
     try {
-        const response = await api.get("/job", {
-            params: { jobForm },
-        });
-        console.log("Jobs fetched:", response.data);
-        currentJobOffset += jobsLimitPerFetch;
-        jobs.push(...response.data.jobs);
+        // Only invoke fetch jobs on client-side
+        if (import.meta.client) {
+            const response = await api.get("/job", {
+                params: { jobForm },
+            });
+            console.log("Jobs fetched:", response.data);
+            if (response.data.jobs && response.data.jobs.length > 0) {
+                jobs.push(...response.data.jobs);
+            }
+        }
     } catch (error) {
         console.error("Error fetching jobs:", error);
     }

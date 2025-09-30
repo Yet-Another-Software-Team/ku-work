@@ -50,6 +50,15 @@
                 <SidebarMenu :items="getSidebarItems(isViewer, isAdmin, isCompany)" />
                 <!-- bottom -->
                 <div class="mt-auto">
+                    <UButton
+                        v-if="!isRegistered && isViewer && !isAdmin && !isCompany"
+                        label="Register"
+                        variant="ghost"
+                        size="xl"
+                        icon="ic:baseline-add-circle-outline"
+                        :ui="{ base: 'justify-start text-left text-white hover:bg-white/10' }"
+                        @click="navigateTo('/register/student', { replace: true })"
+                    />
                     <LogoutButton />
                 </div>
             </template>
@@ -82,6 +91,15 @@
             </header>
             <SidebarMenu :items="getSidebarItems(isViewer, isAdmin, isCompany)" />
             <div class="mt-auto">
+                <UButton
+                    v-if="!isRegistered && isViewer && !isAdmin && !isCompany"
+                    label="Register"
+                    variant="ghost"
+                    size="xl"
+                    icon="ic:baseline-add-circle-outline"
+                    :ui="{ base: 'justify-start text-left text-white hover:bg-white/10' }"
+                    @click="navigateTo('/register/student', { replace: true })"
+                />
                 <LogoutButton />
             </div>
         </div>
@@ -89,13 +107,16 @@
 </template>
 
 <script setup lang="ts">
+
 const isViewer = ref(true);
 const isCompany = ref(false);
 const isAdmin = ref(false);
+const isRegistered = ref(false);
 const loading = ref(true);
 
 onMounted(() => {
     const role = localStorage.getItem("role");
+    isRegistered.value = localStorage.getItem("isRegistered") === "true";
 
     if (role === "company") {
         isViewer.value = false;
@@ -107,6 +128,15 @@ onMounted(() => {
         isCompany.value = false;
         isAdmin.value = false;
     }
+    if (role === "viewer") {
+        isViewer.value = true;
+        isCompany.value = false;
+        isAdmin.value = false;
+    }
+    console.log("isViewer:", isViewer.value);
+    console.log("isCompany:", isCompany.value);
+    console.log("isAdmin:", isAdmin.value);
+    console.log("isRegistered:", isRegistered.value);
     loading.value = false;
 });
 

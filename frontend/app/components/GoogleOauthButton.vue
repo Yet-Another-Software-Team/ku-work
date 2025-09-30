@@ -41,7 +41,6 @@ const login = async () => {
                     withCredentials: true,
                 }
             );
-
             localStorage.setItem("token", response.data.token);
             localStorage.setItem("username", response.data.username);
             localStorage.setItem("isRegistered", response.data.isRegistered.toString());
