@@ -104,6 +104,9 @@ async function onSubmit(_: FormSubmitEvent<Schema>) {
         state.username = "";
         state.password = "";
         show.value = false;
+
+        navigateTo("/dashboard", { replace: true });
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
         let description = "Incorrect username or password. Please try again.";

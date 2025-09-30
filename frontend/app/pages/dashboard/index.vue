@@ -6,8 +6,14 @@
                 Company Dashboard
             </h1>
             <div class="flex flex-wrap gap-10">
+                <div v-if="data.length === 0">
+                    <p class="text-center text-neutral-300 dark:text-neutral-400 text-xl">
+                        No jobs posted yet.
+                    </p>
+                </div>
                 <JobCardCompany
                     v-for="job in data"
+                    v-else
                     :key="job.id"
                     class="h-[18em] w-full lg:w-[25em] drop-shadow-md"
                     :job-i-d="job.id.toString()"
@@ -111,7 +117,18 @@ onMounted(() => {
 const updateJobOpen = (id: number, value: boolean) => {
     const job = data.value.find((job) => job.id === id);
     if (job) {
-        job.open = value;
+        try {
+            api.post("/job", { id: id, open: value });
+            job.open = value;
+        } catch {
+            addToast({
+                title: "Error",
+                description: "Failed to update job status. Please try again.",
+                color: "error",
+            });
+        } finally {
+            fetchJobs();
+        }
     }
 };
 

@@ -154,6 +154,7 @@
                         class="size-fit text-xl text-white rounded-md px-15 font-medium bg-primary-500 hover:bg-primary-700 hover:cursor-pointer active:bg-primary-800"
                         type="submit"
                         label="Post"
+                        :disabled="isSubmitting || !isFormValid"
                     />
                 </div>
             </div>
@@ -168,6 +169,7 @@ import * as z from "zod";
 const emit = defineEmits(["close"]);
 
 const { add: addToast } = useToast();
+const isSubmitting = ref(false);
 
 const showDiscardConfirm = ref(false);
 
@@ -227,6 +229,10 @@ const schema = z
         message: "Minimum salary must be less than or equal to maximum salary",
         path: ["salary"],
     });
+
+const isFormValid = computed(() => {
+    return schema.safeParse(form.value).success;
+});
 
 function validateField(fieldName, value) {
     try {
@@ -320,18 +326,6 @@ async function onSubmit() {
         });
         return;
     }
-    console.log("Form data is valid:", result.data);
-    const response = await api.post("/job", result.data, {
-        withCredentials: true,
-    });
-    if (response.status < 200 || response.status >= 300) {
-        addToast({
-            title: "Form submission failed",
-            description: response.data?.message || "An error occurred. Please try again.",
-            color: "error",
-        });
-        return;
-    }
 
     // Map frontend field names to backend expected names
     const backendData = {
@@ -347,7 +341,17 @@ async function onSubmit() {
         open: true, // default to open
     };
 
-    console.log("Sending data to backend:", backendData);
+    const response = await api.post("/job", backendData, {
+        withCredentials: true,
+    });
+    if (response.status < 200 || response.status >= 300) {
+        addToast({
+            title: "Form submission failed",
+            description: response.data?.message || "An error occurred. Please try again.",
+            color: "error",
+        });
+        return;
+    }
 
     try {
         await api.post("/job", backendData, {
