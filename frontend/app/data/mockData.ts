@@ -47,6 +47,7 @@ interface JobApplication {
     maxSalary: number;
     approved: boolean;
     logo: string;
+    open?: boolean;
 }
 
 interface Job {
