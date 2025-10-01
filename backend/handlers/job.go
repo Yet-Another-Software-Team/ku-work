@@ -155,7 +155,7 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 		query = query.Group("jobs.id")
 	}
 	query = query.Offset(int(input.Offset))
-	query = query.Limit(int(input.Limit)).Preload("Company")
+	query = query.Limit(int(input.Limit)).Preload("Company").Preload("Company.User")
 	if isCompany {
 		var jobsWithStats []JobWithApplicationStatistics
 		result = query.Find(&jobsWithStats)

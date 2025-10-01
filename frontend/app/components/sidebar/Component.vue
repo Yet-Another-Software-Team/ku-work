@@ -148,7 +148,6 @@
 </template>
 
 <script setup lang="ts">
-import { logout } from "~/composables/common";
 const username = ref<string | null>(null);
 
 const isViewer = ref(true);

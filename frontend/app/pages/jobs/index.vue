@@ -53,6 +53,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import type { CheckboxGroupValue } from "@nuxt/ui";
+import type { JobPost } from "~/data/mockData";
 
 definePageMeta({
     layout: "viewer",
@@ -60,24 +61,7 @@ definePageMeta({
 
 // Jobs
 
-interface JobApplication {
-    id: string;
-    createdAt: string;
-    name: string;
-    companyId: string;
-    position: string;
-    duration: string;
-    description: string;
-    location: string;
-    jobType: string;
-    experienceType: string;
-    minSalary: number;
-    maxSalary: number;
-    approved: boolean;
-    logo: string;
-}
-
-const jobs: JobApplication[] = [];
+const jobs = ref<JobPost[]>([]);
 const selectedIndex = ref<number | null>(null);
 const userRole = ref<string>("viewer");
 
@@ -90,10 +74,12 @@ const expType = ref<CheckboxGroupValue[] | null>(null);
 const salaryRange = ref<number[] | null>(null);
 
 const filteredJobs = computed(() => {
-    return jobs.filter((job) => {
+    return jobs.value.filter((job) => {
+        const companyName = job.company?.User?.Username || job.name;
         const matchesSearch =
             job.position.toLowerCase().includes(search.value.toLowerCase()) ||
-            job.name.toLowerCase().includes(search.value.toLowerCase());
+            job.name.toLowerCase().includes(search.value.toLowerCase()) ||
+            companyName.toLowerCase().includes(search.value.toLowerCase());
 
         const matchesLocation =
             !location.value || job.location.toLowerCase().includes(location.value.toLowerCase());
@@ -144,9 +130,9 @@ const fetchJobs = async () => {
             const response = await api.get("/job", {
                 params: { jobForm },
             });
-            console.log("Jobs fetched:", response.data);
+            console.log(response);
             if (response.data.jobs && response.data.jobs.length > 0) {
-                jobs.push(...response.data.jobs);
+                jobs.value.push(...response.data.jobs);
             }
         }
     } catch (error) {

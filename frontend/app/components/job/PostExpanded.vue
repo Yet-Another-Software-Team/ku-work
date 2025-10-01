@@ -5,8 +5,8 @@
             <!-- Profile -->
             <span class="flex-shrink-0">
                 <img
-                    v-if="data.logo"
-                    :src="data.logo"
+                    v-if="data.company.photoId"
+                    :src="`${runtimeConfig.public.apiBaseUrl}/files/${data.company.photoId}`"
                     alt="Company Logo"
                     class="rounded-full size-[6em] object-cover"
                 />
@@ -22,7 +22,7 @@
                 <span>
                     <NuxtLink to="/jobs/company">
                         <h2 class="text-primary-700 text-md font-semibold">
-                            {{ data.name }}
+                            {{ data.company.User.Username }}
                         </h2>
                     </NuxtLink>
                     <p class="text-xs">{{ timeAgo(data.createdAt) }}</p>
@@ -82,10 +82,12 @@
 </template>
 
 <script setup lang="ts">
-import type { JobApplication } from "~/data/mockData";
+import type { JobPost } from "~/data/mockData";
+
+const runtimeConfig = useRuntimeConfig();
 
 defineProps<{
-    data: JobApplication;
+    data: JobPost;
     isSelected: boolean;
     isViewer: boolean;
 }>();
