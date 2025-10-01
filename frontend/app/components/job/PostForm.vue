@@ -165,6 +165,7 @@
 <script setup>
 import { ref, reactive, watch } from "vue";
 import * as z from "zod";
+import { is } from "zod/v4/locales";
 
 const emit = defineEmits(["close"]);
 
@@ -309,6 +310,7 @@ watch(
 );
 
 async function onSubmit() {
+    isSubmitting.value = true;
     const result = schema.safeParse(form.value);
     if (!result.success) {
         for (const issue of result.error.issues) {
@@ -341,18 +343,6 @@ async function onSubmit() {
         open: true, // default to open
     };
 
-    const response = await api.post("/job", backendData, {
-        withCredentials: true,
-    });
-    if (response.status < 200 || response.status >= 300) {
-        addToast({
-            title: "Form submission failed",
-            description: response.data?.message || "An error occurred. Please try again.",
-            color: "error",
-        });
-        return;
-    }
-
     try {
         await api.post("/job", backendData, {
             withCredentials: true,
@@ -371,6 +361,8 @@ async function onSubmit() {
             description: error.message || "An error occurred. Please try again.",
             color: "error",
         });
+    } finally {
+        isSubmitting.value = false;
     }
 }
 </script>

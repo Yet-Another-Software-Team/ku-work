@@ -45,7 +45,7 @@ onMounted(() => {
     if (import.meta.client) {
         const role = localStorage.getItem("role") || "viewer";
         const registered = localStorage.getItem("isRegistered") === "true";
-        if (role == "viewer") {
+        if (role === "viewer") {
             const toast = useToast();
             toast.add({
                 title: "Insufficient Permissions",
@@ -54,7 +54,7 @@ onMounted(() => {
             });
             navigateTo("/jobs", { replace: true });
         }
-        if (!["student", "company", "viewer"].includes(userRole.value)) {
+        if (!["student", "company", "viewer"].includes(role)) {
             const toast = useToast();
             toast.add({
                 title: "Unrecognized Role",
