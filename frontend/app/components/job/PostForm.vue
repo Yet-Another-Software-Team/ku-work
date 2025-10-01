@@ -328,6 +328,18 @@ async function onSubmit() {
         });
         return;
     }
+    console.log("Form data is valid:", result.data);
+    const response = await api.post("/job", result.data, {
+        withCredentials: true,
+    });
+    if (response.status < 200 || response.status >= 300) {
+        addToast({
+            title: "Form submission failed",
+            description: response.data?.message || "An error occurred. Please try again.",
+            color: "error",
+        });
+        return;
+    }
 
     // Map frontend field names to backend expected names
     const backendData = {

@@ -101,7 +101,7 @@ const filteredJobs = computed(() => {
 // API call to fetch jobs
 const api = useApi();
 
-interface getJobApplicationForm {
+interface getJobForm {
     location?: string;
     keyword?: string;
     jobtype?: string[];
@@ -111,7 +111,7 @@ interface getJobApplicationForm {
 }
 
 const fetchJobs = async () => {
-    const jobForm: getJobApplicationForm = {
+    const jobForm: getJobForm = {
         location: location.value ?? "",
         keyword: search.value ?? "",
         jobtype: jobType.value ? jobType.value.map(String) : [""],
