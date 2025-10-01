@@ -37,8 +37,8 @@ func (h *JobHandlers) CreateJob(ctx *gin.Context) {
 		Location    string `json:"location" binding:"required,max=128"`
 		JobType     string `json:"jobtype" binding:"required,oneof='fulltime' 'parttime' 'contract' 'casual' 'internship'"`
 		Experience  string `json:"experience" binding:"required,oneof='newgrad' 'junior' 'senior' 'manager' 'internship'"`
-		MinSalary   uint   `json:"minsalary" binding:"required"`
-		MaxSalary   uint   `json:"maxsalary" binding:"required"`
+		MinSalary   uint   `json:"minsalary"`
+		MaxSalary   uint   `json:"maxsalary"`
 		Open        bool   `json:"open"`
 	}
 	input := CreateJobInput{}
@@ -83,9 +83,10 @@ func (h *JobHandlers) CreateJob(ctx *gin.Context) {
 
 type JobWithApplicationStatistics struct {
 	model.Job
-	Pending  int64 `json:"pending"`
-	Accepted int64 `json:"accepted"`
-	Rejected int64 `json:"rejected"`
+	Pending     int64  `json:"pending"`
+	Accepted    int64  `json:"accepted"`
+	Rejected    int64  `json:"rejected"`
+	CompanyName string `json:"companyName"`
 }
 
 func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
@@ -108,9 +109,9 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 		Limit:     32,
 		Offset:    0,
 	}
-	err := ctx.Bind(&input)
+	err := ctx.ShouldBind(&input)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	isCompany := false
@@ -124,16 +125,21 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 	} else if result.RowsAffected != 0 {
 		isCompany = true
 	}
-	keywordPattern := fmt.Sprintf("%%%s%%", input.Keyword)
 	query := h.DB.Model(&model.Job{})
 	if isCompany {
 		query = query.Joins("LEFT JOIN job_applications ON job_applications.job_id = jobs.id")
-		query = query.Select("jobs.*, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'pending') AS pending, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'accepted') AS accepted, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'rejected') AS rejected")
+		query = query.Select("jobs.*, ANY_VALUE(users.username) as company_name, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'pending') AS pending, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'accepted') AS accepted, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'rejected') AS rejected")
 	}
-	query = query.Where(h.DB.Where("name ILIKE ?", keywordPattern).Or("description ILIKE ?", keywordPattern))
+	if input.Keyword != "" {
+		keywordPattern := fmt.Sprintf("%%%s%%", input.Keyword)
+		query = query.Where(h.DB.Where("name ILIKE ?", keywordPattern).Or("description ILIKE ?", keywordPattern))
+	}
 	query = query.Where("min_salary >= ?", input.MinSalary)
 	query = query.Where("max_salary <= ?", input.MaxSalary)
 	if input.CompanyID != nil {
+		if *input.CompanyID == "self" {
+			input.CompanyID = &userId
+		}
 		query = query.Where("company_id = ?", *input.CompanyID)
 		if input.Open != nil {
 			query = query.Where("is_open = ?", *input.Open)
@@ -155,7 +161,7 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 		query = query.Group("jobs.id")
 	}
 	query = query.Offset(int(input.Offset))
-	query = query.Limit(int(input.Limit)).Preload("Company").Preload("Company.User")
+	query = query.Limit(int(input.Limit)).Preload("Company").Joins("INNER JOIN users ON users.id = jobs.company_id")
 	if isCompany {
 		var jobsWithStats []JobWithApplicationStatistics
 		result = query.Find(&jobsWithStats)
@@ -171,8 +177,12 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 		})
 		return
 	}
-	var jobs []model.Job
-	result = query.Find(&jobs)
+	type JobWithCompanyInfo struct {
+		model.Job
+		CompanyName string `json:"companyName"`
+	}
+	var jobs []JobWithCompanyInfo
+	result = query.Select("jobs.*, users.username as company_name").Find(&jobs)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return

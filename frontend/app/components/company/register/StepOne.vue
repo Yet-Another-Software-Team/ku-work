@@ -190,7 +190,7 @@ const schema = z.object({
     companyName: z.string().min(2, "Name must be at least 2 characters"),
     companyEmail: z.email("Please enter a valid email address"),
     password: z.string().min(8, "Password must be at least 8 characters"),
-    phone: z.string().regex(/^\+(?:[1-9]\d{0,2})\d{4,14}$/, "Please enter a valid phone number"),
+    phone: z.string().regex(/^\+(?:[1-9]\d{0,2}) \d{4,14}$/, "Please enter a valid phone number"),
     address: z.string().min(5, "Address must be at least 5 characters"),
     city: z.string().min(2, "City must be at least 2 characters"),
     country: z.string().min(2, "Country must be at least 2 characters"),

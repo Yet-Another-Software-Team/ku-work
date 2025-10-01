@@ -37,6 +37,8 @@ type RegisterRequest struct {
 	Country  string                `form:"country" binding:"required,max=100"`
 	Photo    *multipart.FileHeader `form:"photo" binding:"required"`
 	Banner   *multipart.FileHeader `form:"banner" binding:"required"`
+	AboutUs  string                `form:"about" binding:"max=16384"`
+	Website  string                `form:"site" binding:"max=100"`
 }
 
 // Register handles user registration
@@ -101,7 +103,9 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 		BannerID: banner.ID,
 		Address:  req.Address,
 		City:     req.City,
+		AboutUs:  req.AboutUs,
 		Country:  req.Country,
+		Website:  req.Website,
 	}
 
 	if err := tx.Create(&newCompany).Error; err != nil {
