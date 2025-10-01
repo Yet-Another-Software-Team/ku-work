@@ -78,14 +78,8 @@ const login = async () => {
                 color: "error",
             });
         }
-    } catch (error) {
-        // Handle errors from the Google login library itself.
-        console.error("Google OAuth error:", error);
-        toast.add({
-            title: "OAuth Error",
-            description: "There was an issue with the Google login process.",
-            color: "error",
-        });
+    } catch {
+        console.warn("OAuth Error...");
     } finally {
         isLoggingIn.value = false;
     }

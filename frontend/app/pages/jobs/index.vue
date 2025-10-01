@@ -2,42 +2,44 @@
     <div class="flex">
         <section class="w-full">
             <!-- Title -->
-            <h1
-                class="flex items-center text-5xl text-primary-800 dark:text-primary font-bold mb-6 gap-2 cursor-pointer"
-            >
-                <span>Job Board</span>
-            </h1>
-            <!-- Search component -->
-            <div class="my-5">
-                <JobSearchComponents
-                    :locations="jobs.map((job) => job.location)"
-                    @update:search="search = $event"
-                    @update:location="location = $event"
-                />
-
-                <!-- More options -->
-                <div>
-                    <SearchMoreButton
-                        @update:salary-range="salaryRange = $event"
-                        @update:job-type="jobType = $event"
-                        @update:exp-type="expType = $event"
+            <section class="sticky top-0 z-20 bg-[#F7F8F4] dark:bg-neutral-900 py-2">
+                <h1
+                    class="flex items-center text-5xl text-primary-800 dark:text-primary font-bold mb-6 gap-2 cursor-pointer"
+                >
+                    <span>Job Board</span>
+                </h1>
+                <!-- Search component -->
+                <div class="my-5">
+                    <JobSearchComponents
+                        :locations="jobs.map((job) => job.location)"
+                        @update:search="search = $event"
+                        @update:location="location = $event"
                     />
+
+                    <!-- More options -->
+                    <div>
+                        <SearchMoreButton
+                            @update:salary-range="salaryRange = $event"
+                            @update:job-type="jobType = $event"
+                            @update:exp-type="expType = $event"
+                        />
+                    </div>
                 </div>
-            </div>
-            <!-- Job applications -->
+            </section>
+            <!-- Job Post -->
             <section v-for="(job, index) in filteredJobs" :key="index">
-                <JobApplicationComponent
+                <JobPostComponent
                     :is-selected="selectedIndex === index"
                     :data="job"
                     @click="selectedIndex = index"
                 />
             </section>
         </section>
-        <!-- Expanded application -->
+        <!-- Expanded Job Post -->
         <section v-if="selectedIndex !== null && selectedIndex < filteredJobs.length" class="flex">
             <USeparator orientation="vertical" class="w-fit mx-5" color="neutral" size="lg" />
             <section>
-                <JobApplicationExpanded
+                <JobPostExpanded
                     v-if="filteredJobs.length > 0"
                     :is-viewer="userRole === 'viewer'"
                     :is-selected="true"
@@ -50,7 +52,6 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { mockJobData, type JobApplication } from "~/data/mockData";
 import type { CheckboxGroupValue } from "@nuxt/ui";
 
 definePageMeta({
@@ -58,7 +59,25 @@ definePageMeta({
 });
 
 // Jobs
-const jobs: JobApplication[] = mockJobData.jobs;
+
+interface JobApplication {
+    id: string;
+    createdAt: string;
+    name: string;
+    companyId: string;
+    position: string;
+    duration: string;
+    description: string;
+    location: string;
+    jobType: string;
+    experienceType: string;
+    minSalary: number;
+    maxSalary: number;
+    approved: boolean;
+    logo: string;
+}
+
+const jobs: JobApplication[] = [];
 const selectedIndex = ref<number | null>(null);
 const userRole = ref<string>("viewer");
 

@@ -1,5 +1,5 @@
 <template>
-    <div class="flex w-full p-6 mt-4 bg-white rounded-xl mx-auto max-w-6xl overflow-visible">
+    <div class="flex w-full p-6 mt-4 bg-white rounded-xl mx-auto max-w-6xl overflow-auto">
         <form class="space-y-4 w-full flex-1" @submit.prevent="onSubmit">
             <!-- Job Title -->
             <div class="grid grid-cols-12 gap-4 items-center w-full">
@@ -139,7 +139,7 @@
 
             <!-- Post & Cancel -->
             <div class="grid grid-cols-12 w-full">
-                <div class="col-span-12 md:col-start-9 md:col-span-4 flex justify-end gap-x-3">
+                <div class="col-span-12 md:col-start-9 md:col-span-4 flex justify-end gap-x-3 mb-5">
                     <!-- Cancel -->
                     <UButton
                         class="size-fit text-xl rounded-md px-15 font-medium hover:bg-gray-200 hover:cursor-pointer"
@@ -327,18 +327,6 @@ async function onSubmit() {
         });
         return;
     }
-    console.log("Form data is valid:", result.data);
-    const response = await api.post("/job", result.data, {
-        withCredentials: true,
-    });
-    if (response.status < 200 || response.status >= 300) {
-        addToast({
-            title: "Form submission failed",
-            description: response.data?.message || "An error occurred. Please try again.",
-            color: "error",
-        });
-        return;
-    }
 
     // Map frontend field names to backend expected names
     const backendData = {
@@ -355,9 +343,11 @@ async function onSubmit() {
     };
 
     try {
-        await api.post("/job", backendData, {
+        const response = await api.post("/job", backendData, {
             withCredentials: true,
         });
+
+        console.log(response);
 
         addToast({
             title: "Form submitted",
@@ -365,6 +355,7 @@ async function onSubmit() {
             color: "success",
         });
         emit("close");
+        isSubmitting.value = false;
     } catch (error) {
         console.error("Job submission error:", error);
         addToast({
@@ -372,7 +363,6 @@ async function onSubmit() {
             description: error.message || "An error occurred. Please try again.",
             color: "error",
         });
-    } finally {
         isSubmitting.value = false;
     }
 }

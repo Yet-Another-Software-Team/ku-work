@@ -1,5 +1,5 @@
 <template>
-    <div v-if="isSelected" class="w-[20em] mt-[4.5rem] sticky top-0 overflow-y-auto max-h-dvh">
+    <div v-if="isSelected" class="w-[20em] mt-[4.5rem] sticky top-10 overflow-y-auto max-h-dvh">
         <!-- First section -->
         <div class="flex mb-7">
             <!-- Profile -->
@@ -8,20 +8,20 @@
                     v-if="data.logo"
                     :src="data.logo"
                     alt="Company Logo"
-                    class="rounded-full size-[6em]"
+                    class="rounded-full size-[6em] object-cover"
                 />
                 <img
                     v-else
-                    src="/images/background.png"
+                    src="~/assets/images/background.png"
                     alt="Company Logo"
-                    class="rounded-full size-[6em]"
+                    class="rounded-full size-[6em] object-cover"
                 />
             </span>
             <span class="mx-3 space-y-1">
                 <h1 class="text-xl font-bold">{{ data.position }}</h1>
                 <span>
                     <NuxtLink to="/jobs/company">
-                        <h2 class="text-[#15543A] text-md font-semibold">
+                        <h2 class="text-primary-700 text-md font-semibold">
                             {{ data.name }}
                         </h2>
                     </NuxtLink>
@@ -33,21 +33,21 @@
         <USeparator class="mt-2" />
         <span class="flex flex-row justify-center text-sm">
             <span class="text-center w-1/3 p-2 space-y-1">
-                <p class="text-[#807D89] font-semibold">Job Type</p>
+                <p class="text-primary-700 font-semibold">Job Type</p>
                 <p class="font-bold">{{ data.jobType }}</p>
             </span>
             <span>
                 <USeparator orientation="vertical" class="h-full items-stretch" size="sm" />
             </span>
             <span class="text-center w-1/3 p-2 space-y-1">
-                <p class="text-[#807D89] font-semibold">Experience</p>
+                <p class="text-primary-700 font-semibold">Experience</p>
                 <p class="font-bold">{{ data.experienceType }}</p>
             </span>
             <span>
                 <USeparator orientation="vertical" class="h-full items-stretch" size="sm" />
             </span>
             <span class="text-center w-1/3 p-2 space-y-1">
-                <p class="text-[#807D89] font-semibold">Salary Range</p>
+                <p class="text-primary-700 font-semibold">Salary Range</p>
                 <p class="font-bold">
                     {{ formatSalary(data.minSalary) }}
                     -
@@ -60,19 +60,19 @@
         <div>
             <h2 class="font-semibold">About This Job</h2>
             <p>
-                <span class="text-[#15543A] font-semibold">Position Title: </span>
+                <span class="text-primary-700 font-semibold">Position Title: </span>
                 {{ data.position }}
             </p>
             <p>
-                <span class="text-[#15543A] font-semibold capitalize">Location: </span>
+                <span class="text-primary-700 font-semibold capitalize">Location: </span>
                 {{ data.location }}
             </p>
             <p>
-                <span class="text-[#15543A] font-semibold">Duration: </span>
+                <span class="text-primary-700 font-semibold">Duration: </span>
                 {{ data.duration }}
             </p>
             <p>
-                <span class="text-[#15543A] font-semibold">Description:</span>
+                <span class="text-primary-700 font-semibold">Description:</span>
                 <br />
                 {{ data.description }}
             </p>

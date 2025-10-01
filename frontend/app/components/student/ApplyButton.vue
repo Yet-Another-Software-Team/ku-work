@@ -47,7 +47,7 @@
                         <div class="h-10 w-10 rounded-full bg-neutral-400 grid place-items-center">
                             <Icon name="basil:file-upload-outline" class="text-xl text-white" />
                         </div>
-                        <div class="text-sm">Drop your resume here</div>
+                        <div class="text-sm text-neutral-400">Drop your resume here</div>
                         <p class="text-[10px] text-neutral-400">
                             PDF, PNG, JPG, JPEG (max 10MB each, 2 files)
                         </p>
@@ -83,7 +83,7 @@
                         <UInput
                             v-model="contactPhone"
                             type="tel"
-                            placeholder="0919999999"
+                            placeholder="+66919999999"
                             :error="!!errors.contactPhone"
                             :ui="{ base: 'rounded-lg bg-white text-black' }"
                             @blur="validateField('contactPhone', contactPhone)"
@@ -116,7 +116,7 @@
                         label="Cancel"
                         color="neutral"
                         variant="outline"
-                        class="flex-1 rounded-md bg-white justify-center hover:bg-gray-200 hover:cursor-pointer border-1 border-gray-200 px-4 py-2 font-md transition"
+                        class="flex-1 rounded-md text-neutral-900 bg-white justify-center hover:bg-gray-200 hover:cursor-pointer border-1 border-gray-200 px-4 py-2 font-md transition"
                         @click="closeForm"
                     />
                     <UButton
@@ -174,8 +174,10 @@ const errors = reactive({
 const schema = z.object({
     contactPhone: z
         .string()
-        .max(20, "Phone number must be 20 characters or less")
-        .refine((v) => (v ? /^[+]?[0-9\-()\s]+$/.test(v) : true), "Invalid phone number format"),
+        .refine(
+            (v) => (v ? /^\+(?:[1-9]\d{0,2})\d{4,14}$/.test(v) : true),
+            "Invalid phone number format"
+        ),
     contactMail: z
         .string()
         .refine((v) => (v ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) : true), "Invalid email format"),
@@ -269,11 +271,6 @@ function addFiles(incoming: File[]) {
 function removeFile(idx: number) {
     files.value.splice(idx, 1);
     if (files.value.length === 0) errors.resumeFile = "Resume file is required";
-    toast.add({
-        title: "File removed",
-        description: "Resume has been removed",
-        color: "warning",
-    });
 }
 
 function truncateName(name: string, limit = 25): string {
