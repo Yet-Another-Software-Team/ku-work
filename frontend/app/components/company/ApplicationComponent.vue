@@ -1,5 +1,5 @@
 <template>
-    <div class="mt-[4.5rem] sticky top-0 overflow-y-auto max-h-dvh rounded-xl shadow-md/25 p-5">
+    <div class="sticky top-0 overflow-y-auto max-h-dvh rounded-xl shadow-md/25 p-5">
         <!-- First section -->
         <div class="flex mb-7 justify-between items-center">
             <!-- Top Left Side -->
@@ -44,6 +44,7 @@
             <!-- Top Right Side -->
             <div>
                 <span class="flex items-center justify-between">
+                    <!-- TODO:Add Patch req -->
                     <USwitch
                         v-model="isOpen"
                         size="xl"
@@ -64,6 +65,7 @@
                     >
                 </span>
                 <!-- Edit Button -->
+                <!-- TODO:Add patch req -->
                 <button
                     class="px-4 py-2 border border-gray-400 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center mt-4 gap-2"
                 >
