@@ -150,20 +150,20 @@ import * as z from "zod";
 
 const emit = defineEmits(["close"]);
 
-const { add: addToast } = useToast();
-
 const showDiscardConfirm = ref(false);
 
 const api = useApi();
+const toast = useToast();
 
 const form = ref({
     title: "",
     location: "",
-    type: "",
-    experience: "",
-    minSalary: "",
-    maxSalary: "",
+    type: null,
+    experience: null,
+    minSalary: null,
+    maxSalary: null,
     description: "",
+    open: true,
 });
 
 const jobTypes = [
@@ -183,12 +183,13 @@ const experiences = [
 const errors = reactive({
     title: "",
     location: "",
-    type: "",
-    experience: "",
-    minSalary: "",
-    maxSalary: "",
+    type: null,
+    experience: null,
+    minSalary: null,
+    maxSalary: null,
     description: "",
     salary: "",
+    open: true,
 });
 
 const schema = z
@@ -278,6 +279,15 @@ watch(
 
 async function onSubmit() {
     const result = schema.safeParse(form.value);
+    const token = localStorage.getItem("jwt_token");
+    if (!token) {
+        toast.add({
+            title: "Form submission failed",
+            description: "You must be logged in to perform this action.",
+            color: "error",
+        });
+        return;
+    }
     if (!result.success) {
         for (const issue of result.error.issues) {
             const key = issue.path?.[0];
@@ -287,7 +297,7 @@ async function onSubmit() {
                 errors.salary = issue.message;
             }
         }
-        addToast({
+        toast.add({
             title: "Form submission failed",
             description: "Please check the highlighted errors and try again.",
             color: "warning",
@@ -296,10 +306,12 @@ async function onSubmit() {
     }
     console.log("Form data is valid:", result.data);
     const response = await api.post("/job", result.data, {
-        withCredentials: true,
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
     });
     if (response.status < 200 || response.status >= 300) {
-        addToast({
+        toast.add({
             title: "Form submission failed",
             description: response.data?.message || "An error occurred. Please try again.",
             color: "error",
@@ -307,7 +319,7 @@ async function onSubmit() {
         return;
     }
 
-    addToast({
+    toast.add({
         title: "Form submitted",
         description: "Your job post has been saved successfully.",
         color: "success",
