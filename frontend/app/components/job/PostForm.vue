@@ -165,7 +165,6 @@
 <script setup>
 import { ref, reactive, watch } from "vue";
 import * as z from "zod";
-import { is } from "zod/v4/locales";
 
 const emit = defineEmits(["close"]);
 
