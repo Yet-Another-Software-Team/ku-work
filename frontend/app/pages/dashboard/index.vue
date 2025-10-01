@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="pt-5 pb-2">
         <!-- Company Dashboard -->
         <div v-if="userRole === 'company'">
             <h1 class="text-5xl text-primary-800 dark:text-primary font-bold mb-5">

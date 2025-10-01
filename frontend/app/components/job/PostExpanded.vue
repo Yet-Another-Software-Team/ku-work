@@ -1,9 +1,9 @@
 <template>
     <div v-if="isSelected" class="w-[20em] mt-[4.5rem] sticky top-10 overflow-y-auto max-h-dvh">
         <!-- First section -->
-        <div class="flex mb-7">
+        <div class="flex items-center mb-7">
             <!-- Profile -->
-            <span>
+            <span class="flex-shrink-0">
                 <img
                     v-if="data.logo"
                     :src="data.logo"

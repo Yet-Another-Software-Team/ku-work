@@ -1,5 +1,5 @@
 <template>
-    <div class="relative">
+    <div class="relative pt-5 pb-2">
         <!-- Loading screen -->
         <div
             v-if="loading"

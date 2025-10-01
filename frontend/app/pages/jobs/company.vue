@@ -1,7 +1,7 @@
 <template>
     <div>
         <!-- Role-based rendering -->
-        <div v-if="userRole === 'student' || userRole === 'viewer'">
+        <div v-if="userRole === 'student' || userRole === 'viewer'" class="pt-5 pb-2">
             <CompanyProfileCard :is-owner="false" :is-viewer="userRole === 'viewer'" />
         </div>
 

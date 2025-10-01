@@ -2,7 +2,7 @@
     <div class="flex">
         <section class="w-full">
             <!-- Title -->
-            <section class="sticky top-0 z-20 bg-[#F7F8F4] dark:bg-neutral-900 py-2">
+            <section class="sticky top-0 z-20 bg-[#F7F8F4] dark:bg-neutral-900 pt-5 pb-2">
                 <h1
                     class="flex items-center text-5xl text-primary-800 dark:text-primary font-bold mb-6 gap-2 cursor-pointer"
                 >
