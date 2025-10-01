@@ -65,15 +65,21 @@
 </template>
 
 <script setup lang="ts">
+<<<<<<< HEAD
 const userRole = ref<string>("viewer");
 
 definePageMeta({
     layout: "viewer",
     middleware: "auth",
+=======
+definePageMeta({
+    layout: "viewer",
+>>>>>>> main
 });
 
 const openJobPostForm = ref(false);
 
+<<<<<<< HEAD
 type Job = {
     id: number;
     position: string;
@@ -137,6 +143,72 @@ const handleJobFormClose = () => {
     // Refresh jobs list after posting (only for companies)
     if (userRole.value === "company") {
         fetchJobs();
+=======
+let data = [
+    {
+        id: 1,
+        position: "Software Quality Assurance Engineer",
+        accepted: 10,
+        rejected: 5,
+        pending: 3,
+        open: true,
+    },
+    {
+        id: 2,
+        position: "Software Engineer",
+        accepted: 15,
+        rejected: 7,
+        pending: 2,
+        open: false,
+    },
+    {
+        id: 3,
+        position: "Product Manager",
+        accepted: 8,
+        rejected: 4,
+        pending: 1,
+        open: true,
+    },
+    {
+        id: 4,
+        position: "Data Scientist",
+        accepted: 12,
+        rejected: 6,
+        pending: 4,
+        open: true,
+    },
+    {
+        id: 5,
+        position: "Security Personnel",
+        accepted: 2,
+        rejected: 199238,
+        pending: 0,
+        open: false,
+    },
+];
+
+const api = useApi();
+
+onMounted(async () => {
+    const keyword = localStorage.getItem("username") || "";
+    const response = await api.get("/job", {
+        params: {
+            keyword: keyword,
+        },
+    });
+    if (response.status !== 200) {
+        console.error("Failed to fetch jobs:", response.data?.message || "Unknown error");
+        return;
+    }
+    console.log("Fetched jobs:", response.data);
+    data = response.data.jobs;
+});
+
+const updateJobOpen = (id: number, value: boolean) => {
+    const job = data.find((job) => job.id === id);
+    if (job) {
+        job.open = value;
+>>>>>>> main
     }
 };
 </script>
