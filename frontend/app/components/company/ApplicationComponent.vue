@@ -44,10 +44,11 @@
             <!-- Top Right Side -->
             <div>
                 <span class="flex items-center justify-between">
-                    <!-- TODO:Add Patch req -->
                     <USwitch
                         v-model="isOpen"
                         size="xl"
+                        :disabled="patchWaiting"
+                        @change="handleChange"
                         @update:model-value="
                             (value) => {
                                 emit('update:open', value);
@@ -114,8 +115,88 @@ const props = defineProps<{
 const emit = defineEmits(["update:open"]);
 
 const isOpen = ref(false);
+const patchWaiting = ref(false);
 
 onMounted(() => {
     isOpen.value = props.open;
 });
+
+const api = useApi();
+const toast = useToast();
+
+interface patchJobForm {
+    id: number;
+    name: string;
+    position: string;
+    duration: string;
+    description: string;
+    location: string;
+    jobtype: "fulltime" | "parttime" | "contract" | "casual" | "internship";
+    experience?: "newgrad" | "junior" | "senior" | "manager" | "internship";
+    minsalary?: number;
+    maxsalary?: number;
+    open?: boolean;
+}
+
+// TODO: Fix error 404 on patch request
+async function handleChange() {
+    // Set up for the patch request
+    patchWaiting.value = true;
+    const token = localStorage.getItem("jwt_token");
+    if (!token) {
+        alert("You must be logged in to perform this action.");
+        patchWaiting.value = false;
+        return;
+    }
+    const role = localStorage.getItem("role");
+    if (role !== "company") {
+        console.error("Only companies can update job status.");
+        patchWaiting.value = false;
+        return;
+    }
+
+    const form: patchJobForm = {
+        id: Number(props.data.id),
+        name: props.data.name,
+        position: props.data.position,
+        duration: props.data.duration,
+        description: props.data.description,
+        location: props.data.location,
+        jobtype: props.data.jobType.toLowerCase() as patchJobForm["jobtype"],
+        experience: props.data.experienceType
+            ? (props.data.experienceType.toLowerCase() as patchJobForm["experience"])
+            : undefined,
+        minsalary: props.data.minSalary,
+        maxsalary: props.data.maxSalary,
+        open: isOpen.value,
+    };
+    console.log("Patching with form:", form);
+
+    // Patch request
+    try {
+        const response = await api.patch(`/job`, form, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            // params: { form },
+        });
+        console.log("Patch response:", response.data);
+        toast.add({
+            title: "Job status updated",
+            description: `The job is now ${isOpen.value ? "open" : "closed"}.`,
+            color: "success",
+        });
+    } catch (error) {
+        toast.add({
+            title: "Error patching job",
+            description: "Failed to update job status. Please try again.",
+            color: "error",
+        });
+        console.error("Error patching job:", error);
+        // Revert the toggle switch state
+        isOpen.value = !isOpen.value;
+    } finally {
+        patchWaiting.value = false;
+    }
+}
 </script>

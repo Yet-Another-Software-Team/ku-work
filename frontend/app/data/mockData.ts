@@ -48,6 +48,9 @@ interface JobApplication {
     approved: boolean;
     logo: string;
     open?: boolean;
+    pending?: number;
+    accepted?: number;
+    rejected?: number;
 }
 
 interface Job {

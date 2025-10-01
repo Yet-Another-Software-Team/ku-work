@@ -39,6 +39,7 @@ definePageMeta({
 
 const openJobPostForm = ref(false);
 
+// Mock data for component testing
 let data = [
     {
         id: 1,
