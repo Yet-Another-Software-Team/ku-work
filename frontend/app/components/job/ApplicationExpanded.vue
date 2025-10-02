@@ -82,10 +82,10 @@
 </template>
 
 <script setup lang="ts">
-import type { JobApplication } from "~/data/mockData";
+import type { JobPost } from "~/data/mockData";
 
 defineProps<{
-    data: JobApplication;
+    data: JobPost;
     isSelected: boolean;
     isViewer: boolean;
 }>();

@@ -32,7 +32,7 @@ interface CompanyProfile {
     };
 }
 
-interface JobApplication {
+interface JobPost {
     id: string;
     createdAt: string;
     name: string;
@@ -54,7 +54,7 @@ interface JobApplication {
 }
 
 interface Job {
-    jobs: JobApplication[];
+    jobs: JobPost[];
 }
 
 const mockUserData: Profile = {
@@ -206,4 +206,4 @@ const mockJobData: Job = {
 };
 
 export { mockUserData, multipleMockUserData, mockCompanyData, mockJobData };
-export type { Profile, CompanyProfile, JobApplication, Job };
+export type { Profile, CompanyProfile, JobPost, Job };

@@ -50,7 +50,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { mockJobData, type JobApplication } from "~/data/mockData";
+import { mockJobData, type JobPost } from "~/data/mockData";
 import type { CheckboxGroupValue } from "@nuxt/ui";
 
 definePageMeta({
@@ -58,7 +58,7 @@ definePageMeta({
 });
 
 // Jobs
-const jobs: JobApplication[] = mockJobData.jobs;
+const jobs: JobPost[] = mockJobData.jobs;
 const selectedIndex = ref<number | null>(null);
 
 // Search and Location
