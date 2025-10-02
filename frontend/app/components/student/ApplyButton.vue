@@ -1,24 +1,15 @@
 <template>
-    <!-- Button -->
-    <!-- Need change when apply to job board -->
-    <UButton class="w-full justify-center my-5 p-2 text-xl" label="Apply" @click="openForm" />
-
-    <!-- Overlay -->
-    <div
-        v-if="open"
-        class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
-        @keydown.esc="closeForm"
+    <UModal
+        v-model:open="open"
+        title="Job Application Form"
+        :ui="{ content: 'w-[380px]', body: 'p-6', title: 'text-xl font-bold' }"
     >
-        <!-- Modal -->
-        <div class="w-[380px] rounded-2xl p-6 shadow-lg bg-white text-gray-900 dark:text-white">
-            <div class="flex justify-between items-center mb-4">
-                <h1 class="text-xl md:text-3xl font-bold text-left text-black">
-                    Job Application Form
-                </h1>
-            </div>
+        <!-- Button Trigger -->
+        <UButton class="w-full justify-center my-5 p-2 text-xl" label="Apply" />
 
+        <template #body>
             <!-- Progress -->
-            <div class="flex flex-1 justify-center items-center gap-x-2">
+            <div class="flex flex-1 justify-center items-center gap-x-2 mb-4">
                 <UProgress
                     v-for="i in totalSteps"
                     :key="i"
@@ -31,7 +22,7 @@
             <div v-if="currentStep === 1">
                 <!-- Dropzone -->
                 <label
-                    class="mt-4 block rounded-md border-2 border-dashed border-neutral-500/50 bg-neutral-50 p-6 text-center cursor-pointer transition hover:bg-neutral-100"
+                    class="mt-4 block rounded-md border-2 border-dashed border-neutral-500/50 bg-neutral-50 p-6 text-center cursor-pointer transition light:hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700"
                     @dragover.prevent
                     @drop="onDrop"
                 >
@@ -44,13 +35,13 @@
                         @change="onPick"
                     />
                     <div class="mx-auto grid place-items-center gap-2">
-                        <div class="h-10 w-10 rounded-full bg-neutral-400 grid place-items-center">
+                        <div
+                            class="h-10 w-10 rounded-full bg-neutral-400 dark:bg-neutral-900 grid place-items-center"
+                        >
                             <Icon name="basil:file-upload-outline" class="text-xl text-white" />
                         </div>
-                        <div class="text-sm text-neutral-400">Drop your resume here</div>
-                        <p class="text-[10px] text-neutral-400">
-                            PDF, PNG, JPG, JPEG (max 10MB each, 2 files)
-                        </p>
+                        <div class="text-sm">Drop your resume here</div>
+                        <p class="text-[10px]">PDF, PNG, JPG, JPEG (max 10MB each, 2 files)</p>
                         <p type="button" class="text-xs text-gray" @click="triggerPick"></p>
                     </div>
                 </label>
@@ -59,11 +50,13 @@
                 <div
                     v-for="(f, i) in files"
                     :key="i"
-                    class="mt-2 flex items-center justify-between p-2 rounded-lg bg-gray-100 text-sm text-black"
+                    class="mt-2 flex items-center justify-between p-2 rounded-lg bg-gray-100 dark:bg-neutral-800 text-sm text-black"
                 >
                     <div class="flex items-center">
                         <Icon name="material-symbols:description" class="text-primary-600 mr-2" />
-                        <span>{{ truncateName(f.name, 25) }}</span>
+                        <span class="text-neutral-900 dark:text-neutral-50">{{
+                            truncateName(f.name, 25)
+                        }}</span>
                         <span class="ml-2 text-gray-500">({{ formatFileSize(f.size) }})</span>
                     </div>
                     <UIcon
@@ -79,13 +72,15 @@
                 <!-- Inputs -->
                 <div class="mt-4 grid grid-cols-2 gap-4">
                     <div>
-                        <div class="text-[13px] text-primary-800 font-semibold mb-1">Phone</div>
+                        <div class="text-[13px] text-primary-800 font-semibold mb-1">
+                            Phone <span class="text-gray-500 font-normal">(optional)</span>
+                        </div>
                         <UInput
                             v-model="contactPhone"
                             type="tel"
                             placeholder="+66919999999"
                             :error="!!errors.contactPhone"
-                            :ui="{ base: 'rounded-lg bg-white text-black' }"
+                            :ui="{ base: 'rounded-lg bg-white dark:bg-neutral-800 text-black' }"
                             @blur="validateField('contactPhone', contactPhone)"
                         />
                         <span v-if="errors.contactPhone" class="text-error text-sm">{{
@@ -94,37 +89,20 @@
                     </div>
                     <div>
                         <div class="text-[13px] text-primary-800 font-semibold mb-1">
-                            Contact Mail
+                            Contact Mail <span class="text-gray-500 font-normal">(optional)</span>
                         </div>
                         <UInput
                             v-model="contactMail"
                             type="email"
                             placeholder="sample@mail.com"
                             :error="!!errors.contactMail"
-                            :ui="{ base: 'rounded-lg bg-white text-black' }"
+                            :ui="{ base: 'rounded-lg bg-white dark:bg-neutral-800 text-black' }"
                             @blur="validateField('contactMail', contactMail)"
                         />
                         <span v-if="errors.contactMail" class="text-error text-sm">{{
                             errors.contactMail
                         }}</span>
                     </div>
-                </div>
-
-                <!-- Actions -->
-                <div class="mt-5 flex items-center gap-3">
-                    <UButton
-                        label="Cancel"
-                        color="neutral"
-                        variant="outline"
-                        class="flex-1 rounded-md text-neutral-900 bg-white justify-center hover:bg-gray-200 hover:cursor-pointer border-1 border-gray-200 px-4 py-2 font-md transition"
-                        @click="closeForm"
-                    />
-                    <UButton
-                        :disabled="!isValid"
-                        label="Next"
-                        class="flex-1 rounded-md justify-center px-4 py-2 font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed bg-primary-500 hover:bg-primary-700 transition"
-                        @click="onNext"
-                    />
                 </div>
             </div>
 
@@ -136,15 +114,35 @@
                 />
                 <h2 class="text-3xl font-bold text-gray-600 mb-2">Apply Success</h2>
                 <p class="text-gray-600">You have applied to this job application.</p>
+            </div>
+        </template>
 
+        <template v-if="currentStep === 1" #footer="{ close }">
+            <div class="flex items-center gap-3 w-full">
                 <UButton
-                    label="Done"
-                    class="mt-5 w-full text-xl justify-center px-4 py-2 font-semibold text-white bg-primary-500 hover:bg-primary-700 transition"
-                    @click="handleDone"
+                    label="Cancel"
+                    color="neutral"
+                    variant="outline"
+                    class="flex-1 rounded-md text-neutral-900 bg-white justify-center hover:bg-gray-200 hover:cursor-pointer border-1 border-gray-200 px-4 py-2 font-md transition"
+                    @click="close"
+                />
+                <UButton
+                    :disabled="!isValid"
+                    label="Next"
+                    class="flex-1 rounded-md justify-center px-4 py-2 font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed bg-primary-500 hover:bg-primary-700 transition"
+                    @click="onNext"
                 />
             </div>
-        </div>
-    </div>
+        </template>
+
+        <template v-else-if="currentStep === 2" #footer="{ close }">
+            <UButton
+                label="Done"
+                class="w-full text-xl justify-center px-4 py-2 font-semibold text-white bg-primary-500 hover:bg-primary-700 transition"
+                @click="handleDone(close)"
+            />
+        </template>
+    </UModal>
 </template>
 
 <script setup lang="ts">
@@ -195,10 +193,6 @@ function validateField(fieldName: keyof typeof errors, value: unknown) {
 
     try {
         schema.pick({ [fieldName]: true }).parse({ [fieldName]: value });
-        if (typeof value === "string" && value.trim() === "") {
-            errors[fieldName] = "This field is required";
-            return false;
-        }
         errors[fieldName] = "";
         return true;
     } catch (error: unknown) {
@@ -215,9 +209,9 @@ watch(contactPhone, (v) => validateField("contactPhone", v));
 watch(contactMail, (v) => validateField("contactMail", v));
 
 const isValid = computed(() => {
-    const filled = contactPhone.value.trim() && contactMail.value.trim() && files.value.length > 0;
+    const hasFiles = files.value.length > 0;
     const noErrors = !Object.values(errors).some(Boolean);
-    return !!filled && noErrors;
+    return hasFiles && noErrors;
 });
 
 const formatFileSize = (bytes: number): string => {
@@ -227,13 +221,6 @@ const formatFileSize = (bytes: number): string => {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
-
-function openForm() {
-    open.value = true;
-}
-function closeForm() {
-    open.value = false;
-}
 
 function triggerPick() {
     fileInput.value?.click();
@@ -283,17 +270,17 @@ function onNext() {
     const okMail = validateField("contactMail", contactMail.value);
     const okResume = validateField("resumeFile", null);
 
-    if (!(okPhone && okMail && okResume)) return;
+    if (!okResume) return;
 
     currentStep.value = 2;
     toast.add({
         title: "Apply Successfully",
-        description: "Your application response will be sent to your contact email",
+        description: "Your application has been submitted successfully",
         color: "success",
     });
 }
 
-function handleDone() {
+function handleDone(close: () => void) {
     contactPhone.value = "";
     contactMail.value = "";
     files.value = [];
@@ -301,6 +288,6 @@ function handleDone() {
     errors.contactMail = "";
     errors.resumeFile = "";
     currentStep.value = 1;
-    closeForm();
+    close();
 }
 </script>
