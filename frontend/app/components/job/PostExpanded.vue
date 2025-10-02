@@ -77,7 +77,7 @@
                 {{ data.description }}
             </p>
         </div>
-        <StudentApplyButton v-if="!isViewer" label="Apply" />
+        <StudentApplyButton v-if="!isViewer" :job-id="data.id" label="Apply" />
     </div>
 </template>
 

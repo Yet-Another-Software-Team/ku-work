@@ -128,7 +128,8 @@
                 />
                 <UButton
                     :disabled="!isValid"
-                    label="Next"
+                    :label="isSubmitting ? 'Submitting...' : 'Next'"
+                    :loading="isSubmitting"
                     class="flex-1 rounded-md justify-center px-4 py-2 font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed bg-primary-500 hover:bg-primary-700 transition"
                     @click="onNext"
                 />
@@ -149,6 +150,13 @@
 import { ref, reactive, computed, watch } from "vue";
 import * as z from "zod";
 
+const api = useApi();
+
+interface Props {
+    jobId: number;
+}
+
+const props = defineProps<Props>();
 const toast = useToast();
 
 const totalSteps = 2;
@@ -159,6 +167,7 @@ type FileLike = File & { previewUrl?: string };
 const open = ref(false);
 const files = ref<FileLike[]>([]);
 const fileInput = ref<HTMLInputElement | null>(null);
+const isSubmitting = ref(false);
 
 const contactPhone = ref("");
 const contactMail = ref("");
@@ -211,7 +220,7 @@ watch(contactMail, (v) => validateField("contactMail", v));
 const isValid = computed(() => {
     const hasFiles = files.value.length > 0;
     const noErrors = !Object.values(errors).some(Boolean);
-    return hasFiles && noErrors;
+    return hasFiles && noErrors && !isSubmitting.value;
 });
 
 const formatFileSize = (bytes: number): string => {
@@ -265,19 +274,48 @@ function truncateName(name: string, limit = 25): string {
     return name.length > limit ? name.slice(0, limit) + "..." : name;
 }
 
-function onNext() {
-    const okPhone = validateField("contactPhone", contactPhone.value);
-    const okMail = validateField("contactMail", contactMail.value);
+async function onNext() {
     const okResume = validateField("resumeFile", null);
 
     if (!okResume) return;
 
-    currentStep.value = 2;
-    toast.add({
-        title: "Apply Successfully",
-        description: "Your application has been submitted successfully",
-        color: "success",
-    });
+    isSubmitting.value = true;
+
+    try {
+        const formData = new FormData();
+        formData.append("id", props.jobId.toString());
+
+        if (contactPhone.value.trim()) {
+            formData.append("phone", contactPhone.value.trim());
+        }
+
+        if (contactMail.value.trim()) {
+            formData.append("email", contactMail.value.trim());
+        }
+
+        files.value.forEach((file) => {
+            console.log(file);
+            formData.append("files", file);
+        });
+
+        await api.postFormData("/job/apply", formData, { withCredentials: true });
+
+        currentStep.value = 2;
+        toast.add({
+            title: "Apply Successfully",
+            description: "Your application has been submitted successfully",
+            color: "success",
+        });
+    } catch (error) {
+        console.error("Application submission failed:", error);
+        toast.add({
+            title: "Application Failed",
+            description: error?.data?.message || "Failed to submit application. Please try again.",
+            color: "error",
+        });
+    } finally {
+        isSubmitting.value = false;
+    }
 }
 
 function handleDone(close: () => void) {
