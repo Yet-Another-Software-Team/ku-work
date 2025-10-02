@@ -11,7 +11,7 @@
         </a>
         <!-- Job applications -->
         <section>
-            <CompanyApplicationComponent
+            <CompanyPostComponent
                 v-if="job"
                 :data="job"
                 :open="job.open ?? false"
