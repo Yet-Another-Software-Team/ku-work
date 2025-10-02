@@ -130,7 +130,6 @@ const fetchJobs = async () => {
             const response = await api.get("/job", {
                 params: { jobForm },
             });
-            console.log(response);
             if (response.data.jobs && response.data.jobs.length > 0) {
                 jobs.value.push(...response.data.jobs);
             }

@@ -148,6 +148,10 @@
 </template>
 
 <script setup lang="ts">
+import { useNuxtApp } from "#app";
+
+const logout = useNuxtApp().$logout as () => void;
+
 const username = ref<string | null>(null);
 
 const isViewer = ref(true);
