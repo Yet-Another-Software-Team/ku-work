@@ -66,16 +66,21 @@
                     >
                 </span>
                 <!-- Edit Button -->
-                <!-- TODO:Add patch req -->
-                <button
-                    class="px-4 py-2 border border-gray-400 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center mt-4 gap-2"
-                >
-                    <Icon
-                        name="material-symbols:edit-square-outline-rounded"
-                        class="size-[1.5em]"
-                    />
-                    Edit Post
-                </button>
+                <UModal v-model:open="openJobEditForm">
+                    <button
+                        class="px-4 py-2 border border-gray-400 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center mt-4 gap-2"
+                        @click="openJobEditForm = true"
+                    >
+                        <Icon
+                            name="material-symbols:edit-square-outline-rounded"
+                            class="size-[1.5em]"
+                        />
+                        Edit Post
+                    </button>
+                    <template #content>
+                        <JobEditForm @close="openJobEditForm = false" />
+                    </template>
+                </UModal>
             </div>
         </div>
 
@@ -105,12 +110,14 @@
 </template>
 
 <script setup lang="ts">
-import type { JobApplication } from "~/data/mockData";
+import type { JobPost } from "~/data/mockData";
 
 const props = defineProps<{
-    data: JobApplication;
+    data: JobPost;
     open: boolean;
 }>();
+
+const openJobEditForm = ref(false);
 
 const emit = defineEmits(["update:open"]);
 
@@ -138,7 +145,6 @@ interface patchJobForm {
     open?: boolean;
 }
 
-// TODO: Fix error 404 on patch request
 async function handleChange() {
     // Set up for the patch request
     patchWaiting.value = true;

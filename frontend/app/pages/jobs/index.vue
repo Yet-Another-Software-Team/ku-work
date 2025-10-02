@@ -26,7 +26,7 @@
             </div>
             <!-- Job applications -->
             <section v-for="(job, index) in filteredJobs" :key="index">
-                <JobApplicationComponent
+                <JobPostComponent
                     :is-selected="selectedIndex === index"
                     :data="job"
                     @click="selectedIndex = index"
@@ -37,7 +37,7 @@
         <section v-if="selectedIndex !== null && selectedIndex < filteredJobs.length" class="flex">
             <USeparator orientation="vertical" class="w-fit mx-5" color="neutral" size="lg" />
             <section>
-                <JobApplicationExpanded
+                <JobPostExpanded
                     v-if="filteredJobs.length > 0"
                     :is-viewer="false"
                     :is-selected="true"
