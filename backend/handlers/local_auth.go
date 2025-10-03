@@ -105,7 +105,7 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 		City:     req.City,
 		Country:  req.Country,
 	}
-	
+
 	if req.Website != "" {
 		// Parse website URL and check for invalid URL (Only Basic Check)
 		parsedURL, err := url.Parse(req.Website)
