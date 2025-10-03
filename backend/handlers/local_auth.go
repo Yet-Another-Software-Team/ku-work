@@ -109,7 +109,7 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 	if req.Website != "" {
 		// Parse website URL and check for invalid URL (Only Basic Check)
 		parsedURL, err := url.Parse(req.Website)
-		if err != nil || !(parsedURL.Scheme == "http" || parsedURL.Scheme == "https") {
+		if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid website URL"})
 			return
 		}
