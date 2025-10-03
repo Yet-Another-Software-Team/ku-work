@@ -4,6 +4,7 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"time"
 
 	"ku-work/backend/model"
@@ -31,6 +32,7 @@ type RegisterRequest struct {
 	Username string                `form:"username" binding:"required,max=256"`
 	Password string                `form:"password" binding:"required,min=8"`
 	Email    string                `form:"email" binding:"required,max=100"`
+	Website  string                `form:"website" binding:"max=200"`
 	Phone    string                `form:"phone" binding:"required,max=20"`
 	Address  string                `form:"address" binding:"required,max=200"`
 	City     string                `form:"city" binding:"required,max=100"`
@@ -102,6 +104,16 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 		Address:  req.Address,
 		City:     req.City,
 		Country:  req.Country,
+	}
+	
+	if req.Website != "" {
+		// Parse website URL and check for invalid URL (Only Basic Check)
+		parsedURL, err := url.Parse(req.Website)
+		if err != nil || !(parsedURL.Scheme == "http" || parsedURL.Scheme == "https") {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid website URL"})
+			return
+		}
+		newCompany.Website = parsedURL.String()
 	}
 
 	if err := tx.Create(&newCompany).Error; err != nil {

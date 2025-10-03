@@ -37,6 +37,24 @@
                 </span>
             </div>
 
+            <!-- Company Website Input -->
+            <div class="flex flex-col space-y-1 col-span-2">
+                <label class="text-gray-800 font-semibold">Company Website *</label>
+                <div class="relative">
+                    <input
+                        :value="companyWebsite"
+                        type="url"
+                        placeholder="Enter your Company Website"
+                        class="w-full px-4 py-3 text-black bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                        :class="{ 'border-red-500': errors.companyWebsite }"
+                        @input="updateCompanyWebsite"
+                    />
+                </div>
+                <span v-if="errors.companyWebsite" class="text-red-500 text-sm">
+                    {{ errors.companyWebsite }}
+                </span>
+            </div>
+
             <!-- Password Input -->
             <div class="flex flex-col space-y-1 col-span-2">
                 <label class="text-gray-800 font-semibold">Password *</label>
@@ -52,6 +70,24 @@
                 </div>
                 <span v-if="errors.password" class="text-red-500 text-sm">
                     {{ errors.password }}
+                </span>
+            </div>
+
+            <!-- Repeat Password Input -->
+            <div class="flex flex-col space-y-1 col-span-2">
+                <label class="text-gray-800 font-semibold">Repeat Password *</label>
+                <div class="relative">
+                    <input
+                        :value="rPassword"
+                        type="password"
+                        placeholder="Repeat your Password"
+                        class="w-full px-4 py-3 text-black bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                        :class="{ 'border-red-500': errors.rPassword }"
+                        @input="updateRPassword"
+                    />
+                </div>
+                <span v-if="errors.rPassword" class="text-red-500 text-sm">
+                    {{ errors.rPassword }}
                 </span>
             </div>
 
@@ -134,12 +170,17 @@
 import { reactive, computed } from "vue";
 import * as z from "zod";
 
+const rPassword = ref("");
 const props = defineProps({
     companyName: {
         type: String,
         default: "",
     },
     companyEmail: {
+        type: String,
+        default: "",
+    },
+    companyWebsite: {
         type: String,
         default: "",
     },
@@ -168,7 +209,9 @@ const props = defineProps({
 const emit = defineEmits([
     "update:companyName",
     "update:companyEmail",
+    "update:companyWebsite",
     "update:password",
+    "update:rPassword",
     "update:phone",
     "update:address",
     "update:city",
@@ -178,7 +221,9 @@ const emit = defineEmits([
 const errors = reactive({
     companyName: "",
     companyEmail: "",
+    companyWebsite: "",
     password: "",
+    rPassword: "",
     phone: "",
     address: "",
     city: "",
@@ -189,7 +234,9 @@ const errors = reactive({
 const schema = z.object({
     companyName: z.string().min(2, "Name must be at least 2 characters"),
     companyEmail: z.email("Please enter a valid email address"),
+    companyWebsite: z.url("Please enter a valid URL"),
     password: z.string().min(8, "Password must be at least 8 characters"),
+    rPassword: z.string().refine((value) => value === props.password, "Passwords do not match"),
     phone: z.string().regex(/^\+(?:[1-9]\d{0,2})\d{4,14}$/, "Please enter a valid phone number"),
     address: z.string().min(5, "Address must be at least 5 characters"),
     city: z.string().min(2, "City must be at least 2 characters"),
@@ -198,6 +245,7 @@ const schema = z.object({
 
 const validateField = (fieldName: keyof typeof errors, value: unknown) => {
     try {
+        console.log("Validating field:", fieldName);
         schema.pick({ [fieldName]: true }).parse({ [fieldName]: value });
         errors[fieldName] = ""; // Clear error if validation is successful
         return true;
@@ -216,6 +264,7 @@ const isValid = computed(() => {
         props.companyName &&
         props.companyEmail &&
         props.password &&
+        rPassword.value &&
         props.phone &&
         props.address &&
         props.city &&
@@ -236,10 +285,22 @@ const updateCompanyEmail = (event: Event) => {
     validateField("companyEmail", value);
 };
 
+const updateCompanyWebsite = (event: Event) => {
+    const value = (event.target as HTMLInputElement).value;
+    emit("update:companyWebsite", value);
+    validateField("companyWebsite", value);
+};
+
 const updatePassword = (event: Event) => {
     const value = (event.target as HTMLInputElement).value;
     emit("update:password", value);
     validateField("password", value);
+};
+
+const updateRPassword = (event: Event) => {
+    const value = (event.target as HTMLInputElement).value;
+    rPassword.value = value;
+    validateField("rPassword", value);
 };
 
 const updatePhone = (event: Event) => {
