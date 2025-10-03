@@ -37,7 +37,7 @@
                         )
                     }}</span>
                 </p>
-                <p class="text-gray-800 dark:text-gray-200 font-semibold">
+                <p v-if="profile.phone" class="text-gray-800 dark:text-gray-200 font-semibold">
                     Phone:
                     <span class="font-normal">{{ profile.phone }}</span>
                 </p>
