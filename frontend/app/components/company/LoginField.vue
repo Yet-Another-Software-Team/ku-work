@@ -25,6 +25,7 @@
                 <template #trailing>
                     <UButton
                         color="neutral"
+                        class="cursor-pointer"
                         variant="link"
                         size="sm"
                         :icon="show ? 'i-lucide-eye-off' : 'i-lucide-eye'"
@@ -63,8 +64,8 @@ type Schema = z.output<typeof schema>;
 const show = ref(false);
 const isLoggingIn = ref(false);
 const state = reactive<Partial<Schema>>({
-    username: undefined,
-    password: undefined,
+    username: "",
+    password: "",
 });
 
 async function onSubmit(_: FormSubmitEvent<Schema>) {
