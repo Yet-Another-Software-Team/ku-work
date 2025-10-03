@@ -34,7 +34,7 @@ interface Props {
     showRequestCount?: boolean;
     showLoadingText?: boolean;
     loadingText?: string;
-    color?: "primary" | "secondary" | "success" | "info" | "warning" | "error" | "neutral";
+    color?: "primary" | "secondary" | "success" | "info" | "warning" | "error" | "neutral" | string;
     size?: "xs" | "sm" | "md" | "lg" | "xl";
     position?: "top" | "bottom";
     animation?: "carousel" | "carousel-inverse" | "swing" | "elastic";

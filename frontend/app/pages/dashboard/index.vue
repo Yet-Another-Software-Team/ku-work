@@ -1,108 +1,142 @@
 <template>
-    <div>
-        <h1 class="text-5xl text-primary-800 dark:text-primary font-bold mb-5">Dashboards</h1>
-        <div class="flex flex-wrap gap-10">
-            <JobCardCompany
-                v-for="job in data"
-                :key="job.id"
-                class="h-[18em] w-full lg:w-[25em] drop-shadow-md"
-                :job-i-d="job.id.toString()"
-                :open="job.open"
-                :position="job.position"
-                :accepted="job.accepted"
-                :rejected="job.rejected"
-                :pending="job.pending"
-                @update:open="(value: boolean) => updateJobOpen(job.id, value)"
-            />
-        </div>
-        <div class="bg-primary p-2 rounded-full size-[4em] fixed bottom-5 right-[6vw]">
-            <UModal v-model:open="openJobPostForm">
-                <Icon
-                    name="ic:baseline-plus"
-                    size="4em"
-                    mode="svg"
-                    class="absolute top-0 bottom-0 left-0 right-0 text-white"
-                    @click="openJobPostForm = true"
+    <div class="pt-5 pb-2">
+        <!-- Company Dashboard -->
+        <div v-if="userRole === 'company'">
+            <h1 class="text-5xl text-primary-800 dark:text-primary font-bold mb-5">
+                Company Dashboard
+            </h1>
+            <div class="flex flex-wrap gap-10">
+                <div v-if="data.length === 0">
+                    <p class="text-center text-neutral-300 dark:text-neutral-400 text-xl">
+                        No jobs posted yet.
+                    </p>
+                </div>
+                <JobCardCompany
+                    v-for="job in data"
+                    v-else
+                    :key="job.id"
+                    class="h-[18em] w-full lg:w-[25em] drop-shadow-md"
+                    :job-i-d="job.id.toString()"
+                    :open="job.open"
+                    :position="job.position"
+                    :accepted="job.accepted"
+                    :rejected="job.rejected"
+                    :pending="job.pending"
+                    @update:open="(value: boolean) => updateJobOpen(job.id, value)"
                 />
-                <template #content>
-                    <JobPostForm @close="openJobPostForm = false" />
-                </template>
-            </UModal>
+            </div>
+            <div class="bg-primary p-2 rounded-full size-[4em] fixed bottom-5 right-[6vw]">
+                <UModal v-model:open="openJobPostForm">
+                    <Icon
+                        name="ic:baseline-plus"
+                        size="4em"
+                        mode="svg"
+                        class="absolute top-0 bottom-0 left-0 right-0 text-white"
+                        @click="openJobPostForm = true"
+                    />
+                    <template #content>
+                        <JobPostForm @close="handleJobFormClose" />
+                    </template>
+                </UModal>
+            </div>
+        </div>
+
+        <!-- Student Dashboard -->
+        <div v-else-if="userRole === 'student'">
+            <h1 class="text-5xl text-primary-800 dark:text-primary font-bold mb-5">
+                Student Dashboard
+            </h1>
+            <div class="text-center py-8">
+                <p class="text-gray-500 text-lg">
+                    Student dashboard functionality not yet implemented.
+                </p>
+                <p class="text-gray-400 text-sm mt-2">
+                    This feature will be available in a future update.
+                </p>
+            </div>
+        </div>
+
+        <!-- Access Denied -->
+        <div v-else class="text-center py-8">
+            <h2 class="text-2xl font-semibold text-gray-600 dark:text-gray-400">Access Denied</h2>
+            <p class="text-gray-500 mt-2">You don't have permission to view this dashboard.</p>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
+const userRole = ref<string>("viewer");
+
 definePageMeta({
     layout: "viewer",
+    middleware: "auth",
 });
 
 const openJobPostForm = ref(false);
 
-let data = [
-    {
-        id: 1,
-        position: "Software Quality Assurance Engineer",
-        accepted: 10,
-        rejected: 5,
-        pending: 3,
-        open: true,
-    },
-    {
-        id: 2,
-        position: "Software Engineer",
-        accepted: 15,
-        rejected: 7,
-        pending: 2,
-        open: false,
-    },
-    {
-        id: 3,
-        position: "Product Manager",
-        accepted: 8,
-        rejected: 4,
-        pending: 1,
-        open: true,
-    },
-    {
-        id: 4,
-        position: "Data Scientist",
-        accepted: 12,
-        rejected: 6,
-        pending: 4,
-        open: true,
-    },
-    {
-        id: 5,
-        position: "Security Personnel",
-        accepted: 2,
-        rejected: 199238,
-        pending: 0,
-        open: false,
-    },
-];
+type Job = {
+    id: number;
+    position: string;
+    accepted: number;
+    rejected: number;
+    pending: number;
+    open: boolean;
+};
+
+const data = ref<Job[]>([]);
 
 const api = useApi();
+const { add: addToast } = useToast();
 
-onMounted(async () => {
-    const keyword = localStorage.getItem("username") || "";
-    const response = await api.get("/job", {
-        params: {
-            keyword: keyword,
-        },
-    });
-    if (response.status !== 200) {
-        console.error("Failed to fetch jobs:", response.data?.message || "Unknown error");
-        return;
+const fetchJobs = async () => {
+    // Only fetch jobs for companies
+    if (userRole.value !== "company") return;
+
+    try {
+        const response = await api.get("/job");
+        console.log("Fetched jobs:", response.data);
+        data.value = response.data.jobs || [];
+    } catch (error) {
+        const apiError = error as { message?: string };
+        console.error("Failed to fetch jobs:", apiError.message || "Unknown error");
+        addToast({
+            title: "Error",
+            description: "Failed to fetch jobs. Please refresh the page.",
+            color: "error",
+        });
     }
-    console.log("Fetched jobs:", response.data);
-    data = response.data.jobs;
+};
+
+onMounted(() => {
+    if (import.meta.client) {
+        userRole.value = localStorage.getItem("role") || "viewer";
+    }
+    fetchJobs();
 });
 
 const updateJobOpen = (id: number, value: boolean) => {
-    const job = data.find((job) => job.id === id);
+    const job = data.value.find((job) => job.id === id);
     if (job) {
-        job.open = value;
+        try {
+            api.post("/job", { id: id, open: value });
+            job.open = value;
+        } catch {
+            addToast({
+                title: "Error",
+                description: "Failed to update job status. Please try again.",
+                color: "error",
+            });
+        } finally {
+            fetchJobs();
+        }
+    }
+};
+
+const handleJobFormClose = () => {
+    openJobPostForm.value = false;
+    // Refresh jobs list after posting (only for companies)
+    if (userRole.value === "company") {
+        fetchJobs();
     }
 };
 </script>

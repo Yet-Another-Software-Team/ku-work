@@ -1,5 +1,5 @@
 <template>
-    <div class="flex w-full p-6 mt-4 bg-white rounded-xl mx-auto max-w-6xl overflow-visible">
+    <div class="flex w-full p-6 mt-4 bg-white rounded-xl mx-auto max-w-6xl overflow-auto">
         <form class="space-y-4 w-full flex-1" @submit.prevent="onSubmit">
             <!-- Job Title -->
             <div class="grid grid-cols-12 gap-4 items-center w-full">
@@ -102,6 +102,23 @@
                 </div>
             </div>
 
+            <!-- Duration -->
+            <div class="grid grid-cols-12 gap-4 items-center w-full">
+                <label
+                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
+                >
+                    Duration
+                </label>
+                <div class="col-span-12 md:col-span-8">
+                    <UInput
+                        v-model="form.duration"
+                        placeholder="e.g., 6 months, 1 year, Permanent"
+                        class="w-full bg-white"
+                    />
+                    <span class="text-error text-sm">{{ errors.duration }}</span>
+                </div>
+            </div>
+
             <!-- Job Description -->
             <div class="grid grid-cols-12 gap-4 items-start w-full">
                 <label
@@ -122,7 +139,7 @@
 
             <!-- Post & Cancel -->
             <div class="grid grid-cols-12 w-full">
-                <div class="col-span-12 md:col-start-9 md:col-span-4 flex justify-end gap-x-3">
+                <div class="col-span-12 md:col-start-9 md:col-span-4 flex justify-end gap-x-3 mb-5">
                     <!-- Cancel -->
                     <UButton
                         class="size-fit text-xl rounded-md px-15 font-medium hover:bg-gray-200 hover:cursor-pointer"
@@ -137,6 +154,7 @@
                         class="size-fit text-xl text-white rounded-md px-15 font-medium bg-primary-500 hover:bg-primary-700 hover:cursor-pointer active:bg-primary-800"
                         type="submit"
                         label="Post"
+                        :disabled="isSubmitting || !isFormValid"
                     />
                 </div>
             </div>
@@ -151,6 +169,7 @@ import * as z from "zod";
 const emit = defineEmits(["close"]);
 
 const { add: addToast } = useToast();
+const isSubmitting = ref(false);
 
 const showDiscardConfirm = ref(false);
 
@@ -164,20 +183,23 @@ const form = ref({
     minSalary: "",
     maxSalary: "",
     description: "",
+    duration: "",
 });
 
 const jobTypes = [
-    { label: "Full-time", value: "Full-time" },
-    { label: "Part-time", value: "Part-time" },
-    { label: "Internship", value: "Internship" },
-    { label: "Contract", value: "Contract" },
+    { label: "Full-time", value: "fulltime" },
+    { label: "Part-time", value: "parttime" },
+    { label: "Internship", value: "internship" },
+    { label: "Contract", value: "contract" },
+    { label: "Casual", value: "casual" },
 ];
 
 const experiences = [
-    { label: "Senior", value: "Senior" },
-    { label: "Junior", value: "Junior" },
-    { label: "New Grad", value: "New Grad" },
-    { label: "Manager", value: "Manager" },
+    { label: "Senior", value: "senior" },
+    { label: "Junior", value: "junior" },
+    { label: "New Grad", value: "newgrad" },
+    { label: "Manager", value: "manager" },
+    { label: "Internship", value: "internship" },
 ];
 
 const errors = reactive({
@@ -188,6 +210,7 @@ const errors = reactive({
     minSalary: "",
     maxSalary: "",
     description: "",
+    duration: "",
     salary: "",
 });
 
@@ -200,11 +223,16 @@ const schema = z
         minSalary: z.coerce.number().min(0, "Minimum salary cannot be negative"),
         maxSalary: z.coerce.number().min(0, "Maximum salary cannot be negative"),
         description: z.string().min(1, "Job Description is required"),
+        duration: z.string().min(1, "Duration is required"),
     })
     .refine((d) => d.minSalary <= d.maxSalary, {
         message: "Minimum salary must be less than or equal to maximum salary",
         path: ["salary"],
     });
+
+const isFormValid = computed(() => {
+    return schema.safeParse(form.value).success;
+});
 
 function validateField(fieldName, value) {
     try {
@@ -260,6 +288,10 @@ watch(
     () => form.value.description,
     (v) => validateField("description", v)
 );
+watch(
+    () => form.value.duration,
+    (v) => validateField("duration", v)
+);
 
 watch(
     () => form.value.minSalary,
@@ -277,6 +309,7 @@ watch(
 );
 
 async function onSubmit() {
+    isSubmitting.value = true;
     const result = schema.safeParse(form.value);
     if (!result.success) {
         for (const issue of result.error.issues) {
@@ -294,24 +327,43 @@ async function onSubmit() {
         });
         return;
     }
-    console.log("Form data is valid:", result.data);
-    const response = await api.post("/job", result.data, {
-        withCredentials: true,
-    });
-    if (response.status < 200 || response.status >= 300) {
+
+    // Map frontend field names to backend expected names
+    const backendData = {
+        name: result.data.title, // title -> name
+        position: result.data.title, // use title as position too
+        location: result.data.location,
+        jobtype: result.data.type, // type -> jobtype
+        experience: result.data.experience,
+        minsalary: result.data.minSalary, // minSalary -> minsalary
+        maxsalary: result.data.maxSalary, // maxSalary -> maxsalary
+        description: result.data.description,
+        duration: result.data.duration,
+        open: true, // default to open
+    };
+
+    try {
+        const response = await api.post("/job", backendData, {
+            withCredentials: true,
+        });
+
+        console.log(response);
+
+        addToast({
+            title: "Form submitted",
+            description: "Your job post has been saved successfully.",
+            color: "success",
+        });
+        emit("close");
+        isSubmitting.value = false;
+    } catch (error) {
+        console.error("Job submission error:", error);
         addToast({
             title: "Form submission failed",
-            description: response.data?.message || "An error occurred. Please try again.",
+            description: error.message || "An error occurred. Please try again.",
             color: "error",
         });
-        return;
+        isSubmitting.value = false;
     }
-
-    addToast({
-        title: "Form submitted",
-        description: "Your job post has been saved successfully.",
-        color: "success",
-    });
-    emit("close");
 }
 </script>

@@ -59,11 +59,10 @@ const props = defineProps<{
 }>();
 
 const toast = useToast();
-const router = useRouter();
 
 function navigateToProfile(id: number) {
     console.log("Navigating to profile of request:", props.requestId);
-    router.push(`/admin/dashboard/profile?id=${id}`);
+    navigateTo(`/admin/dashboard/profile?id=${id}`, { replace: true });
 }
 
 // add function later
