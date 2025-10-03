@@ -59,18 +59,18 @@ func (h *JobHandlers) CreateJob(ctx *gin.Context) {
 		return
 	}
 	job := model.Job{
-		Name:        input.Name,
-		CompanyID:   company.UserID,
-		Position:    input.Position,
-		Duration:    input.Duration,
-		Description: input.Description,
-		Location:    input.Location,
-		JobType:     model.JobType(input.JobType),
-		Experience:  model.ExperienceType(input.Experience),
-		MinSalary:   input.MinSalary,
-		MaxSalary:   input.MaxSalary,
-		IsApproved:  false,
-		IsOpen:      input.Open,
+		Name:           input.Name,
+		CompanyID:      company.UserID,
+		Position:       input.Position,
+		Duration:       input.Duration,
+		Description:    input.Description,
+		Location:       input.Location,
+		JobType:        model.JobType(input.JobType),
+		Experience:     model.ExperienceType(input.Experience),
+		MinSalary:      input.MinSalary,
+		MaxSalary:      input.MaxSalary,
+		ApprovalStatus: model.JobApprovalPending,
+		IsOpen:         input.Open,
 	}
 	if result := h.DB.Create(&job); result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
@@ -91,16 +91,17 @@ type JobWithApplicationStatistics struct {
 func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 	userId := ctx.MustGet("userID").(string)
 	type FetchJobsInput struct {
-		Limit      uint     `json:"limit" form:"limit" binding:"max=128"`
-		Offset     uint     `json:"offset" form:"offset"`
-		Location   string   `json:"location" form:"location" binding:"max=128"`
-		Keyword    string   `json:"keyword" form:"keyword" binding:"max=256"`
-		JobType    []string `json:"jobtype" form:"jobtype" binding:"max=5,dive,max=32"`
-		Experience []string `json:"experience" form:"experience" binding:"max=5,dive,max=32"`
-		MinSalary  uint     `json:"minsalary" form:"minsalary"`
-		MaxSalary  uint     `json:"maxsalary" form:"maxsalary"`
-		Open       *bool    `json:"open" form:"open"`
-		CompanyID  *string  `json:"companyId" form:"companyId" binding:"omitempty,max=64"`
+		Limit          uint     `json:"limit" form:"limit" binding:"max=128"`
+		Offset         uint     `json:"offset" form:"offset"`
+		Location       string   `json:"location" form:"location" binding:"max=128"`
+		Keyword        string   `json:"keyword" form:"keyword" binding:"max=256"`
+		JobType        []string `json:"jobtype" form:"jobtype" binding:"max=5,dive,max=32"`
+		Experience     []string `json:"experience" form:"experience" binding:"max=5,dive,max=32"`
+		MinSalary      uint     `json:"minsalary" form:"minsalary"`
+		MaxSalary      uint     `json:"maxsalary" form:"maxsalary"`
+		Open           *bool    `json:"open" form:"open"`
+		CompanyID      *string  `json:"companyId" form:"companyId" binding:"omitempty,max=64"`
+		ApprovalStatus string   `json:"approvalStatus" form:"approvalStatus" binding:"max=64"`
 	}
 	input := FetchJobsInput{
 		MinSalary: 0,
@@ -130,7 +131,9 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 		query = query.Joins("LEFT JOIN job_applications ON job_applications.job_id = jobs.id")
 		query = query.Select("jobs.*, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'pending') AS pending, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'accepted') AS accepted, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'rejected') AS rejected")
 	}
-	query = query.Where(h.DB.Where("name ILIKE ?", keywordPattern).Or("description ILIKE ?", keywordPattern))
+	if input.Keyword != "" {
+		query = query.Where(h.DB.Where("name ILIKE ?", keywordPattern).Or("description ILIKE ?", keywordPattern))
+	}
 	query = query.Where("min_salary >= ?", input.MinSalary)
 	query = query.Where("max_salary <= ?", input.MaxSalary)
 	if input.CompanyID != nil {
@@ -150,7 +153,19 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 	if len(input.Experience) != 0 {
 		query = query.Where("experience IN ?", input.Experience)
 	}
-	query = query.Where(&model.Job{IsApproved: true})
+	result = h.DB.Limit(1).Find(&model.Admin{
+		UserID: userId,
+	})
+	if result.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	} else if result.RowsAffected != 0 {
+		if input.ApprovalStatus != "" {
+			query = query.Where(&model.Job{ApprovalStatus: model.JobApprovalStatus(input.ApprovalStatus)})
+		}
+	} else {
+		query = query.Where(&model.Job{ApprovalStatus: model.JobApprovalAccepted})
+	}
 	if isCompany {
 		query = query.Group("jobs.id")
 	}
@@ -159,9 +174,6 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 	if isCompany {
 		var jobsWithStats []JobWithApplicationStatistics
 		result = query.Find(&jobsWithStats)
-		for _, job := range jobsWithStats {
-			println(job.ID)
-		}
 		if result.Error != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 			return
@@ -270,7 +282,8 @@ func (h *JobHandlers) EditJob(ctx *gin.Context) {
 
 func (h *JobHandlers) ApproveJob(ctx *gin.Context) {
 	type ApproveJobInput struct {
-		ID uint `json:"id" binding:"required"`
+		ID      uint `json:"id" binding:"required"`
+		Approve bool `json:"approve"`
 	}
 	input := ApproveJobInput{}
 	err := ctx.Bind(&input)
@@ -286,7 +299,11 @@ func (h *JobHandlers) ApproveJob(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
-	job.IsApproved = true
+	if input.Approve {
+		job.ApprovalStatus = model.JobApprovalAccepted
+	} else {
+		job.ApprovalStatus = model.JobApprovalRejected
+	}
 	result = h.DB.Save(&job)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
@@ -324,20 +341,17 @@ func (h *JobHandlers) ApplyJob(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
-	if !student.Approved {
+	if student.ApprovalStatus != model.StudentApprovalAccepted {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "your student status is not approved yet"})
 		return
 	}
 	job := model.Job{
-		ID: input.JobID,
+		ID:             input.JobID,
+		ApprovalStatus: model.JobApprovalAccepted,
 	}
 	result = h.DB.First(&job)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
-		return
-	}
-	if !job.IsApproved {
-		ctx.JSON(http.StatusForbidden, gin.H{"error": "job is not approved yet"})
 		return
 	}
 	jobApplication := model.JobApplication{

@@ -19,15 +19,20 @@ import (
 
 func TestJob(t *testing.T) {
 	t.Run("Create", func(t *testing.T) {
-		var company *model.Company
 		var err error
-		if company, err = CreateAdminCompany(fmt.Sprintf("createjobtester-%d", time.Now().UnixNano())); err != nil {
+		var userCreationResult *UserCreationResult
+		if userCreationResult, err = CreateUser(UserCreationInfo{
+			Username:  fmt.Sprintf("createjobtester-%d", time.Now().UnixNano()),
+			IsAdmin:   true,
+			IsCompany: true,
+		}); err != nil {
 			t.Error(err)
 			return
 		}
 		defer (func() {
-			_ = db.Delete(&company)
+			_ = db.Delete(&userCreationResult.User)
 		})()
+		company := userCreationResult.Company
 		w := httptest.NewRecorder()
 		jobName := fmt.Sprintf("testjob1-%d", time.Now().UnixNano())
 		payload := fmt.Sprintf(`{
@@ -81,15 +86,20 @@ func TestJob(t *testing.T) {
 		assert.Equal(t, job.MaxSalary, uint(2))
 	})
 	t.Run("Edit", func(t *testing.T) {
-		var company *model.Company
 		var err error
-		if company, err = CreateAdminCompany(fmt.Sprintf("createjobtester-%d", time.Now().UnixNano())); err != nil {
+		var userCreationResult *UserCreationResult
+		if userCreationResult, err = CreateUser(UserCreationInfo{
+			Username:  fmt.Sprintf("editjobtester-%d", time.Now().UnixNano()),
+			IsAdmin:   true,
+			IsCompany: true,
+		}); err != nil {
 			t.Error(err)
 			return
 		}
 		defer (func() {
-			_ = db.Delete(&company)
+			_ = db.Delete(&userCreationResult.User)
 		})()
+		company := userCreationResult.Company
 		job := model.Job{
 			Name:        fmt.Sprintf("nice-job-%d", time.Now().UnixNano()),
 			CompanyID:   company.UserID,
@@ -155,28 +165,33 @@ func TestJob(t *testing.T) {
 		assert.Equal(t, edited_job.MaxSalary, uint(100))
 	})
 	t.Run("Fetch", func(t *testing.T) {
-		var company *model.Company
 		var err error
-		if company, err = CreateAdminCompany(fmt.Sprintf("createjobtester-%d", time.Now().UnixNano())); err != nil {
+		var userCreationResult *UserCreationResult
+		if userCreationResult, err = CreateUser(UserCreationInfo{
+			Username:  fmt.Sprintf("fetchjobtester-%d", time.Now().UnixNano()),
+			IsAdmin:   true,
+			IsCompany: true,
+		}); err != nil {
 			t.Error(err)
 			return
 		}
 		defer (func() {
-			_ = db.Delete(&company)
+			_ = db.Delete(&userCreationResult.User)
 		})()
+		company := userCreationResult.Company
 		job := model.Job{
-			Name:        fmt.Sprintf("nice-job-%d", time.Now().UnixNano()),
-			CompanyID:   company.UserID,
-			Position:    "software engineer",
-			Duration:    "6 months",
-			Description: "make software",
-			Location:    "bangkok",
-			JobType:     model.JobTypeInternship,
-			Experience:  model.ExperienceInternship,
-			MinSalary:   10,
-			MaxSalary:   100,
-			IsOpen:      true,
-			IsApproved:  true,
+			Name:           fmt.Sprintf("nice-job-%d", time.Now().UnixNano()),
+			CompanyID:      company.UserID,
+			Position:       "software engineer",
+			Duration:       "6 months",
+			Description:    "make software",
+			Location:       "bangkok",
+			JobType:        model.JobTypeInternship,
+			Experience:     model.ExperienceInternship,
+			MinSalary:      10,
+			MaxSalary:      100,
+			IsOpen:         true,
+			ApprovalStatus: model.JobApprovalAccepted,
 		}
 		err = db.Create(&job).Error
 		if err != nil {
@@ -195,7 +210,7 @@ func TestJob(t *testing.T) {
 		}
 		student := model.Student{
 			UserID:              company.UserID,
-			Approved:            true,
+			ApprovalStatus:      model.StudentApprovalAccepted,
 			PhotoID:             photoFile.ID,
 			StudentStatusFileID: statusFile.ID,
 		}
@@ -251,15 +266,20 @@ func TestJob(t *testing.T) {
 		assert.Equal(t, result.Jobs[0].Position, "software engineer")
 	})
 	t.Run("Approve", func(t *testing.T) {
-		var company *model.Company
 		var err error
-		if company, err = CreateAdminCompany(fmt.Sprintf("createjobtester-%d", time.Now().UnixNano())); err != nil {
+		var userCreationResult *UserCreationResult
+		if userCreationResult, err = CreateUser(UserCreationInfo{
+			Username:  fmt.Sprintf("approvejobtester-%d", time.Now().UnixNano()),
+			IsAdmin:   true,
+			IsCompany: true,
+		}); err != nil {
 			t.Error(err)
 			return
 		}
 		defer (func() {
-			_ = db.Delete(&company)
+			_ = db.Delete(&userCreationResult.User)
 		})()
+		company := userCreationResult.Company
 		job := model.Job{
 			Name:        fmt.Sprintf("nice-job-%d", time.Now().UnixNano()),
 			CompanyID:   company.UserID,
@@ -278,7 +298,7 @@ func TestJob(t *testing.T) {
 			return
 		}
 		w := httptest.NewRecorder()
-		payload := fmt.Sprintf(`{"id": %d}`, job.ID)
+		payload := fmt.Sprintf(`{"id": %d,"approve": true}`, job.ID)
 		req, _ := http.NewRequest("POST", "/job/approve", strings.NewReader(payload))
 		jwtHandler := handlers.NewJWTHandlers(db)
 		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
@@ -309,6 +329,7 @@ func TestJob(t *testing.T) {
 			t.Error(err)
 			return
 		}
+		assert.Equal(t, edited_job.ApprovalStatus, model.JobApprovalAccepted)
 		assert.Equal(t, edited_job.Name, job.Name)
 		assert.Equal(t, edited_job.Position, "software engineer")
 		assert.Equal(t, edited_job.Duration, "6 months")
@@ -320,15 +341,20 @@ func TestJob(t *testing.T) {
 		assert.Equal(t, edited_job.MaxSalary, uint(100))
 	})
 	t.Run("Apply", func(t *testing.T) {
-		var company *model.Company
 		var err error
-		if company, err = CreateAdminCompany(fmt.Sprintf("applyjobtestercom-%d", time.Now().UnixNano())); err != nil {
+		var userCreationResult *UserCreationResult
+		if userCreationResult, err = CreateUser(UserCreationInfo{
+			Username:  fmt.Sprintf("applyjobtester-%d", time.Now().UnixNano()),
+			IsAdmin:   true,
+			IsCompany: true,
+		}); err != nil {
 			t.Error(err)
 			return
 		}
 		defer (func() {
-			_ = db.Delete(&company)
+			_ = db.Delete(&userCreationResult.User)
 		})()
+		company := userCreationResult.Company
 		user := model.User{
 			Username: fmt.Sprintf("applyjobtester-%d", time.Now().UnixNano()),
 		}
@@ -352,7 +378,7 @@ func TestJob(t *testing.T) {
 		}
 		student := model.Student{
 			UserID:              user.ID,
-			Approved:            true,
+			ApprovalStatus:      model.StudentApprovalAccepted,
 			PhotoID:             photoFile.ID,
 			StudentStatusFileID: statusFile.ID,
 		}
@@ -361,8 +387,8 @@ func TestJob(t *testing.T) {
 			return
 		}
 		job := model.Job{
-			CompanyID:  company.UserID,
-			IsApproved: true,
+			CompanyID:      company.UserID,
+			ApprovalStatus: model.JobApprovalAccepted,
 		}
 		if result := db.Create(&job); result.Error != nil {
 			t.Error(result.Error)
