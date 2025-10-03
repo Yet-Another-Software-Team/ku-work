@@ -385,7 +385,8 @@ func (h *JobHandlers) ApplyJob(ctx *gin.Context) {
 func (h *JobHandlers) FetchJobApplications(ctx *gin.Context) {
 	userId := ctx.MustGet("userID").(string)
 	type FetchJobApplicationsInput struct {
-		JobID  *uint `json:"id" form:"id"`
+		ID     *uint `json:"id" form:"id"`
+		JobID  *uint `json:"jobId" form:"jobId"`
 		Offset uint  `json:"offset" form:"offset"`
 		Limit  uint  `json:"limit" form:"limit" binding:"max=64"`
 	}
@@ -395,7 +396,20 @@ func (h *JobHandlers) FetchJobApplications(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	query := h.DB.Model(&model.JobApplication{})
+	type JobApplicationWithApplicantName struct {
+		model.JobApplication
+		Username string `json:"username"`
+	}
+	query := h.DB.Model(&model.JobApplication{}).Joins("INNER JOIN users ON users.id = job_applications.user_id").Select("job_applications.*", "users.username as username")
+	if input.ID != nil {
+		var jobApplication JobApplicationWithApplicantName
+		if err := query.Take(&jobApplication).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		ctx.JSON(http.StatusOK, jobApplication)
+		return
+	}
 	if input.JobID != nil {
 		query = query.Where(&model.JobApplication{JobID: *input.JobID})
 	} else {
@@ -424,7 +438,7 @@ func (h *JobHandlers) FetchJobApplications(ctx *gin.Context) {
 			}
 		}
 	}
-	var jobApplications []model.JobApplication
+	var jobApplications []JobApplicationWithApplicantName
 	result := query.Offset(int(input.Offset)).Limit(int(input.Limit)).Preload("Files").Find(&jobApplications)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
