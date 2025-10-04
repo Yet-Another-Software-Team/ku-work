@@ -50,21 +50,21 @@
 </template>
 
 <script setup lang="ts">
-import { mockJobData, type JobApplication } from "~/data/mockData";
+import { mockJobData, type JobPost } from "~/data/mockData";
 
 definePageMeta({
     layout: "viewer",
 });
 
 // Jobs
-const job: JobApplication | null = mockJobData.jobs[0] ? mockJobData.jobs[0] : null;
+const job: JobPost | null = mockJobData.jobs[0] ? mockJobData.jobs[0] : null;
 
 // API call to fetch jobs
 const api = useApi();
 const limit = 10;
 let currentJobOffset = 0;
 
-interface getJobApplicationForm {
+interface getJobPostForm {
     limit: number;
     offset: number;
     keyword: string;
@@ -89,7 +89,7 @@ onMounted(() => {
 });
 
 const fetchJob = async (token: string | null) => {
-    const jobForm: getJobApplicationForm = {
+    const jobForm: getJobPostForm = {
         limit: 1,
         offset: 0,
         keyword: "",

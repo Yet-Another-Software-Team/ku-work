@@ -1,6 +1,7 @@
 <template>
     <UButton
         :icon="colorMode.value === 'dark' ? 'ic:round-light-mode' : 'ic:round-dark-mode'"
+        class="cursor-pointer"
         @click="toggleDark"
     />
 </template>

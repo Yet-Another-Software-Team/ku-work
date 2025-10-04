@@ -105,10 +105,10 @@
 </template>
 
 <script setup lang="ts">
-import type { JobApplication } from "~/data/mockData";
+import type { JobPost } from "~/data/mockData";
 
 const props = defineProps<{
-    data: JobApplication;
+    data: JobPost;
     open: boolean;
 }>();
 

@@ -62,7 +62,7 @@ export default defineNuxtPlugin(() => {
     // Request interceptor to add auth token and start loading
     axiosInstance.interceptors.request.use(
         (config) => {
-            const token = import.meta.client ? localStorage.getItem("jwt_token") : null;
+            const token = import.meta.client ? localStorage.getItem("token") : null;
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
             }
@@ -144,7 +144,7 @@ export default defineNuxtPlugin(() => {
                     endRequest(refreshRequestId);
 
                     if (import.meta.client) {
-                        localStorage.setItem("jwt_token", newToken);
+                        localStorage.setItem("token", newToken);
                     }
 
                     // Update the authorization header for the original request
@@ -172,7 +172,7 @@ export default defineNuxtPlugin(() => {
                     forceComplete();
 
                     if (import.meta.client) {
-                        localStorage.removeItem("jwt_token");
+                        localStorage.removeItem("token");
                         localStorage.removeItem("username");
                         localStorage.removeItem("role");
 
@@ -182,7 +182,7 @@ export default defineNuxtPlugin(() => {
                             color: "error",
                         });
 
-                        await navigateTo("/");
+                        await navigateTo("/", { replace: true });
                     }
 
                     return Promise.reject(refreshError);

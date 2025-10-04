@@ -25,6 +25,7 @@
                 <template #trailing>
                     <UButton
                         color="neutral"
+                        class="cursor-pointer"
                         variant="link"
                         size="sm"
                         :icon="show ? 'i-lucide-eye-off' : 'i-lucide-eye'"
@@ -63,8 +64,8 @@ type Schema = z.output<typeof schema>;
 const show = ref(false);
 const isLoggingIn = ref(false);
 const state = reactive<Partial<Schema>>({
-    username: undefined,
-    password: undefined,
+    username: "",
+    password: "",
 });
 
 async function onSubmit(_: FormSubmitEvent<Schema>) {
@@ -91,7 +92,7 @@ async function onSubmit(_: FormSubmitEvent<Schema>) {
             }
         );
 
-        localStorage.setItem("jwt_token", response.data.token);
+        localStorage.setItem("token", response.data.token);
         localStorage.setItem("username", response.data.username);
         if (response.data.isCompany) {
             localStorage.setItem("role", "company");
@@ -104,6 +105,9 @@ async function onSubmit(_: FormSubmitEvent<Schema>) {
         state.username = "";
         state.password = "";
         show.value = false;
+
+        navigateTo("/dashboard", { replace: true });
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
         let description = "Incorrect username or password. Please try again.";

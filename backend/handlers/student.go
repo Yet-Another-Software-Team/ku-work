@@ -213,14 +213,18 @@ func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 	if input.UserID != "" {
 		userId = input.UserID
 	}
-	student := model.Student{
-		UserID: userId,
+	type StudentInfo struct {
+		model.Student
+		FirstName string `json:"firstName"`
+		LastName  string `json:"lastName"`
+		Email     string `json:"email"`
 	}
-	if err := h.DB.First(&student).Error; err != nil {
+	var studentInfo StudentInfo
+	if err := h.DB.Model(&model.Student{}).Select("students.*, google_o_auth_details.first_name as first_name, google_o_auth_details.last_name as last_name, google_o_auth_details.email as email").Joins("INNER JOIN google_o_auth_details on google_o_auth_details.user_id = students.user_id").Where("students.user_id = ?", userId).Take(&studentInfo).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{
-		"profile": student,
+		"profile": studentInfo,
 	})
 }
