@@ -17,7 +17,7 @@
                             :items="jobTypeItems"
                             size="lg"
                             :ui="{
-                                base: 'ring-2 dark:ring-gray-400',
+                                base: 'ring-2 dark:ring-gray-400 cursor-pointer',
                             }"
                         />
                     </div>
@@ -30,9 +30,10 @@
                         <UCheckboxGroup
                             v-model="expTypeValue"
                             :items="expTypeItems"
+                            class="cursor-pointer"
                             size="lg"
                             :ui="{
-                                base: 'ring-2 dark:ring-gray-400',
+                                base: 'ring-2 dark:ring-gray-400 cursor-pointer',
                             }"
                         />
                     </div>
@@ -41,7 +42,12 @@
                 <!-- Salary Range -->
                 <div>
                     <h3 class="font-bold mb-2">Salary Range</h3>
-                    <USlider v-model="sliderValues" :max="maxSalary" :step="1000" class="w-full" />
+                    <USlider
+                        v-model="sliderValues"
+                        :max="maxSalary"
+                        :step="1000"
+                        class="w-full cursor-pointer"
+                    />
                     <div class="text-sm text-right pt-2">
                         {{ formatSalary(sliderValues[0] ?? 0) }}
                         -
@@ -57,7 +63,7 @@
                 label="More"
                 color="primary"
                 variant="solid"
-                class="h-full"
+                class="h-full cursor-pointer"
                 :trailing-icon="showFilters ? 'i-lucide:chevron-up' : 'i-lucide:chevron-down'"
                 @click="showFilters = !showFilters"
             />

@@ -109,10 +109,12 @@ func (h *CompanyHandlers) GetProfileHandler(ctx *gin.Context) {
 	if input.ID == "" {
 		input.ID = ctx.MustGet("userID").(string)
 	}
-	company := model.Company{
-		UserID: input.ID,
+	type CompanyInfo struct {
+		model.Company
+		Name string `json:"name"`
 	}
-	if err := h.DB.First(&company).Error; err != nil {
+	var company CompanyInfo
+	if err := h.DB.Model(&model.Company{}).Select("companies.*, users.username as name").Joins("INNER JOIN users on users.id = companies.user_id").Where("companies.user_id = ?", input.ID).Take(&company).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

@@ -39,6 +39,7 @@ type RegisterRequest struct {
 	Country  string                `form:"country" binding:"required,max=100"`
 	Photo    *multipart.FileHeader `form:"photo" binding:"required"`
 	Banner   *multipart.FileHeader `form:"banner" binding:"required"`
+	AboutUs  string                `form:"about" binding:"max=16384"`
 }
 
 // Register handles user registration
@@ -95,6 +96,15 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 		return
 	}
 
+	if req.Website != "" {
+		// Parse website URL and check for invalid URL (Only Basic Check)
+		parsedURL, err := url.Parse(req.Website)
+		if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid website URL"})
+			return
+		}
+	}
+
 	newCompany := model.Company{
 		UserID:   newUser.ID,
 		Email:    req.Email,
@@ -103,18 +113,11 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 		BannerID: banner.ID,
 		Address:  req.Address,
 		City:     req.City,
+		AboutUs:  req.AboutUs,
 		Country:  req.Country,
+		Website:  req.Website,
 	}
 
-	if req.Website != "" {
-		// Parse website URL and check for invalid URL (Only Basic Check)
-		parsedURL, err := url.Parse(req.Website)
-		if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid website URL"})
-			return
-		}
-		newCompany.Website = parsedURL.String()
-	}
 
 	if err := tx.Create(&newCompany).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create Company Data"})

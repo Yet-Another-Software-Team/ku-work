@@ -31,7 +31,7 @@
                         name="ic:baseline-plus"
                         size="4em"
                         mode="svg"
-                        class="absolute top-0 bottom-0 left-0 right-0 text-white"
+                        class="absolute top-0 bottom-0 left-0 right-0 text-white cursor-pointer"
                         @click="openJobPostForm = true"
                     />
                     <template #content>
@@ -93,7 +93,11 @@ const fetchJobs = async () => {
     if (userRole.value !== "company") return;
 
     try {
-        const response = await api.get("/job");
+        const response = await api.get("/job", {
+            params: {
+                companyId: "self",
+            },
+        });
         console.log("Fetched jobs:", response.data);
         data.value = response.data.jobs || [];
     } catch (error) {
@@ -116,20 +120,23 @@ onMounted(() => {
 
 const updateJobOpen = (id: number, value: boolean) => {
     const job = data.value.find((job) => job.id === id);
-    if (job) {
-        try {
-            api.post("/job", { id: id, open: value });
-            job.open = value;
-        } catch {
-            addToast({
-                title: "Error",
-                description: "Failed to update job status. Please try again.",
-                color: "error",
-            });
-        } finally {
-            fetchJobs();
+    if (!job) return;
+    const oldValue = job.open;
+    job.open = value;
+    api.patch(
+        "/job",
+        {
+            id: job.id,
+            open: value,
+        },
+        {
+            withCredentials: true,
         }
-    }
+    )
+        .then((x) => {
+            if (x.status !== 200) Promise.reject(x);
+        })
+        .catch((_) => (job.open = oldValue));
 };
 
 const handleJobFormClose = () => {
