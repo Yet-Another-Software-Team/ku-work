@@ -118,7 +118,6 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 		Website:  req.Website,
 	}
 
-
 	if err := tx.Create(&newCompany).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create Company Data"})
 		return
