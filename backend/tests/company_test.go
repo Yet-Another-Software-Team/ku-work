@@ -24,6 +24,7 @@ func TestCompany(t *testing.T) {
 			"username": username,
 			"password": "password123",
 			"email":    "company@test.com",
+			"website":  "https://www.company.com",
 			"phone":    "0987654321",
 			"address":  "123 Test St",
 			"city":     "Testville",
@@ -126,6 +127,7 @@ func TestCompany(t *testing.T) {
 			"username": username, // Same username
 			"password": "password123",
 			"email":    "company@test.com",
+			"website":  "https://www.company.com",
 			"phone":    "0987654321",
 			"address":  "123 Test St",
 			"city":     "Testville",

@@ -40,7 +40,7 @@ interface Company {
     photoId: string;
     bannerId: string;
     about: string;
-    site: string;
+    website: string;
     address: string;
     city: string;
     country: string;
@@ -190,7 +190,7 @@ const mockJobData: Job = {
                 city: "Quebec",
                 country: "Canada",
                 about: "",
-                site: "",
+                website: "",
             },
             companyName: "AA",
             open: true,
@@ -220,7 +220,7 @@ const mockJobData: Job = {
                 city: "Quebec",
                 country: "Canada",
                 about: "",
-                site: "",
+                website: "",
             },
             companyName: "AA",
             open: false,
@@ -251,7 +251,7 @@ const mockJobData: Job = {
                 city: "Quebec",
                 country: "Canada",
                 about: "",
-                site: "",
+                website: "",
             },
             companyName: "AA",
             open: true,

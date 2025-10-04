@@ -52,9 +52,9 @@
             <div class="w-[12rem] mr-5 mb-5">
                 <h3 class="font-semibold text-gray-800 dark:text-white mb-2">Connections</h3>
                 <ul class="space-y-2 text-primary-600">
-                    <li v-if="profile.site">
+                    <li v-if="profile.website">
                         <a
-                            :href="profile.site"
+                            :href="profile.website"
                             target="_blank"
                             class="flex items-center gap-2 hover:underline"
                         >
@@ -62,7 +62,7 @@
                                 name="material-symbols:link-rounded"
                                 class="size-[2em] text-black dark:text-white"
                             />
-                            <span class="w-[10rem] text-sm truncate">{{ profile.site }}</span>
+                            <span class="w-[10rem] text-sm truncate">{{ profile.website }}</span>
                         </a>
                     </li>
                     <li>
@@ -108,7 +108,7 @@ const profile = ref({
     photo: "",
     banner: "",
     email: "",
-    site: "",
+    website: "",
     about: "",
     address: "",
     name: "",

@@ -4,6 +4,7 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"time"
 
 	"ku-work/backend/model"
@@ -31,6 +32,7 @@ type RegisterRequest struct {
 	Username string                `form:"username" binding:"required,max=256"`
 	Password string                `form:"password" binding:"required,min=8"`
 	Email    string                `form:"email" binding:"required,max=100"`
+	Website  string                `form:"website" binding:"max=200"`
 	Phone    string                `form:"phone" binding:"required,max=20"`
 	Address  string                `form:"address" binding:"required,max=200"`
 	City     string                `form:"city" binding:"required,max=100"`
@@ -38,7 +40,6 @@ type RegisterRequest struct {
 	Photo    *multipart.FileHeader `form:"photo" binding:"required"`
 	Banner   *multipart.FileHeader `form:"banner" binding:"required"`
 	AboutUs  string                `form:"about" binding:"max=16384"`
-	Website  string                `form:"site" binding:"max=100"`
 }
 
 // Register handles user registration
@@ -93,6 +94,15 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	if req.Website != "" {
+		// Parse website URL and check for invalid URL (Only Basic Check)
+		parsedURL, err := url.Parse(req.Website)
+		if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid website URL"})
+			return
+		}
 	}
 
 	newCompany := model.Company{
