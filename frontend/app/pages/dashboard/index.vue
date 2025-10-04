@@ -1,7 +1,19 @@
 <template>
     <div class="pt-5 pb-2">
+        <div v-if="isLoading">
+            <h1 class="text-5xl text-primary-800 dark:text-primary font-bold mb-5">
+                Company Dashboard
+            </h1>
+            <div class="flex flex-wrap gap-10">
+                <USkeleton
+                    v-for="n in 3"
+                    :key="n"
+                    class="h-[18em] w-full lg:w-[25em] drop-shadow-md"
+                />
+            </div>
+        </div>
         <!-- Company Dashboard -->
-        <div v-if="userRole === 'company'">
+        <div v-else-if="userRole === 'company' && !isLoading">
             <h1 class="text-5xl text-primary-800 dark:text-primary font-bold mb-5">
                 Company Dashboard
             </h1>
@@ -42,7 +54,7 @@
         </div>
 
         <!-- Student Dashboard -->
-        <div v-else-if="userRole === 'student'">
+        <div v-else-if="userRole === 'student' && !isLoading">
             <h1 class="text-5xl text-primary-800 dark:text-primary font-bold mb-5">
                 Student Dashboard
             </h1>
@@ -111,11 +123,15 @@ const fetchJobs = async () => {
     }
 };
 
+const isLoading = ref(true);
+
 onMounted(() => {
+    isLoading.value = true;
     if (import.meta.client) {
         userRole.value = localStorage.getItem("role") || "viewer";
     }
     fetchJobs();
+    isLoading.value = false;
 });
 
 const updateJobOpen = (id: number, value: boolean) => {

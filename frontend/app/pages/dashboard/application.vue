@@ -83,7 +83,7 @@ interface getApplicationForm {
 }
 
 onMounted(() => {
-    const token = localStorage.getItem("jwt_token");
+    const token = localStorage.getItem("token");
     fetchJob(token);
     fetchApplication(token);
 });
