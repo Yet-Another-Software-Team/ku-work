@@ -33,14 +33,32 @@
                 </p>
             </div>
 
-            <!-- Edit Button -->
-            <button
-                v-if="isOwner"
-                class="px-4 py-2 border border-gray-400 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center mt-4 ml-auto mb-auto"
+            <UModal
+            v-model:open="openEditModal"
+            :ui="{
+                container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
+                overlay: 'fixed inset-0 bg-black/50',
+                content: 'w-full max-w-6xl'
+            }"
             >
-                <Icon name="material-symbols:edit-square-outline-rounded" class="size-[1.5em]" />
-                Edit Profile
-            </button>
+            <!-- Edit Button -->
+             <Ubutton
+                    v-if="isOwner"
+                    class="px-4 py-2 border border-gray-400 rounded-md text-sm hover:bg-gray-100 hover:cursor-pointer dark:hover:bg-gray-700 flex items-center mt-4 ml-auto mb-auto"
+                    @click="openEditModal = true"
+                >
+                    <Icon name="material-symbols:edit-square-outline-rounded" class="size-[1.5em]" />
+                    Edit Profile
+                </Ubutton>
+            <template #content>
+                <!-- Your editor component inside the modal -->
+                <EditCompanyProfileCard
+                :profile="data.profile"
+                @close="openEditModal = false"
+                @saved="onSaved"
+                />
+            </template>
+            </UModal>
         </div>
 
         <!-- Divider -->
@@ -95,6 +113,8 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+import EditCompanyProfileCard from '~/components/EditCompanyProfileCard.vue'
 import { mockCompanyData } from "~/data/mockData";
 
 withDefaults(
@@ -108,6 +128,13 @@ withDefaults(
 
 const data = mockCompanyData;
 const email = "john.doe@ku.th";
+
+const openEditModal = ref(false)
+
+function onSaved(updated: typeof data.profile) {
+  Object.assign(data.profile, updated)
+  openEditModal.value = false
+}
 
 // const api = useApi();
 
