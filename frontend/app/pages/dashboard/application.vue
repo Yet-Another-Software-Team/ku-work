@@ -64,60 +64,22 @@ const api = useApi();
 const limit = 10;
 let currentJobOffset = 0;
 
-interface getJobPostForm {
-    limit: number;
-    offset: number;
-    keyword: string;
-    jobtype: string;
-    experience: string;
-    minsalary: number;
-    maxsalary: number;
-    open: boolean;
-    companyId: string;
-}
-
 interface getApplicationForm {
     limit?: number;
     offset?: number;
-    id?: number;
+    jobId?: number;
 }
 
 onMounted(() => {
     const token = localStorage.getItem("token");
-    fetchJob(token);
     fetchApplication(token);
 });
-
-const fetchJob = async (token: string | null) => {
-    const jobForm: getJobPostForm = {
-        limit: 1,
-        offset: 0,
-        keyword: "",
-        jobtype: "",
-        experience: "",
-        minsalary: 0,
-        maxsalary: 0,
-        open: true,
-        companyId: "",
-    };
-    try {
-        const response = await api.get("/job", {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-            params: { jobForm },
-        });
-        console.log("Job fetched:", response.data);
-    } catch (error) {
-        console.error("Error fetching job:", error);
-    }
-};
 
 const fetchApplication = async (token: string | null) => {
     const jobForm: getApplicationForm = {
         limit: limit,
         offset: currentJobOffset,
-        id: job ? Number(job.id) : undefined,
+        jobId: job ? Number(job.id) : undefined,
     };
     try {
         const response = await api.get("/job/application", {
