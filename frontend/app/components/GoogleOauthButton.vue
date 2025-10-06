@@ -41,8 +41,7 @@ const login = async () => {
                     withCredentials: true,
                 }
             );
-
-            localStorage.setItem("jwt_token", response.data.token);
+            localStorage.setItem("token", response.data.token);
             localStorage.setItem("username", response.data.username);
             localStorage.setItem("isRegistered", response.data.isRegistered.toString());
 
@@ -56,9 +55,9 @@ const login = async () => {
 
             if (response.status == 201) {
                 // Account is new, navigate to registration page
-                navigateTo("/register/student");
+                navigateTo("/register/student", { replace: true });
             } else {
-                navigateTo("/jobs");
+                navigateTo("/jobs", { replace: true });
             }
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -79,14 +78,8 @@ const login = async () => {
                 color: "error",
             });
         }
-    } catch (error) {
-        // Handle errors from the Google login library itself.
-        console.error("Google OAuth error:", error);
-        toast.add({
-            title: "OAuth Error",
-            description: "There was an issue with the Google login process.",
-            color: "error",
-        });
+    } catch {
+        console.warn("OAuth Error...");
     } finally {
         isLoggingIn.value = false;
     }

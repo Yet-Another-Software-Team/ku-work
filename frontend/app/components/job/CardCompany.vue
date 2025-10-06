@@ -4,19 +4,20 @@
             <div class="flex justify-between">
                 <div class="flex gap-x-4">
                     <USwitch
-                        v-model="isOpen"
+                        :model-value="props.open"
+                        :ui="{ base: 'cursor-pointer' }"
                         @update:model-value="
                             (value) => {
                                 emit('update:open', value);
                             }
                         "
                     />
-                    <span v-if="isOpen" class="text-primary-800 dark:text-primary font-bold">
+                    <span v-if="props.open" class="text-primary-800 dark:text-primary font-bold">
                         Open
                     </span>
                     <span v-else class="text-error-800 dark:text-error font-bold">Closed</span>
                 </div>
-                <UDropdownMenu :items="menuItems">
+                <UDropdownMenu class="cursor-pointer" :items="menuItems">
                     <Icon
                         name="ic:baseline-more-vert"
                         size="18"
@@ -67,12 +68,6 @@
 <script setup lang="ts">
 import type { DropdownMenuItem } from "@nuxt/ui";
 
-const isOpen = ref(false);
-
-onMounted(() => {
-    isOpen.value = props.open;
-});
-
 const emit = defineEmits<{
     (e: "update:open", value: boolean): void;
 }>();
@@ -108,6 +103,7 @@ const menuItems = ref<DropdownMenuItem[]>([
     {
         label: "Edit",
         icon: "i-lucide-pencil",
+        class: "cursor-pointer",
         onClick: () => {
             console.log("Action 1 clicked");
         },

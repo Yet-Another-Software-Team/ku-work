@@ -14,7 +14,7 @@ type User struct {
 	UpdatedAt    time.Time
 	DeletedAt    gorm.DeletedAt `gorm:"index"`
 	Username     string         `gorm:"unique"`
-	PasswordHash string
+	PasswordHash string         `json:"-"`
 }
 
 func (user *User) BeforeDelete(tx *gorm.DB) (err error) {

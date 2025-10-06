@@ -4,7 +4,7 @@
         variant="ghost"
         size="xl"
         icon="ic:round-logout"
-        :ui="{ base: 'justify-start text-left text-white hover:bg-white/10' }"
+        :ui="{ base: 'justify-start text-left text-white hover:bg-white/10 cursor-pointer' }"
         @click="logout"
     />
 </template>
@@ -25,7 +25,7 @@ const logout = async () => {
             }
         );
 
-        localStorage.removeItem("jwt_token");
+        localStorage.removeItem("token");
         localStorage.removeItem("username");
         localStorage.removeItem("role");
 

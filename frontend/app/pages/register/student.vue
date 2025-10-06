@@ -1,8 +1,15 @@
 <template>
-    <div class="mx-[12vw] main-container mt-[5vw]">
+    <div class="mx-[12vw] main-container">
+        <img src="~/assets/images/base.png" class="my-5 h-[5em] mx-auto" alt="KU Work Student" />
         <StudentRegisterCard />
     </div>
 </template>
+
+<script setup lang="ts">
+definePageMeta({
+    middleware: "student-register",
+});
+</script>
 
 <style>
 .main-container::before {
@@ -12,7 +19,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: url("/images/background.png");
+    background-image: url("~/assets/images/background.png");
     background-size: cover;
     background-position: center;
     z-index: -1;

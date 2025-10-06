@@ -1,9 +1,9 @@
 export interface ProgressConfig {
-    color: string;
+    color: "primary" | "secondary" | "success" | "info" | "warning" | "error" | "neutral" | string;
     size: "xs" | "sm" | "md" | "lg" | "xl";
     position: "top" | "bottom";
     variant: "default" | "floating" | "embedded";
-    animation: "carousel" | "swing" | "elastic" | "pulse";
+    animation: "carousel" | "swing" | "elastic";
     showRequestCount: boolean;
     showLoadingText: boolean;
     loadingText: string;

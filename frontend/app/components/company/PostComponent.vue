@@ -6,8 +6,8 @@
             <div class="flex items-center gap-5">
                 <span>
                     <img
-                        v-if="data.logo"
-                        :src="data.logo"
+                        v-if="logo"
+                        :src="logo"
                         alt="Company Logo"
                         class="rounded-full size-[6em]"
                     />
@@ -118,6 +118,7 @@ const props = defineProps<{
 }>();
 
 const openJobEditForm = ref(false);
+const logo = ref("");
 
 const emit = defineEmits(["update:open"]);
 
@@ -128,8 +129,13 @@ onMounted(() => {
     isOpen.value = props.open;
 });
 
+const config = useRuntimeConfig();
 const api = useApi();
 const toast = useToast();
+
+onMounted(() => {
+    logo.value = `${config.public.apiBaseUrl}/files/${props.data.company.photoId}`;
+});
 
 interface patchJobForm {
     id: number;
@@ -148,7 +154,7 @@ interface patchJobForm {
 async function handleChange() {
     // Set up for the patch request
     patchWaiting.value = true;
-    const token = localStorage.getItem("jwt_token");
+    const token = localStorage.getItem("token");
     if (!token) {
         alert("You must be logged in to perform this action.");
         patchWaiting.value = false;

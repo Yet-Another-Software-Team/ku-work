@@ -19,24 +19,26 @@
             <!-- Icon -->
             <div class="flex items-center justify-center w-20 h-20 rounded-md">
                 <img
-                    v-if="data.logo"
-                    :src="data.logo"
+                    v-if="data.company.photoId"
+                    :src="`${runtimeConfig.public.apiBaseUrl}/files/${data.company.photoId}`"
                     alt="Company Logo"
-                    class="size-full rounded-md"
+                    class="size-full rounded-md object-cover"
                 />
                 <img
                     v-else
                     src="/images/background.png"
                     alt="Company Logo"
-                    class="size-full rounded-md"
+                    class="size-full rounded-md object-cover"
                 />
             </div>
 
             <!-- Job info -->
             <div class="flex flex-col py-5">
-                <h2 class="font-semibold text-gray-900 dark:text-[#fdfdfd]">{{ data.position }}</h2>
+                <h2 class="font-semibold text-gray-900 dark:text-[#fdfdfd]">
+                    {{ data.name }} - {{ data.position }}
+                </h2>
                 <p class="capitalize text-sm text-gray-500 dark:text-gray-200">
-                    {{ data.location }}
+                    {{ data.companyName }} • {{ data.location }}
                 </p>
                 <div class="flex space-x-2 mt-2">
                     <span class="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">
@@ -58,6 +60,8 @@
 
 <script setup lang="ts">
 import type { JobPost } from "~/data/mockData";
+
+const runtimeConfig = useRuntimeConfig();
 
 defineProps<{
     data: JobPost;

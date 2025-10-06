@@ -1,5 +1,12 @@
 <template>
-    <div class="bg-white w-full min-h-[50em] rounded-lg p-5 flex flex-col justify-between">
+    <div
+        v-if="isLoading"
+        class="bg-white w-full min-h-[50em] rounded-lg p-5 flex flex-col justify-center items-center"
+    >
+        <icon name="svg-spinners:180-ring-with-bg" class="text-[10em] text-primary mb-4" />
+        <h2 class="text-4xl font-bold text-primary mb-2">Loading...</h2>
+    </div>
+    <div v-else class="bg-white w-full min-h-[50em] rounded-lg p-5 flex flex-col justify-between">
         <div>
             <div class="flex justify-between items-center">
                 <h1 class="text-xl md:text-3xl font-bold text-left text-black py-4">
@@ -92,6 +99,8 @@ import { useApi, type AuthResponse } from "~/composables/useApi";
 const toast = useToast();
 const api = useApi();
 
+const isLoading = ref(true);
+
 const totalSteps = 3;
 const currentStep = ref(1);
 const isSubmitting = ref(false);
@@ -127,6 +136,25 @@ const canSubmit = computed(() => {
         return stepTwoRef.value.isValid;
     }
     return false;
+});
+
+onMounted(() => {
+    if (import.meta.client) {
+        const token = localStorage.getItem("token");
+        const role = localStorage.getItem("role");
+        if (token) {
+            if (role === "company" || role === "student") {
+                navigateTo("/dashboard", { replace: true });
+            } else if (role === "admin") {
+                navigateTo("/admin/dashboard", { replace: true });
+            } else if (role === "viewer") {
+                navigateTo("/jobs", { replace: true });
+            } else {
+                navigateTo("/", { replace: true });
+            }
+        }
+        isLoading.value = false;
+    }
 });
 
 const handleNext = () => {
@@ -186,7 +214,7 @@ const onSubmit = async () => {
         const response = await api.postFormData<AuthResponse>("/company/register", formData);
 
         if (response.data.token) {
-            localStorage.setItem("jwt_token", response.data.token);
+            localStorage.setItem("token", response.data.token);
             localStorage.setItem("username", response.data.username as string);
             if (response.data.isCompany) {
                 localStorage.setItem("role", "company");
@@ -211,6 +239,6 @@ const handleDone = () => {
         description: "Registration complete. Redirecting to dashboard...",
         color: "success",
     });
-    navigateTo("/dashboard");
+    navigateTo("/dashboard", { replace: true });
 };
 </script>
