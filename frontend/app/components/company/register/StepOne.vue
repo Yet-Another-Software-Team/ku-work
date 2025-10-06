@@ -236,6 +236,7 @@ const schema = z.object({
     companyEmail: z.email("Please enter a valid email address"),
     companyWebsite: z.url("Please enter a valid URL"),
     password: z.string().min(8, "Password must be at least 8 characters"),
+    rPassword: z.string().refine((value) => value === props.password, "Passwords do not match"),
     phone: z.string().regex(/^\+(?:[1-9]\d{0,2}) \d{4,14}$/, "Please enter a valid phone number"),
     address: z.string().min(5, "Address must be at least 5 characters"),
     city: z.string().min(2, "City must be at least 2 characters"),
