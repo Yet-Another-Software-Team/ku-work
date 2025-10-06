@@ -119,7 +119,8 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 		MinSalary      uint     `json:"minsalary" form:"minsalary"`
 		MaxSalary      uint     `json:"maxsalary" form:"maxsalary"`
 		Open           *bool    `json:"open" form:"open"`
-		CompanyID      *string  `json:"companyId" form:"companyId" binding:"omitempty,max=64"`
+		CompanyID      string   `json:"companyId" form:"companyId" binding:"max=64"`
+		JobID          *uint    `json:"id" form:"id" binding:"omitempty,max=64"`
 		ApprovalStatus string   `json:"approvalStatus" form:"approvalStatus" binding:"max=64"`
 	}
 
@@ -151,6 +152,13 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 
 	query := h.DB.Model(&model.Job{})
 
+	// Optional id limit
+	if input.JobID != nil {
+		query = query.Where(&model.Job{
+			ID: *input.JobID,
+		})
+	}
+
 	// If the user is a company, include job applications statistic
 	if isCompany {
 		query = query.Joins("LEFT JOIN job_applications ON job_applications.job_id = jobs.id")
@@ -168,11 +176,11 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 	query = query.Where("max_salary <= ?", input.MaxSalary)
 
 	// Filter Job post by company ID
-	if input.CompanyID != nil {
-		if *input.CompanyID == "self" {
-			input.CompanyID = &userId
+	if input.CompanyID != "" {
+		if input.CompanyID == "self" {
+			input.CompanyID = userId
 		}
-		query = query.Where("company_id = ?", *input.CompanyID)
+		query = query.Where("company_id = ?", input.CompanyID)
 		if input.Open != nil {
 			query = query.Where("is_open = ?", *input.Open)
 		}
@@ -202,7 +210,7 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
-	} else if result.RowsAffected != 0 || (input.CompanyID != nil && (*input.CompanyID == "self" || *input.CompanyID == userId)) {
+	} else if result.RowsAffected != 0 || (input.CompanyID == "self" || input.CompanyID == userId) {
 		// If is admin, or same company then consider approval status
 		if input.ApprovalStatus != "" {
 			query = query.Where(&model.Job{ApprovalStatus: model.JobApprovalStatus(input.ApprovalStatus)})
