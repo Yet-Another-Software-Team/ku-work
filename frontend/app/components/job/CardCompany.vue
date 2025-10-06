@@ -25,7 +25,7 @@
                     />
                 </UDropdownMenu>
             </div>
-            <UTooltip :text="props.position">
+            <UTooltip :text="props.position" @click="selectJob">
                 <div class="flex mt-2 font-semibold text-lg truncate">
                     {{ props.position }}
                 </div>
@@ -109,4 +109,9 @@ const menuItems = ref<DropdownMenuItem[]>([
         },
     },
 ]);
+
+function selectJob() {
+    console.log("Job ID:", props.jobID);
+    navigateTo(`/dashboard/post/${props.jobID}`);
+}
 </script>

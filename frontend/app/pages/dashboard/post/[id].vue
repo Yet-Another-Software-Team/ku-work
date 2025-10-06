@@ -61,6 +61,7 @@ const job: JobPost | null = mockJobData.jobs[0] ? mockJobData.jobs[0] : null;
 
 // API call to fetch jobs
 const api = useApi();
+const route = useRoute();
 const limit = 10;
 let currentJobOffset = 0;
 
@@ -71,6 +72,7 @@ interface getApplicationForm {
 }
 
 onMounted(() => {
+    console.log("Job ID on mounted:", route.params.id);
     const token = localStorage.getItem("token");
     fetchApplication(token);
 });

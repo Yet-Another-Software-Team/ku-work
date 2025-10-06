@@ -1,12 +1,10 @@
 <template>
     <div class="pt-5 pb-2">
         <div v-if="isLoading">
-            <h1 class="text-5xl text-primary-800 dark:text-primary font-bold mb-5">
-                Company Dashboard
-            </h1>
+            <USkeleton class="h-12 w-1/3 mb-5" />
             <div class="flex flex-wrap gap-10">
                 <USkeleton
-                    v-for="n in 3"
+                    v-for="n in 10"
                     :key="n"
                     class="h-[18em] w-full lg:w-[25em] drop-shadow-md"
                 />
