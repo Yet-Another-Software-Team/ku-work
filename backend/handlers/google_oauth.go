@@ -58,13 +58,16 @@ type oauthToken struct {
 	Code string `json:"code"`
 }
 
+// Handle authorization code exchange and user info retrieval
 func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
+	// Validate request
 	var req oauthToken
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Authorization code is required"})
 		return
 	}
 
+	// Exchange authorization code for access token
 	exchange_ctx := context.Background()
 	token, err := h.GoogleOauthConfig.Exchange(exchange_ctx, req.Code)
 	if err != nil {
@@ -72,7 +75,10 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 		return
 	}
 
+	// Create HTTP client with timeout
 	client := &http.Client{Timeout: 10 * time.Second}
+	
+	// Create API request to exchange access token for user info
 	api_req, err := http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo", nil)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -93,11 +99,13 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 		}
 	}()
 
+	// Check if API request was successful
 	if api_res.StatusCode != http.StatusOK {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Access Token is invalid, expired or insufficient"})
 		return
 	}
 
+	// Parse user info from API response
 	type UserInfo struct {
 		ID         string `json:"id"`
 		Email      string `json:"email"`
@@ -138,7 +146,7 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 		status = http.StatusCreated
 	}
 
-	// Update user details if necessary
+	// Update user details if necessary, to keep them up-to-date
 	if oauthDetail.UserID != "" {
 		h.DB.Model(&oauthDetail).Updates(model.GoogleOAuthDetails{
 			FirstName: userInfo.GivenName,
