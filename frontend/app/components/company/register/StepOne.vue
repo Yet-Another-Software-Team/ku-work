@@ -279,7 +279,7 @@ const schema = z.object({
 
 const validateField = (fieldName: keyof typeof errors, value: unknown) => {
     try {
-        console.log("Validating field:", fieldName);
+        // console.log("Validating field:", fieldName); // Removed for production
         schema.pick({ [fieldName]: true }).parse({ [fieldName]: value });
         errors[fieldName] = ""; // Clear error if validation is successful
         return true;
