@@ -133,7 +133,7 @@
         <!-- Save & Discard -->
             <div class="grid grid-cols-6 w-full">
                 <div class="col-span-12 md:col-start-9 md:col-span-4 flex justify-end gap-x-3 ml-auto">
-                    <!-- Discard (opens confirm modal) -->
+                    <!-- Discard -->
                     <UButton
                         class="size-fit text-xl rounded-md px-15 font-medium hover:bg-gray-800 hover:cursor-pointer"
                         variant="outline" 
@@ -161,7 +161,7 @@
                             </div>
                         </template>
                         <template #footer>
-                            <div class="w-full flex justify-end gap-2">
+                            <div class="flex justify-end gap-2">
                                 <UButton variant="outline" color="neutral" @click="cancelDiscard">
                                     Cancel
                                 </UButton>
@@ -243,6 +243,7 @@ const schema = z.object({
     .or(z.literal('')),
   aboutUs: z.string()
 })
+
 
 function validateField(fieldName: keyof typeof form.value, value: unknown) {
   try {

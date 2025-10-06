@@ -40,12 +40,14 @@
             </div>
 
             <!-- Edit Button -->
-            <button
-                class="px-4 py-2 border border-gray-400 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center mt-4 sm:mt-0 sm:ml-10 mr-auto mb-auto"
+            <UButton
+                variant="outline"
+                class="px-4 py-2 border border-gray-400 rounded-md text-sm hover:bg-gray-100 hover:cursor-pointer dark:hover:bg-gray-700 flex items-center mt-4 ml-auto mb-auto"
+                @click="isEditModalOpen = true"
             >
                 <Icon name="material-symbols:edit-square-outline-rounded" class="size-[1.5em]" />
                 Edit Profile
-            </button>
+            </UButton>
         </div>
 
         <!-- Divider -->
@@ -88,16 +90,48 @@
                 </p>
             </div>
         </div>
+
+        <UModal
+            v-model:open="isEditModalOpen"
+            :ui="{
+                container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
+                overlay: 'fixed inset-0 bg-black/50',
+                content: 'w-full max-w-2xl'
+            }"
+        >
+            <template #content>
+                <EditProfileCard
+                    :profile="data.profile"
+                    @close="closeEditModal"
+                    @saved="handleProfileSaved"
+                />
+            </template>
+        </UModal>
     </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { mockUserData } from "~/data/mockData";
+import EditProfileCard from "./EditProfileCard.vue";
 
 const data = mockUserData;
 
-// Compute age
+const email = "john.doe@ku.th";
+const isEditModalOpen = ref(false);
+
+const closeEditModal = () => {
+    isEditModalOpen.value = false;
+};
+
+type StudentProfileUpdate = typeof data.profile & { _avatarFile?: File | null };
+
+const handleProfileSaved = (updated: StudentProfileUpdate) => {
+    const { _avatarFile, ...profile } = updated;
+    Object.assign(data.profile, profile);
+    isEditModalOpen.value = false;
+};
+
 const age = computed(() => {
     const birth = new Date(data.profile.birthDate);
     const today = new Date();
@@ -108,8 +142,6 @@ const age = computed(() => {
     }
     return years;
 });
-
-const email = "john.doe@ku.th";
 
 // const api = useApi();
 
