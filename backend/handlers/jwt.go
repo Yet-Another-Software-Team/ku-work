@@ -108,6 +108,7 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	username := user.Username
 	isStudent := false
 
+	// Check if user is a student
 	var oauthCount int64
 	h.DB.Model(&model.GoogleOAuthDetails{}).Where("user_id = ?", user.ID).Count(&oauthCount)
 	if oauthCount > 0 {
@@ -121,6 +122,7 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 		isStudent = sCount > 0
 	}
 
+	// Check if user is a company
 	isCompany := false
 	if !isStudent {
 		var cCount int64
@@ -164,5 +166,4 @@ func (h *JWTHandlers) HandleToken(user model.User) (string, string, error) {
 	}
 
 	return jwtToken, refreshToken, nil
-
 }
