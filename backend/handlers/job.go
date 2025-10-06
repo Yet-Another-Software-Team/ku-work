@@ -17,12 +17,14 @@ import (
 type JobHandlers struct {
 	DB           *gorm.DB
 	FileHandlers *FileHandlers
+	AIHandler    *AIHandler
 }
 
-func NewJobHandlers(db *gorm.DB) *JobHandlers {
+func NewJobHandlers(db *gorm.DB, aiHandler *AIHandler) *JobHandlers {
 	return &JobHandlers{
 		DB:           db,
 		FileHandlers: NewFileHandlers(db),
+		AIHandler:    aiHandler,
 	}
 }
 
@@ -56,7 +58,8 @@ type EditJobInput struct {
 
 // ApproveJobInput defines the request body for approving a job.
 type ApproveJobInput struct {
-	Approve bool `json:"approve"`
+	Approve bool   `json:"approve"`
+	Reason  string `json:"reason" binding:"max=16384"`
 }
 
 // JobResponse defines the structure for a single job listing in API responses.
@@ -156,6 +159,9 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"id": job.ID,
 	})
+
+	// Tell AI to approve it for me
+	go h.AIHandler.AutoApproveJob(&job)
 }
 
 // @Summary Fetch job listings
@@ -472,6 +478,7 @@ func (h *JobHandlers) JobApprovalHandler(ctx *gin.Context) {
 	if err := tx.Create(&model.Audit{
 		ActorID:    ctx.MustGet("userID").(string),
 		Action:     string(job.ApprovalStatus),
+		Reason:     input.Reason,
 		ObjectName: "Job",
 		ObjectID:   strconv.FormatUint(uint64(job.ID), 10),
 	}).Error; err != nil {
