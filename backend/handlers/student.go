@@ -26,15 +26,15 @@ func NewStudentHandler(db *gorm.DB, fileHandlers *FileHandlers) *StudentHandler 
 }
 
 // Handle Registration to be student
-// 
+//
 // Reject if user already registered to be student.
 // use by OAuth users.
-// 
+//
 // use multipart/form-data
 func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 	// Get user ID from context (auth middleware)
 	userId := ctx.MustGet("userID").(string)
-	
+
 	// Check if user is already registered as a student
 	var count int64
 	h.DB.Model(&model.Student{}).Where("user_id = ?", userId).Count(&count)
@@ -86,7 +86,7 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// Create student model based on input data
 	student := model.Student{
 		UserID:              userId,
@@ -102,7 +102,7 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 		StudentStatus:       input.StudentStatus,
 		StudentStatusFileID: statusDocument.ID,
 	}
-	
+
 	// Create file Commit the transaction
 	result := tx.Create(&student)
 	if result.Error != nil {
@@ -121,14 +121,14 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 }
 
 // Edit student profile
-// 
-// Support partial updates
-// 
+//
+// # Support partial updates
+//
 // use multipart/form-data
 func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 	// Get user ID from context (auth middleware)
 	userId := ctx.MustGet("userID").(string)
-	
+
 	// Bind input data to StudentEditProfileInput struct
 	type StudentEditProfileInput struct {
 		Phone         *string               `form:"phone" binding:"omitempty,max=20"`
@@ -145,7 +145,7 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// Get current data from database.
 	student := model.Student{
 		UserID: userId,
@@ -163,7 +163,7 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 		}
 		student.BirthDate = datatypes.Date(parsedBirthDate)
 	}
-	
+
 	if input.Phone != nil {
 		student.Phone = *input.Phone
 	}
@@ -212,7 +212,7 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// Get student data from database
 	student := model.Student{
 		UserID: input.UserID,
@@ -222,7 +222,7 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 		ctx.String(http.StatusInternalServerError, result.Error.Error())
 		return
 	}
-	
+
 	// Check student status to be approved
 	student.Approved = true
 	result = h.DB.Save(&student)
@@ -230,7 +230,7 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 		ctx.String(http.StatusInternalServerError, result.Error.Error())
 		return
 	}
-	
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "ok",
 	})
@@ -240,7 +240,7 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 	// Get userId from context (auth middleware)
 	userId := ctx.MustGet("userID").(string)
-	
+
 	// Bind input data from request body
 	type GetStudentProfileInput struct {
 		UserID string `form:"id" binding:"max=128"`
@@ -251,12 +251,12 @@ func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// If user ID is provided, use the userId from request
 	if input.UserID != "" {
 		userId = input.UserID
 	}
-	
+
 	// Get Student Profile from database
 	type StudentInfo struct {
 		model.Student
@@ -269,7 +269,7 @@ func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"profile": studentInfo,
 	})

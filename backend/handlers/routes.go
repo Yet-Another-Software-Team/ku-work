@@ -29,7 +29,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 
 	// Authentication Protected Routes
 	authed := router.Group("/", middlewares.AuthMiddleware(jwtHandler.JWTSecret))
-	
+
 	// Admin Routes
 	admin := authed.Group("/", middlewares.AdminPermissionMiddleware(db))
 

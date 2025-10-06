@@ -21,10 +21,10 @@ func NewCompanyHandlers(db *gorm.DB) *CompanyHandlers {
 }
 
 // Handler function for editing company profile
-// 
+//
 // Taking user input and updating the company profile in the database.
 // Support partial updates. If any field is not provided, it will not be updated.
-// 
+//
 // Support request with multipart/form-data
 func (h *CompanyHandlers) EditProfileHandler(ctx *gin.Context) {
 	// take user ID from context (auth middleware)
@@ -39,7 +39,7 @@ func (h *CompanyHandlers) EditProfileHandler(ctx *gin.Context) {
 		Banner  *multipart.FileHeader `form:"banner" binding:"omitempty"`
 	}
 	input := CompanyEditProfileInput{}
-	
+
 	// Validate input data
 	err := ctx.MustBindWith(&input, binding.FormMultipart)
 	if err != nil {
@@ -55,7 +55,7 @@ func (h *CompanyHandlers) EditProfileHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// Update company data if input is provided in request
 	if input.Phone != nil {
 		company.Phone = *input.Phone
@@ -77,7 +77,7 @@ func (h *CompanyHandlers) EditProfileHandler(ctx *gin.Context) {
 		}
 		company.PhotoID = photo.ID
 	}
-	
+
 	success := false
 
 	defer (func() {
@@ -95,7 +95,7 @@ func (h *CompanyHandlers) EditProfileHandler(ctx *gin.Context) {
 		}
 		company.BannerID = banner.ID
 	}
-	
+
 	// Remove file that are recently saved if request is not successful
 	defer (func() {
 		if !success && input.Banner != nil {
@@ -104,7 +104,7 @@ func (h *CompanyHandlers) EditProfileHandler(ctx *gin.Context) {
 			})
 		}
 	})()
-	
+
 	// Save updated company to database.
 	if err := h.DB.Save(&company).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -119,28 +119,28 @@ func (h *CompanyHandlers) EditProfileHandler(ctx *gin.Context) {
 }
 
 // Get Company Profile
-// 
+//
 // Use userID to get company profile.
 // return company profile according to model.Company.
-// 
+//
 // if no id is provided, use userID from context.
 func (h *CompanyHandlers) GetProfileHandler(ctx *gin.Context) {
 	type CompanyGetProfileInput struct {
 		ID string `form:"id" binding:"max=64"`
 	}
-	
+
 	input := CompanyGetProfileInput{}
 	err := ctx.MustBindWith(&input, binding.Form)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// Use current user ID if no ID is provided.
 	if input.ID == "" {
 		input.ID = ctx.MustGet("userID").(string)
 	}
-	
+
 	// Try to get company info with company name included.
 	type CompanyInfo struct {
 		model.Company
@@ -151,6 +151,6 @@ func (h *CompanyHandlers) GetProfileHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	ctx.JSON(http.StatusOK, company)
 }

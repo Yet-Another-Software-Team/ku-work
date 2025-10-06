@@ -77,7 +77,7 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 
 	// Create HTTP client with timeout
 	client := &http.Client{Timeout: 10 * time.Second}
-	
+
 	// Create API request to exchange access token for user info
 	api_req, err := http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo", nil)
 	if err != nil {

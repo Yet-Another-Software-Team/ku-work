@@ -142,7 +142,7 @@ type LoginRequest struct {
 }
 
 // Handle Local Authentication of Company User
-// 
+//
 // Rejects if user is not a company
 func (h *LocalAuthHandlers) CompanyLoginHandler(ctx *gin.Context) {
 	var req LoginRequest
@@ -188,7 +188,7 @@ func (h *LocalAuthHandlers) CompanyLoginHandler(ctx *gin.Context) {
 }
 
 // Handle Local Authentication of Admin User
-// 
+//
 // Rejects if user is not a admin
 func (h *LocalAuthHandlers) AdminLoginHandler(ctx *gin.Context) {
 	var req LoginRequest

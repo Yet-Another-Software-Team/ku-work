@@ -23,19 +23,19 @@ func NewJobHandlers(db *gorm.DB) *JobHandlers {
 }
 
 // Create new job listing
-// 
+//
 // CreateJob creates a new job listing in the database.
 func (h *JobHandlers) CreateJob(ctx *gin.Context) {
 	// Get user ID from context (auth middleware)
 	probUserId, hasUserId := ctx.Get("userID")
-	
+
 	// Return error if user ID is not found
 	if !hasUserId {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 	userid := probUserId.(string)
-	
+
 	// Bind input data to struct
 	type CreateJobInput struct {
 		Name        string `json:"name" binding:"required,max=128"`
@@ -55,7 +55,7 @@ func (h *JobHandlers) CreateJob(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// Validate input data
 	if input.MaxSalary < input.MinSalary {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "minsalary must be lower than or equal to maxsalary"})
@@ -82,13 +82,13 @@ func (h *JobHandlers) CreateJob(ctx *gin.Context) {
 		IsApproved:  false,
 		IsOpen:      input.Open,
 	}
-	
+
 	// Create Job into database
 	if result := h.DB.Create(&job); result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
-	
+
 	// return job ID on success
 	ctx.JSON(http.StatusOK, gin.H{
 		"id": job.ID,
@@ -104,7 +104,7 @@ type JobWithApplicationStatistics struct {
 }
 
 // Fetch Jobs from Database.
-// 
+//
 // Allow query parameters for filtering jobs.
 func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 	userId := ctx.MustGet("userID").(string)
@@ -121,7 +121,7 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 		Open       *bool    `json:"open" form:"open"`
 		CompanyID  *string  `json:"companyId" form:"companyId" binding:"omitempty,max=64"`
 	}
-	
+
 	// Set default values for some fields and bind the input
 	input := FetchJobsInput{
 		MinSalary: 0,
@@ -134,7 +134,7 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// Check if the user is a company
 	isCompany := false
 	company := model.Company{
@@ -147,25 +147,25 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 	} else if result.RowsAffected != 0 {
 		isCompany = true
 	}
-	
+
 	query := h.DB.Model(&model.Job{})
-	
-	// If the user is a company, include job applications statistic 
+
+	// If the user is a company, include job applications statistic
 	if isCompany {
 		query = query.Joins("LEFT JOIN job_applications ON job_applications.job_id = jobs.id")
 		query = query.Select("jobs.*, ANY_VALUE(users.username) as company_name, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'pending') AS pending, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'accepted') AS accepted, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'rejected') AS rejected")
 	}
-	
+
 	// Filter Job post by keyword
 	if input.Keyword != "" {
 		keywordPattern := fmt.Sprintf("%%%s%%", input.Keyword)
 		query = query.Where(h.DB.Where("name ILIKE ?", keywordPattern).Or("description ILIKE ?", keywordPattern))
 	}
-	
+
 	// Filter Job post by salary range
 	query = query.Where("min_salary >= ?", input.MinSalary)
 	query = query.Where("max_salary <= ?", input.MaxSalary)
-	
+
 	// Filter Job post by company ID
 	if input.CompanyID != nil {
 		if *input.CompanyID == "self" {
@@ -178,32 +178,32 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 	} else {
 		query = query.Where("is_open = ?", true)
 	}
-	
+
 	// Filter Job post by location
 	if len(input.Location) != 0 {
 		query = query.Where("location = ?", input.Location)
 	}
-	
+
 	// Filter Job post by job type
 	if len(input.JobType) != 0 {
 		query = query.Where("job_type IN ?", input.JobType)
 	}
-	
+
 	// Filter Job post by experience
 	if len(input.Experience) != 0 {
 		query = query.Where("experience IN ?", input.Experience)
 	}
-	
+
 	// Filter only approved jobs
 	query = query.Where(&model.Job{IsApproved: true})
 	if isCompany {
 		query = query.Group("jobs.id")
 	}
-	
+
 	// Offset and Limit
 	query = query.Offset(int(input.Offset))
 	query = query.Limit(int(input.Limit)).Preload("Company").Joins("INNER JOIN users ON users.id = jobs.company_id")
-	
+
 	// return Job posts with application statistics
 	if isCompany {
 		var jobsWithStats []JobWithApplicationStatistics
@@ -220,7 +220,7 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	// return Job posts with company info if not company
 	type JobWithCompanyInfo struct {
 		model.Job
@@ -238,7 +238,7 @@ func (h *JobHandlers) FetchJobs(ctx *gin.Context) {
 }
 
 // Edit job post that is owned by the user
-// 
+//
 // Support partial update of job post
 func (h *JobHandlers) EditJob(ctx *gin.Context) {
 	// Get user id from context (auth middleware)
@@ -249,7 +249,7 @@ func (h *JobHandlers) EditJob(ctx *gin.Context) {
 		return
 	}
 	userid := probUserId.(string)
-	
+
 	// Bind request to struct
 	type EditJobInput struct {
 		Name        *string `json:"name" binding:"omitempty,max=128"`
@@ -269,7 +269,7 @@ func (h *JobHandlers) EditJob(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// Get job post from database
 	job := &model.Job{
 		ID: input.ID,
@@ -283,63 +283,63 @@ func (h *JobHandlers) EditJob(ctx *gin.Context) {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": result.Error.Error()})
 		return
 	}
-	
+
 	// Denied access if user is not the owner of job post
 	if job.CompanyID != userid {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
 		return
 	}
-	
+
 	// Update job post with new data
 	if input.Name != nil {
 		job.Name = *input.Name
 	}
-	
+
 	if input.Position != nil {
 		job.Position = *input.Position
 	}
-	
+
 	if input.Duration != nil {
 		job.Duration = *input.Duration
 	}
-	
+
 	if input.Description != nil {
 		job.Description = *input.Description
 	}
-	
+
 	if input.Location != nil {
 		job.Location = *input.Location
 	}
-	
+
 	if input.JobType != nil {
 		job.JobType = model.JobType(*input.JobType)
 	}
-	
+
 	if input.Open != nil {
 		job.IsOpen = *input.Open
 	}
-	
+
 	if input.Experience != nil {
 		job.Experience = model.ExperienceType(*input.Experience)
 	}
-	
+
 	if input.Experience != nil {
 		job.Experience = model.ExperienceType(*input.Experience)
 	}
-	
+
 	if input.MinSalary != nil {
 		job.MinSalary = *input.MinSalary
 	}
-	
+
 	if input.MaxSalary != nil {
 		job.MaxSalary = *input.MaxSalary
 	}
-	
+
 	if job.MinSalary > job.MaxSalary {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "minsalary cannot exceed maxsalary"})
 		return
 	}
-	
+
 	result = h.DB.Save(&job)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
@@ -379,7 +379,7 @@ func (h *JobHandlers) ApproveJob(ctx *gin.Context) {
 }
 
 // Handle application of a job post using its ID
-// 
+//
 // Use request body of multipart/form-data
 func (h *JobHandlers) ApplyJob(ctx *gin.Context) {
 	// Get user ID from context (auth middleware)
@@ -389,7 +389,7 @@ func (h *JobHandlers) ApplyJob(ctx *gin.Context) {
 		return
 	}
 	userid := probUserId.(string)
-	
+
 	// Bind request body to input struct
 	type ApplyJobInput struct {
 		JobID    uint                    `form:"id" binding:"required"`
@@ -403,7 +403,7 @@ func (h *JobHandlers) ApplyJob(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// Check if user is approved student, denied otherwise
 	student := model.Student{
 		UserID: userid,
@@ -429,7 +429,7 @@ func (h *JobHandlers) ApplyJob(ctx *gin.Context) {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "job is not approved yet"})
 		return
 	}
-	
+
 	// Create job application
 	jobApplication := model.JobApplication{
 		UserID:   student.UserID,
@@ -446,7 +446,7 @@ func (h *JobHandlers) ApplyJob(ctx *gin.Context) {
 			}
 		}
 	})()
-	
+
 	// Save all files into database and file system
 	for _, file := range input.Files {
 		fileObject, err := SaveFile(ctx, h.DB, student.UserID, file, model.FileCategoryDocument)
@@ -456,7 +456,7 @@ func (h *JobHandlers) ApplyJob(ctx *gin.Context) {
 		}
 		jobApplication.Files = append(jobApplication.Files, *fileObject)
 	}
-	
+
 	// Create application database object
 	if err := h.DB.Create(&jobApplication).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -472,7 +472,7 @@ func (h *JobHandlers) ApplyJob(ctx *gin.Context) {
 func (h *JobHandlers) FetchJobApplications(ctx *gin.Context) {
 	// Get user ID from context (auth middleware)
 	userId := ctx.MustGet("userID").(string)
-	
+
 	// Bind input data to struct
 	type FetchJobApplicationsInput struct {
 		ID     *uint `json:"id" form:"id"`
@@ -486,14 +486,14 @@ func (h *JobHandlers) FetchJobApplications(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// Create Job application with applicant name
 	type JobApplicationWithApplicantName struct {
 		model.JobApplication
 		Username string `json:"username"`
 	}
 	query := h.DB.Model(&model.JobApplication{}).Joins("INNER JOIN users ON users.id = job_applications.user_id").Select("job_applications.*", "users.username as username")
-	
+
 	// If ID is provided fetch only that job application
 	if input.ID != nil {
 		var jobApplication JobApplicationWithApplicantName
@@ -504,7 +504,7 @@ func (h *JobHandlers) FetchJobApplications(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, jobApplication)
 		return
 	}
-	
+
 	// If JobID is provided fetch job applications for that job
 	if input.JobID != nil {
 		query = query.Where(&model.JobApplication{JobID: *input.JobID})
@@ -541,7 +541,7 @@ func (h *JobHandlers) FetchJobApplications(ctx *gin.Context) {
 			}
 		}
 	}
-	
+
 	// Return job application with name and preloaded files
 	var jobApplications []JobApplicationWithApplicantName
 	result := query.Offset(int(input.Offset)).Limit(int(input.Limit)).Preload("Files").Find(&jobApplications)
