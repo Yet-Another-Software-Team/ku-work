@@ -37,21 +37,83 @@
                 </span>
             </div>
 
+            <!-- Company Website Input -->
+            <div class="flex flex-col space-y-1 col-span-2">
+                <label class="text-gray-800 font-semibold">Company Website *</label>
+                <div class="relative">
+                    <input
+                        :value="companyWebsite"
+                        type="url"
+                        placeholder="Enter your Company Website"
+                        class="w-full px-4 py-3 text-black bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                        :class="{ 'border-red-500': errors.companyWebsite }"
+                        @input="updateCompanyWebsite"
+                    />
+                </div>
+                <span v-if="errors.companyWebsite" class="text-red-500 text-sm">
+                    {{ errors.companyWebsite }}
+                </span>
+            </div>
+
             <!-- Password Input -->
             <div class="flex flex-col space-y-1 col-span-2">
                 <label class="text-gray-800 font-semibold">Password *</label>
                 <div class="relative">
                     <input
                         :value="password"
-                        type="password"
+                        :type="showPassword ? 'text' : 'password'"
                         placeholder="Enter your Password"
-                        class="w-full px-4 py-3 text-black bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                        class="w-full px-4 py-3 pr-12 text-black bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                         :class="{ 'border-red-500': errors.password }"
                         @input="updatePassword"
                     />
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                        <UButton
+                            color="neutral"
+                            class="cursor-pointer"
+                            variant="link"
+                            size="sm"
+                            :icon="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                            :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                            :aria-pressed="showPassword"
+                            aria-controls="password"
+                            @click="showPassword = !showPassword"
+                        />
+                    </div>
                 </div>
                 <span v-if="errors.password" class="text-red-500 text-sm">
                     {{ errors.password }}
+                </span>
+            </div>
+
+            <!-- Repeat Password Input -->
+            <div class="flex flex-col space-y-1 col-span-2">
+                <label class="text-gray-800 font-semibold">Repeat Password *</label>
+                <div class="relative">
+                    <input
+                        :value="rPassword"
+                        :type="showRepeatPassword ? 'text' : 'password'"
+                        placeholder="Repeat your Password"
+                        class="w-full px-4 py-3 pr-12 text-black bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                        :class="{ 'border-red-500': errors.rPassword }"
+                        @input="updateRPassword"
+                    />
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                        <UButton
+                            color="neutral"
+                            class="cursor-pointer"
+                            variant="link"
+                            size="sm"
+                            :icon="showRepeatPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                            :aria-label="showRepeatPassword ? 'Hide password' : 'Show password'"
+                            :aria-pressed="showRepeatPassword"
+                            aria-controls="repeat-password"
+                            @click="showRepeatPassword = !showRepeatPassword"
+                        />
+                    </div>
+                </div>
+                <span v-if="errors.rPassword" class="text-red-500 text-sm">
+                    {{ errors.rPassword }}
                 </span>
             </div>
 
@@ -131,8 +193,12 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed } from "vue";
+import { reactive, computed, ref } from "vue";
 import * as z from "zod";
+
+const rPassword = ref("");
+const showPassword = ref(false);
+const showRepeatPassword = ref(false);
 
 const props = defineProps({
     companyName: {
@@ -140,6 +206,10 @@ const props = defineProps({
         default: "",
     },
     companyEmail: {
+        type: String,
+        default: "",
+    },
+    companyWebsite: {
         type: String,
         default: "",
     },
@@ -168,7 +238,9 @@ const props = defineProps({
 const emit = defineEmits([
     "update:companyName",
     "update:companyEmail",
+    "update:companyWebsite",
     "update:password",
+    "update:rPassword",
     "update:phone",
     "update:address",
     "update:city",
@@ -178,19 +250,27 @@ const emit = defineEmits([
 const errors = reactive({
     companyName: "",
     companyEmail: "",
+    companyWebsite: "",
     password: "",
+    rPassword: "",
     phone: "",
     address: "",
     city: "",
     country: "",
 });
 
-// Zod schema with improved, user-friendly error messages
+// Zod schema, user-friendly error messages
 const schema = z.object({
     companyName: z.string().min(2, "Name must be at least 2 characters"),
     companyEmail: z.email("Please enter a valid email address"),
+    companyWebsite: z.url("Please enter a valid URL"),
     password: z.string().min(8, "Password must be at least 8 characters"),
-    phone: z.string().regex(/^\+(?:[1-9]\d{0,2}) \d{4,14}$/, "Please enter a valid phone number"),
+    phone: z
+        .string()
+        .regex(
+            /^\+(?:[1-9]\d{0,2}) \d{4,14}$/,
+            "Please enter your phone number in the format +XX XXXXXXXXXX"
+        ), // After country code spaces is required
     address: z.string().min(5, "Address must be at least 5 characters"),
     city: z.string().min(2, "City must be at least 2 characters"),
     country: z.string().min(2, "Country must be at least 2 characters"),
@@ -211,11 +291,21 @@ const validateField = (fieldName: keyof typeof errors, value: unknown) => {
     }
 };
 
+const validateRPassword = (value: string, value2: string) => {
+    if (value !== value2) {
+        errors.rPassword = "Passwords do not match";
+        return false;
+    }
+    errors.rPassword = "";
+    return true;
+};
+
 const isValid = computed(() => {
     const hasValues =
         props.companyName &&
         props.companyEmail &&
         props.password &&
+        rPassword.value &&
         props.phone &&
         props.address &&
         props.city &&
@@ -236,10 +326,23 @@ const updateCompanyEmail = (event: Event) => {
     validateField("companyEmail", value);
 };
 
+const updateCompanyWebsite = (event: Event) => {
+    const value = (event.target as HTMLInputElement).value;
+    emit("update:companyWebsite", value);
+    validateField("companyWebsite", value);
+};
+
 const updatePassword = (event: Event) => {
     const value = (event.target as HTMLInputElement).value;
     emit("update:password", value);
     validateField("password", value);
+    validateRPassword(rPassword.value, value);
+};
+
+const updateRPassword = (event: Event) => {
+    const value = (event.target as HTMLInputElement).value;
+    rPassword.value = value;
+    validateRPassword(value, props.password);
 };
 
 const updatePhone = (event: Event) => {
