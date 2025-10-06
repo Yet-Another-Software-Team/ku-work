@@ -61,12 +61,25 @@
                 <div class="relative">
                     <input
                         :value="password"
-                        type="password"
+                        :type="showPassword ? 'text' : 'password'"
                         placeholder="Enter your Password"
-                        class="w-full px-4 py-3 text-black bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                        class="w-full px-4 py-3 pr-12 text-black bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                         :class="{ 'border-red-500': errors.password }"
                         @input="updatePassword"
                     />
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                        <UButton
+                            color="neutral"
+                            class="cursor-pointer"
+                            variant="link"
+                            size="sm"
+                            :icon="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                            :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                            :aria-pressed="showPassword"
+                            aria-controls="password"
+                            @click="showPassword = !showPassword"
+                        />
+                    </div>
                 </div>
                 <span v-if="errors.password" class="text-red-500 text-sm">
                     {{ errors.password }}
@@ -79,12 +92,25 @@
                 <div class="relative">
                     <input
                         :value="rPassword"
-                        type="password"
+                        :type="showRepeatPassword ? 'text' : 'password'"
                         placeholder="Repeat your Password"
-                        class="w-full px-4 py-3 text-black bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                        class="w-full px-4 py-3 pr-12 text-black bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                         :class="{ 'border-red-500': errors.rPassword }"
                         @input="updateRPassword"
                     />
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                        <UButton
+                            color="neutral"
+                            class="cursor-pointer"
+                            variant="link"
+                            size="sm"
+                            :icon="showRepeatPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                            :aria-label="showRepeatPassword ? 'Hide password' : 'Show password'"
+                            :aria-pressed="showRepeatPassword"
+                            aria-controls="repeat-password"
+                            @click="showRepeatPassword = !showRepeatPassword"
+                        />
+                    </div>
                 </div>
                 <span v-if="errors.rPassword" class="text-red-500 text-sm">
                     {{ errors.rPassword }}
@@ -167,10 +193,13 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed } from "vue";
+import { reactive, computed, ref } from "vue";
 import * as z from "zod";
 
 const rPassword = ref("");
+const showPassword = ref(false);
+const showRepeatPassword = ref(false);
+
 const props = defineProps({
     companyName: {
         type: String,
@@ -230,14 +259,19 @@ const errors = reactive({
     country: "",
 });
 
-// Zod schema with improved, user-friendly error messages
+// Zod schema, user-friendly error messages
 const schema = z.object({
     companyName: z.string().min(2, "Name must be at least 2 characters"),
     companyEmail: z.email("Please enter a valid email address"),
     companyWebsite: z.url("Please enter a valid URL"),
     password: z.string().min(8, "Password must be at least 8 characters"),
     rPassword: z.string().refine((value) => value === props.password, "Passwords do not match"),
-    phone: z.string().regex(/^\+(?:[1-9]\d{0,2}) \d{4,14}$/, "Please enter a valid phone number"),
+    phone: z
+        .string()
+        .regex(
+            /^\+(?:[1-9]\d{0,2}) \d{4,14}$/,
+            "Please enter your phone number in the format +XX XXXXXXXXXX"
+        ), // After country code spaces is required
     address: z.string().min(5, "Address must be at least 5 characters"),
     city: z.string().min(2, "City must be at least 2 characters"),
     country: z.string().min(2, "Country must be at least 2 characters"),
