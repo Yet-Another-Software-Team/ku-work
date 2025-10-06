@@ -294,47 +294,36 @@ func (h *JobHandlers) EditJob(ctx *gin.Context) {
 	if input.Name != nil {
 		job.Name = *input.Name
 	}
-
 	if input.Position != nil {
 		job.Position = *input.Position
 	}
-
 	if input.Duration != nil {
 		job.Duration = *input.Duration
 	}
-
 	if input.Description != nil {
 		job.Description = *input.Description
 	}
-
 	if input.Location != nil {
 		job.Location = *input.Location
 	}
-
 	if input.JobType != nil {
 		job.JobType = model.JobType(*input.JobType)
 	}
-
 	if input.Open != nil {
 		job.IsOpen = *input.Open
 	}
-
 	if input.Experience != nil {
 		job.Experience = model.ExperienceType(*input.Experience)
 	}
-
 	if input.Experience != nil {
 		job.Experience = model.ExperienceType(*input.Experience)
 	}
-
 	if input.MinSalary != nil {
 		job.MinSalary = *input.MinSalary
 	}
-
 	if input.MaxSalary != nil {
 		job.MaxSalary = *input.MaxSalary
 	}
-
 	if job.MinSalary > job.MaxSalary {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "minsalary cannot exceed maxsalary"})
 		return
