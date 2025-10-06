@@ -141,7 +141,9 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-// Login handles user login
+// Handle Local Authentication of Company User
+// 
+// Rejects if user is not a company
 func (h *LocalAuthHandlers) CompanyLoginHandler(ctx *gin.Context) {
 	var req LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -185,7 +187,9 @@ func (h *LocalAuthHandlers) CompanyLoginHandler(ctx *gin.Context) {
 	})
 }
 
-// Login handles user login
+// Handle Local Authentication of Admin User
+// 
+// Rejects if user is not a admin
 func (h *LocalAuthHandlers) AdminLoginHandler(ctx *gin.Context) {
 	var req LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
