@@ -108,15 +108,17 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	username := user.Username
 	isStudent := false
 
-	// Check if user is a student
+	// Check for OAuth User
 	var oauthCount int64
 	h.DB.Model(&model.GoogleOAuthDetails{}).Where("user_id = ?", user.ID).Count(&oauthCount)
 	if oauthCount > 0 {
 		var oauthDetail model.GoogleOAuthDetails
+		// Get username of OAuth user (First Name + Last Name), since username of such user is stored as email in database.
 		if err := h.DB.Model(&oauthDetail).Where("user_id = ?", user.ID).First(&oauthDetail); err == nil {
 			username = oauthDetail.FirstName + " " + oauthDetail.LastName
 		}
 
+		// Check if user is a student
 		var sCount int64
 		h.DB.Model(&model.Student{}).Where("user_id = ? AND approved = ?", user.ID, true).Count(&sCount)
 		isStudent = sCount > 0
