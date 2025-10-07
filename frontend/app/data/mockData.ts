@@ -32,6 +32,7 @@ interface CompanyProfile {
     };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Company {
     id: string;
     createdAt: string;

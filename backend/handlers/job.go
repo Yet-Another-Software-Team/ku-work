@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -335,7 +336,7 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 	// Convert job id to uint
 	jobIdStr := ctx.Param("id")
 	jobId64, err := strconv.ParseUint(jobIdStr, 10, 64)
-	if err != nil || jobId64 <= 0 {
+	if err != nil || jobId64 <= 0 || jobId64 > math.MaxUint32 {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid job id"})
 		return
 	}
@@ -469,7 +470,7 @@ func (h *JobHandlers) JobApprovalHandler(ctx *gin.Context) {
 func (h *JobHandlers) GetJobDetailHandler(ctx *gin.Context) {
 	jobIdStr := ctx.Param("id")
 	jobId64, err := strconv.ParseInt(jobIdStr, 10, 64)
-	if err != nil || jobId64 <= 0 {
+	if err != nil || jobId64 <= 0 || jobId64 > math.MaxUint32 {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid job ID"})
 		return
 	}

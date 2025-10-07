@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"ku-work/backend/model"
+	"math"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -82,7 +83,7 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 
 	jobIdStr := ctx.Param("id")
 	jobId64, err := strconv.ParseInt(jobIdStr, 10, 64)
-	if err != nil || jobId64 <= 0 {
+	if err != nil || jobId64 <= 0 || jobId64 > math.MaxUint32 {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "invalid job ID"})
 		return
 	}
@@ -178,7 +179,7 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 	// Convert job id to uint from URL parameter
 	jobIdStr := ctx.Param("id")
 	jobId64, err := strconv.ParseUint(jobIdStr, 10, 64)
-	if err != nil || jobId64 <= 0{
+	if err != nil || jobId64 <= 0 || jobId64 > math.MaxUint32 {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid job id"})
 		return
 	}
@@ -274,7 +275,7 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 	// Extract job ID from URL parameter
 	jobIdStr := ctx.Param("id")
 	jobId64, err := strconv.ParseUint(jobIdStr, 10, 64)
-	if err != nil || jobId64 <= 0 {
+	if err != nil || jobId64 <= 0 || jobId64 > math.MaxUint32 {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid job ID"})
 		return
 	}
@@ -419,7 +420,7 @@ func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context
 	// Convert job id to uint from URL parameter
 	jobIdStr := ctx.Param("id")
 	jobId64, err := strconv.ParseUint(jobIdStr, 10, 64)
-	if err != nil || jobId64 <= 0 {
+	if err != nil || jobId64 <= 0 || jobId64 > math.MaxUint32 {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid job ID"})
 		return
 	}
