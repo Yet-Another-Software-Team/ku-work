@@ -119,7 +119,7 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
-	
+
 	// Use the student's profile phone and email as the default contact information if none is provided
 	googleOAuthDetails := model.GoogleOAuthDetails{}
 	result = h.DB.Where("user_id = ?", student.UserID).First(&googleOAuthDetails)
@@ -135,7 +135,6 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 		input.AltEmail = googleOAuthDetails.Email
 	}
 
-	
 	jobApplication := model.JobApplication{
 		UserID:   student.UserID,
 		JobID:    job.ID,
