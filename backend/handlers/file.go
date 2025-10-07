@@ -197,7 +197,7 @@ func CleanImageMetadata(filePath string) error {
 }
 
 // Serves a file from the server file system.
-func (h *FileHandlers) ServeFile(ctx *gin.Context) {
+func (h *FileHandlers) ServeFileHandler(ctx *gin.Context) {
 	fileID := ctx.Param("fileID")
 	// Ensure that file id not contain invalid characters
 	if strings.Contains(fileID, "/") || strings.Contains(fileID, `\`) || strings.Contains(fileID, "..") {

@@ -1,0 +1,450 @@
+package handlers
+
+import (
+	"fmt"
+	"ku-work/backend/model"
+	"mime/multipart"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+)
+
+type ApplicationHandlers struct {
+	DB           *gorm.DB
+	FileHandlers *FileHandlers
+}
+
+func NewApplicationHandlers(db *gorm.DB) *ApplicationHandlers {
+	return &ApplicationHandlers{
+		DB:           db,
+		FileHandlers: NewFileHandlers(db),
+	}
+}
+
+// CreateJobApplicationHandler creates a new job application (student applies to a job).
+//
+// This handler allows approved students to apply to approved job postings
+// by submitting their application with optional alternate contact information
+// and required document files (e.g., resume, cover letter).
+func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
+	// Get user ID from context (auth middleware)
+	probUserId, hasUserId := ctx.Get("userID")
+	if !hasUserId {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userid := probUserId.(string)
+
+	jobIdStr := ctx.Param("id")
+	jobId64, err := strconv.ParseInt(jobIdStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid job ID"})
+		return
+	}
+	jobId := uint(jobId64)
+
+	// Bind request body to input struct
+	type ApplyJobInput struct {
+		AltPhone string                  `form:"phone" binding:"max=20"`
+		AltEmail string                  `form:"email" binding:"max=128"`
+		Files    []*multipart.FileHeader `form:"files" binding:"max=2,required"`
+	}
+	input := ApplyJobInput{}
+	err = ctx.Bind(&input)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Check if user is approved student, denied otherwise
+	student := model.Student{
+		UserID: userid,
+	}
+	result := h.DB.First(&student)
+	if result.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+	if student.ApprovalStatus != model.StudentApprovalAccepted {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "your student status is not approved yet"})
+		return
+	}
+	job := model.Job{
+		ID:             jobId,
+		ApprovalStatus: model.JobApprovalAccepted,
+	}
+	result = h.DB.First(&job)
+	if result.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+	jobApplication := model.JobApplication{
+		UserID:   student.UserID,
+		JobID:    job.ID,
+		AltPhone: input.AltPhone,
+		AltEmail: input.AltEmail,
+	}
+	success := false
+	// If create job application fails remove files
+	defer (func() {
+		if !success {
+			for _, file := range jobApplication.Files {
+				_ = h.DB.Delete(&file)
+			}
+		}
+	})()
+
+	// Save all files into database and file system
+	for _, file := range input.Files {
+		fileObject, err := SaveFile(ctx, h.DB, student.UserID, file, model.FileCategoryDocument)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to save file %s: %s", file.Filename, err.Error())})
+			return
+		}
+		jobApplication.Files = append(jobApplication.Files, *fileObject)
+	}
+
+	// Create application database object
+	if err := h.DB.Create(&jobApplication).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	success = true
+	ctx.JSON(http.StatusOK, gin.H{
+		"id": jobApplication.ID,
+	})
+}
+
+// GetJobApplicationsHandler fetches all job applications for a specific job.
+//
+// This handler is used to display the list of applicants for a job posting
+// with support for status filtering (pending, accepted, rejected).
+//
+// Results include applicant username and are paginated.
+func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
+	// Extract authenticated user ID from context
+	userId := ctx.MustGet("userID").(string)
+
+	// Convert job id to uint from URL parameter
+	jobIdStr := ctx.Param("id")
+	jobId64, err := strconv.ParseUint(jobIdStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid job id"})
+		return
+	}
+	jobId := uint(jobId64)
+
+	// Verify the job exists and check authorization
+	job := &model.Job{}
+	if err := h.DB.First(job, jobId).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "job not found"})
+		} else {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	// Check if user is authorized to view applications for this job
+	// Only the company that posted the job or an admin can view its applications
+	if job.CompanyID != userId {
+		// Check if user is an admin
+		admin := model.Admin{}
+		result := h.DB.Where("user_id = ?", userId).First(&admin)
+		if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+			return
+		}
+		if result.RowsAffected == 0 {
+			// User is not an admin and not the company that posted the job
+			ctx.JSON(http.StatusForbidden, gin.H{"error": "forbidden: only the company that posted this job or an admin can view its applications"})
+			return
+		}
+	}
+
+	// Parse and validate query parameters
+	type FetchJobApplicationsInput struct {
+		Status *string `json:"status" form:"status"`
+		Offset uint    `json:"offset" form:"offset"`
+		Limit  uint    `json:"limit" form:"limit" binding:"max=64"`
+	}
+	input := FetchJobApplicationsInput{}
+	err = ctx.Bind(&input)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Set default limit if not provided
+	if input.Limit == 0 {
+		input.Limit = 32
+	}
+
+	// Define response struct that includes applicant username
+	type JobApplicationWithApplicantName struct {
+		model.JobApplication
+		Username string `json:"username"`
+		Major    string `json:"major"`
+		Status   string `json:"status"`
+	}
+
+	// Build base query joining with users table to fetch applicant username
+	// Filter by the job ID from the URL parameter
+	query := h.DB.Model(&model.JobApplication{}).
+		Joins("INNER JOIN google_o_auth_details ON google_o_auth_details.id = job_applications.user_id").
+		Joins("INNER JOIN students ON students.user_id = job_applications.user_id").
+		Select("job_applications.*",
+		 	   "CONCAT(google_o_auth_details.FirstName, ' ', google_o_auth_details.LastName) as username",
+			   "students.major as major",
+			   "job_applications.status as status").
+		Where("job_applications.job_id = ?", jobId)
+
+	// Filter by status if provided (for tabs: pending, accepted, rejected)
+	if input.Status != nil && *input.Status != "" {
+		query = query.Where("job_applications.status = ?", *input.Status)
+	}
+
+	// Execute query with pagination and preload associated files
+	var jobApplications []JobApplicationWithApplicantName
+	result := query.Offset(int(input.Offset)).Limit(int(input.Limit)).Preload("Files").Find(&jobApplications)
+	if result.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, jobApplications)
+}
+
+// GetJobApplicationHandler fetches a specific job application for a given job and student.
+//
+// This handler retrieves detailed information about a single job application including
+// the applicant's full profile, contact information, and resume files.
+// Used for the application detail view.
+func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
+	// Extract job ID from URL parameter
+	jobIdStr := ctx.Param("id")
+	jobId64, err := strconv.ParseUint(jobIdStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid job ID"})
+		return
+	}
+	jobId := uint(jobId64)
+
+	// Extract student ID from URL parameter
+	studentId := ctx.Param("studentId")
+
+	// Define response struct that includes full applicant details
+	type JobApplicationWithApplicantDetails struct {
+		model.JobApplication
+		Username  string    `json:"username"`
+		Email 	  string    `json:"email"`
+		Phone     string    `json:"phone"`
+		PhotoID   *string   `json:"photoId"`
+		BirthDate time.Time `json:"birthDate"`
+		AboutMe   string    `json:"aboutMe"`
+		GitHub    string    `json:"github"`
+		LinkedIn  string    `json:"linkedIn"`
+		StudentID string    `json:"studentId"`
+		Major     string    `json:"major"`
+
+	}
+
+	// Query for the specific job application with full student details
+	var jobApplication JobApplicationWithApplicantDetails
+	query := h.DB.Model(&model.JobApplication{}).
+		Joins("INNER JOIN users ON users.id = job_applications.user_id").
+		Joins("LEFT JOIN students ON students.user_id = job_applications.user_id").
+		Select(`job_applications.*, users.username as username,
+			students.phone as phone, students.photo_id as photo_id,
+			students.birth_date as birth_date, students.about_me as about_me,
+			students.git_hub as github, students.linked_in as linked_in,
+			students.student_id as student_id, students.major as major`).
+		Where("job_applications.job_id = ? AND job_applications.user_id = ?", jobId, studentId).
+		Preload("Files")
+
+	if err := query.First(&jobApplication).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "job application not found"})
+		} else {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	ctx.JSON(http.StatusOK, jobApplication)
+}
+
+// GetAllJobApplicationsHandler fetches job applications for the authenticated user.
+//
+// This handler supports the following access patterns:
+// - Companies: see applications for all their job postings
+// - Students: see their own applications
+//
+// Results include applicant username and associated files with pagination support.
+func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
+	// Extract authenticated user ID from context
+	userId := ctx.MustGet("userID").(string)
+
+	// Parse and validate query parameters
+	type FetchJobApplicationsInput struct {
+		Offset uint `json:"offset" form:"offset"`
+		Limit  uint `json:"limit" form:"limit" binding:"max=64"`
+	}
+	input := FetchJobApplicationsInput{}
+	err := ctx.Bind(&input)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Set default limit if not provided
+	if input.Limit == 0 {
+		input.Limit = 32
+	}
+
+	// Define response struct that includes applicant username
+	type JobApplicationWithApplicantName struct {
+		model.JobApplication
+		Username string `json:"username"`
+		Major    string `json:"major"`
+		Status   string `json:"status"`
+	}
+
+	// Build base query joining with users table to fetch applicant username
+	query := h.DB.Model(&model.JobApplication{}).
+		Joins("INNER JOIN google_o_auth_details ON google_o_auth_details.id = job_applications.user_id").
+		Joins("INNER JOIN students ON students.user_id = job_applications.user_id").
+		Select("job_applications.*",
+		 	   "CONCAT(google_o_auth_details.FirstName, ' ', google_o_auth_details.LastName) as username",
+			   "students.major as major",
+			   "job_applications.status as status")
+
+	// Determine user role and filter applications accordingly
+	// Check if user is a company
+	company := model.Company{
+		UserID: userId,
+	}
+	result := h.DB.Limit(1).Find(&company)
+	if result.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+
+	if result.RowsAffected != 0 {
+		// User is a company: fetch applications for all their job postings
+		query = query.Joins("INNER JOIN jobs on jobs.id = job_applications.job_id").Where("jobs.company_id = ?", userId)
+	} else {
+		// Check if user is a student
+		student := model.Student{
+			UserID: userId,
+		}
+		result = h.DB.Limit(1).Find(&student)
+		if result.Error != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+			return
+		}
+
+		if result.RowsAffected != 0 {
+			// User is a student: fetch only their own applications
+			query = query.Where("job_applications.user_id = ?", userId)
+		} else {
+			// User is neither company nor student: deny access
+			ctx.JSON(http.StatusForbidden, gin.H{"error": "user is neither company nor student"})
+			return
+		}
+	}
+
+	// Execute query with pagination and preload associated files
+	var jobApplications []JobApplicationWithApplicantName
+	result = query.Offset(int(input.Offset)).Limit(int(input.Limit)).Preload("Files").Find(&jobApplications)
+	if result.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, jobApplications)
+}
+
+// UpdateJobApplicationStatusHandler updates the status of a job application (approve/reject).
+//
+// This handler allows companies to approve or reject job applications.
+// Only the company that posted the job or an admin can update application status.
+func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context) {
+	// Extract authenticated user ID from context
+	userId := ctx.MustGet("userID").(string)
+
+	// Convert job id to uint from URL parameter
+	jobIdStr := ctx.Param("id")
+	jobId64, err := strconv.ParseUint(jobIdStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid job ID"})
+		return
+	}
+	jobId := uint(jobId64)
+
+	// Extract student ID from URL parameter
+	studentId := ctx.Param("studentId")
+
+	// Verify the job exists and check authorization
+	job := &model.Job{}
+	if err := h.DB.First(job, jobId).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "job not found"})
+		} else {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	// Check if user is authorized to update applications for this job
+	// Only the company that posted the job or an admin can update application status
+	if job.CompanyID != userId {
+		// Check if user is an admin
+		admin := model.Admin{}
+		result := h.DB.Where("user_id = ?", userId).First(&admin)
+		if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+			return
+		}
+		if result.RowsAffected == 0 {
+			// User is not an admin and not the company that posted the job
+			ctx.JSON(http.StatusForbidden, gin.H{"error": "forbidden: only the company that posted this job or an admin can update application status"})
+			return
+		}
+	}
+
+	// Parse input data
+	type UpdateStatusInput struct {
+		Status string `json:"status" binding:"required,oneof=accepted rejected pending"`
+	}
+	input := UpdateStatusInput{}
+	if err := ctx.BindJSON(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Find the job application
+	jobApplication := &model.JobApplication{}
+	if err := h.DB.Where("job_id = ? AND user_id = ?", jobId, studentId).First(jobApplication).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "job application not found"})
+		} else {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	// Update the status
+	jobApplication.Status = model.JobApplicationStatus(input.Status)
+	if err := h.DB.Save(jobApplication).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "application status updated successfully",
+		"status":  jobApplication.Status,
+	})
+}

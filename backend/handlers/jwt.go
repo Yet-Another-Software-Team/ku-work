@@ -3,6 +3,7 @@ package handlers
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"ku-work/backend/helper"
 	"ku-work/backend/model"
 	"log"
 	"net/http"
@@ -99,46 +100,16 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 		return
 	}
 
-	var user model.User
-	if err := h.DB.Where("id = ?", refreshTokenDB.UserID).First(&user).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user"})
-		return
-	}
 
-	username := user.Username
-	isStudent := false
-
-	// Check for OAuth User
-	var oauthCount int64
-	h.DB.Model(&model.GoogleOAuthDetails{}).Where("user_id = ?", user.ID).Count(&oauthCount)
-	if oauthCount > 0 {
-		var oauthDetail model.GoogleOAuthDetails
-		// Get username of OAuth user (First Name + Last Name), since username of such user is stored as email in database.
-		if err := h.DB.Model(&oauthDetail).Where("user_id = ?", user.ID).First(&oauthDetail); err == nil {
-			username = oauthDetail.FirstName + " " + oauthDetail.LastName
-		}
-
-		// Check if user is a student
-		var sCount int64
-		h.DB.Model(&model.Student{}).Where("user_id = ? AND approval_status = ?", user.ID, model.StudentApprovalAccepted).Count(&sCount)
-		isStudent = sCount > 0
-	}
-
-	// Check if user is a company
-	isCompany := false
-	if !isStudent {
-		var cCount int64
-		h.DB.Model(&model.Company{}).Where("user_id = ?", user.ID).Count(&cCount)
-		isCompany = cCount > 0
-	}
-
+	role := helper.GetRole(refreshTokenDB.UserID, h.DB)
+	username := helper.GetUsername(refreshTokenDB.UserID, role,h.DB)
+	
 	ctx.SetCookie("refresh_token", newRefreshToken, int(time.Hour*24*30/time.Second), "/", "", true, true)
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"token":     jwtToken,
 		"username":  username,
-		"isStudent": isStudent,
-		"isCompany": isCompany,
+		"role":      role,
 	})
 }
 

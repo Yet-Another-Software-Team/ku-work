@@ -246,7 +246,7 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 	// Get userId from context (auth middleware)
 	userId := ctx.MustGet("userID").(string)
-
+	
 	// Bind input data from request body
 	type GetStudentProfileInput struct {
 		UserID         string `form:"id" binding:"max=128"`

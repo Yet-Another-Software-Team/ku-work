@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"time"
 
+	"ku-work/backend/helper"
 	"ku-work/backend/model"
 
 	"github.com/gin-gonic/gin"
@@ -140,8 +141,7 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"token":     jwtToken,
 		"username":  newUser.Username,
-		"isStudent": false,
-		"isCompany": true, // This registration flow only used for Company.
+		"role":      helper.Company,
 	})
 }
 
@@ -192,8 +192,7 @@ func (h *LocalAuthHandlers) CompanyLoginHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"token":     jwtToken,
 		"username":  user.Username,
-		"isStudent": false,
-		"isCompany": true,
+		"role":      helper.Company,
 	})
 }
 
@@ -238,7 +237,6 @@ func (h *LocalAuthHandlers) AdminLoginHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"token":     jwtToken,
 		"username":  user.Username,
-		"isStudent": false,
-		"isCompany": false,
+		"role":      helper.Admin,
 	})
 }

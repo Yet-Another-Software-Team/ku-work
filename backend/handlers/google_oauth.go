@@ -11,6 +11,7 @@ import (
 	"os"
 	"time"
 
+	"ku-work/backend/helper"
 	"ku-work/backend/model"
 
 	"github.com/gin-gonic/gin"
@@ -173,7 +174,7 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", true, true)
 
 	username := oauthDetail.FirstName + " " + oauthDetail.LastName
-	isStudent := false
+	role := helper.Viewer
 	isRegistered := false
 	if status == http.StatusOK {
 		// Check if user is a valid and approved student
@@ -183,15 +184,16 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 		if count > 0 {
 			var student model.Student
 			h.DB.Model(&student).Where("user_id = ?", user.ID).First(&student)
-			isStudent = student.ApprovalStatus == model.StudentApprovalAccepted
+			if student.ApprovalStatus == model.StudentApprovalAccepted {
+				role = helper.Student
+			}
 		}
 	}
 
 	ctx.JSON(status, gin.H{
 		"token":        jwtToken,
 		"username":     username,
-		"isCompany":    false, // Company doesn't have OAuth Login option
-		"isStudent":    isStudent,
+		"role":			role,
 		"isRegistered": isRegistered, // To tell frontend whether user is registered or not
 	})
 
