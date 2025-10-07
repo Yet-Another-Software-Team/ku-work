@@ -9,7 +9,7 @@
                 <span>Back</span>
             </h1>
         </a>
-        <!-- Job applications -->
+        <!-- Job Post detail -->
         <section>
             <div v-if="isLoading">
                 <USkeleton class="h-[20em] w-full mb-5" />
@@ -23,44 +23,76 @@
             <div v-else class="text-center text-neutral-500 dark:text-neutral-400">
                 No job applications available.
             </div>
-            <section class="h-[3em] overflow-hidden border-b-1 my-5">
-                <div class="flex flex-row gap-2 h-[6em] max-w-[40em] left-0 top-0">
-                    <div
-                        class="hover:cursor-pointer transition-all duration-150 text-center"
-                        :class="setTailwindClasses('inprogress')"
-                        @click="selectInProgress"
-                    >
-                        <p class="font-bold px-5 py-1 text-2xl">In Progress</p>
-                    </div>
-                    <div
-                        class="hover:cursor-pointer transition-all duration-150 text-center"
-                        :class="setTailwindClasses('accepted')"
-                        @click="selectAccepted"
-                    >
-                        <p class="font-bold px-5 py-1 text-2xl">Accepted</p>
-                    </div>
-                    <div
-                        class="hover:cursor-pointer transition-all duration-150 text-center"
-                        :class="setTailwindClasses('rejected')"
-                        @click="selectRejected"
-                    >
-                        <p class="font-bold px-5 py-1 text-2xl">Rejected</p>
-                    </div>
+        </section>
+        <!-- Navigation bar -->
+        <section class="h-[3em] overflow-hidden border-b-1 my-5">
+            <div class="flex flex-row gap-2 h-[6em] max-w-[40em] left-0 top-0">
+                <div
+                    class="hover:cursor-pointer transition-all duration-150 text-center"
+                    :class="setTailwindClasses('inprogress')"
+                    @click="selectInProgress"
+                >
+                    <p class="font-bold px-5 py-1 text-2xl">In Progress</p>
                 </div>
-            </section>
+                <div
+                    class="hover:cursor-pointer transition-all duration-150 text-center"
+                    :class="setTailwindClasses('accepted')"
+                    @click="selectAccepted"
+                >
+                    <p class="font-bold px-5 py-1 text-2xl">Accepted</p>
+                </div>
+                <div
+                    class="hover:cursor-pointer transition-all duration-150 text-center"
+                    :class="setTailwindClasses('rejected')"
+                    @click="selectRejected"
+                >
+                    <p class="font-bold px-5 py-1 text-2xl">Rejected</p>
+                </div>
+            </div>
+        </section>
+        <!-- Job Applications List -->
+        <section>
+            <div class="flex justify-between">
+                <h1 class="text-2xl font-semibold mb-2">{{ countedApplication }} Applicants</h1>
+                <div class="flex gap-5">
+                    <h1 class="text-2xl font-semibold mb-2">Sort by:</h1>
+                    <!-- TODO: Implement sorting later -->
+                    <!-- <USelectMenu value-key="id" placement="bottom-end" class="w-[10em]" /> -->
+                </div>
+            </div>
+            <hr class="w-full my-5" />
+            <div v-if="isLoading">
+                <USkeleton v-for="n in 10" :key="n" class="h-[20em] w-full mb-5" />
+            </div>
+            <div v-else>
+                <JobApplicationComponent
+                    v-for="app in filteredApplications()"
+                    :key="app.id"
+                    :application-data="app"
+                    class="mb-5"
+                    @approve="console.log('Approved application ID:', app.id)"
+                    @reject="console.log('Rejected application ID:', app.id)"
+                />
+            </div>
         </section>
     </section>
 </template>
 
 <script setup lang="ts">
-import { mockJobData, type JobPost } from "~/data/mockData";
+import { mockJobApplicationData } from "~/data/mockData";
+import type { JobPost, JobApplication } from "~/data/mockData";
 
 definePageMeta({
     layout: "viewer",
 });
 
-// Jobs
-const job = ref<JobPost>(mockJobData.jobs[0]!);
+// test
+const test = ref(true);
+
+// Jobs and applications
+const job = ref<JobPost>();
+const applications = ref<Array<JobApplication>>();
+const countedApplication = computed(() => applicationCount());
 
 // API call to fetch jobs
 const api = useApi();
@@ -75,41 +107,42 @@ interface getApplicationForm {
     jobId?: number;
 }
 
-onMounted(() => {
+onMounted(async () => {
     isLoading.value = true;
-    console.log("Job ID on mounted:", route.params.id);
-    job.value.id = route.params.id ? Number(route.params.id) : -1;
-    if (job.value.id === -1) {
+    const jobId = route.params.id ? Number(route.params.id) : -1;
+    if (jobId === -1) {
         return;
     }
     const token = localStorage.getItem("token");
-    fetchJob(token);
-    fetchApplication(token);
+    await fetchJob(token, jobId);
+    await fetchApplication(token, jobId);
+    if (test.value) {
+        applications.value = [mockJobApplicationData];
+        if (job.value) job.value.pending = 1;
+    }
     isLoading.value = false;
 });
 
-const fetchJob = async (token: string | null) => {
+const fetchJob = async (token: string | null, jobId: number) => {
     try {
         const response = await api.get(`/job`, {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
-            params: { id: job.value.id, companyId: "self" },
+            params: { id: jobId, companyId: "self" },
         });
         job.value = response.data.jobs[0];
-        // console.log("Updated job value:", job.value);
     } catch (error) {
         console.error("Error fetching job details:", error);
     }
 };
 
-const fetchApplication = async (token: string | null) => {
+const fetchApplication = async (token: string | null, jobId: number) => {
     const jobForm: getApplicationForm = {
         limit: limit,
         offset: currentJobOffset,
-        jobId: Number(job.value.id),
+        jobId: jobId,
     };
-    console.log("Fetching job application with form:", jobForm);
     try {
         const response = await api.get("/job/application", {
             headers: {
@@ -117,7 +150,11 @@ const fetchApplication = async (token: string | null) => {
             },
             params: { jobForm },
         });
-        console.log("Job application fetched:", response.data);
+        if (applications.value === undefined) {
+            applications.value = response.data;
+        } else {
+            applications.value.push(...response.data);
+        }
         currentJobOffset += limit;
     } catch (error) {
         console.error("Error fetching job application:", error);
@@ -127,6 +164,7 @@ const fetchApplication = async (token: string | null) => {
 // Toggle between inprogress, accepted, rejected
 const isSelected = ref("inprogress");
 
+// Handlers for selecting application status
 function setTailwindClasses(activeCondition: string) {
     const condition = isSelected.value;
     if (condition == activeCondition) {
@@ -151,6 +189,27 @@ function selectAccepted() {
 
 function selectRejected() {
     isSelected.value = "rejected";
+}
+
+function filteredApplications() {
+    if (isSelected.value === "inprogress") {
+        return applications.value?.filter((app) => app.status === "pending");
+    } else if (isSelected.value === "accepted") {
+        return applications.value?.filter((app) => app.status === "accepted");
+    } else if (isSelected.value === "rejected") {
+        return applications.value?.filter((app) => app.status === "rejected");
+    }
+}
+
+function applicationCount() {
+    if (isSelected.value === "inprogress") {
+        return job.value?.pending;
+    } else if (isSelected.value === "accepted") {
+        return job.value?.accepted;
+    } else if (isSelected.value === "rejected") {
+        return job.value?.rejected;
+    }
+    return 0;
 }
 
 const updateJobOpen = (id: number, value: boolean) => {

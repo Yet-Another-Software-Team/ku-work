@@ -335,14 +335,13 @@ async function onSubmit() {
         return;
     }
 
-    console.log("Form data is valid:", result.data);
+    // console.log("Form data is valid:", result.data);
     try {
-        const response = await api.post("/job", result.data, {
+        await api.post("/job", result.data, {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
         });
-        console.log(response);
         addToast({
             title: "Form submitted",
             description: "Your job post has been saved successfully.",

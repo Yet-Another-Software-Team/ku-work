@@ -92,10 +92,25 @@ interface JobApplication {
     files: JobApplicationFile[];
 }
 
-interface JobApplicationResponse {
-    applications: JobApplication[];
-    total: number;
-}
+const mockJobApplicationData: JobApplication = {
+    id: 1,
+    createdAt: "2023-10-01T12:00:00Z",
+    jobId: 101,
+    userId: "12345678-1234-1234-1234-123456789012",
+    phone: "012-345-6789",
+    email: "abc@ku.th",
+    status: "pending",
+    username: "John Doe",
+    files: [
+        {
+            id: "file-uuid-1",
+            createdAt: "2023-10-01T12:00:00Z",
+            userId: "12345678-1234-1234-1234-123456789012",
+            fileType: "resume",
+            category: "application",
+        },
+    ],
+};
 
 const mockUserData: Profile = {
     profile: {
@@ -287,5 +302,5 @@ const mockJobData: Job = {
     ],
 };
 
-export { mockUserData, multipleMockUserData, mockCompanyData, mockJobData };
-export type { Profile, CompanyProfile, JobPost, Job, JobApplication, JobApplicationResponse };
+export { mockUserData, multipleMockUserData, mockCompanyData, mockJobData, mockJobApplicationData };
+export type { Profile, CompanyProfile, JobPost, Job, JobApplication };

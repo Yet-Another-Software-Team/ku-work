@@ -126,15 +126,12 @@ const emit = defineEmits(["update:open"]);
 const isOpen = ref(false);
 const patchWaiting = ref(false);
 
-onMounted(() => {
-    isOpen.value = props.open;
-});
-
 const config = useRuntimeConfig();
 const api = useApi();
 const toast = useToast();
 
 onMounted(() => {
+    isOpen.value = props.open;
     logo.value = `${config.public.apiBaseUrl}/files/${props.data.company.photoId}`;
 });
 
