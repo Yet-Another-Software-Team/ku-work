@@ -20,7 +20,7 @@
             <span class="mx-3 space-y-1">
                 <h1 class="text-xl font-bold">{{ data.name }}</h1>
                 <span>
-                    <NuxtLink to="/jobs/company">
+                    <NuxtLink :to="`/jobs/company?id=${data.companyId}`">
                         <h2 class="text-primary-700 text-md font-semibold">
                             {{ data.companyName }}
                         </h2>
