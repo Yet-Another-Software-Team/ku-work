@@ -29,7 +29,14 @@
                 </div>
             </div>
             <UTooltip :text="props.position" @click="selectJob">
-                <div class="flex mt-2 font-semibold text-lg truncate">
+                <div
+                    class="flex mt-2 font-semibold text-lg truncate"
+                    :class="
+                        props.approvalStatus === 'accepted'
+                            ? 'cursor-pointer hover:underline'
+                            : 'text-gray-500 cursor-not-allowed'
+                    "
+                >
                     {{ props.position }}
                 </div>
             </UTooltip>

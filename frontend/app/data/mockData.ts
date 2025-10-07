@@ -72,6 +72,31 @@ interface Job {
     jobs: JobPost[];
 }
 
+interface JobApplicationFile {
+    id: string;
+    createdAt: string;
+    userId: string;
+    fileType: string;
+    category: string;
+}
+
+interface JobApplication {
+    id: number;
+    createdAt: string;
+    jobId: number;
+    userId: string;
+    phone: string;
+    email: string;
+    status: string;
+    username: string;
+    files: JobApplicationFile[];
+}
+
+interface JobApplicationResponse {
+    applications: JobApplication[];
+    total: number;
+}
+
 const mockUserData: Profile = {
     profile: {
         name: "John Doe",
@@ -263,4 +288,4 @@ const mockJobData: Job = {
 };
 
 export { mockUserData, multipleMockUserData, mockCompanyData, mockJobData };
-export type { Profile, CompanyProfile, JobPost, Job };
+export type { Profile, CompanyProfile, JobPost, Job, JobApplication, JobApplicationResponse };

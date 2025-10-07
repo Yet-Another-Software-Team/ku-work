@@ -95,20 +95,24 @@
                 </label>
                 <div class="col-span-12 md:col-span-8">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <UInputNumber
-                            v-model="form.minSalary"
-                            placeholder="Minimum Salary"
-                            orientation="vertical"
-                            class="w-full"
-                            :min="0"
-                        />
-                        <UInputNumber
-                            v-model="form.maxSalary"
-                            placeholder="Maximum Salary"
-                            orientation="vertical"
-                            class="w-full"
-                            :min="0"
-                        />
+                        <UFormField label="Minimum Salary">
+                            <UInputNumber
+                                v-model="form.minSalary"
+                                placeholder="Minimum Salary"
+                                orientation="vertical"
+                                class="w-full"
+                                :min="0"
+                            />
+                        </UFormField>
+                        <UFormField label="Maximum Salary">
+                            <UInputNumber
+                                v-model="form.maxSalary"
+                                placeholder="Maximum Salary"
+                                orientation="vertical"
+                                class="w-full"
+                                :min="0"
+                            />
+                        </UFormField>
                     </div>
                     <span class="text-error text-sm">
                         {{ errors.salary || errors.minSalary || errors.maxSalary }}
