@@ -25,15 +25,10 @@
                     v-for="job in data"
                     v-else
                     :key="job.id"
+                    :data="job"
                     class="h-[18em] w-full lg:w-[25em] drop-shadow-md"
-                    :job-i-d="job.id.toString()"
-                    :approval-status="job.approvalStatus"
-                    :open="job.open"
-                    :position="job.position"
-                    :accepted="job.accepted!"
-                    :rejected="job.rejected!"
-                    :pending="job.pending!"
                     @update:open="(value: boolean) => updateJobOpen(job.id, value)"
+                    @close="fetchJobs"
                 />
             </div>
             <div class="bg-primary p-2 rounded-full size-[4em] fixed bottom-5 right-[6vw]">

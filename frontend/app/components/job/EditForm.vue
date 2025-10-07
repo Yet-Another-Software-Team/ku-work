@@ -1,5 +1,5 @@
 <template>
-    <div class="flex w-full p-6 mt-4 bg-white rounded-xl mx-auto max-w-6xl overflow-visible">
+    <div class="flex w-full p-6 mt-4 rounded-xl mx-auto max-w-6xl overflow-visible">
         <form class="space-y-4 w-full flex-1" @submit.prevent="onSubmit">
             <!-- Job Title -->
             <div class="grid grid-cols-12 gap-4 items-center w-full">
@@ -9,12 +9,8 @@
                     Job Title
                 </label>
                 <div class="col-span-12 md:col-span-8">
-                    <UInput
-                        v-model="form.title"
-                        placeholder="Enter job title"
-                        class="w-full bg-white"
-                    />
-                    <span class="text-error text-sm">{{ errors.title }}</span>
+                    <UInput v-model="form.position" placeholder="Enter job title" class="w-full" />
+                    <span class="text-error text-sm">{{ errors.position }}</span>
                 </div>
             </div>
 
@@ -25,12 +21,12 @@
                 >
                     Job Location
                 </label>
-                <div class="col-span-12 md:col-span-8 bg-white">
+                <div class="col-span-12 md:col-span-8">
                     <UInput
                         v-model="form.location"
                         placeholder="Location"
                         icon="material-symbols:location-on-outline-rounded"
-                        class="w-full bg-white"
+                        class="w-full"
                     />
                     <span class="text-error text-sm">{{ errors.location }}</span>
                 </div>
@@ -45,12 +41,12 @@
                 </label>
                 <div class="col-span-12 md:col-span-8 relative z-50">
                     <USelect
-                        v-model="form.type"
+                        v-model="form.jobType"
                         placeholder="Select Job Type"
-                        class="w-full p-2 text-black bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
+                        class="w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
                         :items="jobTypes"
                     />
-                    <span class="text-error text-sm">{{ errors.type }}</span>
+                    <span class="text-error text-sm">{{ errors.jobType }}</span>
                 </div>
             </div>
 
@@ -65,10 +61,28 @@
                     <USelect
                         v-model="form.experience"
                         placeholder="Select Required Experience"
-                        class="w-full p-2 text-black bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
+                        class="w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
                         :items="experiences"
                     />
                     <span class="text-error text-sm">{{ errors.experience }}</span>
+                </div>
+            </div>
+
+            <!-- Duration -->
+            <div class="grid grid-cols-12 gap-4 items-center w-full">
+                <label
+                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
+                >
+                    Job Duration
+                </label>
+                <div class="col-span-12 md:col-span-8 relative z-50">
+                    <USelect
+                        v-model="form.duration"
+                        placeholder="Select Job Type"
+                        class="w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
+                        :items="durationOptions"
+                    />
+                    <span class="text-error text-sm">{{ errors.duration }}</span>
                 </div>
             </div>
 
@@ -81,20 +95,24 @@
                 </label>
                 <div class="col-span-12 md:col-span-8">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <UInputNumber
-                            v-model="form.minSalary"
-                            placeholder="Minimum Salary"
-                            orientation="vertical"
-                            class="w-full"
-                            :min="0"
-                        />
-                        <UInputNumber
-                            v-model="form.maxSalary"
-                            placeholder="Maximum Salary"
-                            orientation="vertical"
-                            class="w-full"
-                            :min="0"
-                        />
+                        <UFormField label="Minimum Salary">
+                            <UInputNumber
+                                v-model="form.minSalary"
+                                placeholder="Minimum Salary"
+                                orientation="vertical"
+                                class="w-full"
+                                :min="0"
+                            />
+                        </UFormField>
+                        <UFormField label="Maximum Salary">
+                            <UInputNumber
+                                v-model="form.maxSalary"
+                                placeholder="Maximum Salary"
+                                orientation="vertical"
+                                class="w-full"
+                                :min="0"
+                            />
+                        </UFormField>
                     </div>
                     <span class="text-error text-sm">
                         {{ errors.salary || errors.minSalary || errors.maxSalary }}
@@ -112,7 +130,7 @@
                 <div class="col-span-12 md:col-span-8">
                     <UTextarea
                         v-model="form.description"
-                        rows="6"
+                        :rows="6"
                         placeholder="Enter job description"
                         class="w-full"
                     />
@@ -139,7 +157,6 @@
                         :dismissible="false"
                         :ui="{
                             title: 'text-xl font-semibold text-primary-800',
-                            container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
                             overlay: 'fixed inset-0 bg-black/50',
                         }"
                     >
@@ -172,9 +189,14 @@
     </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, watch } from "vue";
+import type { EditJobPost, JobPost } from "~/data/mockData";
 import * as z from "zod";
+
+const props = defineProps<{
+    data: JobPost;
+}>();
 
 const emit = defineEmits(["close"]);
 
@@ -182,57 +204,81 @@ const { add: addToast } = useToast();
 
 const showDiscardConfirm = ref(false);
 
-const form = ref({
-    title: "",
-    location: "",
-    type: "",
-    experience: "",
-    minSalary: "",
-    maxSalary: "",
-    description: "",
+const api = useApi();
+
+const form = ref<EditJobPost>({
+    id: props.data.id,
+    name: props.data.name,
+    position: props.data.position,
+    duration: props.data.duration,
+    description: props.data.description,
+    location: props.data.location,
+    jobType: props.data.jobType,
+    experience: props.data.experienceType,
+    minSalary: props.data.minSalary,
+    maxSalary: props.data.maxSalary,
+    open: props.data.open,
 });
 
-const jobTypes = [
-    { label: "Full-time", value: "Full-time" },
-    { label: "Part-time", value: "Part-time" },
-    { label: "Internship", value: "Internship" },
-    { label: "Contract", value: "Contract" },
-];
-
-const experiences = [
-    { label: "Senior", value: "Senior" },
-    { label: "Junior", value: "Junior" },
-    { label: "New Grad", value: "New Grad" },
-    { label: "Manager", value: "Manager" },
-];
-
 const errors = reactive({
-    title: "",
+    name: "",
+    position: "",
+    duration: "",
+    description: "",
     location: "",
-    type: "",
+    jobType: "",
     experience: "",
     minSalary: "",
     maxSalary: "",
-    description: "",
     salary: "",
 });
 
+const jobTypes = [
+    { label: "Full-time", value: "fulltime" },
+    { label: "Part-time", value: "parttime" },
+    { label: "Internship", value: "internship" },
+    { label: "Contract", value: "contract" },
+    { label: "Casual", value: "casual" },
+];
+
+const experiences = [
+    { label: "Senior", value: "senior" },
+    { label: "Junior", value: "junior" },
+    { label: "New Grad", value: "newgrad" },
+    { label: "Manager", value: "manager" },
+    { label: "Internship", value: "internship" },
+];
+
+const durationOptions = [
+    { label: "1 Month", value: "1 month" },
+    { label: "2 Months", value: "2 months" },
+    { label: "3 Months", value: "3 months" },
+    { label: "6 Months", value: "6 months" },
+    { label: "12 Months", value: "12 months" },
+    { label: "Contract", value: "contract" },
+    { label: "Permanent", value: "permanent" },
+];
+
 const schema = z
     .object({
-        title: z.string().min(1, "Job Title is required"),
+        id: z.number().min(1, "Job ID is required"),
+        name: z.string().min(1, "Logged in user is required"),
+        position: z.string().min(1, "Job Title is required"),
+        duration: z.string().min(1, "Duration is required"),
         location: z.string().min(1, "Job Location is required"),
-        type: z.string().min(1, "Job Type is required"),
+        jobType: z.string().min(1, "Job Type is required"),
         experience: z.string().min(1, "Experience is required"),
         minSalary: z.coerce.number().min(0, "Minimum salary cannot be negative"),
         maxSalary: z.coerce.number().min(0, "Maximum salary cannot be negative"),
         description: z.string().min(1, "Job Description is required"),
+        open: z.boolean().optional(),
     })
     .refine((d) => d.minSalary <= d.maxSalary, {
         message: "Minimum salary must be less than or equal to maximum salary",
         path: ["salary"],
     });
 
-function validateField(fieldName, value) {
+function validateField(fieldName: keyof typeof errors, value: string | number | null) {
     try {
         schema.pick({ [fieldName]: true }).parse({ [fieldName]: value });
         if (typeof value === "string" && value.trim() === "") {
@@ -276,16 +322,16 @@ function confirmDiscard() {
 }
 
 watch(
-    () => form.value.title,
-    (v) => validateField("title", v)
+    () => form.value.position,
+    (v) => validateField("position", v)
 );
 watch(
     () => form.value.location,
     (v) => validateField("location", v)
 );
 watch(
-    () => form.value.type,
-    (v) => validateField("type", v)
+    () => form.value.jobType,
+    (v) => validateField("jobType", v)
 );
 watch(
     () => form.value.experience,
@@ -311,13 +357,13 @@ watch(
     }
 );
 
-function onSubmit() {
+async function onSubmit() {
     const result = schema.safeParse(form.value);
     if (!result.success) {
         for (const issue of result.error.issues) {
             const key = issue.path?.[0];
             if (typeof key === "string" && key in errors) {
-                errors[key] = issue.message;
+                errors[key as keyof typeof errors] = issue.message;
             } else if (key === "salary" || key === undefined) {
                 errors.salary = issue.message;
             }
@@ -330,11 +376,27 @@ function onSubmit() {
         return;
     }
 
-    addToast({
-        title: "Form submitted",
-        description: "Your job post has been saved successfully.",
-        color: "success",
-    });
-    emit("close");
+    try {
+        const token = localStorage.getItem("token");
+        console.log("Updating job with data:", result.data);
+        await api.patch(`/job`, result.data, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        addToast({
+            title: "Update successful",
+            description: "Your job post has been updated successfully.",
+            color: "success",
+        });
+        emit("close");
+    } catch (error) {
+        console.error("Error updating job:", error);
+        addToast({
+            title: "Update failed",
+            description: "An error occurred while saving changes.",
+            color: "error",
+        });
+    }
 }
 </script>

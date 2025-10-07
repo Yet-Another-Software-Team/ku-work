@@ -19,6 +19,7 @@
                 :data="job"
                 :open="job.open ?? false"
                 @update:open="(value: boolean) => job && updateJobOpen(Number(job.id), value)"
+                @close="fetchJob"
             />
             <div v-else class="text-center text-neutral-500 dark:text-neutral-400">
                 No job applications available.
@@ -86,8 +87,8 @@ definePageMeta({
     layout: "viewer",
 });
 
-// test
-const test = ref(true);
+// test: set to true to use mock data
+const test = ref(false);
 
 // Jobs and applications
 const job = ref<JobPost>();

@@ -46,6 +46,33 @@ interface Company {
     country: string;
 }
 
+interface CreateJobPost {
+    name: string;
+    position: string;
+    duration: string;
+    description: string | undefined;
+    location: string;
+    jobType: string | undefined;
+    experience: string | undefined;
+    minSalary: number | undefined;
+    maxSalary: number | undefined;
+    open: boolean;
+}
+
+interface EditJobPost {
+    id: number;
+    name: string;
+    position: string;
+    duration: string;
+    description: string;
+    location: string;
+    jobType: string;
+    experience: string;
+    minSalary: number;
+    maxSalary: number;
+    open: boolean;
+}
+
 interface JobPost {
     companyName: string;
     id: number;
@@ -303,4 +330,4 @@ const mockJobData: Job = {
 };
 
 export { mockUserData, multipleMockUserData, mockCompanyData, mockJobData, mockJobApplicationData };
-export type { Profile, CompanyProfile, JobPost, Job, JobApplication };
+export type { Profile, CompanyProfile, CreateJobPost, EditJobPost, JobPost, Job, JobApplication };

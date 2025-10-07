@@ -48,7 +48,7 @@
                         v-model="isOpen"
                         size="xl"
                         :disabled="patchWaiting"
-                        @change="handleChange"
+                        @change="handleToggle"
                         @update:model-value="
                             (value) => {
                                 emit('update:open', value);
@@ -67,7 +67,7 @@
                 </span>
                 <!-- Edit Button -->
                 <UModal v-model:open="openJobEditForm">
-                    <button
+                    <UButton
                         class="px-4 py-2 border border-gray-400 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center mt-4 gap-2"
                         @click="openJobEditForm = true"
                     >
@@ -76,9 +76,9 @@
                             class="size-[1.5em]"
                         />
                         Edit Post
-                    </button>
+                    </UButton>
                     <template #content>
-                        <JobEditForm @close="openJobEditForm = false" />
+                        <JobEditForm :data="data" @close="handleCloseEditForm" />
                     </template>
                 </UModal>
             </div>
@@ -121,7 +121,7 @@ const openJobEditForm = ref(false);
 const logo = ref("");
 const data = ref<JobPost>(props.data);
 
-const emit = defineEmits(["update:open"]);
+const emit = defineEmits(["update:open", "close"]);
 
 const isOpen = ref(false);
 const patchWaiting = ref(false);
@@ -137,60 +137,53 @@ onMounted(() => {
 
 interface patchJobForm {
     id: number;
-    name: string;
-    position: string;
-    duration: string;
-    description: string;
-    location: string;
-    jobtype: "fulltime" | "parttime" | "contract" | "casual" | "internship";
+    name?: string;
+    position?: string;
+    duration?: string;
+    description?: string;
+    location?: string;
+    jobtype?: "fulltime" | "parttime" | "contract" | "casual" | "internship";
     experience?: "newgrad" | "junior" | "senior" | "manager" | "internship";
     minsalary?: number;
     maxsalary?: number;
     open?: boolean;
 }
 
-async function handleChange() {
-    // Set up for the patch request
+async function handleToggle() {
+    // Set up for the patch request toggle switch
     patchWaiting.value = true;
     const token = localStorage.getItem("token");
     if (!token) {
-        alert("You must be logged in to perform this action.");
+        toast.add({
+            title: "Not authenticated",
+            description: "You must be logged in to perform this action.",
+            color: "error",
+        });
         patchWaiting.value = false;
         return;
     }
+
     const role = localStorage.getItem("role");
     if (role !== "company") {
-        console.error("Only companies can update job status.");
+        toast.add({
+            title: "Unauthorized",
+            description: "Only companies can update job status.",
+            color: "error",
+        });
         patchWaiting.value = false;
         return;
     }
 
-    const form: patchJobForm = {
+    const toggleOpen: patchJobForm = {
         id: Number(props.data.id),
-        name: props.data.name,
-        position: props.data.position,
-        duration: props.data.duration,
-        description: props.data.description,
-        location: props.data.location,
-        jobtype: props.data.jobType.toLowerCase() as patchJobForm["jobtype"],
-        experience: props.data.experienceType
-            ? (props.data.experienceType.toLowerCase() as patchJobForm["experience"])
-            : undefined,
-        minsalary: props.data.minSalary,
-        maxsalary: props.data.maxSalary,
         open: isOpen.value,
     };
-    console.log("Patching with form:", form);
-
-    // Patch request
     try {
-        const response = await api.patch(`/job`, form, {
+        await api.patch(`/job`, toggleOpen, {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
-            // params: { form },
         });
-        console.log("Patch response:", response.data);
         toast.add({
             title: "Job status updated",
             description: `The job is now ${isOpen.value ? "open" : "closed"}.`,
@@ -198,16 +191,21 @@ async function handleChange() {
         });
     } catch (error) {
         toast.add({
-            title: "Error patching job",
+            title: "Error updating job status",
             description: "Failed to update job status. Please try again.",
             color: "error",
         });
-        console.error("Error patching job:", error);
+        console.error("Error updating job status:", error);
         // Revert the toggle switch state
         isOpen.value = !isOpen.value;
     } finally {
         patchWaiting.value = false;
     }
+}
+
+function handleCloseEditForm() {
+    openJobEditForm.value = false;
+    emit("close");
 }
 
 // Watch for prop changes (parent update data after fetched job)

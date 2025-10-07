@@ -4,7 +4,7 @@
             <div class="flex justify-between">
                 <div class="flex gap-x-4">
                     <USwitch
-                        :model-value="props.open"
+                        :model-value="data.open"
                         :ui="{ base: 'cursor-pointer' }"
                         @update:model-value="
                             (value) => {
@@ -12,13 +12,13 @@
                             }
                         "
                     />
-                    <span v-if="props.open" class="text-primary-800 dark:text-primary font-bold">
+                    <span v-if="data.open" class="text-primary-800 dark:text-primary font-bold">
                         Open
                     </span>
                     <span v-else class="text-error-800 dark:text-error font-bold">Closed</span>
                 </div>
                 <div class="flex gap-x-2 items-center">
-                    <UBadge :color="colorPicker()">{{ props.approvalStatus }}</UBadge>
+                    <UBadge :color="colorPicker()">{{ data.approvalStatus }}</UBadge>
                     <UDropdownMenu class="cursor-pointer" :items="menuItems">
                         <Icon
                             name="ic:baseline-more-vert"
@@ -26,18 +26,23 @@
                             class="hover:text-primary transition-colors duration-300"
                         />
                     </UDropdownMenu>
+                    <UModal v-model:open="openJobEditForm">
+                        <template #content>
+                            <JobEditForm :data="data" @close="handleCloseEditForm" />
+                        </template>
+                    </UModal>
                 </div>
             </div>
-            <UTooltip :text="props.position" @click="selectJob">
+            <UTooltip :text="data.position" @click="selectJob">
                 <div
                     class="flex mt-2 font-semibold text-lg truncate"
                     :class="
-                        props.approvalStatus === 'accepted'
+                        data.approvalStatus === 'accepted'
                             ? 'cursor-pointer hover:underline'
                             : 'text-gray-500 cursor-not-allowed'
                     "
                 >
-                    {{ props.position }}
+                    {{ data.position }}
                 </div>
             </UTooltip>
         </template>
@@ -48,28 +53,28 @@
                     <Icon name="ic:outline-access-time" size="18" class="text-warning-700" />
                     <span class="text-neutral-500 dark:text-neutral-400">Pending</span>
                 </div>
-                <div>{{ props.pending }}</div>
+                <div>{{ data.pending }}</div>
             </div>
             <div class="flex justify-between">
                 <div class="flex items-center gap-x-2">
                     <Icon name="ic:outline-check-circle" size="18" class="text-primary-700" />
                     <span class="text-neutral-500 dark:text-neutral-400">Accepted</span>
                 </div>
-                <div>{{ props.accepted }}</div>
+                <div>{{ data.accepted }}</div>
             </div>
             <div class="flex justify-between">
                 <div class="flex items-center gap-x-2">
                     <Icon name="ic:baseline-do-disturb" size="18" class="text-error-700" />
                     <span class="text-neutral-500 dark:text-neutral-400">Rejected</span>
                 </div>
-                <div>{{ props.rejected }}</div>
+                <div>{{ data.rejected }}</div>
             </div>
             <div class="flex justify-between">
                 <div class="flex items-center gap-x-2">
                     <Icon name="ic:outline-insert-drive-file" size="18" class="text-neutral-700" />
                     <span class="text-neutral-500 dark:text-neutral-400">Total Applicants</span>
                 </div>
-                <div>{{ props.rejected + props.accepted + props.pending }}</div>
+                <div>{{ data.rejected! + data.accepted! + data.pending! }}</div>
             </div>
         </div>
     </UCard>
@@ -77,41 +82,18 @@
 
 <script setup lang="ts">
 import type { DropdownMenuItem } from "@nuxt/ui";
+import type { JobPost } from "~/data/mockData";
 
 const emit = defineEmits<{
     (e: "update:open", value: boolean): void;
+    (e: "close"): void;
 }>();
 
-const props = defineProps({
-    jobID: {
-        type: String,
-        required: true,
-    },
-    open: {
-        type: Boolean,
-        required: true,
-    },
-    position: {
-        type: String,
-        required: true,
-    },
-    accepted: {
-        type: Number,
-        required: true,
-    },
-    rejected: {
-        type: Number,
-        required: true,
-    },
-    pending: {
-        type: Number,
-        required: true,
-    },
-    approvalStatus: {
-        type: String,
-        required: true,
-    },
-});
+const openJobEditForm = ref(false);
+
+const props = defineProps<{
+    data: JobPost;
+}>();
 
 const menuItems = ref<DropdownMenuItem[]>([
     {
@@ -119,17 +101,17 @@ const menuItems = ref<DropdownMenuItem[]>([
         icon: "i-lucide-pencil",
         class: "cursor-pointer",
         onClick: () => {
-            console.log("Action 1 clicked");
+            openJobEditForm.value = true;
         },
     },
 ]);
 
 function colorPicker() {
-    if (props.approvalStatus === "pending") {
+    if (props.data.approvalStatus === "pending") {
         return "warning";
-    } else if (props.approvalStatus === "accepted") {
+    } else if (props.data.approvalStatus === "accepted") {
         return "primary";
-    } else if (props.approvalStatus === "rejected") {
+    } else if (props.data.approvalStatus === "rejected") {
         return "error";
     } else {
         return "neutral";
@@ -137,9 +119,14 @@ function colorPicker() {
 }
 
 function selectJob() {
-    console.log("Job ID:", props.jobID);
-    if (props.approvalStatus === "accepted") {
-        navigateTo(`/dashboard/post/${props.jobID}`);
+    console.log("Job ID:", props.data.id);
+    if (props.data.approvalStatus === "accepted") {
+        navigateTo(`/dashboard/post/${props.data.id}`);
     }
+}
+
+function handleCloseEditForm() {
+    openJobEditForm.value = false;
+    emit("close");
 }
 </script>

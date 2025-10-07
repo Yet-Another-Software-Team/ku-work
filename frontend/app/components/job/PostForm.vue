@@ -41,9 +41,9 @@
                 </label>
                 <div class="col-span-12 md:col-span-8 relative z-50">
                     <USelect
-                        v-model="form.jobType"
+                        v-model="form.jobType!"
                         placeholder="Select Job Type"
-                        class="w-full p-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
+                        class="w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
                         :items="jobTypes"
                     />
                     <span class="text-error text-sm">{{ errors.jobType }}</span>
@@ -59,9 +59,9 @@
                 </label>
                 <div class="col-span-12 md:col-span-8 relative z-50">
                     <USelect
-                        v-model="form.experience"
+                        v-model="form.experience!"
                         placeholder="Select Required Experience"
-                        class="w-full p-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
+                        class="w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
                         :items="experiences"
                     />
                     <span class="text-error text-sm">{{ errors.experience }}</span>
@@ -79,7 +79,7 @@
                     <USelect
                         v-model="form.duration"
                         placeholder="Select Job Type"
-                        class="w-full p-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
+                        class="w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
                         :items="durationOptions"
                     />
                     <span class="text-error text-sm">{{ errors.duration }}</span>
@@ -162,8 +162,9 @@
     </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, watch } from "vue";
+import type { CreateJobPost } from "~/data/mockData";
 import * as z from "zod";
 
 const emit = defineEmits(["close"]);
@@ -173,18 +174,18 @@ const { add: addToast } = useToast();
 const showDiscardConfirm = ref(false);
 
 const api = useApi();
+const isSubmitting = ref(false);
 
-// TODO: Add duration to the form
-const form = ref({
+const form = ref<CreateJobPost>({
     name: "",
     position: "",
-    duration: null,
-    description: "",
+    duration: "",
+    description: undefined,
     location: "",
-    jobType: null,
-    experience: null,
-    minSalary: null,
-    maxSalary: null,
+    jobType: undefined,
+    experience: undefined,
+    minSalary: undefined,
+    maxSalary: undefined,
     open: true,
 });
 
@@ -245,7 +246,7 @@ const schema = z
         path: ["salary"],
     });
 
-function validateField(fieldName, value) {
+function validateField(fieldName: keyof typeof errors, value: string | number | undefined) {
     try {
         schema.pick({ [fieldName]: true }).parse({ [fieldName]: value });
         if (typeof value === "string" && value.trim() === "") {
@@ -316,13 +317,14 @@ watch(
 );
 
 async function onSubmit() {
-    form.value.name = localStorage.getItem("username");
+    isSubmitting.value = true;
+    form.value.name = localStorage.getItem("username") ?? "";
     const result = schema.safeParse(form.value);
     if (!result.success) {
         for (const issue of result.error.issues) {
             const key = issue.path?.[0];
             if (typeof key === "string" && key in errors) {
-                errors[key] = issue.message;
+                errors[key as keyof typeof errors] = issue.message;
             } else if (key === "salary" || key === undefined) {
                 errors.salary = issue.message;
             }
@@ -335,7 +337,6 @@ async function onSubmit() {
         return;
     }
 
-    // console.log("Form data is valid:", result.data);
     try {
         await api.post("/job", result.data, {
             headers: {
@@ -353,7 +354,7 @@ async function onSubmit() {
         console.error("Job submission error:", error);
         addToast({
             title: "Form submission failed",
-            description: response.data?.message || "An error occurred. Please try again.",
+            description: "An error occurred. Please try again.",
             color: "error",
         });
         return;
