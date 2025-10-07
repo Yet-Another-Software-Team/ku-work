@@ -32,29 +32,27 @@ interface CompanyProfile {
     };
 }
 
+interface Company {
+    id: string;
+    createdAt: string;
+    email: string;
+    phone: string;
+    photoId: string;
+    bannerId: string;
+    about: string;
+    website: string;
+    address: string;
+    city: string;
+    country: string;
+}
+
 interface JobPost {
+    companyName: string;
     id: number;
     createdAt: string;
     name: string;
     companyId: string;
-    company: {
-        id: string;
-        User: {
-            ID: string;
-            CreatedAt: string;
-            UpdatedAt: string;
-            DeletedAt: string | null;
-            Username: string;
-        };
-        createdAt: string;
-        email: string;
-        phone: string;
-        photoId: string;
-        bannerId: string;
-        address: string;
-        city: string;
-        country: string;
-    };
+    company: Company;
     position: string;
     duration: string;
     description: string;
@@ -169,18 +167,20 @@ const mockJobData: Job = {
     jobs: [
         {
             id: 1,
-            createdAt: "2025-10-01T22:13:47.233059+07:00",
-            name: "Software Engineer",
-            companyId: "734fc1e6-34b5-4810-b139-ce575b1a52c6",
+            createdAt: "2025-08-23T18:17:51.746604+07:00",
+            name: "IT City Banna",
+            companyId: "2d7f403e-8831-4805-a15b-65d48f6db46e",
+            position: "IT Support",
+            duration: "forever",
+            description: "IT position",
+            location: "thailand",
+            jobType: "casual",
+            experienceType: "newgrad",
+            minSalary: 1,
+            maxSalary: 1,
+            approved: false,
             company: {
                 id: "734fc1e6-34b5-4810-b139-ce575b1a52c6",
-                User: {
-                    ID: "734fc1e6-34b5-4810-b139-ce575b1a52c6",
-                    CreatedAt: "2025-10-01T22:06:51.157972+07:00",
-                    UpdatedAt: "2025-10-01T22:06:51.157972+07:00",
-                    DeletedAt: null,
-                    Username: "AA",
-                },
                 createdAt: "2025-10-01T22:06:52.152089+07:00",
                 email: "AAA@AAA.AAA",
                 phone: "+6699999999999",
@@ -189,16 +189,71 @@ const mockJobData: Job = {
                 address: "That St.",
                 city: "Quebec",
                 country: "Canada",
+                about: "",
+                website: "",
             },
-            position: "Software Engineer",
-            duration: "6 month",
-            description: "Do Software Engineering related works 😊",
-            location: "New York",
-            jobType: "fulltime",
-            experienceType: "junior",
+            companyName: "AA",
+            open: true,
+        },
+        {
+            id: 2,
+            createdAt: "2025-08-20T12:05:21.123456+07:00",
+            name: "Software Engineering",
+            companyId: "3e5d27c1-98f2-4b6b-a3c9-7e0f32e8f888",
+            position: "Frontend Developer",
+            duration: "Contract",
+            description: "Work on building modern web applications with Vue.js and TypeScript.",
+            location: "Thailand",
+            jobType: "Contract",
+            experienceType: "Junior",
+            minSalary: 30000,
+            maxSalary: 45000,
+            approved: true,
+            company: {
+                id: "734fc1e6-34b5-4810-b139-ce575b1a52c6",
+                createdAt: "2025-10-01T22:06:52.152089+07:00",
+                email: "AAA@AAA.AAA",
+                phone: "+6699999999999",
+                photoId: "305419d1-2d0e-4b0b-9137-f4689e39198d",
+                bannerId: "28769ce2-7a40-4ff3-8067-c2b56f926518",
+                address: "That St.",
+                city: "Quebec",
+                country: "Canada",
+                about: "",
+                website: "",
+            },
+            companyName: "AA",
+            open: false,
+        },
+        {
+            id: 3,
+            createdAt: "2025-07-15T09:45:00.654321+07:00",
+            name: "Finance",
+            companyId: "7a1e3f0a-43c7-4f2e-9b19-11234d9abc99",
+            position: "Financial Analyst",
+            duration: "Permanent",
+            description:
+                "Analyze financial data and create reports to assist management decisions.",
+            location: "Singapore",
+            jobType: "Full Time",
+            experienceType: "Mid-level",
             minSalary: 50000,
             maxSalary: 55000,
             approved: true,
+            company: {
+                id: "734fc1e6-34b5-4810-b139-ce575b1a52c6",
+                createdAt: "2025-10-01T22:06:52.152089+07:00",
+                email: "AAA@AAA.AAA",
+                phone: "+6699999999999",
+                photoId: "305419d1-2d0e-4b0b-9137-f4689e39198d",
+                bannerId: "28769ce2-7a40-4ff3-8067-c2b56f926518",
+                address: "That St.",
+                city: "Quebec",
+                country: "Canada",
+                about: "",
+                website: "",
+            },
+            companyName: "AA",
             open: true,
         },
     ],

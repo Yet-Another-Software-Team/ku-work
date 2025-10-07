@@ -26,6 +26,7 @@
                 ref="stepOneRef"
                 v-model:company-name="form.companyName"
                 v-model:company-email="form.companyEmail"
+                v-model:company-website="form.companyWebsite"
                 v-model:password="form.password"
                 v-model:phone="form.phone"
                 v-model:address="form.address"
@@ -111,6 +112,7 @@ const stepTwoRef = ref<{ isValid: boolean } | null>(null);
 const form = reactive({
     companyName: "",
     companyEmail: "",
+    companyWebsite: "",
     password: "",
     phone: "",
     address: "",
@@ -202,6 +204,7 @@ const onSubmit = async () => {
         const formData = new FormData();
         formData.append("username", form.companyName);
         formData.append("email", form.companyEmail);
+        formData.append("website", form.companyWebsite);
         formData.append("password", form.password);
         formData.append("phone", form.phone);
         formData.append("address", form.address);

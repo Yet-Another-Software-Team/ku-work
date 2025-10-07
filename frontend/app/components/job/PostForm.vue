@@ -10,11 +10,28 @@
                 </label>
                 <div class="col-span-12 md:col-span-8">
                     <UInput
-                        v-model="form.title"
+                        v-model="form.name"
                         placeholder="Enter job title"
                         class="w-full bg-white"
                     />
-                    <span class="text-error text-sm">{{ errors.title }}</span>
+                    <span class="text-error text-sm">{{ errors.name }}</span>
+                </div>
+            </div>
+
+            <!-- Job Position -->
+            <div class="grid grid-cols-12 gap-4 items-center w-full">
+                <label
+                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
+                >
+                    Job Position
+                </label>
+                <div class="col-span-12 md:col-span-8">
+                    <UInput
+                        v-model="form.position"
+                        placeholder="Enter job position"
+                        class="w-full bg-white"
+                    />
+                    <span class="text-error text-sm">{{ errors.position }}</span>
                 </div>
             </div>
 
@@ -45,12 +62,13 @@
                 </label>
                 <div class="col-span-12 md:col-span-8 relative z-50">
                     <USelect
-                        v-model="form.type"
+                        v-model="form.jobtype"
                         placeholder="Select Job Type"
+                        style="min-height: 37px"
                         class="w-full p-2 text-black bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
                         :items="jobTypes"
                     />
-                    <span class="text-error text-sm">{{ errors.type }}</span>
+                    <span class="text-error text-sm">{{ errors.jobtype }}</span>
                 </div>
             </div>
 
@@ -65,6 +83,7 @@
                     <USelect
                         v-model="form.experience"
                         placeholder="Select Required Experience"
+                        style="min-height: 37px"
                         class="w-full p-2 text-black bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
                         :items="experiences"
                     />
@@ -82,14 +101,14 @@
                 <div class="col-span-12 md:col-span-8">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <UInputNumber
-                            v-model="form.minSalary"
+                            v-model="form.minsalary"
                             placeholder="Minimum Salary"
                             orientation="vertical"
                             class="w-full"
                             :min="0"
                         />
                         <UInputNumber
-                            v-model="form.maxSalary"
+                            v-model="form.maxsalary"
                             placeholder="Maximum Salary"
                             orientation="vertical"
                             class="w-full"
@@ -97,7 +116,7 @@
                         />
                     </div>
                     <span class="text-error text-sm">
-                        {{ errors.salary || errors.minSalary || errors.maxSalary }}
+                        {{ errors.salary || errors.minsalary || errors.maxsalary }}
                     </span>
                 </div>
             </div>
@@ -129,7 +148,7 @@
                 <div class="col-span-12 md:col-span-8">
                     <UTextarea
                         v-model="form.description"
-                        rows="6"
+                        :rows="6"
                         placeholder="Enter job description"
                         class="w-full"
                     />
@@ -176,12 +195,14 @@ const showDiscardConfirm = ref(false);
 const api = useApi();
 
 const form = ref({
-    title: "",
+    name: "",
+    position: "",
+    duration: "",
     location: "",
-    type: "",
+    jobtype: "",
     experience: "",
-    minSalary: "",
-    maxSalary: "",
+    minsalary: 0,
+    maxsalary: 0,
     description: "",
     duration: "",
 });
@@ -203,12 +224,14 @@ const experiences = [
 ];
 
 const errors = reactive({
-    title: "",
+    name: "",
+    position: "",
+    duration: "",
     location: "",
-    type: "",
+    jobtype: "",
     experience: "",
-    minSalary: "",
-    maxSalary: "",
+    minsalary: "",
+    maxsalary: "",
     description: "",
     duration: "",
     salary: "",
@@ -216,16 +239,18 @@ const errors = reactive({
 
 const schema = z
     .object({
-        title: z.string().min(1, "Job Title is required"),
+        name: z.string().min(1, "Job Title is required"),
+        position: z.string().min(1, "Job Position is required"),
         location: z.string().min(1, "Job Location is required"),
-        type: z.string().min(1, "Job Type is required"),
+        duration: z.string().min(1, "Job Duration is required"),
+        jobtype: z.string().min(1, "Job Type is required"),
         experience: z.string().min(1, "Experience is required"),
-        minSalary: z.coerce.number().min(0, "Minimum salary cannot be negative"),
-        maxSalary: z.coerce.number().min(0, "Maximum salary cannot be negative"),
+        minsalary: z.coerce.number().min(0, "Minimum salary cannot be negative"),
+        maxsalary: z.coerce.number().min(0, "Maximum salary cannot be negative"),
         description: z.string().min(1, "Job Description is required"),
         duration: z.string().min(1, "Duration is required"),
     })
-    .refine((d) => d.minSalary <= d.maxSalary, {
+    .refine((d) => d.minsalary <= d.maxsalary, {
         message: "Minimum salary must be less than or equal to maximum salary",
         path: ["salary"],
     });
@@ -255,8 +280,8 @@ function validateField(fieldName, value) {
 
 function validateSalaryCross() {
     errors.salary = "";
-    const min = Number(form.value.minSalary);
-    const max = Number(form.value.maxSalary);
+    const min = Number(form.value.minsalary);
+    const max = Number(form.value.maxsalary);
     if (!Number.isFinite(min) || !Number.isFinite(max)) return;
     if (min > max) {
         errors.salary = "Minimum salary must be less than or equal to maximum salary";
@@ -269,16 +294,20 @@ function cancel() {
 }
 
 watch(
-    () => form.value.title,
-    (v) => validateField("title", v)
+    () => form.value.name,
+    (v) => validateField("name", v)
+);
+watch(
+    () => form.value.position,
+    (v) => validateField("position", v)
 );
 watch(
     () => form.value.location,
     (v) => validateField("location", v)
 );
 watch(
-    () => form.value.type,
-    (v) => validateField("type", v)
+    () => form.value.jobtype,
+    (v) => validateField("jobtype", v)
 );
 watch(
     () => form.value.experience,
@@ -294,16 +323,16 @@ watch(
 );
 
 watch(
-    () => form.value.minSalary,
+    () => form.value.minsalary,
     (v) => {
-        validateField("minSalary", v);
+        validateField("minsalary", v);
         validateSalaryCross();
     }
 );
 watch(
-    () => form.value.maxSalary,
+    () => form.value.maxsalary,
     (v) => {
-        validateField("maxSalary", v);
+        validateField("maxsalary", v);
         validateSalaryCross();
     }
 );
@@ -328,22 +357,8 @@ async function onSubmit() {
         return;
     }
 
-    // Map frontend field names to backend expected names
-    const backendData = {
-        name: result.data.title, // title -> name
-        position: result.data.title, // use title as position too
-        location: result.data.location,
-        jobtype: result.data.type, // type -> jobtype
-        experience: result.data.experience,
-        minsalary: result.data.minSalary, // minSalary -> minsalary
-        maxsalary: result.data.maxSalary, // maxSalary -> maxsalary
-        description: result.data.description,
-        duration: result.data.duration,
-        open: true, // default to open
-    };
-
     try {
-        const response = await api.post("/job", backendData, {
+        const response = await api.post("/job", result.data, {
             withCredentials: true,
         });
 

@@ -11,7 +11,9 @@ import (
 	"gorm.io/gorm"
 )
 
+// Setup Database Connection and Setup Database Models
 func LoadDB() (*gorm.DB, error) {
+	// Setup Database Connection
 	db_username, db_has_username := os.LookupEnv("DB_USERNAME")
 	if !db_has_username {
 		return nil, errors.New("no database username specified")
@@ -45,6 +47,7 @@ func LoadDB() (*gorm.DB, error) {
 		return nil, err
 	}
 
+	// Models to be registered with GORM and migrate into Database
 	allModels := []any{
 		&model.User{},
 		&model.Admin{},

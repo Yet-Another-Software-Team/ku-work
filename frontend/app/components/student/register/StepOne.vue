@@ -208,7 +208,7 @@ const schema = z.object({
         }, "Age must be between 16 and 80 years"),
     phone: z
         .string()
-        .regex(/^\+(?:[1-9]\d{0,2})\d{4,14}$/, "Please enter a valid phone number")
+        .regex(/^\+(?:[1-9]\d{0,2}) \d{4,14}$/, "Please enter a valid phone number")
         .optional(),
     aboutMe: z.string().max(16384, "About me must be 16,384 characters or less").optional(),
     githubURL: z
