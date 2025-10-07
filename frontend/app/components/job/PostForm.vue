@@ -148,7 +148,7 @@
                 <div class="col-span-12 md:col-span-8">
                     <UTextarea
                         v-model="form.description"
-                        rows="6"
+                        :rows="6"
                         placeholder="Enter job description"
                         class="w-full"
                     />
@@ -201,8 +201,8 @@ const form = ref({
     location: "",
     jobtype: "",
     experience: "",
-    minsalary: "",
-    maxsalary: "",
+    minsalary: 0,
+    maxsalary: 0,
     description: "",
     duration: "",
 });
@@ -357,22 +357,8 @@ async function onSubmit() {
         return;
     }
 
-    // Map frontend field names to backend expected names
-    const backendData = {
-        name: result.data.title, // title -> name
-        position: result.data.title, // use title as position too
-        location: result.data.location,
-        jobtype: result.data.type, // type -> jobtype
-        experience: result.data.experience,
-        minsalary: result.data.minSalary, // minSalary -> minsalary
-        maxsalary: result.data.maxSalary, // maxSalary -> maxsalary
-        description: result.data.description,
-        duration: result.data.duration,
-        open: true, // default to open
-    };
-
     try {
-        const response = await api.post("/job", backendData, {
+        const response = await api.post("/job", result.data, {
             withCredentials: true,
         });
 

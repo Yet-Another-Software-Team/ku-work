@@ -120,7 +120,7 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 
 		// Check if user is a student
 		var sCount int64
-		h.DB.Model(&model.Student{}).Where("user_id = ? AND approved = ?", user.ID, true).Count(&sCount)
+		h.DB.Model(&model.Student{}).Where("user_id = ? AND approval_status = ?", user.ID, model.StudentApprovalAccepted).Count(&sCount)
 		isStudent = sCount > 0
 	}
 
