@@ -114,26 +114,15 @@ const profile = ref({
     name: "",
 });
 
-// const email = "john.doe@ku.th";
-
 const config = useRuntimeConfig();
 const api = useApi();
 
 onMounted(async () => {
     try {
-        // Decode JWT to get user ID
-        const token = localStorage.getItem("token");
-        if (!token) {
-            console.error("No token found");
-            return;
-        }
-
-        let userId: string;
-        try {
-            const payload = JSON.parse(atob(token.split(".")[1]));
-            userId = payload.userId;
-        } catch (error) {
-            console.error("Failed to decode token:", error);
+        // Get user ID from localStorage
+        const userId = localStorage.getItem("userId");
+        if (!userId) {
+            console.error("No user ID found in localStorage");
             return;
         }
 

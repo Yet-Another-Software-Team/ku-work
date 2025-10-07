@@ -100,16 +100,16 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 		return
 	}
 
-
 	role := helper.GetRole(refreshTokenDB.UserID, h.DB)
-	username := helper.GetUsername(refreshTokenDB.UserID, role,h.DB)
-	
+	username := helper.GetUsername(refreshTokenDB.UserID, role, h.DB)
+
 	ctx.SetCookie("refresh_token", newRefreshToken, int(time.Hour*24*30/time.Second), "/", "", true, true)
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"token":     jwtToken,
-		"username":  username,
-		"role":      role,
+		"token":    jwtToken,
+		"username": username,
+		"role":     role,
+		"userId":   refreshTokenDB.UserID,
 	})
 }
 

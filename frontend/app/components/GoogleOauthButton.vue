@@ -44,6 +44,9 @@ const login = async () => {
             localStorage.setItem("token", response.data.token);
             localStorage.setItem("username", response.data.username);
             localStorage.setItem("isRegistered", response.data.isRegistered.toString());
+            if (response.data.userId) {
+                localStorage.setItem("userId", response.data.userId);
+            }
 
             // Use the role from the response, or default to viewer
             const role = response.data.role;

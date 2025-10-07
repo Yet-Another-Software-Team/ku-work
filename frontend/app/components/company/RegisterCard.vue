@@ -219,6 +219,9 @@ const onSubmit = async () => {
         if (response.data.token) {
             localStorage.setItem("token", response.data.token);
             localStorage.setItem("username", response.data.username as string);
+            if (response.data.userId) {
+                localStorage.setItem("userId", response.data.userId);
+            }
             if (response.data.role) {
                 localStorage.setItem("role", response.data.role);
             } else {

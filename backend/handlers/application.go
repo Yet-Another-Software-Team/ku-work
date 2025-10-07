@@ -86,6 +86,7 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 		JobID:    job.ID,
 		AltPhone: input.AltPhone,
 		AltEmail: input.AltEmail,
+		Status:   model.JobApplicationPending,
 	}
 	success := false
 	// If create job application fails remove files

@@ -145,6 +145,15 @@ export default defineNuxtPlugin(() => {
 
                     if (import.meta.client) {
                         localStorage.setItem("token", newToken);
+                        if (response.data.userId) {
+                            localStorage.setItem("userId", response.data.userId);
+                        }
+                        if (response.data.username) {
+                            localStorage.setItem("username", response.data.username);
+                        }
+                        if (response.data.role) {
+                            localStorage.setItem("role", response.data.role);
+                        }
                     }
 
                     // Update the authorization header for the original request

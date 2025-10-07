@@ -78,6 +78,7 @@ func TestCompany(t *testing.T) {
 			Token    string `json:"token"`
 			Username string `json:"username"`
 			Role     string `json:"role"`
+			UserId   string `json:"userId"`
 			Error    string `json:"error"`
 		}
 		var result Result

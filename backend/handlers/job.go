@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
+	"log"
 
 	"net/http"
 	"strconv"
@@ -109,6 +110,7 @@ type JobWithApplicationStatistics struct {
 //
 // Allow query parameters for filtering jobs.
 func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
+	log.Println("Fetching jobs...")
 	userId := ctx.MustGet("userID").(string)
 	// List of query parameters for filtering jobs
 	type FetchJobsInput struct {
@@ -153,7 +155,7 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 	// If the user is a company, include job applications statistic
 	if role == helper.Company {
 		query = query.Joins("LEFT JOIN job_applications ON job_applications.job_id = jobs.id")
-		query = query.Select("jobs.*, ANY_VALUE(users.username) as company_name, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'pending') AS pending, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'accepted') AS accepted, COUNT(job_applications.id) FILTER(WHERE job_applications.Status = 'rejected') AS rejected")
+		query = query.Select("jobs.*, ANY_VALUE(users.username) as company_name, COUNT(job_applications.id) FILTER(WHERE job_applications.status = 'pending') AS pending, COUNT(job_applications.id) FILTER(WHERE job_applications.status = 'accepted') AS accepted, COUNT(job_applications.id) FILTER(WHERE job_applications.status = 'rejected') AS rejected")
 	}
 
 	// Filter Job post by keyword

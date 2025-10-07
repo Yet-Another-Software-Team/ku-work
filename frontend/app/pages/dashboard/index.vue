@@ -22,6 +22,7 @@
                     :accepted="job.accepted"
                     :rejected="job.rejected"
                     :pending="job.pending"
+                    :approval-status="job.approvalStatus"
                     @update:open="(value: boolean) => updateJobOpen(job.id, value)"
                 />
             </div>
@@ -81,6 +82,7 @@ type Job = {
     rejected: number;
     pending: number;
     open: boolean;
+    approvalStatus: string;
 };
 
 const data = ref<Job[]>([]);
@@ -93,12 +95,7 @@ const fetchJobs = async () => {
     if (userRole.value !== "company") return;
 
     try {
-        const response = await api.get("/jobs", {
-            params: {
-                companyId: "self",
-            },
-        });
-        console.log("Fetched jobs:", response.data);
+        const response = await api.get("/jobs");
         data.value = response.data.jobs || [];
     } catch (error) {
         const apiError = error as { message?: string };

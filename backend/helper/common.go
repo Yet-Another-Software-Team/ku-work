@@ -11,7 +11,7 @@ type Role string
 const (
 	Admin   Role = "admin"
 	Company Role = "company"
-	Student Role = "user"
+	Student Role = "student"
 	Viewer  Role = "viewer"
 	Unknown Role = "unknown"
 )

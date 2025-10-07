@@ -240,5 +240,6 @@ func (h *UserHandlers) GetProfileHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"username": username,
 		"role":     role,
+		"userId":   userId,
 	})
 }

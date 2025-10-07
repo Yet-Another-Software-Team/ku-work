@@ -297,7 +297,7 @@ async function onNext() {
             formData.append("files", file);
         });
 
-        await api.postFormData(`/jobs/${props.id}/apply`, formData, { withCredentials: true });
+        await api.postFormData(`/jobs/${props.jobId}/apply`, formData, { withCredentials: true });
 
         currentStep.value = 2;
         toast.add({

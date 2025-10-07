@@ -257,11 +257,13 @@ export interface LoginResponse {
     token: string;
     username: string;
     role: string;
+    userId: string;
 }
 
 export interface AuthResponse {
     token?: string;
     username?: string;
     role?: string;
+    userId?: string;
     message?: string;
 }

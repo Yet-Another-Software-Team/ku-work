@@ -94,6 +94,7 @@ async function onSubmit(_: FormSubmitEvent<Schema>) {
 
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("username", response.data.username);
+        localStorage.setItem("userId", response.data.userId);
         if (response.data.role) {
             localStorage.setItem("role", response.data.role);
         } else {

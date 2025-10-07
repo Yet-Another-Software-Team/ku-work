@@ -139,9 +139,10 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", true, true)
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"token":     jwtToken,
-		"username":  newUser.Username,
-		"role":      helper.Company,
+		"token":    jwtToken,
+		"username": newUser.Username,
+		"role":     helper.Company,
+		"userId":   newUser.ID,
 	})
 }
 
@@ -190,9 +191,10 @@ func (h *LocalAuthHandlers) CompanyLoginHandler(ctx *gin.Context) {
 	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", true, true)
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"token":     jwtToken,
-		"username":  user.Username,
-		"role":      helper.Company,
+		"token":    jwtToken,
+		"username": user.Username,
+		"role":     helper.Company,
+		"userId":   user.ID,
 	})
 }
 
@@ -235,8 +237,9 @@ func (h *LocalAuthHandlers) AdminLoginHandler(ctx *gin.Context) {
 	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", true, true)
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"token":     jwtToken,
-		"username":  user.Username,
-		"role":      helper.Admin,
+		"token":    jwtToken,
+		"username": user.Username,
+		"role":     helper.Admin,
+		"userId":   user.ID,
 	})
 }

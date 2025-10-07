@@ -28,6 +28,7 @@ const logout = async () => {
         localStorage.removeItem("token");
         localStorage.removeItem("username");
         localStorage.removeItem("role");
+        localStorage.removeItem("userId");
 
         toast.add({
             title: "Logged Out",
