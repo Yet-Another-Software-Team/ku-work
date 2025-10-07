@@ -126,7 +126,7 @@
                 <div class="col-span-12 md:col-span-8">
                     <UTextarea
                         v-model="form.description"
-                        rows="6"
+                        :rows="6"
                         placeholder="Enter job description"
                         class="w-full"
                     />
@@ -330,13 +330,24 @@ async function onSubmit() {
         });
         return;
     }
+
     console.log("Form data is valid:", result.data);
-    const response = await api.post("/job", result.data, {
-        headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-    });
-    if (response.status < 200 || response.status >= 300) {
+    try {
+        const response = await api.post("/job", result.data, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+        });
+        console.log(response);
+        addToast({
+            title: "Form submitted",
+            description: "Your job post has been saved successfully.",
+            color: "success",
+        });
+        emit("close");
+        isSubmitting.value = false;
+    } catch (error) {
+        console.error("Job submission error:", error);
         addToast({
             title: "Form submission failed",
             description: response.data?.message || "An error occurred. Please try again.",

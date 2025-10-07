@@ -106,6 +106,7 @@ func SaveFile(ctx *gin.Context, db *gorm.DB, userId string, file *multipart.File
 	return fileRecord, nil
 }
 
+// Get file type from file name
 func ExtractFileType(filename string) (model.FileType, error) {
 	ext := strings.ToLower(filepath.Ext(filename))
 	if ext == "" {
@@ -134,6 +135,10 @@ func ExtractFileType(filename string) (model.FileType, error) {
 	}
 }
 
+// Clean image metadata using file path
+//
+// Skip unsupported formats.
+// Return error if any
 func CleanImageMetadata(filePath string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -191,13 +196,17 @@ func CleanImageMetadata(filePath string) error {
 	return nil
 }
 
+// Serves a file from the server file system.
 func (h *FileHandlers) ServeFile(ctx *gin.Context) {
 	fileID := ctx.Param("fileID")
+	// Ensure that file id not contain invalid characters
 	if strings.Contains(fileID, "/") || strings.Contains(fileID, `\`) || strings.Contains(fileID, "..") {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file identifier"})
 		return
 	}
 
+	// Get absolute path of base directory
+	// TODO: Externalize Absolute Path directory to allow usage of non-default base directories
 	baseDir := "./files"
 	filePath := filepath.Join(baseDir, fileID)
 	absBaseDir, err := filepath.Abs(baseDir)
@@ -225,8 +234,10 @@ func (h *FileHandlers) ServeFile(ctx *gin.Context) {
 		}
 		return
 	}
+	// Close file on function exit
 	defer func() { _ = file.Close() }()
 
+	//Read file content to buffer
 	buffer := make([]byte, 512)
 	n, err := file.Read(buffer)
 	if err != nil && err != io.EOF {

@@ -24,6 +24,7 @@ func TestCompany(t *testing.T) {
 			"username": username,
 			"password": "password123",
 			"email":    "company@test.com",
+			"website":  "https://www.company.com",
 			"phone":    "0987654321",
 			"address":  "123 Test St",
 			"city":     "Testville",
@@ -126,6 +127,7 @@ func TestCompany(t *testing.T) {
 			"username": username, // Same username
 			"password": "password123",
 			"email":    "company@test.com",
+			"website":  "https://www.company.com",
 			"phone":    "0987654321",
 			"address":  "123 Test St",
 			"city":     "Testville",
@@ -187,15 +189,20 @@ func TestCompany(t *testing.T) {
 	})
 	t.Run("Edit Profile", func(t *testing.T) {
 		username := fmt.Sprintf("companytester-%d", time.Now().UnixNano())
-		var company *model.Company
 		var err error
-		if company, err = CreateAdminCompany(username); err != nil {
+		var userCreationResult *UserCreationResult
+		if userCreationResult, err = CreateUser(UserCreationInfo{
+			Username:  username,
+			IsAdmin:   true,
+			IsCompany: true,
+		}); err != nil {
 			t.Error(err)
 			return
 		}
 		defer (func() {
-			_ = db.Delete(&company)
+			_ = db.Delete(&userCreationResult.User)
 		})()
+		company := userCreationResult.Company
 		values := map[string]string{
 			"phone":   "0123456789",
 			"address": "1234 gay street bangcock thailand",
@@ -246,15 +253,20 @@ func TestCompany(t *testing.T) {
 
 	t.Run("Get Profile", func(t *testing.T) {
 		username := fmt.Sprintf("companytester-%d", time.Now().UnixNano())
-		var company *model.Company
 		var err error
-		if company, err = CreateAdminCompany(username); err != nil {
+		var userCreationResult *UserCreationResult
+		if userCreationResult, err = CreateUser(UserCreationInfo{
+			Username:  username,
+			IsAdmin:   true,
+			IsCompany: true,
+		}); err != nil {
 			t.Error(err)
 			return
 		}
 		defer (func() {
-			_ = db.Delete(&company)
+			_ = db.Delete(&userCreationResult.User)
 		})()
+		company := userCreationResult.Company
 		company.Phone = "0123456789"
 		company.Address = "1234 gay street bangcock thailand"
 		if err := db.Save(&company).Error; err != nil {

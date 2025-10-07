@@ -29,15 +29,9 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 
 	// Authentication Protected Routes
 	authed := router.Group("/", middlewares.AuthMiddleware(jwtHandler.JWTSecret))
-	authed.GET("/protected", func(ctx *gin.Context) {
-		ctx.JSON(200, gin.H{"message": "Protected route"})
-	})
 
 	// Admin Routes
 	admin := authed.Group("/", middlewares.AdminPermissionMiddleware(db))
-	admin.GET("/admin", func(ctx *gin.Context) {
-		ctx.JSON(200, gin.H{"message": "Admin route"})
-	})
 
 	// Student routes
 	authed.POST("/students/register", studentHandler.RegisterHandler)
