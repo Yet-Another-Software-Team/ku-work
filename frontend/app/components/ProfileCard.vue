@@ -97,7 +97,7 @@
             :ui="{
                 container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
                 overlay: 'fixed inset-0 bg-black/50',
-                content: 'w-full max-w-2xl'
+                content: 'w-full max-w-2xl',
             }"
         >
             <template #content>

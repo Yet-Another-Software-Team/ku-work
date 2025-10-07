@@ -100,7 +100,7 @@
             :ui="{
                 container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
                 overlay: 'fixed inset-0 bg-black/50',
-                content: 'w-full max-w-6xl'
+                content: 'w-full max-w-6xl',
             }"
         >
             <template #content>
@@ -115,8 +115,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import EditCompanyProfileCard from '~/components/EditCompanyProfileCard.vue'
+import { ref } from "vue";
+import EditCompanyProfileCard from "~/components/EditCompanyProfileCard.vue";
 import { mockCompanyData } from "~/data/mockData";
 
 withDefaults(
@@ -131,11 +131,11 @@ withDefaults(
 const data = mockCompanyData;
 const email = "john.doe@ku.th";
 
-const openEditModal = ref(false)
+const openEditModal = ref(false);
 
 function onSaved(updated: typeof data.profile) {
-  Object.assign(data.profile, updated)
-  openEditModal.value = false
+    Object.assign(data.profile, updated);
+    openEditModal.value = false;
 }
 
 // const api = useApi();
