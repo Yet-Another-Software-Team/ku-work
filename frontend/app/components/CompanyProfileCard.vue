@@ -121,7 +121,24 @@ const api = useApi();
 
 onMounted(async () => {
     try {
-        const response = await api.get("/company");
+        // Decode JWT to get user ID
+        const token = localStorage.getItem("token");
+        if (!token) {
+            console.error("No token found");
+            return;
+        }
+
+        let userId: string;
+        try {
+            const payload = JSON.parse(atob(token.split(".")[1]));
+            userId = payload.userId;
+        } catch (error) {
+            console.error("Failed to decode token:", error);
+            return;
+        }
+
+        // Fetch full company profile using user ID
+        const response = await api.get(`/company/${userId}`);
         if (response.status === 200) {
             console.log("Successfully fetched company profile:", response.data);
             response.data.banner = `${config.public.apiBaseUrl}/files/${response.data.bannerId}`;

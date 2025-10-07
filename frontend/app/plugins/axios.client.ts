@@ -125,10 +125,10 @@ export default defineNuxtPlugin(() => {
 
                 try {
                     // Start a new request for the refresh operation
-                    const refreshRequestId = startRequest("/refresh", "POST");
+                    const refreshRequestId = startRequest("/auth/refresh", "POST");
                     // Try to refresh the token
                     const response = await axios.post(
-                        `${config.public.apiBaseUrl}/refresh`,
+                        `${config.public.apiBaseUrl}/auth/refresh`,
                         {},
                         {
                             withCredentials: true,

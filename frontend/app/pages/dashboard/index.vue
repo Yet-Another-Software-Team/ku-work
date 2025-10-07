@@ -93,7 +93,7 @@ const fetchJobs = async () => {
     if (userRole.value !== "company") return;
 
     try {
-        const response = await api.get("/job", {
+        const response = await api.get("/jobs", {
             params: {
                 companyId: "self",
             },
@@ -124,9 +124,8 @@ const updateJobOpen = (id: number, value: boolean) => {
     const oldValue = job.open;
     job.open = value;
     api.patch(
-        "/job",
+        `/jobs/${job.id}`,
         {
-            id: job.id,
             open: value,
         },
         {

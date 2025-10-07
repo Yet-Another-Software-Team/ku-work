@@ -18,7 +18,7 @@ const logout = async () => {
     try {
         const api = useApi();
         await api.post(
-            "/logout",
+            "/auth/logout",
             {},
             {
                 withCredentials: true,

@@ -283,7 +283,6 @@ async function onNext() {
 
     try {
         const formData = new FormData();
-        formData.append("id", props.jobId.toString());
 
         if (contactPhone.value.trim()) {
             formData.append("phone", contactPhone.value.trim());
@@ -298,7 +297,7 @@ async function onNext() {
             formData.append("files", file);
         });
 
-        await api.postFormData("/job/apply", formData, { withCredentials: true });
+        await api.postFormData(`/jobs/${props.id}/apply`, formData, { withCredentials: true });
 
         currentStep.value = 2;
         toast.add({

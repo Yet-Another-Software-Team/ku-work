@@ -33,7 +33,7 @@ const login = async () => {
         try {
             const api = useApi();
             const response = await api.post<oauthLoginResponse>(
-                "/google/login",
+                "/auth/google/login",
                 {
                     code: oauth_response.code,
                 },
@@ -45,13 +45,9 @@ const login = async () => {
             localStorage.setItem("username", response.data.username);
             localStorage.setItem("isRegistered", response.data.isRegistered.toString());
 
-            if (response.data.isCompany) {
-                localStorage.setItem("role", "company");
-            } else if (response.data.isStudent) {
-                localStorage.setItem("role", "student");
-            } else {
-                localStorage.setItem("role", "viewer");
-            }
+            // Use the role from the response, or default to viewer
+            const role = response.data.role;
+            localStorage.setItem("role", role);
 
             if (response.status == 201) {
                 // Account is new, navigate to registration page

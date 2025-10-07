@@ -358,7 +358,7 @@ async function onSubmit() {
     }
 
     try {
-        const response = await api.post("/job", result.data, {
+        const response = await api.post("/jobs", result.data, {
             withCredentials: true,
         });
 
