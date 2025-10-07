@@ -74,7 +74,7 @@
                     <UInput
                         v-model="form.companyName"
                         placeholder="Company Name"
-                        class="mt-1 w-full rounded-md border border-gray-500 bg-white text-gray-900 dark:bg-[#013B49] dark:text-white"
+                        class="mt-1 w-full rounded-md bg-white text-gray-900 dark:bg-[#013B49] dark:text-white"
                     />
                     <p v-if="errors.companyName" class="mt-1 text-sm text-red-500">
                         {{ errors.companyName }}
@@ -89,7 +89,7 @@
                         v-model="form.mail"
                         placeholder="Company Email"
                         type="email"
-                        class="mt-1 w-full rounded-md border border-gray-500 bg-white text-gray-900 dark:bg-[#013B49] dark:text-white"
+                        class="mt-1 w-full rounded-md bg-white text-gray-900 dark:bg-[#013B49] dark:text-white"
                     />
                     <p v-if="errors.mail" class="mt-1 text-sm text-red-500">{{ errors.mail }}</p>
                 </div>
@@ -102,7 +102,7 @@
                         v-model="form.phone"
                         placeholder="Phone"
                         type="tel"
-                        class="mt-1 w-full rounded-md border border-gray-500 bg-white text-gray-900 dark:bg-[#013B49] dark:text-white"
+                        class="mt-1 w-full rounded-md bg-white text-gray-900 dark:bg-[#013B49] dark:text-white"
                     />
                     <p v-if="errors.phone" class="mt-1 text-sm text-red-500">{{ errors.phone }}</p>
                 </div>
@@ -114,7 +114,7 @@
                     <UInput
                         v-model="form.address"
                         placeholder="Address"
-                        class="mt-1 w-full rounded-md border border-gray-500 bg-white text-gray-900 dark:bg-[#013B49] dark:text-white"
+                        class="mt-1 w-full rounded-md bg-white text-gray-900 dark:bg-[#013B49] dark:text-white"
                     />
                     <p v-if="errors.address" class="mt-1 text-sm text-red-500">
                         {{ errors.address }}
@@ -130,7 +130,7 @@
                             <UInput
                                 v-model="form.city"
                                 placeholder="City"
-                                class="w-full rounded-md border border-gray-500 bg-white text-gray-900 dark:bg-[#013B49] dark:text-white"
+                                class="w-full rounded-md bg-white text-gray-900 dark:bg-[#013B49] dark:text-white"
                             />
                             <p v-if="errors.city" class="mt-1 text-sm text-red-500">
                                 {{ errors.city }}
@@ -140,7 +140,7 @@
                             <UInput
                                 v-model="form.country"
                                 placeholder="Country"
-                                class="w-full rounded-md border border-gray-500 bg-white text-gray-900 dark:bg-[#013B49] dark:text-white"
+                                class="w-full rounded-md bg-white text-gray-900 dark:bg-[#013B49] dark:text-white"
                             />
                             <p v-if="errors.country" class="mt-1 text-sm text-red-500">
                                 {{ errors.country }}
@@ -153,7 +153,7 @@
                     <label class="block font-semibold text-primary-800 dark:text-primary"
                         >About us</label
                     >
-                    <div class="mt-1 rounded-md border border-gray-500 bg-white dark:bg-[#013B49]">
+                    <div class="mt-1 rounded-md bg-white dark:bg-[#013B49]">
                         <UTextarea
                             v-model="form.aboutUs"
                             placeholder="About us"
