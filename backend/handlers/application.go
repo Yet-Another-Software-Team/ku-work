@@ -121,26 +121,25 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 	}
 
 	// Use the student's profile phone and email as the default contact information if none is provided
-	googleOAuthDetails := model.GoogleOAuthDetails{}
-	result = h.DB.Where("user_id = ?", student.UserID).First(&googleOAuthDetails)
-	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
-		return
-	}
-
 	if input.AltPhone == "" {
 		input.AltPhone = student.Phone
 	}
 	if input.AltEmail == "" {
-		input.AltEmail = googleOAuthDetails.Email
+		user := model.User{}
+		result = h.DB.Where("user_id = ?", student.UserID).First(&user)
+		if result.Error != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+			return
+		}
+		input.AltEmail = user.Username // The username of OAuth User is already set as their email
 	}
 
 	jobApplication := model.JobApplication{
-		UserID:   student.UserID,
-		JobID:    job.ID,
-		AltPhone: input.AltPhone,
-		AltEmail: input.AltEmail,
-		Status:   model.JobApplicationPending,
+		UserID:       student.UserID,
+		JobID:        job.ID,
+		ContactPhone: input.AltPhone,
+		ContactEmail: input.AltEmail,
+		Status:       model.JobApplicationPending,
 	}
 	success := false
 	// If create job application fails remove files

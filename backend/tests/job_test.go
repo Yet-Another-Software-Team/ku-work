@@ -471,8 +471,8 @@ func TestJob(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		assert.Equal(t, jobApp.AltPhone, "0123456789")
-		assert.Equal(t, jobApp.AltEmail, "cool@localhost")
+		assert.Equal(t, jobApp.ContactPhone, "0123456789")
+		assert.Equal(t, jobApp.ContactEmail, "cool@localhost")
 	})
 	t.Run("FetchSelf", func(t *testing.T) {
 		var err error
