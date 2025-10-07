@@ -67,7 +67,7 @@ func TestCompany(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		req, _ := http.NewRequest("POST", "/company/register", &b)
+		req, _ := http.NewRequest("POST", "/auth/company/register", &b)
 		req.Header.Set("Content-Type", fw.FormDataContentType())
 
 		router.ServeHTTP(w, req)
@@ -75,11 +75,10 @@ func TestCompany(t *testing.T) {
 		assert.Equal(t, w.Code, http.StatusOK)
 
 		type Result struct {
-			Token     string `json:"token"`
-			Username  string `json:"username"`
-			IsStudent bool   `json:"isStudent"`
-			IsCompany bool   `json:"isCompany"`
-			Error     string `json:"error"`
+			Token    string `json:"token"`
+			Username string `json:"username"`
+			Role     string `json:"role"`
+			Error    string `json:"error"`
 		}
 		var result Result
 		if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
@@ -91,8 +90,7 @@ func TestCompany(t *testing.T) {
 		}
 
 		assert.Equal(t, result.Username, username)
-		assert.Equal(t, result.IsStudent, false)
-		assert.Equal(t, result.IsCompany, true)
+		assert.Equal(t, result.Role, "company")
 		if result.Token == "" {
 			t.Fatal("token is empty")
 		}
@@ -170,7 +168,7 @@ func TestCompany(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		req, _ := http.NewRequest("POST", "/company/register", &b)
+		req, _ := http.NewRequest("POST", "/auth/company/register", &b)
 		req.Header.Set("Content-Type", fw.FormDataContentType())
 
 		router.ServeHTTP(w, req)
@@ -193,7 +191,6 @@ func TestCompany(t *testing.T) {
 		var userCreationResult *UserCreationResult
 		if userCreationResult, err = CreateUser(UserCreationInfo{
 			Username:  username,
-			IsAdmin:   true,
 			IsCompany: true,
 		}); err != nil {
 			t.Error(err)
@@ -225,7 +222,7 @@ func TestCompany(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		req, err := http.NewRequest("PATCH", "/company", &b)
+		req, err := http.NewRequest("PATCH", "/me", &b)
 		if err != nil {
 			t.Error(err)
 			return
@@ -274,7 +271,7 @@ func TestCompany(t *testing.T) {
 			return
 		}
 		w := httptest.NewRecorder()
-		req, err := http.NewRequest("GET", "/company", strings.NewReader(""))
+		req, err := http.NewRequest("GET", fmt.Sprintf("/company/%s", company.UserID), strings.NewReader(""))
 		if err != nil {
 			t.Error(err)
 			return
@@ -290,8 +287,8 @@ func TestCompany(t *testing.T) {
 		router.ServeHTTP(w, req)
 		assert.Equal(t, w.Code, 200)
 		type Result struct {
-			Phone   string `json:"phone"`
-			Address string `json:"address"`
+			model.Company
+			Name string `json:"name"`
 		}
 		result := Result{}
 		err = json.Unmarshal(w.Body.Bytes(), &result)
@@ -299,7 +296,7 @@ func TestCompany(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		assert.Equal(t, result.Address, "1234 gay street bangcock thailand")
-		assert.Equal(t, result.Phone, "0123456789")
+		assert.Equal(t, result.Company.Address, "1234 gay street bangcock thailand")
+		assert.Equal(t, result.Company.Phone, "0123456789")
 	})
 }

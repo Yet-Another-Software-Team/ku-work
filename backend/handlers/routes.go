@@ -24,11 +24,11 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	auth.POST("/admin/login", localAuthHandlers.AdminLoginHandler)
 	auth.POST("/company/register", localAuthHandlers.CompanyRegisterHandler)
 	auth.POST("/company/login", localAuthHandlers.CompanyLoginHandler)
-	auth.POST("/student/register", studentHandlers.RegisterHandler)
 	auth.POST("/google/login", googleAuthHandlers.GoogleOauthHandler)
 
 	// Protected Authentication Routes
 	authProtected := auth.Group("", middlewares.AuthMiddleware(jwtHandlers.JWTSecret))
+	authProtected.POST("/student/register", studentHandlers.RegisterHandler)
 	authProtected.POST("/refresh", jwtHandlers.RefreshTokenHandler)
 	authProtected.POST("/logout", jwtHandlers.LogoutHandler)
 
@@ -66,7 +66,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	application.GET("", applicationHandlers.GetAllJobApplicationsHandler)
 
 	// Student Routes
-	student := router.Group("/students")
+	student := protectedRouter.Group("/students")
 	student.GET("", studentHandlers.GetProfileHandler)
 
 	studentAdmin := student.Group("", middlewares.AdminPermissionMiddleware(db))

@@ -204,8 +204,7 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 	// Bind input data to struct
 	type StudentRegistrationApprovalInput struct {
-		UserID  string `json:"id" binding:"max=128"`
-		Approve bool   `json:"approve"`
+		Approve bool `json:"approve"`
 	}
 	input := StudentRegistrationApprovalInput{}
 	err := ctx.Bind(&input)
@@ -214,13 +213,16 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 		return
 	}
 
+	// Get student ID from URL parameter
+	studentID := ctx.Param("id")
+
 	// Get student data from database
 	student := model.Student{
-		UserID: input.UserID,
+		UserID: studentID,
 	}
 	result := h.DB.First(&student)
 	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Student not found"})
 		return
 	}
 
@@ -246,7 +248,7 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 	// Get userId from context (auth middleware)
 	userId := ctx.MustGet("userID").(string)
-	
+
 	// Bind input data from request body
 	type GetStudentProfileInput struct {
 		UserID         string `form:"id" binding:"max=128"`

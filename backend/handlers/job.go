@@ -355,7 +355,6 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 // Handle approval of a job post using its ID
 func (h *JobHandlers) JobApprovalHandler(ctx *gin.Context) {
 	type ApproveJobInput struct {
-		ID      uint `json:"id" binding:"required"`
 		Approve bool `json:"approve"`
 	}
 	input := ApproveJobInput{}
@@ -364,12 +363,14 @@ func (h *JobHandlers) JobApprovalHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	job := model.Job{
-		ID: input.ID,
-	}
-	result := h.DB.First(&job)
+
+	// Get job ID from URL parameter
+	jobID := ctx.Param("id")
+
+	job := model.Job{}
+	result := h.DB.First(&job, "id = ?", jobID)
 	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Job not found"})
 		return
 	}
 	if input.Approve {

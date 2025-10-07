@@ -42,11 +42,12 @@ func (h *UserHandlers) EditProfileHandler(ctx *gin.Context) {
 		return
 	}
 	// Perform role-specific actions
-	if role == helper.Company {
+	switch role {
+	case helper.Company:
 		h.editCompanyProfile(ctx, userId)
-	} else if role == helper.Student {
+	case helper.Student:
 		h.editStudentProfile(ctx, userId)
-	} else {
+	default:
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "Only Company or Student can edit profile"})
 	}
 }
@@ -108,7 +109,7 @@ func (h *UserHandlers) editCompanyProfile(ctx *gin.Context, userId string) {
 		}
 		company.Website = *input.Website
 	}
-	
+
 	// Handle Photo and Banner Update
 	// Remove file that are recently saved if request is not successful
 	success := false
@@ -136,7 +137,7 @@ func (h *UserHandlers) editCompanyProfile(ctx *gin.Context, userId string) {
 		}
 		company.PhotoID = photo.ID
 	}
-	
+
 	if input.Banner != nil {
 		banner, err := SaveFile(ctx, h.DB, userId, input.Banner, model.FileCategoryImage)
 		if err != nil {
@@ -231,14 +232,13 @@ func (h *UserHandlers) editStudentProfile(ctx *gin.Context, userId string) {
 	})
 }
 
-
 // Simple Handler to get profile of current user
 func (h *UserHandlers) GetProfileHandler(ctx *gin.Context) {
-	userId := ctx.MustGet("userId").(string)
+	userId := ctx.MustGet("userID").(string)
 	role := helper.GetRole(userId, h.DB)
 	username := helper.GetUsername(userId, role, h.DB)
 	ctx.JSON(http.StatusOK, gin.H{
 		"username": username,
-		"role": role,
+		"role":     role,
 	})
 }

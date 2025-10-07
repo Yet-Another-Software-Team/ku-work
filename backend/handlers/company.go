@@ -40,10 +40,9 @@ func (h *CompanyHandlers) GetCompanyProfileHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, company)
 }
 
-
 // Admin Only to get collection of companies
 func (h *CompanyHandlers) GetCompanyListHandler(ctx *gin.Context) {
-	userId := ctx.MustGet("userId").(string)
+	userId := ctx.MustGet("userID").(string)
 	role := helper.GetRole(userId, h.DB)
 	if role != helper.Admin {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
@@ -55,4 +54,3 @@ func (h *CompanyHandlers) GetCompanyListHandler(ctx *gin.Context) {
 		return
 	}
 }
-
