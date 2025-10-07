@@ -11,8 +11,11 @@
         </a>
         <!-- Job applications -->
         <section>
+            <div v-if="isLoading">
+                <USkeleton class="h-[20em] w-full mb-5" />
+            </div>
             <CompanyPostComponent
-                v-if="job"
+                v-else-if="job"
                 :data="job"
                 :open="job.open ?? false"
                 @update:open="(value: boolean) => job && updateJobOpen(Number(job.id), value)"
@@ -62,6 +65,7 @@ const job = ref<JobPost>(mockJobData.jobs[0]!);
 // API call to fetch jobs
 const api = useApi();
 const route = useRoute();
+const isLoading = ref(true);
 const limit = 32;
 let currentJobOffset = 0;
 
@@ -72,14 +76,32 @@ interface getApplicationForm {
 }
 
 onMounted(() => {
+    isLoading.value = true;
     console.log("Job ID on mounted:", route.params.id);
     job.value.id = route.params.id ? Number(route.params.id) : -1;
     if (job.value.id === -1) {
         return;
     }
     const token = localStorage.getItem("token");
+    fetchJob(token);
     fetchApplication(token);
+    isLoading.value = false;
 });
+
+const fetchJob = async (token: string | null) => {
+    try {
+        const response = await api.get(`/job`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            params: { id: job.value.id, companyId: "self" },
+        });
+        job.value = response.data.jobs[0];
+        // console.log("Updated job value:", job.value);
+    } catch (error) {
+        console.error("Error fetching job details:", error);
+    }
+};
 
 const fetchApplication = async (token: string | null) => {
     const jobForm: getApplicationForm = {

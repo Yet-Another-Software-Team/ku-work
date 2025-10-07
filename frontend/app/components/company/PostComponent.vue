@@ -119,6 +119,7 @@ const props = defineProps<{
 
 const openJobEditForm = ref(false);
 const logo = ref("");
+const data = ref<JobPost>(props.data);
 
 const emit = defineEmits(["update:open"]);
 
@@ -211,4 +212,12 @@ async function handleChange() {
         patchWaiting.value = false;
     }
 }
+
+// Watch for prop changes (parent update data after fetched job)
+watch(
+    () => props.data,
+    (newData) => {
+        data.value = newData;
+    }
+);
 </script>
