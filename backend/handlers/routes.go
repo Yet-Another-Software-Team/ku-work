@@ -73,28 +73,3 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	studentAdmin.POST("/:id/approval", studentHandlers.ApproveHandler)
 
 }
-
-// 	// Authentication Protected Routes
-// 	authed := router.Group("/", middlewares.AuthMiddleware(jwtHandler.JWTSecret))
-
-// 	// Admin Routes
-// 	admin := authed.Group("/", middlewares.AdminPermissionMiddleware(db))
-
-// 	// Student routes
-// 	authed.POST("/students/register", studentHandler.RegisterHandler)
-// 	authed.PATCH("/students", studentHandler.EditProfileHandler)
-// 	authed.GET("/students", studentHandler.GetProfileHandler)
-// 	admin.POST("/students/approve", studentHandler.ApproveHandler)
-
-// 	// Job routes
-// 	authed.GET("/job", jobHandlers.FetchJobs)
-// 	authed.POST("/job", jobHandlers.CreateJob)
-// 	authed.PATCH("/job", jobHandlers.EditJob)
-// 	admin.POST("/job/approve", jobHandlers.ApproveJob)
-// 	authed.POST("/job/apply", jobHandlers.ApplyJob)
-// 	authed.GET("/job/application", jobHandlers.FetchJobApplications)
-
-// 	// Company routes
-// 	authed.PATCH("/company", companyHandler.EditProfileHandler)
-// 	authed.GET("/company", companyHandler.GetProfileHandler)
-// }

@@ -219,6 +219,7 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 
 // GetJobApplicationHandler fetches a specific job application for a given job and student.
 //
+// # Use Student ID i.e., 6612345678
 // This handler retrieves detailed information about a single job application including
 // the applicant's full profile, contact information, and resume files.
 // Used for the application detail view.
@@ -261,7 +262,7 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 			students.birth_date as birth_date, students.about_me as about_me,
 			students.git_hub as github, students.linked_in as linked_in,
 			students.student_id as student_id, students.major as major`).
-		Where("job_applications.job_id = ? AND job_applications.user_id = ?", jobId, studentId).
+		Where("job_applications.job_id = ? AND student_id = ?", jobId, studentId).
 		Preload("Files")
 
 	if err := query.First(&jobApplication).Error; err != nil {
@@ -399,20 +400,10 @@ func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context
 	}
 
 	// Check if user is authorized to update applications for this job
-	// Only the company that posted the job or an admin can update application status
+	// Only the company that posted the job
 	if job.CompanyID != userId {
-		// Check if user is an admin
-		admin := model.Admin{}
-		result := h.DB.Where("user_id = ?", userId).First(&admin)
-		if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
-			return
-		}
-		if result.RowsAffected == 0 {
-			// User is not an admin and not the company that posted the job
-			ctx.JSON(http.StatusForbidden, gin.H{"error": "forbidden: only the company that posted this job or an admin can update application status"})
-			return
-		}
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "forbidden: only the company that posted this job"})
+		return
 	}
 
 	// Parse input data
