@@ -19,7 +19,7 @@
                 </div>
                 <button
                     type="button"
-                    class="absolute -right-1 bottom-0 translate-y-1 inline-flex items-center justify-center w-9 h-9 rounded-full bg-emerald-500 text-white shadow hover:bg-emerald-600 ring-4 ring-white/60"
+                    class="absolute -right-1 bottom-0 translate-y-1 inline-flex items-center justify-center w-9 h-9 rounded-full bg-primary-500 text-white shadow hover:bg- primary-600 ring-4 ring-white/60"
                     aria-label="Change avatar"
                     @click="triggerAvatarPicker"
                 >
@@ -41,7 +41,7 @@
                     >Name</label
                 >
                 <div
-                    class="rounded-lg border border-emerald-700/50 bg-gray-100 px-4 py-2 text-gray-900 dark:border-emerald-700/40 dark:bg-[#013B49] dark:text-white"
+                    class="rounded-lg border border- primary-700/50 bg-gray-100 px-4 py-2 text-gray-900 dark:border- primary-700/40 dark:bg-[#013B49] dark:text-white"
                 >
                     {{ displayName }}
                 </div>
@@ -57,7 +57,7 @@
                     type="date"
                     icon="i-heroicons-calendar-20-solid"
                     placeholder="Birth date"
-                    class="w-full rounded-lg border border-emerald-700/70 bg-white dark:bg-[#013B49] text-gray-900 dark:text-white"
+                    class="w-full rounded-lg bg-white dark:bg-[#013B49] text-gray-900 dark:text-white"
                 />
                 <p v-if="errors.dob" class="mt-1 text-sm text-red-500">{{ errors.dob }}</p>
             </div>
@@ -72,7 +72,7 @@
                     id="phone"
                     v-model="form.phone"
                     placeholder="Optional: +66919999999"
-                    class="w-full rounded-lg border border-emerald-700/70 bg-white dark:bg-[#013B49] text-gray-900 dark:text-white"
+                    class="w-full rounded-lg bg-white dark:bg-[#013B49] text-gray-900 dark:text-white"
                 />
                 <p v-if="errors.phone" class="mt-1 text-sm text-red-500">{{ errors.phone }}</p>
             </div>
@@ -87,7 +87,7 @@
                     id="github"
                     v-model="form.github"
                     placeholder="Optional: https://github.com/username"
-                    class="w-full rounded-lg border border-emerald-700/70 bg-white dark:bg-[#013B49] text-gray-900 dark:text-white"
+                    class="w-full rounded-lg bg-white dark:bg-[#013B49] text-gray-900 dark:text-white"
                 />
                 <p v-if="errors.github" class="mt-1 text-sm text-red-500">{{ errors.github }}</p>
             </div>
@@ -102,7 +102,7 @@
                     id="linkedin"
                     v-model="form.linkedin"
                     placeholder="Optional: https://linkedin.com/in/username"
-                    class="w-full rounded-lg border border-emerald-700/70 bg-white dark:bg-[#013B49] text-gray-900 dark:text-white"
+                    class="w-full rounded-lg bg-white dark:bg-[#013B49] text-gray-900 dark:text-white"
                 />
                 <p v-if="errors.linkedin" class="mt-1 text-sm text-red-500">
                     {{ errors.linkedin }}
@@ -115,7 +115,7 @@
                     class="block text-primary-800 dark:text-primary font-semibold mb-1"
                     >About me</label
                 >
-                <div class="rounded-lg border border-emerald-700/70 bg-white dark:bg-[#013B49]">
+                <div class="rounded-lg bg-white dark:bg-[#013B49]">
                     <UTextarea
                         id="aboutMe"
                         v-model="form.aboutMe"
