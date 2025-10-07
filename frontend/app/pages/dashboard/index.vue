@@ -26,7 +26,9 @@
                     @update:open="(value: boolean) => updateJobOpen(job.id, value)"
                 />
             </div>
-            <div class="bg-primary p-2 rounded-full size-[4em] fixed bottom-5 right-[6vw]">
+            <div
+                class="bg-primary-500 p-2 rounded-full size-[4em] fixed bottom-5 right-[6vw] hover:bg-primary-700 transition-all duration-200"
+            >
                 <UModal v-model:open="openJobPostForm">
                     <Icon
                         name="ic:baseline-plus"
