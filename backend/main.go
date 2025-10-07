@@ -10,6 +10,11 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+
+	docs "ku-work/backend/docs"
+
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func main() {
@@ -35,6 +40,9 @@ func main() {
 
 	// Setup routes
 	handlers.SetupRoutes(router, db)
+
+	docs.SwaggerInfo.BasePath = ""
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
 	listen_address, has_listen_address := os.LookupEnv("LISTEN_ADDRESS")
 	if !has_listen_address {
