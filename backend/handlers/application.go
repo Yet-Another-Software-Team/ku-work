@@ -26,8 +26,8 @@ func NewApplicationHandlers(db *gorm.DB) *ApplicationHandlers {
 
 // ApplyJobInput defines the structure for the job application form data.
 type ApplyJobInput struct {
-	AltPhone string                `form:"phone" binding:"max=20"`
-	AltEmail string                `form:"email" binding:"max=128"`
+	AltPhone string                  `form:"phone" binding:"max=20"`
+	AltEmail string                  `form:"email" binding:"max=128"`
 	Files    []*multipart.FileHeader `form:"files" binding:"max=2,required"`
 }
 

@@ -9,11 +9,7 @@
                     Job Title
                 </label>
                 <div class="col-span-12 md:col-span-8">
-                    <UInput
-                        v-model="form.name"
-                        placeholder="Enter job title"
-                        class="w-full"
-                    />
+                    <UInput v-model="form.name" placeholder="Enter job title" class="w-full" />
                     <span class="text-error text-sm">{{ errors.name }}</span>
                 </div>
             </div>

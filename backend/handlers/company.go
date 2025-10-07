@@ -90,4 +90,3 @@ func (h *CompanyHandlers) GetCompanyListHandler(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, companies)
 }
-
