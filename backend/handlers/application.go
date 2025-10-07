@@ -24,11 +24,53 @@ func NewApplicationHandlers(db *gorm.DB) *ApplicationHandlers {
 	}
 }
 
-// CreateJobApplicationHandler creates a new job application (student applies to a job).
-//
-// This handler allows approved students to apply to approved job postings
-// by submitting their application with optional alternate contact information
-// and required document files (e.g., resume, cover letter).
+// ApplyJobInput defines the structure for the job application form data.
+type ApplyJobInput struct {
+	AltPhone string                `form:"phone" binding:"max=20"`
+	AltEmail string                `form:"email" binding:"max=128"`
+	Files    []*multipart.FileHeader `form:"files" binding:"max=2,required"`
+}
+
+// JobApplicationWithApplicantName defines the response structure including the applicant's name.
+type JobApplicationWithApplicantName struct {
+	model.JobApplication
+	Username string `json:"username"`
+	Major    string `json:"major"`
+	Status   string `json:"status"`
+}
+
+// JobApplicationWithApplicantDetails defines the response structure for a detailed application view.
+type JobApplicationWithApplicantDetails struct {
+	model.JobApplication
+	Username  string    `json:"username"`
+	Email     string    `json:"email"`
+	Phone     string    `json:"phone"`
+	PhotoID   *string   `json:"photoId"`
+	BirthDate time.Time `json:"birthDate"`
+	AboutMe   string    `json:"aboutMe"`
+	GitHub    string    `json:"github"`
+	LinkedIn  string    `json:"linkedIn"`
+	StudentID string    `json:"studentId"`
+	Major     string    `json:"major"`
+}
+
+// @Summary Apply to a job
+// @Description Creates a new job application. Allows an approved student to apply to an approved job posting by submitting their application with optional alternate contact information and required document files (e.g., resume, cover letter).
+// @Tags Job Applications
+// @Security BearerAuth
+// @Accept multipart/form-data
+// @Produce json
+// @Param id path uint true "Job ID"
+// @Param Files formData file true "Files to upload (e.g., Resume, Cover Letter). Max 2 files."
+// @Param AltPhone formData string false "Alternate phone number"
+// @Param AltEmail formData string false "Alternate email address"
+// @Success 200 {object} object{id=uint} "Successfully created job application"
+// @Failure 400 {object} object{error=string} "Bad Request: Invalid input"
+// @Failure 401 {object} object{error=string} "Unauthorized"
+// @Failure 403 {object} object{error=string} "Forbidden: Student status not approved"
+// @Failure 404 {object} object{error=string} "Not Found: Invalid Job ID"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /jobs/{id}/apply [post]
 func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 	// Get user ID from context (auth middleware)
 	probUserId, hasUserId := ctx.Get("userID")
@@ -41,17 +83,11 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 	jobIdStr := ctx.Param("id")
 	jobId64, err := strconv.ParseInt(jobIdStr, 10, 64)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid job ID"})
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "invalid job ID"})
 		return
 	}
 	jobId := uint(jobId64)
 
-	// Bind request body to input struct
-	type ApplyJobInput struct {
-		AltPhone string                  `form:"phone" binding:"max=20"`
-		AltEmail string                  `form:"email" binding:"max=128"`
-		Files    []*multipart.FileHeader `form:"files" binding:"max=2,required"`
-	}
 	input := ApplyJobInput{}
 	err = ctx.Bind(&input)
 	if err != nil {
@@ -119,12 +155,22 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 	})
 }
 
-// GetJobApplicationsHandler fetches all job applications for a specific job.
-//
-// This handler is used to display the list of applicants for a job posting
-// with support for status filtering (pending, accepted, rejected).
-//
-// Results include applicant username and are paginated.
+// @Summary Get applications for a specific job
+// @Description Fetches all job applications for a specific job posting. This endpoint is for companies to view applicants. It supports status filtering (pending, accepted, rejected) and pagination.
+// @Tags Job Applications
+// @Security BearerAuth
+// @Produce json
+// @Param id path uint true "Job ID"
+// @Param status query string false "Filter by status (pending, accepted, rejected)"
+// @Param offset query int false "Offset for pagination" default(0)
+// @Param limit query int false "Limit for pagination" default(32)
+// @Success 200 {array} handlers.JobApplicationWithApplicantName "List of job applications"
+// @Failure 400 {object} object{error=string} "Bad Request: Invalid job ID"
+// @Failure 401 {object} object{error=string} "Unauthorized"
+// @Failure 403 {object} object{error=string} "Forbidden: User is not authorized to view these applications"
+// @Failure 404 {object} object{error=string} "Not Found: Job not found"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /jobs/{id}/applications [get]
 func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 	// Extract authenticated user ID from context
 	userId := ctx.MustGet("userID").(string)
@@ -172,6 +218,7 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 		Offset uint    `json:"offset" form:"offset"`
 		Limit  uint    `json:"limit" form:"limit" binding:"max=64"`
 	}
+
 	input := FetchJobApplicationsInput{}
 	err = ctx.Bind(&input)
 	if err != nil {
@@ -184,23 +231,15 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 		input.Limit = 32
 	}
 
-	// Define response struct that includes applicant username
-	type JobApplicationWithApplicantName struct {
-		model.JobApplication
-		Username string `json:"username"`
-		Major    string `json:"major"`
-		Status   string `json:"status"`
-	}
-
 	// Build base query joining with users table to fetch applicant username
 	// Filter by the job ID from the URL parameter
 	query := h.DB.Model(&model.JobApplication{}).
 		Joins("INNER JOIN google_o_auth_details ON google_o_auth_details.id = job_applications.user_id").
 		Joins("INNER JOIN students ON students.user_id = job_applications.user_id").
 		Select("job_applications.*",
-		 	   "CONCAT(google_o_auth_details.FirstName, ' ', google_o_auth_details.LastName) as username",
-			   "students.major as major",
-			   "job_applications.status as status").
+			"CONCAT(google_o_auth_details.FirstName, ' ', google_o_auth_details.LastName) as username",
+			"students.major as major",
+			"job_applications.status as status").
 		Where("job_applications.job_id = ?", jobId)
 
 	// Filter by status if provided (for tabs: pending, accepted, rejected)
@@ -218,12 +257,19 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, jobApplications)
 }
 
-// GetJobApplicationHandler fetches a specific job application for a given job and student.
-//
-// # Use Student ID i.e., 6612345678
-// This handler retrieves detailed information about a single job application including
-// the applicant's full profile, contact information, and resume files.
-// Used for the application detail view.
+// @Summary Get a specific job application
+// @Description Retrieves detailed information about a single job application for a specific student, including the applicant's full profile, contact information, and attached files (resume, etc.).
+// @Tags Job Applications
+// @Security BearerAuth
+// @Produce json
+// @Param id path uint true "Job ID"
+// @Param studentId path string true "Student User ID"
+// @Success 200 {object} handlers.JobApplicationWithApplicantDetails "Detailed job application"
+// @Failure 400 {object} object{error=string} "Bad Request: Invalid job ID"
+// @Failure 401 {object} object{error=string} "Unauthorized"
+// @Failure 404 {object} object{error=string} "Not Found: Job application not found"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /jobs/{id}/applications/{studentId} [get]
 func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 	// Extract job ID from URL parameter
 	jobIdStr := ctx.Param("id")
@@ -236,22 +282,6 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 
 	// Extract student ID from URL parameter
 	studentId := ctx.Param("studentId")
-
-	// Define response struct that includes full applicant details
-	type JobApplicationWithApplicantDetails struct {
-		model.JobApplication
-		Username  string    `json:"username"`
-		Email 	  string    `json:"email"`
-		Phone     string    `json:"phone"`
-		PhotoID   *string   `json:"photoId"`
-		BirthDate time.Time `json:"birthDate"`
-		AboutMe   string    `json:"aboutMe"`
-		GitHub    string    `json:"github"`
-		LinkedIn  string    `json:"linkedIn"`
-		StudentID string    `json:"studentId"`
-		Major     string    `json:"major"`
-
-	}
 
 	// Query for the specific job application with full student details
 	var jobApplication JobApplicationWithApplicantDetails
@@ -278,13 +308,18 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, jobApplication)
 }
 
-// GetAllJobApplicationsHandler fetches job applications for the authenticated user.
-//
-// This handler supports the following access patterns:
-// - Companies: see applications for all their job postings
-// - Students: see their own applications
-//
-// Results include applicant username and associated files with pagination support.
+// @Summary Get all applications for the current user
+// @Description Fetches job applications for the authenticated user. If the user is a company, it returns all applications for all their job postings. If the user is a student, it returns all of their own applications. Supports pagination.
+// @Tags Job Applications
+// @Security BearerAuth
+// @Produce json
+// @Param offset query int false "Offset for pagination" default(0)
+// @Param limit query int false "Limit for pagination" default(32)
+// @Success 200 {array} handlers.JobApplicationWithApplicantName "List of job applications"
+// @Failure 401 {object} object{error=string} "Unauthorized"
+// @Failure 403 {object} object{error=string} "Forbidden: User is not a company or student"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /applications [get]
 func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 	// Extract authenticated user ID from context
 	userId := ctx.MustGet("userID").(string)
@@ -306,22 +341,14 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 		input.Limit = 32
 	}
 
-	// Define response struct that includes applicant username
-	type JobApplicationWithApplicantName struct {
-		model.JobApplication
-		Username string `json:"username"`
-		Major    string `json:"major"`
-		Status   string `json:"status"`
-	}
-
 	// Build base query joining with users table to fetch applicant username
 	query := h.DB.Model(&model.JobApplication{}).
 		Joins("INNER JOIN google_o_auth_details ON google_o_auth_details.id = job_applications.user_id").
 		Joins("INNER JOIN students ON students.user_id = job_applications.user_id").
 		Select("job_applications.*",
-		 	   "CONCAT(google_o_auth_details.FirstName, ' ', google_o_auth_details.LastName) as username",
-			   "students.major as major",
-			   "job_applications.status as status")
+			"CONCAT(google_o_auth_details.FirstName, ' ', google_o_auth_details.LastName) as username",
+			"students.major as major",
+			"job_applications.status as status")
 
 	// Determine user role and filter applications accordingly
 	// Check if user is a company
@@ -369,10 +396,22 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, jobApplications)
 }
 
-// UpdateJobApplicationStatusHandler updates the status of a job application (approve/reject).
-//
-// This handler allows companies to approve or reject job applications.
-// Only the company that posted the job or an admin can update application status.
+// @Summary Update job application status
+// @Description Updates the status of a job application to 'accepted', 'rejected', or 'pending'. This action can only be performed by the company that posted the job.
+// @Tags Job Applications
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path uint true "Job ID"
+// @Param studentId path string true "Student User ID"
+// @Param status body handlers.UpdateJobApplicationStatusHandler.UpdateStatusInput true "New status"
+// @Success 200 {object} object{message=string, status=string} "Application status updated successfully"
+// @Failure 400 {object} object{error=string} "Bad Request: Invalid ID or input"
+// @Failure 401 {object} object{error=string} "Unauthorized"
+// @Failure 403 {object} object{error=string} "Forbidden: User is not authorized to update this application"
+// @Failure 404 {object} object{error=string} "Not Found: Job or application not found"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /jobs/{id}/applications/{studentId}/status [patch]
 func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context) {
 	// Extract authenticated user ID from context
 	userId := ctx.MustGet("userID").(string)

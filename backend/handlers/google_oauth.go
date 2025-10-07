@@ -59,7 +59,18 @@ type oauthToken struct {
 	Code string `json:"code"`
 }
 
-// Handle authorization code exchange and user info retrieval
+// @Summary Handle Google OAuth login
+// @Description Handles the server-side flow for Google OAuth2. It receives an authorization code from the client, exchanges it for a token with Google, fetches the user's profile information, and then either creates a new user account or logs in an existing user. On success, it returns a JWT token and sets a refresh token cookie.
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param code body oauthToken true "Google Authorization Code"
+// @Success 200 {object} object{token=string, username=string, role=string, userId=string, isRegistered=bool} "Login successful"
+// @Success 201 {object} object{token=string, username=string, role=string, userId=string, isRegistered=bool} "User registration successful"
+// @Failure 400 {object} object{error=string} "Bad Request: Authorization code is required"
+// @Failure 401 {object} object{error=string} "Unauthorized: Invalid access token"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /auth/google/login [post]
 func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 	// Validate request
 	var req oauthToken
@@ -197,5 +208,4 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 		"userId":       user.ID,
 		"isRegistered": isRegistered, // To tell frontend whether user is registered or not
 	})
-
 }

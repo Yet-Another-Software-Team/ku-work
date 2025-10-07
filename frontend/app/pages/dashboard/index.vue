@@ -96,6 +96,7 @@ const fetchJobs = async () => {
 
     try {
         const response = await api.get("/jobs");
+        console.log("Fetched jobs:", response.data);
         data.value = response.data.jobs || [];
     } catch (error) {
         const apiError = error as { message?: string };

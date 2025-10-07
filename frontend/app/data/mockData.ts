@@ -52,13 +52,14 @@ interface JobPost {
     createdAt: string;
     name: string;
     companyId: string;
-    company: Company;
+    photoId: string;
+    bannerId: string;
     position: string;
     duration: string;
     description: string;
     location: string;
     jobType: string;
-    experienceType: string;
+    experience: string;
     minSalary: number;
     maxSalary: number;
     approved: boolean;

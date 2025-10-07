@@ -26,12 +26,31 @@ func NewUserHandlers(db *gorm.DB) *UserHandlers {
 	}
 }
 
-// Handler function for editing user profile
-//
-// Taking user input and updating the company profile in the database.
-// Support partial updates. If any field is not provided, it will not be updated.
-//
-// Support request with multipart/form-data
+// @Summary Edit user profile
+// @Description Edits the profile of the currently authenticated user. This endpoint automatically detects whether the user is a student or a company and accepts the appropriate fields for that role. Supports partial updates.
+// @Tags Users
+// @Security BearerAuth
+// @Accept multipart/form-data
+// @Produce json
+// @Param phone formData string false "Phone number (For both Student and Company)"
+// @Param birthDate formData string false "Birth date in RFC3339 format (Student only)"
+// @Param aboutMe formData string false "About me/us section (For both Student and Company)"
+// @Param github formData string false "GitHub profile URL (Student only)"
+// @Param linkedIn formData string false "LinkedIn profile URL (Student only)"
+// @Param studentStatus formData string false "Student status (Student only)" Enums(Graduated, Current Student)
+// @Param email formData string false "Company email (Company only)"
+// @Param website formData string false "Company website URL (Company only)"
+// @Param address formData string false "Company address (Company only)"
+// @Param city formData string false "Company city (Company only)"
+// @Param country formData string false "Company country (Company only)"
+// @Param photo formData file false "Profile photo/logo (For both Student and Company)"
+// @Param banner formData file false "Company banner image (Company only)"
+// @Success 200 {object} object{message=string} "ok"
+// @Failure 400 {object} object{error=string} "Bad Request"
+// @Failure 401 {object} object{error=string} "Unauthorized"
+// @Failure 403 {object} object{error=string} "Forbidden"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /me [patch]
 func (h *UserHandlers) EditProfileHandler(ctx *gin.Context) {
 	// take user ID from context (auth middleware)
 	userId := ctx.MustGet("userID").(string)
@@ -232,7 +251,14 @@ func (h *UserHandlers) editStudentProfile(ctx *gin.Context, userId string) {
 	})
 }
 
-// Simple Handler to get profile of current user
+// @Summary Get current user's profile
+// @Description Retrieves basic profile information (username, role, and user ID) for the currently authenticated user.
+// @Tags Users
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} object{username=string, role=string, userId=string} "Successfully retrieved user profile"
+// @Failure 401 {object} object{error=string} "Unauthorized"
+// @Router /me [get]
 func (h *UserHandlers) GetProfileHandler(ctx *gin.Context) {
 	userId := ctx.MustGet("userID").(string)
 	role := helper.GetRole(userId, h.DB)

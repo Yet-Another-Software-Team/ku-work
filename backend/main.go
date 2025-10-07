@@ -17,6 +17,16 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// @title KU-Work API
+// @version 1.0
+// @description This is a sample API for KU-Work
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+// @host localhost:8000
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and the Token
 func main() {
 	_ = godotenv.Load()
 

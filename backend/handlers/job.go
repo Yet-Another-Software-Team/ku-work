@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
-	"log"
-
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -25,9 +24,81 @@ func NewJobHandlers(db *gorm.DB) *JobHandlers {
 	}
 }
 
-// Create new job listing
-//
-// CreateJob creates a new job listing in the database.
+// CreateJobInput defines the request body for creating a new job.
+type CreateJobInput struct {
+	Name        string `json:"name" binding:"required,max=128"`
+	Position    string `json:"position" binding:"required,max=128"`
+	Duration    string `json:"duration" binding:"required,max=128"`
+	Description string `json:"description" binding:"required,max=16384"`
+	Location    string `json:"location" binding:"required,max=128"`
+	JobType     string `json:"jobtype" binding:"required,oneof='fulltime' 'parttime' 'contract' 'casual' 'internship'"`
+	Experience  string `json:"experience" binding:"required,oneof='newgrad' 'junior' 'senior' 'manager' 'internship'"`
+	MinSalary   uint   `json:"minsalary"`
+	MaxSalary   uint   `json:"maxsalary"`
+	Open        bool   `json:"open"`
+}
+
+// EditJobInput defines the request body for editing an existing job.
+type EditJobInput struct {
+	Name        *string `json:"name" binding:"omitempty,max=128"`
+	Position    *string `json:"position" binding:"omitempty,max=128"`
+	Duration    *string `json:"duration" binding:"omitempty,max=128"`
+	Description *string `json:"description" binding:"omitempty,max=16384"`
+	Location    *string `json:"location" binding:"omitempty,max=128"`
+	JobType     *string `json:"jobtype" binding:"omitempty,oneof='fulltime' 'parttime' 'contract' 'casual' 'internship'"`
+	Experience  *string `json:"experience" binding:"omitempty,oneof='newgrad' 'junior' 'senior' 'manager' 'internship'"`
+	MinSalary   *uint   `json:"minsalary" binding:"omitempty"`
+	MaxSalary   *uint   `json:"maxsalary" binding:"omitempty"`
+	Open        *bool   `json:"open" binding:"omitempty"`
+}
+
+// ApproveJobInput defines the request body for approving a job.
+type ApproveJobInput struct {
+	Approve bool `json:"approve"`
+}
+
+// JobResponse defines the structure for a single job listing in API responses.
+type JobResponse struct {
+	ID             uint      `json:"id"`
+	CreatedAt      time.Time `json:"createdAt"`
+	UpdatedAt      time.Time `json:"updatedAt"`
+	Name           string    `json:"name"`
+	CompanyID      string    `json:"companyId"`
+	PhotoID        string    `json:"photoId"`
+	BannerID       string    `json:"bannerId"`
+	CompanyName    string    `json:"companyName"`
+	Position       string    `json:"position"`
+	Duration       string    `json:"duration"`
+	Description    string    `json:"description"`
+	Location       string    `json:"location"`
+	JobType        string    `json:"jobType"`
+	Experience     string    `json:"experience"`
+	MinSalary      uint      `json:"minSalary"`
+	MaxSalary      uint      `json:"maxSalary"`
+	ApprovalStatus string    `json:"approvalStatus"`
+	IsOpen         bool      `json:"open"`
+}
+
+// JobWithStatsResponse extends JobResponse with application statistics for company users.
+type JobWithStatsResponse struct {
+	JobResponse
+	Pending  int64 `json:"pending"`
+	Accepted int64 `json:"accepted"`
+	Rejected int64 `json:"rejected"`
+}
+
+// @Summary Create a new job listing
+// @Description Allows an authenticated company to create a new job posting. The job will be pending approval by an admin.
+// @Tags Jobs
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param job body handlers.CreateJobInput true "Job creation data"
+// @Success 200 {object} object{id=uint} "Successfully created job listing"
+// @Failure 400 {object} object{error=string} "Bad Request"
+// @Failure 401 {object} object{error=string} "Unauthorized"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /jobs [post]
 func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 	// Get user ID from context (auth middleware)
 	probUserId, hasUserId := ctx.Get("userID")
@@ -39,29 +110,16 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 	}
 	userid := probUserId.(string)
 
-	// Bind input data to struct
-	type CreateJobInput struct {
-		Name        string `json:"name" binding:"required,max=128"`
-		Position    string `json:"position" binding:"required,max=128"`
-		Duration    string `json:"duration" binding:"required,max=128"`
-		Description string `json:"description" binding:"required,max=16384"`
-		Location    string `json:"location" binding:"required,max=128"`
-		JobType     string `json:"jobtype" binding:"required,oneof='fulltime' 'parttime' 'contract' 'casual' 'internship'"`
-		Experience  string `json:"experience" binding:"required,oneof='newgrad' 'junior' 'senior' 'manager' 'internship'"`
-		MinSalary   uint   `json:"minsalary"`
-		MaxSalary   uint   `json:"maxsalary"`
-		Open        bool   `json:"open"`
-	}
 	input := CreateJobInput{}
 	err := ctx.Bind(&input)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	// Validate input data
 	if input.MaxSalary < input.MinSalary {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "minsalary must be lower than or equal to maxsalary"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "minsalary must be lower than or equal to maxsalary"})
 		return
 	}
 	company := model.Company{
@@ -98,19 +156,29 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 	})
 }
 
-type JobWithApplicationStatistics struct {
-	model.Job
-	Pending     int64  `json:"pending"`
-	Accepted    int64  `json:"accepted"`
-	Rejected    int64  `json:"rejected"`
-	CompanyName string `json:"companyName"`
-}
-
-// Fetch Jobs from Database.
-//
-// Allow query parameters for filtering jobs.
+// @Summary Fetch job listings
+// @Description Retrieves a list of job postings with extensive filtering options. Behavior changes based on user role. Companies see their own jobs with application stats. Admins can see all jobs. Others see only open, approved jobs.
+// @Tags Jobs
+// @Security BearerAuth
+// @Produce json
+// @Param limit query uint false "Pagination limit" default(32)
+// @Param offset query uint false "Pagination offset"
+// @Param location query string false "Filter by location"
+// @Param keyword query string false "Search keyword for name and description"
+// @Param jobtype query []string false "Filter by job type(s)"
+// @Param experience query []string false "Filter by experience level(s)"
+// @Param minsalary query uint false "Minimum salary filter"
+// @Param maxsalary query uint false "Maximum salary filter"
+// @Param open query bool false "Filter by open status (company only)"
+// @Param companyId query string false "Filter by company ID"
+// @Param id query uint false "Filter by specific job ID"
+// @Param approvalStatus query string false "Filter by approval status (admin/company only)"
+// @Success 200 {object} object{jobs=[]JobWithStatsResponse} "List of jobs for a company user (includes stats)"
+// @Success 200 {object} object{jobs=[]JobResponse} "List of jobs for a non-company user"
+// @Failure 400 {object} object{error=string} "Bad Request"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /jobs [get]
 func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
-	log.Println("Fetching jobs...")
 	userId := ctx.MustGet("userID").(string)
 	// List of query parameters for filtering jobs
 	type FetchJobsInput struct {
@@ -150,12 +218,6 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 		query = query.Where(&model.Job{
 			ID: *input.JobID,
 		})
-	}
-
-	// If the user is a company, include job applications statistic
-	if role == helper.Company {
-		query = query.Joins("LEFT JOIN job_applications ON job_applications.job_id = jobs.id")
-		query = query.Select("jobs.*, ANY_VALUE(users.username) as company_name, COUNT(job_applications.id) FILTER(WHERE job_applications.status = 'pending') AS pending, COUNT(job_applications.id) FILTER(WHERE job_applications.status = 'accepted') AS accepted, COUNT(job_applications.id) FILTER(WHERE job_applications.status = 'rejected') AS rejected")
 	}
 
 	// Filter Job post by keyword
@@ -208,18 +270,21 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 		query = query.Where(&model.Job{ApprovalStatus: model.JobApprovalAccepted})
 	}
 
-	if role == helper.Company {
-		query = query.Group("jobs.id")
-	}
-
 	// Offset and Limit
-	query = query.Offset(int(input.Offset))
-	query = query.Limit(int(input.Limit)).Preload("Company").Joins("INNER JOIN users ON users.id = jobs.company_id")
+	query = query.Offset(int(input.Offset)).
+		Limit(int(input.Limit)).
+		Joins("INNER JOIN users ON users.id = jobs.company_id").
+		Joins("INNER JOIN companies ON companies.user_id = jobs.company_id")
 
 	// return Job posts with application statistics
 	if role == helper.Company {
-		var jobsWithStats []JobWithApplicationStatistics
-		result := query.Find(&jobsWithStats)
+		var jobsWithStats []JobWithStatsResponse
+		result := query.
+			Select("jobs.*, users.username as company_name, companies.photo_id, companies.banner_id, COUNT(CASE WHEN job_applications.status = 'pending' THEN 1 END) AS pending, COUNT(CASE WHEN job_applications.status = 'accepted' THEN 1 END) AS accepted, COUNT(CASE WHEN job_applications.status = 'rejected' THEN 1 END) AS rejected").
+			Joins("LEFT JOIN job_applications ON job_applications.job_id = jobs.id").
+			Group("jobs.id, users.username, companies.photo_id, companies.banner_id").
+			Find(&jobsWithStats)
+
 		if result.Error != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 			return
@@ -231,12 +296,8 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 	}
 
 	// return Job posts with company info if not company
-	type JobWithCompanyInfo struct {
-		model.Job
-		CompanyName string `json:"companyName"`
-	}
-	var jobs []JobWithCompanyInfo
-	result := query.Select("jobs.*, users.username as company_name").Find(&jobs)
+	var jobs []JobResponse
+	result := query.Select("jobs.*, users.username as company_name, companies.photo_id, companies.banner_id").Find(&jobs)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
@@ -246,9 +307,21 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 	})
 }
 
-// Edit job post that is owned by the user
-//
-// Support partial update of job post
+// @Summary Edit a job listing
+// @Description Allows a company to edit one of their own job postings. Supports partial updates.
+// @Tags Jobs
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path uint true "Job ID"
+// @Param job body handlers.EditJobInput true "Job update data"
+// @Success 200 {object} object{message=string} "Job updated successfully"
+// @Failure 400 {object} object{error=string} "Bad Request"
+// @Failure 401 {object} object{error=string} "Unauthorized"
+// @Failure 403 {object} object{error=string} "Forbidden"
+// @Failure 404 {object} object{error=string} "Not Found"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /jobs/{id} [patch]
 func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 	// Get user id from context (auth middleware)
 	probUserId, hasUserId := ctx.Get("userID")
@@ -282,19 +355,6 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 		return
 	}
 
-	// Bind request to struct
-	type EditJobInput struct {
-		Name        *string `json:"name" binding:"omitempty,max=128"`
-		Position    *string `json:"position" binding:"omitempty,max=128"`
-		Duration    *string `json:"duration" binding:"omitempty,max=128"`
-		Description *string `json:"description" binding:"omitempty,max=16384"`
-		Location    *string `json:"location" binding:"omitempty,max=128"`
-		JobType     *string `json:"jobtype" binding:"omitempty,oneof='fulltime' 'parttime' 'contract' 'casual' 'internship'"`
-		Experience  *string `json:"experience" binding:"omitempty,oneof='newgrad' 'junior' 'senior' 'manager' 'internship'"`
-		MinSalary   *uint   `json:"minsalary" binding:"omitempty"`
-		MaxSalary   *uint   `json:"maxsalary" binding:"omitempty"`
-		Open        *bool   `json:"open" binding:"omitempty"`
-	}
 	var input EditJobInput
 	if err := ctx.ShouldBindJSON(&input); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -332,9 +392,6 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 	if input.Experience != nil {
 		job.Experience = model.ExperienceType(*input.Experience)
 	}
-	if input.Experience != nil {
-		job.Experience = model.ExperienceType(*input.Experience)
-	}
 	if input.MinSalary != nil {
 		job.MinSalary = *input.MinSalary
 	}
@@ -354,11 +411,20 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "job updated successfully"})
 }
 
-// Handle approval of a job post using its ID
+// @Summary Approve or reject a job listing (Admin only)
+// @Description Allows an admin to approve or reject a job posting submitted by a company.
+// @Tags Jobs
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path uint true "Job ID"
+// @Param approval body handlers.ApproveJobInput true "Approval action"
+// @Success 200 {object} object{message=string} "ok"
+// @Failure 400 {object} object{error=string} "Bad Request"
+// @Failure 404 {object} object{error=string} "Not Found"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /jobs/{id}/approval [post]
 func (h *JobHandlers) JobApprovalHandler(ctx *gin.Context) {
-	type ApproveJobInput struct {
-		Approve bool `json:"approve"`
-	}
 	input := ApproveJobInput{}
 	err := ctx.Bind(&input)
 	if err != nil {
@@ -390,9 +456,16 @@ func (h *JobHandlers) JobApprovalHandler(ctx *gin.Context) {
 	})
 }
 
-// Handle application of a job post using its ID
-//
-// Use request body of multipart/form-data
+// @Summary Get job details
+// @Description Retrieves the detailed information for a single job posting by its ID.
+// @Tags Jobs
+// @Security BearerAuth
+// @Produce json
+// @Param id path uint true "Job ID"
+// @Success 200 {object} handlers.JobResponse "Job details retrieved successfully"
+// @Failure 400 {object} object{error=string} "Bad Request: Invalid job ID"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /jobs/{id} [get]
 func (h *JobHandlers) GetJobDetailHandler(ctx *gin.Context) {
 	jobIdStr := ctx.Param("id")
 	jobId64, err := strconv.ParseInt(jobIdStr, 10, 64)
@@ -402,8 +475,12 @@ func (h *JobHandlers) GetJobDetailHandler(ctx *gin.Context) {
 	}
 	jobId := uint(jobId64)
 
-	job := &model.Job{}
-	if err := h.DB.First(job, jobId).Error; err != nil {
+	var job JobResponse
+	if err := h.DB.Model(&model.Job{}).
+		Select("jobs.*, users.username as company_name, companies.photo_id, companies.banner_id").
+		Joins("INNER JOIN users ON users.id = jobs.company_id").
+		Joins("INNER JOIN companies ON companies.user_id = jobs.company_id").
+		First(&job, jobId).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

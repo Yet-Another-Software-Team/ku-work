@@ -68,7 +68,15 @@ func (h *JWTHandlers) GenerateTokens(userID string) (string, string, error) {
 	return signedJwtToken, refreshTokenString, nil
 }
 
-// handle refresh token request
+// @Summary Refresh JWT token
+// @Description Renews an access token using a valid refresh token provided in a cookie. It returns a new JWT and user details, and sets a new refresh token cookie.
+// @Tags Authentication
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} object{token=string, username=string, role=string, userId=string} "Successfully refreshed token"
+// @Failure 401 {object} object{error=string} "Unauthorized: Missing, invalid, or expired refresh token"
+// @Failure 500 {object} object{error=string} "Internal Server Error: Failed to generate new tokens"
+// @Router /auth/refresh [post]
 func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	refreshToken, err := ctx.Cookie("refresh_token")
 	if err != nil {
@@ -113,7 +121,13 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	})
 }
 
-// LogoutHandler invalidates the user's session.
+// @Summary Logout user
+// @Description Invalidates the user's session by deleting their refresh token from the database and clearing the refresh token cookie.
+// @Tags Authentication
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} object{message=string} "Logged out successfully"
+// @Router /auth/logout [post]
 func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
 	refreshToken, err := ctx.Cookie("refresh_token")
 	if err != nil {
@@ -131,7 +145,7 @@ func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }
 
-// Handle Token sending
+// HandleToken is a helper function to generate and return JWT and refresh tokens for a user.
 func (h *JWTHandlers) HandleToken(user model.User) (string, string, error) {
 	jwtToken, refreshToken, err := h.GenerateTokens(user.ID)
 	if err != nil {

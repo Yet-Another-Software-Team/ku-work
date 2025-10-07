@@ -5,8 +5,8 @@
             <!-- Profile -->
             <span class="flex-shrink-0">
                 <img
-                    v-if="data.company.photoId"
-                    :src="`${runtimeConfig.public.apiBaseUrl}/files/${data.company.photoId}`"
+                    v-if="data.photoId"
+                    :src="`${runtimeConfig.public.apiBaseUrl}/files/${data.photoId}`"
                     alt="Company Logo"
                     class="rounded-full size-[6em] object-cover"
                 />
@@ -41,7 +41,7 @@
             </span>
             <span class="text-center w-1/3 p-2 space-y-1">
                 <p class="text-primary-700 font-semibold">Experience</p>
-                <p class="font-bold">{{ data.experienceType }}</p>
+                <p class="font-bold">{{ data.experience }}</p>
             </span>
             <span>
                 <USeparator orientation="vertical" class="h-full items-stretch" size="sm" />
