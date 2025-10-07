@@ -57,12 +57,12 @@ definePageMeta({
 });
 
 // Jobs
-const job: JobPost | null = mockJobData.jobs[0] ? mockJobData.jobs[0] : null;
+const job = ref<JobPost>(mockJobData.jobs[0]!);
 
 // API call to fetch jobs
 const api = useApi();
 const route = useRoute();
-const limit = 10;
+const limit = 32;
 let currentJobOffset = 0;
 
 interface getApplicationForm {
@@ -73,6 +73,10 @@ interface getApplicationForm {
 
 onMounted(() => {
     console.log("Job ID on mounted:", route.params.id);
+    job.value.id = route.params.id ? Number(route.params.id) : -1;
+    if (job.value.id === -1) {
+        return;
+    }
     const token = localStorage.getItem("token");
     fetchApplication(token);
 });
@@ -81,8 +85,9 @@ const fetchApplication = async (token: string | null) => {
     const jobForm: getApplicationForm = {
         limit: limit,
         offset: currentJobOffset,
-        jobId: job ? Number(job.id) : undefined,
+        jobId: Number(job.value.id),
     };
+    console.log("Fetching job application with form:", jobForm);
     try {
         const response = await api.get("/job/application", {
             headers: {
@@ -127,8 +132,8 @@ function selectRejected() {
 }
 
 const updateJobOpen = (id: number, value: boolean) => {
-    if (job && Number(job.id) === id) {
-        job.open = value;
+    if (job.value && Number(job.value.id) === id) {
+        job.value.open = value;
     }
 };
 </script>

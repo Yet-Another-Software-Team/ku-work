@@ -40,7 +40,7 @@ interface Company {
     photoId: string;
     bannerId: string;
     about: string;
-    website: string;
+    site: string;
     address: string;
     city: string;
     country: string;
@@ -61,8 +61,11 @@ interface JobPost {
     experienceType: string;
     minSalary: number;
     maxSalary: number;
-    approved: boolean;
+    approvalStatus: "pending" | "accepted" | "rejected";
     open: boolean;
+    accepted?: number;
+    rejected?: number;
+    pending?: number;
 }
 
 interface Job {
@@ -178,7 +181,7 @@ const mockJobData: Job = {
             experienceType: "newgrad",
             minSalary: 1,
             maxSalary: 1,
-            approved: false,
+            approvalStatus: "rejected",
             company: {
                 id: "734fc1e6-34b5-4810-b139-ce575b1a52c6",
                 createdAt: "2025-10-01T22:06:52.152089+07:00",
@@ -190,7 +193,7 @@ const mockJobData: Job = {
                 city: "Quebec",
                 country: "Canada",
                 about: "",
-                website: "",
+                site: "",
             },
             companyName: "AA",
             open: true,
@@ -208,7 +211,7 @@ const mockJobData: Job = {
             experienceType: "Junior",
             minSalary: 30000,
             maxSalary: 45000,
-            approved: true,
+            approvalStatus: "accepted",
             company: {
                 id: "734fc1e6-34b5-4810-b139-ce575b1a52c6",
                 createdAt: "2025-10-01T22:06:52.152089+07:00",
@@ -220,7 +223,7 @@ const mockJobData: Job = {
                 city: "Quebec",
                 country: "Canada",
                 about: "",
-                website: "",
+                site: "",
             },
             companyName: "AA",
             open: false,
@@ -239,7 +242,7 @@ const mockJobData: Job = {
             experienceType: "Mid-level",
             minSalary: 50000,
             maxSalary: 55000,
-            approved: true,
+            approvalStatus: "accepted",
             company: {
                 id: "734fc1e6-34b5-4810-b139-ce575b1a52c6",
                 createdAt: "2025-10-01T22:06:52.152089+07:00",
@@ -251,7 +254,7 @@ const mockJobData: Job = {
                 city: "Quebec",
                 country: "Canada",
                 about: "",
-                website: "",
+                site: "",
             },
             companyName: "AA",
             open: true,

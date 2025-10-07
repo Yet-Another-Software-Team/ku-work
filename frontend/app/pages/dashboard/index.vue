@@ -27,11 +27,12 @@
                     :key="job.id"
                     class="h-[18em] w-full lg:w-[25em] drop-shadow-md"
                     :job-i-d="job.id.toString()"
+                    :approval-status="job.approvalStatus"
                     :open="job.open"
                     :position="job.position"
-                    :accepted="job.accepted"
-                    :rejected="job.rejected"
-                    :pending="job.pending"
+                    :accepted="job.accepted!"
+                    :rejected="job.rejected!"
+                    :pending="job.pending!"
                     @update:open="(value: boolean) => updateJobOpen(job.id, value)"
                 />
             </div>
@@ -75,6 +76,7 @@
 </template>
 
 <script setup lang="ts">
+import type { JobPost } from "~/data/mockData";
 const userRole = ref<string>("viewer");
 
 definePageMeta({
@@ -84,16 +86,7 @@ definePageMeta({
 
 const openJobPostForm = ref(false);
 
-type Job = {
-    id: number;
-    position: string;
-    accepted: number;
-    rejected: number;
-    pending: number;
-    open: boolean;
-};
-
-const data = ref<Job[]>([]);
+const data = ref<JobPost[]>([]);
 
 const api = useApi();
 const { add: addToast } = useToast();

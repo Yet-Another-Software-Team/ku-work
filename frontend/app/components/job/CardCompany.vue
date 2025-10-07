@@ -17,13 +17,16 @@
                     </span>
                     <span v-else class="text-error-800 dark:text-error font-bold">Closed</span>
                 </div>
-                <UDropdownMenu class="cursor-pointer" :items="menuItems">
-                    <Icon
-                        name="ic:baseline-more-vert"
-                        size="18"
-                        class="hover:text-primary transition-colors duration-300"
-                    />
-                </UDropdownMenu>
+                <div class="flex gap-x-2 items-center">
+                    <UBadge :color="colorPicker()">{{ props.approvalStatus }}</UBadge>
+                    <UDropdownMenu class="cursor-pointer" :items="menuItems">
+                        <Icon
+                            name="ic:baseline-more-vert"
+                            size="18"
+                            class="hover:text-primary transition-colors duration-300"
+                        />
+                    </UDropdownMenu>
+                </div>
             </div>
             <UTooltip :text="props.position" @click="selectJob">
                 <div class="flex mt-2 font-semibold text-lg truncate">
@@ -97,6 +100,10 @@ const props = defineProps({
         type: Number,
         required: true,
     },
+    approvalStatus: {
+        type: String,
+        required: true,
+    },
 });
 
 const menuItems = ref<DropdownMenuItem[]>([
@@ -110,8 +117,22 @@ const menuItems = ref<DropdownMenuItem[]>([
     },
 ]);
 
+function colorPicker() {
+    if (props.approvalStatus === "pending") {
+        return "warning";
+    } else if (props.approvalStatus === "accepted") {
+        return "primary";
+    } else if (props.approvalStatus === "rejected") {
+        return "error";
+    } else {
+        return "neutral";
+    }
+}
+
 function selectJob() {
     console.log("Job ID:", props.jobID);
-    navigateTo(`/dashboard/post/${props.jobID}`);
+    if (props.approvalStatus === "accepted") {
+        navigateTo(`/dashboard/post/${props.jobID}`);
+    }
 }
 </script>
