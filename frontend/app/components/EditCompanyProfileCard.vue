@@ -1,193 +1,166 @@
 <template>
   <div class="rounded-xl max-h-[90vh] overflow-y-auto">
     <div class="p-4 sm:p-5 md:p-6">
-      <!-- Header: banner + avatar -->
       <div class="relative">
-        <!-- Banner -->
         <div class="relative h-28 sm:h-32 md:h-36 w-full">
-          <img
-            :src="bannerPreview"
-            alt="Company banner"
-            class="h-full w-full object-cover"
-          />
-
-          <!-- Edit banner -->
+          <img :src="bannerPreview" alt="Company banner" class="h-full w-full object-cover" />
           <button
             type="button"
-            class="absolute right-3 top-3 inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-500 text-white shadow hover:bg-primary-600"
+            class="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary-500 text-white shadow hover:bg-primary-600 hover:cursor-pointer"
             @click="triggerBannerPicker"
             aria-label="Change banner"
           >
-            <Icon name="material-symbols:edit-square-outline-rounded" class="w-5 h-5" />
+            <Icon name="material-symbols:edit-square-outline-rounded" class="h-5 w-5" />
           </button>
-          <input
-            ref="bannerInput"
-            type="file"
-            accept="image/*"
-            class="hidden"
-            @change="onBannerSelected"
-          />
+          <input ref="bannerInput" type="file" accept="image/*" class="hidden" @change="onBannerSelected" />
         </div>
 
-        <!-- Logo -->
         <div class="absolute -bottom-10 left-4 z-20">
           <div class="relative">
-            <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gray-200 overflow-hidden shadow">
-              <img
-                v-if="logoPreview"
-                :src="logoPreview"
-                alt="Company logo"
-                class="w-full h-full object-cover"
-              />
-              <Icon v-else name="ic:baseline-account-circle" class="w-full h-full text-gray-400" />
+            <div class="h-20 w-20 overflow-hidden rounded-full bg-gray-200 shadow sm:h-24 sm:w-24">
+              <img v-if="logoPreview" :src="logoPreview" alt="Company logo" class="h-full w-full object-cover" />
+              <Icon v-else name="ic:baseline-account-circle" class="h-full w-full text-gray-400" />
             </div>
             <button
               type="button"
-              class="absolute -right-1 sm:right-0 bottom-0 translate-y-1 inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-500 text-white shadow hover:bg-primary-600"
+              class="absolute -right-1 bottom-0 translate-y-1 inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary-500 text-white shadow hover:bg-primary-600 hover:cursor-pointer sm:right-0"
               @click="triggerLogoPicker"
               aria-label="Change logo"
             >
-              <Icon name="material-symbols:edit-square-outline-rounded" class="w-5 h-5" />
+              <Icon name="material-symbols:edit-square-outline-rounded" class="h-5 w-5" />
             </button>
-            <input
-              ref="logoInput"
-              type="file"
-              accept="image/*"
-              class="hidden"
-              @change="onLogoSelected"
-            />
+            <input ref="logoInput" type="file" accept="image/*" class="hidden" @change="onLogoSelected" />
           </div>
         </div>
       </div>
-      <div class="pt-12"></div>
 
-      <!-- Form -->
-      <form class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2" @submit.prevent="save">
-        <!-- Company Name -->
-        <div class="md:col-span-2 text-primary-800 dark:text-primary font-semibold ">
-          Company Name
-        </div>
-        <UInput
-          v-model="form.companyName"
-          placeholder="Company Name"
-          class="md:col-span-2 rounded-md border border-gray-500 bg-white dark:bg-[#013B49] text-gray-900 dark:text-white"
-        />
+      <div class="pt-12" />
 
-        <!-- Address -->
-        <div class="md:col-span-2 text-primary-800 dark:text-primary font-semibold mt-1">
-          Address
-        </div>
-        <UInput
-          v-model="form.address"
-          placeholder="Address"
-          class="md:col-span-2 rounded-md border border-gray-500 bg-white dark:bg-[#013B49] text-gray-900 dark:text-white"
-        />
-
-        <!-- Location -->
-        <div class="md:col-span-2 text-primary-800 dark:text-primary font-semibold mt-1">
-          Location
-        </div>
-        <UInput
-          v-model="form.city"
-          placeholder="City"
-          class="rounded-md border border-gray-500 bg-white dark:bg-[#013B49] text-gray-900 dark:text-white"
-        />
-        <UInput
-          v-model="form.country"
-          placeholder="Country"
-           
-          class="rounded-md border border-gray-500 bg-white dark:bg-[#013B49] text-gray-900 dark:text-white"
-        />
-
-        <!-- Connections -->
-        <div class="md:col-span-2 text-primary-800 dark:text-primary font-semibold  mt-1">
-          Connections
-        </div>
-        <UInput
-          v-model="form.phone"
-          placeholder="Phone"
-          type="tel"
-          class="rounded-md border border-gray-500 bg-white dark:bg-[#013B49] text-gray-900 dark:text-white"
-        />
-        <UInput
-          v-model="form.mail"
-          placeholder="Mail"
-          type="email"
-          class="rounded-md border border-gray-500 bg-white dark:bg-[#013B49] text-gray-900 dark:text-white"
-        />
-        <!-- About us -->
-        <div class="md:col-span-2 text-primary-800 dark:text-primary font-semibold  mt-1">
-          About us
-        </div>
-        <div
-          class="md:col-span-2 max-h-56 md:max-h-64 overflow-y-auto rounded-md border border-gray-500  bg-white dark:bg-[#013B49]"
-        >
-          <UTextarea
-            v-model="form.aboutUs"
-            placeholder="About us"
-            :rows="6"
-            class="w-full bg-transparent border border-gray-500 focus:outline-none resize-none text-gray-900 dark:text-white"
+      <form class="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2" @submit.prevent="handleSubmit">
+        <div class="md:col-span-2">
+          <label class="block font-semibold text-primary-800 dark:text-primary">Company Name *</label>
+          <UInput
+            v-model="form.companyName"
+            placeholder="Company Name"
+            class="mt-1 w-full rounded-md border border-gray-500 bg-white text-gray-900 dark:bg-[#013B49] dark:text-white"
           />
+          <p v-if="errors.companyName" class="mt-1 text-sm text-red-500">{{ errors.companyName }}</p>
         </div>
-        <div></div>
-        <!-- Save & Discard -->
-            <div class="grid grid-cols-6 w-full">
-                <div class="col-span-12 md:col-start-9 md:col-span-4 flex justify-end gap-x-3 ml-auto">
-                    <!-- Discard -->
-                    <UButton
-                        class="size-fit text-xl rounded-md px-15 font-medium hover:bg-gray-800 hover:cursor-pointer"
-                        variant="outline" 
-                        color="neutral"
-                        label="Discard"
-                        @click="showDiscardConfirm = true"
-                    />
 
-                    <!-- Confirm Discard Modal -->
-                    <UModal
-                        v-model:open="showDiscardConfirm"
-                        title="Discard Change?"
-                        :dismissible="false"
-                        :ui="{
-                            title: 'text-xl font-semibold text-primary-800 dark:text-primary',
-                            container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
-                            overlay: 'fixed inset-0 bg-black/50',
-                        }"
-                    >
-                        <template #body>
-                            <div class="space-y-2">
-                                <p class="dark:text-white">
-                                    This will discard your current inputs. Are you sure?
-                                </p>
-                            </div>
-                        </template>
-                        <template #footer>
-                            <div class="flex justify-end gap-2">
-                                <UButton variant="outline" color="neutral" @click="cancelDiscard">
-                                    Cancel
-                                </UButton>
-                                <UButton color="primary" @click="confirmDiscard"> Discard </UButton>
-                            </div>
-                        </template>
-                    </UModal>
+        <div class="md:col-span-2">
+          <label class="block font-semibold text-primary-800 dark:text-primary">Company Email *</label>
+          <UInput
+            v-model="form.mail"
+            placeholder="Company Email"
+            type="email"
+            class="mt-1 w-full rounded-md border border-gray-500 bg-white text-gray-900 dark:bg-[#013B49] dark:text-white"
+          />
+          <p v-if="errors.mail" class="mt-1 text-sm text-red-500">{{ errors.mail }}</p>
+        </div>
 
-                    <!-- Save -->
-                    <UButton
-                        class="size-fit text-xl text-white rounded-md px-15 font-medium bg-primary-500 hover:bg-primary-700 hover:cursor-pointer active:bg-primary-800"
-                        type="submit"
-                        label="Save"
-                    />
-                </div>
-                </div>
+        <div class="md:col-span-2">
+          <label class="block font-semibold text-primary-800 dark:text-primary">Phone *</label>
+          <UInput
+            v-model="form.phone"
+            placeholder="Phone"
+            type="tel"
+            class="mt-1 w-full rounded-md border border-gray-500 bg-white text-gray-900 dark:bg-[#013B49] dark:text-white"
+          />
+          <p v-if="errors.phone" class="mt-1 text-sm text-red-500">{{ errors.phone }}</p>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block font-semibold text-primary-800 dark:text-primary">Address *</label>
+          <UInput
+            v-model="form.address"
+            placeholder="Address"
+            class="mt-1 w-full rounded-md border border-gray-500 bg-white text-gray-900 dark:bg-[#013B49] dark:text-white"
+          />
+          <p v-if="errors.address" class="mt-1 text-sm text-red-500">{{ errors.address }}</p>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block font-semibold text-primary-800 dark:text-primary">Location *</label>
+          <div class="mt-1 grid grid-cols-1 gap-2 md:grid-cols-2">
+            <div>
+              <UInput
+                v-model="form.city"
+                placeholder="City"
+                class="w-full rounded-md border border-gray-500 bg-white text-gray-900 dark:bg-[#013B49] dark:text-white"
+              />
+              <p v-if="errors.city" class="mt-1 text-sm text-red-500">{{ errors.city }}</p>
+            </div>
+            <div>
+              <UInput
+                v-model="form.country"
+                placeholder="Country"
+                class="w-full rounded-md border border-gray-500 bg-white text-gray-900 dark:bg-[#013B49] dark:text-white"
+              />
+              <p v-if="errors.country" class="mt-1 text-sm text-red-500">{{ errors.country }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block font-semibold text-primary-800 dark:text-primary">About us</label>
+          <div class="mt-1 rounded-md border border-gray-500 bg-white dark:bg-[#013B49]">
+            <UTextarea
+              v-model="form.aboutUs"
+              placeholder="About us"
+              :rows="6"
+              class="w-full bg-transparent text-gray-900 dark:text-white"
+            />
+          </div>
+          <p v-if="errors.aboutUs" class="mt-1 text-sm text-red-500">{{ errors.aboutUs }}</p>
+        </div>
+
+        <div class="md:col-span-2 flex flex-wrap justify-end gap-3 pt-4">
+          <UButton
+            type="button"
+            variant="outline"
+            color="neutral"
+            class="rounded-md px-4"
+            @click="openDiscardModal"
+          >
+            Discard
+          </UButton>
+          <UButton type="submit" color="primary" class="rounded-md px-5">
+            Save
+          </UButton>
+        </div>
       </form>
     </div>
   </div>
+
+  <UModal
+    v-model:open="showDiscardConfirm"
+    title="Discard changes?"
+    :dismissible="false"
+    :ui="{
+      title: 'text-xl font-semibold text-primary-800 dark:text-primary',
+      container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
+      overlay: 'fixed inset-0 bg-black/50'
+    }"
+  >
+    <template #body>
+      <p class="dark:text-white">This will discard your current inputs. Are you sure?</p>
+    </template>
+    <template #footer>
+      <div class="flex justify-end gap-2">
+        <UButton variant="outline" color="neutral" @click="hideDiscardModal">Cancel</UButton>
+        <UButton color="primary" @click="confirmDiscard">Discard</UButton>
+      </div>
+    </template>
+  </UModal>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, onBeforeUnmount } from 'vue'
+import { onBeforeUnmount, reactive, ref, watch } from 'vue'
 import * as z from 'zod'
 
-type Profile = {
+const { add: addToast } = useToast()
+
+interface Profile {
   name?: string
   address?: string
   website?: string
@@ -200,169 +173,224 @@ type Profile = {
   phone?: string
 }
 
+interface FormState {
+  companyName: string
+  mail: string
+  phone: string
+  address: string
+  city: string
+  country: string
+  aboutUs: string
+}
+
+type FormKey = keyof FormState
+
+type SavedPayload = Profile & {
+  _logoFile?: File | null
+  _bannerFile?: File | null
+}
+
 const props = defineProps<{ profile: Profile }>()
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'saved', val: Profile & { _logoFile?: File | null; _bannerFile?: File | null }): void
+  (e: 'saved', val: SavedPayload): void
 }>()
 
-const { add: addToast } = useToast()
+const PHONE_REGEX = /^\+(?:[1-9]\d{0,2})\d{4,14}$/
 const showDiscardConfirm = ref(false)
-const form = ref({
-  companyName: props.profile.name ?? '',
-  address: props.profile.address ?? '',
-  city: props.profile.city ?? '',
-  country: props.profile.country ?? '',
-  mail: props.profile.mail ?? '',
-  phone: props.profile.phone ?? '',
-  aboutUs: props.profile.aboutUs ?? ''
-})
-
-const errors = reactive<Record<string, string>>({
+const form = reactive<FormState>({
   companyName: '',
+  mail: '',
+  phone: '',
   address: '',
   city: '',
   country: '',
+  aboutUs: ''
+})
+
+const errors = reactive<Record<FormKey, string>>({
+  companyName: '',
   mail: '',
   phone: '',
+  address: '',
+  city: '',
+  country: '',
   aboutUs: ''
 })
 
 const schema = z.object({
-  companyName: z.string().min(1, 'Company name is required'),
-  address: z.string().min(1, 'Address is required'),
-  city: z.string().min(1, 'City is required'),
-  country: z.string().min(1, 'Country is required'),
-  mail: z
-    .string()
-    .min(1, 'Email is required')
-    .email('Email is invalid'),
-  phone: z
-    .string()
-    .optional()
-    .or(z.literal('')),
-  aboutUs: z.string()
+  companyName: z.string().trim().min(2, 'Name must be at least 2 characters'),
+  mail: z.string().trim().email('Please enter a valid email address'),
+  phone: z.string().trim().regex(PHONE_REGEX, 'Please enter a valid phone number'),
+  address: z.string().trim().min(5, 'Address must be at least 5 characters'),
+  city: z.string().trim().min(2, 'City must be at least 2 characters'),
+  country: z.string().trim().min(2, 'Country must be at least 2 characters'),
+  aboutUs: z.string().max(2000, 'About us must be 2,000 characters or less').optional()
 })
-
-
-function validateField(fieldName: keyof typeof form.value, value: unknown) {
-  try {
-    schema.pick({ [fieldName]: true } as any).parse({ [fieldName]: value })
-    if (typeof value === 'string' && value.trim() === '') {
-      errors[fieldName as string] = 'This field is required'
-      return false
-    }
-    errors[fieldName as string] = ''
-    return true
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      errors[fieldName as string] = error.issues[0]?.message ?? 'Invalid value'
-    } else {
-      errors[fieldName as string] = 'Invalid value'
-    }
-    return false
-  }
-}
-
-watch(() => form.value.companyName, v => validateField('companyName', v))
-watch(() => form.value.address,     v => validateField('address', v))
-watch(() => form.value.city,        v => validateField('city', v))
-watch(() => form.value.country,     v => validateField('country', v))
-watch(() => form.value.mail,        v => validateField('mail', v))
-watch(() => form.value.phone,       v => validateField('phone', v))
-watch(() => form.value.aboutUs,     v => validateField('aboutUs', v))
-
-function cancelDiscard() {
-  showDiscardConfirm.value = false
-}
-function confirmDiscard() {
-  showDiscardConfirm.value = false
-  addToast({
-    title: 'Changes discarded',
-    description: 'Old data reloaded.',
-    color: 'success'
-  })
-  emit('close')
-}
 
 const logoInput = ref<HTMLInputElement | null>(null)
 const logoFile = ref<File | null>(null)
-const logoPreview = ref<string>(props.profile.logo || '')
+const logoPreview = ref<string>('')
+
+const bannerInput = ref<HTMLInputElement | null>(null)
+const bannerFile = ref<File | null>(null)
+const bannerPreview = ref<string>('')
+
+watch(
+  () => props.profile,
+  (profile) => resetForm(profile),
+  { deep: true, immediate: true }
+)
+
+function resetForm(profile: Profile) {
+  form.companyName = profile.name ?? ''
+  form.mail = profile.mail ?? ''
+  form.phone = profile.phone ?? ''
+  form.address = profile.address ?? ''
+  form.city = profile.city ?? ''
+  form.country = profile.country ?? ''
+  form.aboutUs = profile.aboutUs ?? ''
+
+  updateLogoPreview(profile.logo ?? '')
+  updateBannerPreview(profile.banner ?? '')
+  logoFile.value = null
+  bannerFile.value = null
+  clearErrors()
+  runAllValidations()
+}
+
+function runAllValidations() {
+  ;(Object.keys(form) as FormKey[]).forEach((key) => validateField(key, form[key]))
+}
+
+function clearErrors() {
+  ;(Object.keys(errors) as FormKey[]).forEach((key) => (errors[key] = ''))
+}
+
+function validateField(field: FormKey, value: string) {
+  const result = (schema.shape[field] as z.ZodTypeAny).safeParse(value)
+  errors[field] = result.success ? '' : result.error.issues[0]?.message ?? 'Invalid value'
+  return result.success
+}
+
+;(Object.keys(form) as FormKey[]).forEach((key) => {
+  watch(
+    () => form[key],
+    (value) => validateField(key, value)
+  )
+})
 
 function triggerLogoPicker() {
   logoInput.value?.click()
 }
-function onLogoSelected(e: Event) {
-  const target = e.target as HTMLInputElement
+
+function onLogoSelected(event: Event) {
+  const target = event.target as HTMLInputElement
   const file = target.files?.[0]
   if (!file) return
-  const valid = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'].includes(file.type)
-  if (!valid) { addToast({ title: 'Unsupported file type', color: 'warning' }); target.value = ''; return }
-  const maxBytes = 2 * 1024 * 1024
-  if (file.size > maxBytes) { addToast({ title: 'File too large (max 2MB)', color: 'warning' }); target.value = ''; return }
-  if (logoPreview.value?.startsWith('blob:')) URL.revokeObjectURL(logoPreview.value)
+
+  if (!validateLogo(file)) {
+    target.value = ''
+    return
+  }
+
+  updateLogoPreview(URL.createObjectURL(file))
   logoFile.value = file
-  logoPreview.value = URL.createObjectURL(file)
 }
 
-const bannerInput = ref<HTMLInputElement | null>(null)
-const bannerFile = ref<File | null>(null)
-const bannerPreview = ref<string>(props.profile.banner || '')
+function validateLogo(file: File) {
+  const valid = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif']
+  if (!valid.includes(file.type)) {
+    addToast({ title: 'Unsupported file type', color: 'warning' })
+    return false
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    addToast({ title: 'File too large (max 2MB)', color: 'warning' })
+    return false
+  }
+  return true
+}
 
 function triggerBannerPicker() {
   bannerInput.value?.click()
 }
-function onBannerSelected(e: Event) {
-  const target = e.target as HTMLInputElement
+
+function onBannerSelected(event: Event) {
+  const target = event.target as HTMLInputElement
   const file = target.files?.[0]
   if (!file) return
-  const valid = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)
-  if (!valid) { addToast({ title: 'Unsupported banner type', color: 'warning' }); target.value = ''; return }
-  const maxBytes = 5 * 1024 * 1024
-  if (file.size > maxBytes) { addToast({ title: 'Banner too large (max 5MB)', color: 'warning' }); target.value = ''; return }
-  if (bannerPreview.value?.startsWith('blob:')) URL.revokeObjectURL(bannerPreview.value)
-  bannerFile.value = file
-  bannerPreview.value = URL.createObjectURL(file)
-}
 
-onBeforeUnmount(() => {
-  if (logoPreview.value?.startsWith('blob:')) URL.revokeObjectURL(logoPreview.value)
-  if (bannerPreview.value?.startsWith('blob:')) URL.revokeObjectURL(bannerPreview.value)
-})
-
-function onSubmit() {
-  const result = schema.safeParse(form.value)
-  if (!result.success) {
-    for (const issue of result.error.issues) {
-      const key = issue.path?.[0]
-      if (typeof key === 'string' && key in errors) {
-        errors[key] = issue.message
-      }
-    }
-    addToast({
-      title: 'Form submission failed',
-      description: 'Please check the highlighted errors and try again.',
-      color: 'warning'
-    })
+  if (!validateBanner(file)) {
+    target.value = ''
     return
   }
 
-  // success: emit payload + files, toast, and close
-  addToast({
-    title: 'Saved',
-    description: 'Company profile has been updated.',
-    color: 'success'
-  })
+  updateBannerPreview(URL.createObjectURL(file))
+  bannerFile.value = file
+}
+
+function validateBanner(file: File) {
+  const valid = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
+  if (!valid.includes(file.type)) {
+    addToast({ title: 'Unsupported banner type', color: 'warning' })
+    return false
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    addToast({ title: 'Banner too large (max 5MB)', color: 'warning' })
+    return false
+  }
+  return true
+}
+
+function updateLogoPreview(source: string) {
+  if (logoPreview.value?.startsWith('blob:')) URL.revokeObjectURL(logoPreview.value)
+  logoPreview.value = source
+}
+
+function updateBannerPreview(source: string) {
+  if (bannerPreview.value?.startsWith('blob:')) URL.revokeObjectURL(bannerPreview.value)
+  bannerPreview.value = source
+}
+
+function openDiscardModal() {
+  showDiscardConfirm.value = true
+}
+
+function hideDiscardModal() {
+  showDiscardConfirm.value = false
+}
+
+function confirmDiscard() {
+  hideDiscardModal()
+  resetForm(props.profile)
+  addToast({ title: 'Changes discarded', description: 'Old data reloaded.', color: 'success' })
+  emit('close')
+}
+
+function handleSubmit() {
+  const result = schema.safeParse({ ...form })
+  if (!result.success) {
+    result.error.issues.forEach((issue) => {
+      const key = issue.path[0]
+      if (typeof key === 'string' && key in errors) {
+        errors[key as FormKey] = issue.message
+      }
+    })
+    addToast({ title: 'Form submission failed', description: 'Please check the errors and try again.', color: 'warning' })
+    return
+  }
+
+  addToast({ title: 'Saved', description: 'Company profile has been updated.', color: 'success' })
 
   emit('saved', {
     ...props.profile,
-    name: form.value.companyName,
-    address: form.value.address,
-    city: form.value.city,
-    country: form.value.country,
-    mail: form.value.mail,
-    phone: form.value.phone,
-    aboutUs: form.value.aboutUs,
+    name: result.data.companyName,
+    mail: result.data.mail,
+    phone: result.data.phone,
+    address: result.data.address,
+    city: result.data.city,
+    country: result.data.country,
+    aboutUs: result.data.aboutUs ?? '',
     banner: bannerPreview.value || props.profile.banner || '',
     logo: logoPreview.value || props.profile.logo || '',
     _logoFile: logoFile.value,
@@ -372,6 +400,8 @@ function onSubmit() {
   emit('close')
 }
 
-const save = onSubmit
+onBeforeUnmount(() => {
+  if (logoPreview.value?.startsWith('blob:')) URL.revokeObjectURL(logoPreview.value)
+  if (bannerPreview.value?.startsWith('blob:')) URL.revokeObjectURL(bannerPreview.value)
+})
 </script>
-

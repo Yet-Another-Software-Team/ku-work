@@ -1,6 +1,5 @@
 <template>
   <div class="rounded-xl dark:bg-[#001F26] max-h-[90vh] overflow-y-auto p-5 w-full max-w-2xl">
-    <!-- Avatar -->
     <div class="w-full flex justify-center mb-10">
       <div class="relative">
         <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gray-200 overflow-hidden shadow">
@@ -10,7 +9,7 @@
         <button
           type="button"
           class="absolute -right-1 bottom-0 translate-y-1 inline-flex items-center justify-center w-9 h-9 rounded-full bg-emerald-500 text-white shadow hover:bg-emerald-600 ring-4 ring-white/60"
-          @click="pickAvatar"
+          @click="triggerAvatarPicker"
           aria-label="Change avatar"
         >
           <Icon name="material-symbols:edit-square-outline-rounded" class="w-5 h-5" />
@@ -19,11 +18,11 @@
       </div>
     </div>
 
-    <form class="grid grid-cols-1 md:grid-cols-2 gap-4" @submit.prevent="onSubmit">
+    <form class="grid grid-cols-1 md:grid-cols-2 gap-4" @submit.prevent="handleSubmit">
       <div class="md:col-span-2">
         <label class="block text-primary-800 dark:text-primary font-semibold mb-1">Name</label>
         <div class="rounded-lg border border-emerald-700/50 bg-gray-100 px-4 py-2 text-gray-900 dark:border-emerald-700/40 dark:bg-[#013B49] dark:text-white">
-          {{ props.profile.name || '�' }}
+          {{ displayName }}
         </div>
       </div>
 
@@ -37,6 +36,7 @@
           placeholder="Birth date"
           class="w-full rounded-lg border border-emerald-700/70 bg-white dark:bg-[#013B49] text-gray-900 dark:text-white"
         />
+        <p v-if="errors.dob" class="mt-1 text-sm text-red-500">{{ errors.dob }}</p>
       </div>
 
       <div class="col-span-1">
@@ -44,19 +44,21 @@
         <UInput
           id="phone"
           v-model="form.phone"
-          placeholder="Phone"
+          placeholder="Optional: +66919999999"
           class="w-full rounded-lg border border-emerald-700/70 bg-white dark:bg-[#013B49] text-gray-900 dark:text-white"
         />
+        <p v-if="errors.phone" class="mt-1 text-sm text-red-500">{{ errors.phone }}</p>
       </div>
 
       <div class="col-span-1">
-        <label for="github" class="block text-primary-800 dark:text-primary font-semibold mb-1">Github</label>
+        <label for="github" class="block text-primary-800 dark:text-primary font-semibold mb-1">GitHub</label>
         <UInput
           id="github"
           v-model="form.github"
-          placeholder="Github"
+          placeholder="Optional: https://github.com/username"
           class="w-full rounded-lg border border-emerald-700/70 bg-white dark:bg-[#013B49] text-gray-900 dark:text-white"
         />
+        <p v-if="errors.github" class="mt-1 text-sm text-red-500">{{ errors.github }}</p>
       </div>
 
       <div class="col-span-1">
@@ -64,9 +66,10 @@
         <UInput
           id="linkedin"
           v-model="form.linkedin"
-          placeholder="LinkedIn"
+          placeholder="Optional: https://linkedin.com/in/username"
           class="w-full rounded-lg border border-emerald-700/70 bg-white dark:bg-[#013B49] text-gray-900 dark:text-white"
         />
+        <p v-if="errors.linkedin" class="mt-1 text-sm text-red-500">{{ errors.linkedin }}</p>
       </div>
 
       <div class="md:col-span-2">
@@ -75,26 +78,29 @@
           <UTextarea
             id="aboutMe"
             v-model="form.aboutMe"
-            placeholder="About me"
+            placeholder="Optional: Tell us about yourself"
             :rows="6"
             class="w-full bg-transparent border-0 focus:outline-none resize-none text-gray-900 dark:text-white"
           />
         </div>
       </div>
 
-      <!-- Save & Discard -->
       <div class="md:col-span-2 flex flex-wrap justify-end gap-3 pt-2 w-full">
-        <!-- Discard -->
         <UButton
           type="button"
           variant="outline"
           color="neutral"
           class="rounded-md px-4"
-          @click="showDiscardConfirm = true"
+          @click="openDiscardModal"
         >
           Discard
         </UButton>
-          <!-- Confirm Discard Modal -->
+        <UButton type="submit" color="primary" class="rounded-md px-5">
+          Save
+        </UButton>
+      </div>
+    </form>
+
     <UModal
       v-model:open="showDiscardConfirm"
       title="Discard changes?"
@@ -110,31 +116,21 @@
       </template>
       <template #footer>
         <div class="flex justify-end gap-2">
-          <UButton variant="outline" color="neutral" @click="cancelDiscard">
-            Cancel
-          </UButton>
-          <UButton color="primary" @click="confirmDiscard">
-            Discard
-          </UButton>
+          <UButton variant="outline" color="neutral" @click="hideDiscardModal">Cancel</UButton>
+          <UButton color="primary" @click="confirmDiscard">Discard</UButton>
         </div>
       </template>
     </UModal>
-        <!-- Save -->
-        <UButton type="submit" color="primary" class="rounded-md px-5">
-          Save
-        </UButton>
-      </div>
-    </form>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import * as z from 'zod'
 
 const { add: addToast } = useToast()
-const showDiscardConfirm = ref(false)
 
-type StudentProfile = {
+interface StudentProfile {
   name?: string
   birthDate?: string
   phone?: string
@@ -144,13 +140,28 @@ type StudentProfile = {
   photo?: string
 }
 
+interface FormState {
+  dob: string
+  phone: string
+  github: string
+  linkedin: string
+  aboutMe: string
+}
+
+type FormKey = keyof FormState
+
+type SavedPayload = StudentProfile & { _avatarFile?: File | null }
+
 const props = defineProps<{ profile: StudentProfile }>()
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'saved', payload: StudentProfile & { name?: string; _avatarFile?: File | null }): void
+  (e: 'saved', payload: SavedPayload): void
 }>()
 
-const form = reactive({
+const PHONE_REGEX = /^\+(?:[1-9]\d{0,2})\d{4,14}$/
+const MAX_ABOUT = 16384
+
+const form = reactive<FormState>({
   dob: '',
   phone: '',
   github: '',
@@ -158,9 +169,45 @@ const form = reactive({
   aboutMe: ''
 })
 
+const errors = reactive<Record<FormKey, string>>({
+  dob: '',
+  phone: '',
+  github: '',
+  linkedin: '',
+  aboutMe: ''
+})
+
+const schema = z.object({
+  dob: z.string().min(1, 'Date of birth is required'),
+  phone: z
+    .string()
+    .optional()
+    .refine((value) => !value || PHONE_REGEX.test(value), 'Please enter a valid phone number'),
+  github: z
+    .string()
+    .max(256, 'GitHub URL must be 256 characters or less')
+    .optional()
+    .refine((url) => !url || isHost(url, 'github.com'), 'Must be a valid GitHub URL'),
+  linkedin: z
+    .string()
+    .max(256, 'LinkedIn URL must be 256 characters or less')
+    .optional()
+    .refine((url) => !url || isHost(url, 'linkedin.com'), 'Must be a valid LinkedIn URL'),
+  aboutMe: z.string().max(MAX_ABOUT, `About me must be ${MAX_ABOUT.toLocaleString()} characters or less`).optional()
+})
+
 const avatarInput = ref<HTMLInputElement | null>(null)
 const avatarPreview = ref<string>('')
 const avatarFile = ref<File | null>(null)
+const showDiscardConfirm = ref(false)
+
+const displayName = computed(() => props.profile?.name?.trim() || 'N/A')
+
+watch(
+  () => props.profile,
+  (profile) => resetForm(profile),
+  { immediate: true, deep: true }
+)
 
 function resetForm(profile: StudentProfile) {
   form.dob = profile.birthDate ? profile.birthDate.slice(0, 10) : ''
@@ -169,63 +216,101 @@ function resetForm(profile: StudentProfile) {
   form.linkedin = profile.linkedIn ?? ''
   form.aboutMe = profile.aboutMe ?? ''
 
-  if (avatarPreview.value?.startsWith('blob:')) {
-    URL.revokeObjectURL(avatarPreview.value)
-  }
-  avatarPreview.value = profile.photo ?? ''
+  updateAvatarPreview(profile.photo ?? '')
   avatarFile.value = null
+  clearErrors()
+  runAllValidations()
 }
 
-watch(
-  () => props.profile,
-  (profile) => {
-    resetForm(profile)
-  },
-  { immediate: true, deep: true }
-)
+function runAllValidations() {
+  ;(Object.keys(form) as FormKey[]).forEach((key) => validateField(key, form[key]))
+}
 
-function pickAvatar() {
+function clearErrors() {
+  ;(Object.keys(errors) as FormKey[]).forEach((key) => (errors[key] = ''))
+}
+
+function validateField(field: FormKey, value: string) {
+  const result = (schema.shape[field] as z.ZodTypeAny).safeParse(value)
+  errors[field] = result.success ? '' : result.error.issues[0]?.message ?? 'Invalid value'
+  return result.success
+}
+
+;(Object.keys(form) as FormKey[]).forEach((key) => {
+  watch(
+    () => form[key],
+    (value) => validateField(key, value)
+  )
+})
+
+function triggerAvatarPicker() {
   avatarInput.value?.click()
 }
 
 function onAvatarSelected(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
+  updateAvatarPreview(URL.createObjectURL(file))
+  avatarFile.value = file
+}
 
+function updateAvatarPreview(source: string) {
   if (avatarPreview.value?.startsWith('blob:')) {
     URL.revokeObjectURL(avatarPreview.value)
   }
-
-  avatarFile.value = file
-  avatarPreview.value = URL.createObjectURL(file)
+  avatarPreview.value = source
 }
 
-function cancelDiscard() {
+function openDiscardModal() {
+  showDiscardConfirm.value = true
+}
+
+function hideDiscardModal() {
   showDiscardConfirm.value = false
 }
 
 function confirmDiscard() {
-  showDiscardConfirm.value = false
+  hideDiscardModal()
   resetForm(props.profile)
-  addToast({
-    title: 'Changes discarded',
-    description: 'Old data reloaded.',
-    color: 'success'
-  })
+  addToast({ title: 'Changes discarded', description: 'Old data reloaded.', color: 'success' })
   emit('close')
 }
 
-function onSubmit() {
+function handleSubmit() {
+  const result = schema.safeParse({ ...form })
+  if (!result.success) {
+    result.error.issues.forEach((issue) => {
+      const key = issue.path[0]
+      if (typeof key === 'string' && key in errors) {
+        errors[key as FormKey] = issue.message
+      }
+    })
+    addToast({ title: 'Form submission failed', description: 'Please check the highlighted errors and try again.', color: 'warning' })
+    return
+  }
+
+  addToast({ title: 'Saved', description: 'Profile updated successfully.', color: 'success' })
+
   emit('saved', {
     ...props.profile,
-    birthDate: form.dob || props.profile.birthDate,
-    phone: form.phone,
-    github: form.github,
-    linkedIn: form.linkedin,
-    aboutMe: form.aboutMe,
+    birthDate: result.data.dob,
+    phone: result.data.phone ?? '',
+    github: result.data.github ?? '',
+    linkedIn: result.data.linkedin ?? '',
+    aboutMe: result.data.aboutMe ?? '',
     photo: avatarPreview.value || props.profile.photo || '',
     _avatarFile: avatarFile.value
   })
+
+  emit('close')
+}
+
+function isHost(url: string, expectedHost: string) {
+  try {
+    return new URL(url).hostname.includes(expectedHost)
+  } catch {
+    return false
+  }
 }
 
 onBeforeUnmount(() => {

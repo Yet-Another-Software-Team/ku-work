@@ -33,32 +33,17 @@
                 </p>
             </div>
 
-            <UModal
-            v-model:open="openEditModal"
-            :ui="{
-                container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
-                overlay: 'fixed inset-0 bg-black/50',
-                content: 'w-full max-w-6xl'
-            }"
-            >
             <!-- Edit Button -->
-             <Ubutton
-                    v-if="isOwner"
-                    class="px-4 py-2 border border-gray-400 rounded-md text-sm hover:bg-gray-100 hover:cursor-pointer dark:hover:bg-gray-700 flex items-center mt-4 ml-auto mb-auto"
-                    @click="openEditModal = true"
-                >
-                    <Icon name="material-symbols:edit-square-outline-rounded" class="size-[1.5em]" />
-                    Edit Profile
-                </Ubutton>
-            <template #content>
-                <!-- Your editor component inside the modal -->
-                <EditCompanyProfileCard
-                :profile="data.profile"
-                @close="openEditModal = false"
-                @saved="onSaved"
-                />
-            </template>
-            </UModal>
+            <UButton
+                v-if="isOwner"
+                variant="outline"
+                color="neutral"
+                class="px-4 py-2 text-sm hover:cursor-pointer flex items-center mt-4 ml-auto mb-auto"
+                @click="openEditModal = true"
+            >
+                <Icon name="material-symbols:edit-square-outline-rounded" class="size-[1.5em]" />
+                Edit Profile
+            </UButton>
         </div>
 
         <!-- Divider -->
@@ -109,6 +94,23 @@
                 </p>
             </div>
         </div>
+
+        <UModal
+            v-model:open="openEditModal"
+            :ui="{
+                container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
+                overlay: 'fixed inset-0 bg-black/50',
+                content: 'w-full max-w-6xl'
+            }"
+        >
+            <template #content>
+                <EditCompanyProfileCard
+                    :profile="data.profile"
+                    @close="openEditModal = false"
+                    @saved="onSaved"
+                />
+            </template>
+        </UModal>
     </div>
 </template>
 

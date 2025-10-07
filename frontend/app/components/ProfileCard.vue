@@ -42,7 +42,8 @@
             <!-- Edit Button -->
             <UButton
                 variant="outline"
-                class="px-4 py-2 border border-gray-400 rounded-md text-sm hover:bg-gray-100 hover:cursor-pointer dark:hover:bg-gray-700 flex items-center mt-4 ml-auto mb-auto"
+                color="neutral"
+                class="px-4 py-2 rounded-md text-sm hover:bg-gray-100 hover:cursor-pointer dark:text-white dark:hover:bg-gray-700 flex items-center mt-4 ml-auto mb-auto"
                 @click="isEditModalOpen = true"
             >
                 <Icon name="material-symbols:edit-square-outline-rounded" class="size-[1.5em]" />
