@@ -297,7 +297,7 @@ func TestCompany(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		assert.Equal(t, result.Company.Address, "1234 gay street bangcock thailand")
-		assert.Equal(t, result.Company.Phone, "0123456789")
+		assert.Equal(t, result.Address, "1234 gay street bangcock thailand")
+		assert.Equal(t, result.Phone, "0123456789")
 	})
 }
