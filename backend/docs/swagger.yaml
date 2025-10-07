@@ -123,7 +123,7 @@ definitions:
         maxLength: 128
         type: string
     type: object
-  handlers.JobApplicationWithApplicantDetails:
+  handlers.FullApplicantDetail:
     properties:
       aboutMe:
         type: string
@@ -160,31 +160,6 @@ definitions:
       username:
         type: string
     type: object
-  handlers.JobApplicationWithApplicantName:
-    properties:
-      createdAt:
-        type: string
-      email:
-        type: string
-      files:
-        items:
-          $ref: '#/definitions/model.File'
-        type: array
-      id:
-        type: integer
-      jobId:
-        type: integer
-      major:
-        type: string
-      phone:
-        type: string
-      status:
-        type: string
-      userId:
-        type: string
-      username:
-        type: string
-    type: object
   handlers.JobResponse:
     properties:
       approvalStatus:
@@ -205,8 +180,6 @@ definitions:
         type: string
       id:
         type: integer
-      isOpen:
-        type: boolean
       jobType:
         type: string
       location:
@@ -217,6 +190,8 @@ definitions:
         type: integer
       name:
         type: string
+      open:
+        type: boolean
       photoId:
         type: string
       position:
@@ -246,8 +221,6 @@ definitions:
         type: string
       id:
         type: integer
-      isOpen:
-        type: boolean
       jobType:
         type: string
       location:
@@ -258,6 +231,8 @@ definitions:
         type: integer
       name:
         type: string
+      open:
+        type: boolean
       pending:
         type: integer
       photoId:
@@ -272,6 +247,33 @@ definitions:
   handlers.LoginRequest:
     properties:
       password:
+        type: string
+      username:
+        type: string
+    type: object
+  handlers.ShortApplicationDetail:
+    properties:
+      createdAt:
+        type: string
+      email:
+        type: string
+      files:
+        items:
+          $ref: '#/definitions/model.File'
+        type: array
+      id:
+        type: integer
+      jobId:
+        type: integer
+      major:
+        type: string
+      phone:
+        type: string
+      status:
+        type: string
+      studentId:
+        type: string
+      userId:
         type: string
       username:
         type: string
@@ -378,7 +380,7 @@ paths:
           description: List of job applications
           schema:
             items:
-              $ref: '#/definitions/handlers.JobApplicationWithApplicantName'
+              $ref: '#/definitions/handlers.ShortApplicationDetail'
             type: array
         "401":
           description: Unauthorized
@@ -1225,7 +1227,7 @@ paths:
           description: List of job applications
           schema:
             items:
-              $ref: '#/definitions/handlers.JobApplicationWithApplicantName'
+              $ref: '#/definitions/handlers.ShortApplicationDetail'
             type: array
         "400":
           description: 'Bad Request: Invalid job ID'
@@ -1289,7 +1291,7 @@ paths:
         "200":
           description: Detailed job application
           schema:
-            $ref: '#/definitions/handlers.JobApplicationWithApplicantDetails'
+            $ref: '#/definitions/handlers.FullApplicantDetail'
         "400":
           description: 'Bad Request: Invalid job ID'
           schema:

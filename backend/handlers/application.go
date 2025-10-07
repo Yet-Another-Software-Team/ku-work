@@ -32,16 +32,17 @@ type ApplyJobInput struct {
 	Files    []*multipart.FileHeader `form:"files" binding:"max=2,required"`
 }
 
-// JobApplicationWithApplicantName defines the response structure including the applicant's name.
-type JobApplicationWithApplicantName struct {
+// ShortApplicationDetail defines the response structure including the applicant's name.
+type ShortApplicationDetail struct {
 	model.JobApplication
-	Username string `json:"username"`
-	Major    string `json:"major"`
-	Status   string `json:"status"`
+	Username  string `json:"username"`
+	Major     string `json:"major"`
+	StudentID string `json:"studentId"`
+	Status    string `json:"status"`
 }
 
-// JobApplicationWithApplicantDetails defines the response structure for a detailed application view.
-type JobApplicationWithApplicantDetails struct {
+// FullApplicantDetail defines the response structure for a detailed application view.
+type FullApplicantDetail struct {
 	model.JobApplication
 	Username  string    `json:"username"`
 	Email     string    `json:"email"`
@@ -118,6 +119,23 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
+	
+	// Use the student's profile phone and email as the default contact information if none is provided
+	googleOAuthDetails := model.GoogleOAuthDetails{}
+	result = h.DB.Where("user_id = ?", student.UserID).First(&googleOAuthDetails)
+	if result.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+
+	if input.AltPhone == "" {
+		input.AltPhone = student.Phone
+	}
+	if input.AltEmail == "" {
+		input.AltEmail = googleOAuthDetails.Email
+	}
+
+	
 	jobApplication := model.JobApplication{
 		UserID:   student.UserID,
 		JobID:    job.ID,
@@ -165,7 +183,7 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 // @Param status query string false "Filter by status (pending, accepted, rejected)"
 // @Param offset query int false "Offset for pagination" default(0)
 // @Param limit query int false "Limit for pagination" default(32)
-// @Success 200 {array} handlers.JobApplicationWithApplicantName "List of job applications"
+// @Success 200 {array} handlers.ShortApplicationDetail "List of job applications"
 // @Failure 400 {object} object{error=string} "Bad Request: Invalid job ID"
 // @Failure 401 {object} object{error=string} "Unauthorized"
 // @Failure 403 {object} object{error=string} "Forbidden: User is not authorized to view these applications"
@@ -240,6 +258,7 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 		Select("job_applications.*",
 			"CONCAT(google_o_auth_details.FirstName, ' ', google_o_auth_details.LastName) as username",
 			"students.major as major",
+			"students.student_id as studentId",
 			"job_applications.status as status").
 		Where("job_applications.job_id = ?", jobId)
 
@@ -249,7 +268,7 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 	}
 
 	// Execute query with pagination and preload associated files
-	var jobApplications []JobApplicationWithApplicantName
+	var jobApplications []ShortApplicationDetail
 	result := query.Offset(int(input.Offset)).Limit(int(input.Limit)).Preload("Files").Find(&jobApplications)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
@@ -265,7 +284,7 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 // @Produce json
 // @Param id path uint true "Job ID"
 // @Param studentId path string true "Student User ID"
-// @Success 200 {object} handlers.JobApplicationWithApplicantDetails "Detailed job application"
+// @Success 200 {object} handlers.FullApplicantDetail "Detailed job application"
 // @Failure 400 {object} object{error=string} "Bad Request: Invalid job ID"
 // @Failure 401 {object} object{error=string} "Unauthorized"
 // @Failure 404 {object} object{error=string} "Not Found: Job application not found"
@@ -285,7 +304,7 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 	studentId := ctx.Param("studentId")
 
 	// Query for the specific job application with full student details
-	var jobApplication JobApplicationWithApplicantDetails
+	var jobApplication FullApplicantDetail
 	query := h.DB.Model(&model.JobApplication{}).
 		Joins("INNER JOIN users ON users.id = job_applications.user_id").
 		Joins("LEFT JOIN students ON students.user_id = job_applications.user_id").
@@ -316,7 +335,7 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 // @Produce json
 // @Param offset query int false "Offset for pagination" default(0)
 // @Param limit query int false "Limit for pagination" default(32)
-// @Success 200 {array} handlers.JobApplicationWithApplicantName "List of job applications"
+// @Success 200 {array} handlers.ShortApplicationDetail "List of job applications"
 // @Failure 401 {object} object{error=string} "Unauthorized"
 // @Failure 403 {object} object{error=string} "Forbidden: User is not a company or student"
 // @Failure 500 {object} object{error=string} "Internal Server Error"
@@ -387,7 +406,7 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 	}
 
 	// Execute query with pagination and preload associated files
-	var jobApplications []JobApplicationWithApplicantName
+	var jobApplications []ShortApplicationDetail
 	result = query.Offset(int(input.Offset)).Limit(int(input.Limit)).Preload("Files").Find(&jobApplications)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})

@@ -56,7 +56,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.JobApplicationWithApplicantName"
+                                "$ref": "#/definitions/handlers.ShortApplicationDetail"
                             }
                         }
                     },
@@ -1335,7 +1335,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.JobApplicationWithApplicantName"
+                                "$ref": "#/definitions/handlers.ShortApplicationDetail"
                             }
                         }
                     },
@@ -1432,7 +1432,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Detailed job application",
                         "schema": {
-                            "$ref": "#/definitions/handlers.JobApplicationWithApplicantDetails"
+                            "$ref": "#/definitions/handlers.FullApplicantDetail"
                         }
                     },
                     "400": {
@@ -2346,7 +2346,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.JobApplicationWithApplicantDetails": {
+        "handlers.FullApplicantDetail": {
             "type": "object",
             "properties": {
                 "aboutMe": {
@@ -2402,44 +2402,6 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.JobApplicationWithApplicantName": {
-            "type": "object",
-            "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "files": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.File"
-                    }
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "jobId": {
-                    "type": "integer"
-                },
-                "major": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "userId": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
         "handlers.JobResponse": {
             "type": "object",
             "properties": {
@@ -2470,9 +2432,6 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
-                "isOpen": {
-                    "type": "boolean"
-                },
                 "jobType": {
                     "type": "string"
                 },
@@ -2487,6 +2446,9 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "open": {
+                    "type": "boolean"
                 },
                 "photoId": {
                     "type": "string"
@@ -2532,9 +2494,6 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
-                "isOpen": {
-                    "type": "boolean"
-                },
                 "jobType": {
                     "type": "string"
                 },
@@ -2549,6 +2508,9 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "open": {
+                    "type": "boolean"
                 },
                 "pending": {
                     "type": "integer"
@@ -2571,6 +2533,47 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.ShortApplicationDetail": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.File"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "jobId": {
+                    "type": "integer"
+                },
+                "major": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "studentId": {
+                    "type": "string"
+                },
+                "userId": {
                     "type": "string"
                 },
                 "username": {
