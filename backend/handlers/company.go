@@ -31,12 +31,16 @@ func (h *CompanyHandlers) EditProfileHandler(ctx *gin.Context) {
 	userId := ctx.MustGet("userID").(string)
 	// Expected form of data from request (ctx), no data is required, partial data is allowed.
 	type CompanyEditProfileInput struct {
-		Phone   *string               `form:"phone" binding:"omitempty,max=20"`
-		Address *string               `form:"address" binding:"omitempty,max=512"`
-		City    *string               `form:"city" binding:"omitempty,max=128"`
-		Country *string               `form:"country" binding:"omitempty,max=128"`
-		Photo   *multipart.FileHeader `form:"photo" binding:"omitempty"`
-		Banner  *multipart.FileHeader `form:"banner" binding:"omitempty"`
+		Phone    *string               `form:"phone" binding:"omitempty,max=20"`
+		Address  *string               `form:"address" binding:"omitempty,max=512"`
+		City     *string               `form:"city" binding:"omitempty,max=128"`
+		Country  *string               `form:"country" binding:"omitempty,max=128"`
+		Photo    *multipart.FileHeader `form:"photo" binding:"omitempty"`
+		Banner   *multipart.FileHeader `form:"banner" binding:"omitempty"`
+		Email    *string               `form:"email" binding:"omitempty,max=100"`
+		Website  *string               `form:"website" binding:"omitempty,max=200"`
+		AboutUs  *string               `form:"about" binding:"omitempty,max=16384"`
+		Username *string               `form:"username" binding:"omitempty,max=256"`
 	}
 	input := CompanyEditProfileInput{}
 
@@ -45,6 +49,32 @@ func (h *CompanyHandlers) EditProfileHandler(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+
+	if input.Username != nil {
+		var usernameCount int64
+		if err := h.DB.Model(&model.User{}).Where(&model.User{
+			Username: *input.Username,
+		}).Count(&usernameCount).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if usernameCount > 0 {
+			ctx.JSON(http.StatusConflict, gin.H{"error": "username already exist"})
+			return
+		}
+		user := model.User{
+			ID: userId,
+		}
+		if err := h.DB.Take(&user).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		user.Username = *input.Username
+		if err := h.DB.Save(&user).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 	}
 
 	// Get current company data
@@ -68,6 +98,15 @@ func (h *CompanyHandlers) EditProfileHandler(ctx *gin.Context) {
 	}
 	if input.Country != nil {
 		company.Country = *input.Country
+	}
+	if input.Email != nil {
+		company.Email = *input.Email
+	}
+	if input.Website != nil {
+		company.Website = *input.Website
+	}
+	if input.AboutUs != nil {
+		company.AboutUs = *input.AboutUs
 	}
 	if input.Photo != nil {
 		photo, err := SaveFile(ctx, h.DB, userId, input.Photo, model.FileCategoryImage)

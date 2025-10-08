@@ -148,14 +148,52 @@ const profile = ref({
 });
 
 const openEditModal = ref(false);
-
-function onSaved(updated: unknown) {
-    Object.assign(profile, updated);
-    openEditModal.value = false;
-}
-
 const api = useApi();
 const config = useRuntimeConfig();
+const toast = useToast();
+
+async function onSaved(updated: {
+    name?: string;
+    address?: string;
+    website?: string;
+    banner?: string;
+    photo?: string;
+    about?: string;
+    city?: string;
+    country?: string;
+    email?: string;
+    phone?: string;
+    _logoFile?: File | null;
+    _bannerFile?: File | null;
+}) {
+    openEditModal.value = false;
+    const formData = new FormData();
+    if (profile.value.name !== updated.name) formData.append("username", updated.name!);
+    if (profile.value.address !== updated.address) formData.append("address", updated.address!);
+    if (profile.value.website !== updated.website) formData.append("website", updated.website!);
+    if (profile.value.city !== updated.city) formData.append("city", updated.city!);
+    if (profile.value.about !== updated.about) formData.append("about", updated.about!);
+    if (profile.value.country !== updated.country) formData.append("country", updated.country!);
+    if (profile.value.email !== updated.email) formData.append("email", updated.email!);
+    if (profile.value.phone !== updated.phone) formData.append("phone", updated.phone!);
+    if (updated._logoFile) formData.append("photo", updated._logoFile!);
+    if (updated._bannerFile) formData.append("banner", updated._bannerFile!);
+    Object.assign(profile, updated);
+    try {
+        await api.patch("/company", formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        });
+    } catch (error) {
+        console.log(error);
+        toast.add({
+            title: "Failed to update profile",
+            description: (error as { message: string }).message,
+            color: "error",
+        });
+    }
+}
 
 onMounted(async () => {
     try {
