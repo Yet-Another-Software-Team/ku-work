@@ -572,3 +572,49 @@ func (h *JobHandlers) FetchJobApplications(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, jobApplications)
 }
+
+// Accept or reject job applications
+func (h *JobHandlers) AcceptJobApplication(ctx *gin.Context) {
+	// Get user ID from context (auth middleware)
+	userId := ctx.MustGet("userID").(string)
+
+	// Bind input data to struct
+	type AcceptJobApplicationInput struct {
+		ID     uint `json:"id" form:"id"`
+		Accept bool `json:"accept" form:"accept"`
+	}
+
+	input := AcceptJobApplicationInput{}
+	err := ctx.Bind(&input)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	
+	// Get Job application
+	jobApplication := model.JobApplication{}
+	if err := h.DB.Model(&jobApplication).
+		Joins("INNER JOIN jobs ON jobs.id = job_applications.job_id").
+		Where("jobs.company_id = ?", userId).
+		Where("job_applications.id = ?", input.ID).
+		Take(&jobApplication).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Set new status
+	if input.Accept {
+		jobApplication.Status = model.JobApplicationAccepted
+	} else {
+		jobApplication.Status = model.JobApplicationRejected
+	}
+
+	// Save
+	if err := h.DB.Save(&jobApplication).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Return ok message
+	ctx.JSON(http.StatusOK, gin.H{"message": "ok"})
+}
