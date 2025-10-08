@@ -153,7 +153,7 @@ const fetchJobs = async (offset?: number) => {
         jobForm.append("maxsalary", salaryRange.value[1] as unknown as string);
     }
     try {
-        const response = await api.get("/job", {
+        const response = await api.get("/jobs", {
             params: jobForm,
         });
         currentJobOffset += jobsLimitPerFetch;

@@ -19,8 +19,8 @@
             <!-- Icon -->
             <div class="flex items-center justify-center w-20 h-20 rounded-md">
                 <img
-                    v-if="data.company.photoId"
-                    :src="`${runtimeConfig.public.apiBaseUrl}/files/${data.company.photoId}`"
+                    v-if="data.photoId"
+                    :src="`${runtimeConfig.public.apiBaseUrl}/files/${data.photoId}`"
                     alt="Company Logo"
                     class="size-full rounded-md object-cover"
                 />
@@ -45,7 +45,7 @@
                         {{ data.jobType }}
                     </span>
                     <span class="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">
-                        {{ data.experienceType }}
+                        {{ data.experience }}
                     </span>
                 </div>
             </div>

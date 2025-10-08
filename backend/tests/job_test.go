@@ -23,7 +23,6 @@ func TestJob(t *testing.T) {
 		var userCreationResult *UserCreationResult
 		if userCreationResult, err = CreateUser(UserCreationInfo{
 			Username:  fmt.Sprintf("createjobtester-%d", time.Now().UnixNano()),
-			IsAdmin:   true,
 			IsCompany: true,
 		}); err != nil {
 			t.Error(err)
@@ -46,7 +45,7 @@ func TestJob(t *testing.T) {
 	"minsalary": 1,
 	"maxsalary": 2
 }`, jobName)
-		req, _ := http.NewRequest("POST", "/job", strings.NewReader(payload))
+		req, _ := http.NewRequest("POST", "/jobs", strings.NewReader(payload))
 		jwtHandler := handlers.NewJWTHandlers(db)
 		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
 		if err != nil {
@@ -90,7 +89,6 @@ func TestJob(t *testing.T) {
 		var userCreationResult *UserCreationResult
 		if userCreationResult, err = CreateUser(UserCreationInfo{
 			Username:  fmt.Sprintf("editjobtester-%d", time.Now().UnixNano()),
-			IsAdmin:   true,
 			IsCompany: true,
 		}); err != nil {
 			t.Error(err)
@@ -118,13 +116,12 @@ func TestJob(t *testing.T) {
 			return
 		}
 		w := httptest.NewRecorder()
-		payload := fmt.Sprintf(`{
-	"id": %d,
+		payload := `{
 	"name": "good job",
 	"position": "software tester",
 	"description": "test software"
-}`, job.ID)
-		req, _ := http.NewRequest("PATCH", "/job", strings.NewReader(payload))
+}`
+		req, _ := http.NewRequest("PATCH", fmt.Sprintf("/jobs/%d", job.ID), strings.NewReader(payload))
 		jwtHandler := handlers.NewJWTHandlers(db)
 		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
 		if err != nil {
@@ -169,7 +166,6 @@ func TestJob(t *testing.T) {
 		var userCreationResult *UserCreationResult
 		if userCreationResult, err = CreateUser(UserCreationInfo{
 			Username:  fmt.Sprintf("fetchjobtester-%d", time.Now().UnixNano()),
-			IsAdmin:   true,
 			IsCompany: true,
 		}); err != nil {
 			t.Error(err)
@@ -230,7 +226,7 @@ func TestJob(t *testing.T) {
 			return
 		}
 		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("GET", "/job?keyword=nice", strings.NewReader(""))
+		req, _ := http.NewRequest("GET", "/jobs?keyword=nice", strings.NewReader(""))
 		jwtHandler := handlers.NewJWTHandlers(db)
 		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
 		if err != nil {
@@ -267,22 +263,33 @@ func TestJob(t *testing.T) {
 	})
 	t.Run("Approve", func(t *testing.T) {
 		var err error
-		var userCreationResult *UserCreationResult
-		if userCreationResult, err = CreateUser(UserCreationInfo{
-			Username:  fmt.Sprintf("approvejobtester-%d", time.Now().UnixNano()),
-			IsAdmin:   true,
+		// Create admin user for approval
+		var adminUser *UserCreationResult
+		if adminUser, err = CreateUser(UserCreationInfo{
+			Username: fmt.Sprintf("approvejobtester-admin-%d", time.Now().UnixNano()),
+			IsAdmin:  true,
+		}); err != nil {
+			t.Error(err)
+			return
+		}
+		defer (func() {
+			_ = db.Delete(&adminUser.User)
+		})()
+		// Create company user for job ownership
+		var companyUser *UserCreationResult
+		if companyUser, err = CreateUser(UserCreationInfo{
+			Username:  fmt.Sprintf("approvejobtester-company-%d", time.Now().UnixNano()),
 			IsCompany: true,
 		}); err != nil {
 			t.Error(err)
 			return
 		}
 		defer (func() {
-			_ = db.Delete(&userCreationResult.User)
+			_ = db.Delete(&companyUser.User)
 		})()
-		company := userCreationResult.Company
 		job := model.Job{
 			Name:        fmt.Sprintf("nice-job-%d", time.Now().UnixNano()),
-			CompanyID:   company.UserID,
+			CompanyID:   companyUser.Company.UserID,
 			Position:    "software engineer",
 			Duration:    "6 months",
 			Description: "make software",
@@ -298,10 +305,10 @@ func TestJob(t *testing.T) {
 			return
 		}
 		w := httptest.NewRecorder()
-		payload := fmt.Sprintf(`{"id": %d,"approve": true}`, job.ID)
-		req, _ := http.NewRequest("POST", "/job/approve", strings.NewReader(payload))
+		payload := `{"approve": true}`
+		req, _ := http.NewRequest("POST", fmt.Sprintf("/jobs/%d/approval", job.ID), strings.NewReader(payload))
 		jwtHandler := handlers.NewJWTHandlers(db)
-		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
+		jwtToken, _, err := jwtHandler.GenerateTokens(adminUser.Admin.UserID)
 		if err != nil {
 			t.Error(err)
 			return
@@ -345,7 +352,6 @@ func TestJob(t *testing.T) {
 		var userCreationResult *UserCreationResult
 		if userCreationResult, err = CreateUser(UserCreationInfo{
 			Username:  fmt.Sprintf("applyjobtester-%d", time.Now().UnixNano()),
-			IsAdmin:   true,
 			IsCompany: true,
 		}); err != nil {
 			t.Error(err)
@@ -396,7 +402,6 @@ func TestJob(t *testing.T) {
 		}
 		values := map[string]string{
 			"phone": "0123456789",
-			"id":    fmt.Sprintf("%d", job.ID),
 			"email": "cool@localhost",
 		}
 		w := httptest.NewRecorder()
@@ -434,7 +439,7 @@ func TestJob(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		req, _ := http.NewRequest("POST", "/job/apply", &b)
+		req, _ := http.NewRequest("POST", fmt.Sprintf("/jobs/%d/apply", job.ID), &b)
 		jwtHandler := handlers.NewJWTHandlers(db)
 		jwtToken, _, err := jwtHandler.GenerateTokens(user.ID)
 		if err != nil {
@@ -466,8 +471,8 @@ func TestJob(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		assert.Equal(t, jobApp.AltPhone, "0123456789")
-		assert.Equal(t, jobApp.AltEmail, "cool@localhost")
+		assert.Equal(t, jobApp.ContactPhone, "0123456789")
+		assert.Equal(t, jobApp.ContactEmail, "cool@localhost")
 	})
 	t.Run("FetchSelf", func(t *testing.T) {
 		var err error
@@ -503,7 +508,7 @@ func TestJob(t *testing.T) {
 			return
 		}
 		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("GET", "/job?companyId=self", strings.NewReader(""))
+		req, _ := http.NewRequest("GET", "/jobs?companyId=self", strings.NewReader(""))
 		jwtHandler := handlers.NewJWTHandlers(db)
 		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
 		if err != nil {

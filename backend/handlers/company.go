@@ -1,12 +1,12 @@
 package handlers
 
 import (
+	"ku-work/backend/helper"
 	"ku-work/backend/model"
-	"mime/multipart"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
 	"gorm.io/gorm"
 )
 
@@ -20,126 +20,35 @@ func NewCompanyHandlers(db *gorm.DB) *CompanyHandlers {
 	}
 }
 
-// Handler function for editing company profile
-//
-// Taking user input and updating the company profile in the database.
-// Support partial updates. If any field is not provided, it will not be updated.
-//
-// Support request with multipart/form-data
-func (h *CompanyHandlers) EditProfileHandler(ctx *gin.Context) {
-	// take user ID from context (auth middleware)
-	userId := ctx.MustGet("userID").(string)
-	// Expected form of data from request (ctx), no data is required, partial data is allowed.
-	type CompanyEditProfileInput struct {
-		Phone   *string               `form:"phone" binding:"omitempty,max=20"`
-		Address *string               `form:"address" binding:"omitempty,max=512"`
-		City    *string               `form:"city" binding:"omitempty,max=128"`
-		Country *string               `form:"country" binding:"omitempty,max=128"`
-		Photo   *multipart.FileHeader `form:"photo" binding:"omitempty"`
-		Banner  *multipart.FileHeader `form:"banner" binding:"omitempty"`
-	}
-	input := CompanyEditProfileInput{}
-
-	// Validate input data
-	err := ctx.MustBindWith(&input, binding.FormMultipart)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Get current company data
-	company := model.Company{
-		UserID: userId,
-	}
-	if err := h.DB.First(&company).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Update company data if input is provided in request
-	if input.Phone != nil {
-		company.Phone = *input.Phone
-	}
-	if input.Address != nil {
-		company.Address = *input.Address
-	}
-	if input.City != nil {
-		company.City = *input.City
-	}
-	if input.Country != nil {
-		company.Country = *input.Country
-	}
-	if input.Photo != nil {
-		photo, err := SaveFile(ctx, h.DB, userId, input.Photo, model.FileCategoryImage)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		company.PhotoID = photo.ID
-	}
-
-	success := false
-
-	defer (func() {
-		if !success && input.Photo != nil {
-			_ = h.DB.Delete(&model.File{
-				ID: company.PhotoID,
-			})
-		}
-	})()
-	if input.Banner != nil {
-		banner, err := SaveFile(ctx, h.DB, userId, input.Banner, model.FileCategoryImage)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		company.BannerID = banner.ID
-	}
-
-	// Remove file that are recently saved if request is not successful
-	defer (func() {
-		if !success && input.Banner != nil {
-			_ = h.DB.Delete(&model.File{
-				ID: company.BannerID,
-			})
-		}
-	})()
-
-	// Save updated company to database.
-	if err := h.DB.Save(&company).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	success = true
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"message": "ok",
-	})
+// CompanyResponse defines the API response for company data, excluding GORM-specific types like DeletedAt.
+type CompanyResponse struct {
+	ID        uint      `json:"id"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	UserID    string    `json:"userId"`
+	Email     string    `json:"email"`
+	Phone     string    `json:"phone"`
+	PhotoID   string    `json:"photoId"`
+	BannerID  string    `json:"bannerId"`
+	Address   string    `json:"address"`
+	City      string    `json:"city"`
+	Country   string    `json:"country"`
+	Website   string    `json:"website"`
+	AboutUs   string    `json:"about"`
+	Name      string    `json:"name"`
 }
 
-// Get Company Profile
-//
-// Use userID to get company profile.
-// return company profile according to model.Company.
-//
-// if no id is provided, use userID from context.
-func (h *CompanyHandlers) GetProfileHandler(ctx *gin.Context) {
-	type CompanyGetProfileInput struct {
-		ID string `form:"id" binding:"max=64"`
-	}
-
-	input := CompanyGetProfileInput{}
-	err := ctx.MustBindWith(&input, binding.Form)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Use current user ID if no ID is provided.
-	if input.ID == "" {
-		input.ID = ctx.MustGet("userID").(string)
-	}
+// @Summary Get a company's profile
+// @Description Retrieves the profile of a specific company using their user ID.
+// @Tags Companies
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Company User ID"
+// @Success 200 {object} handlers.CompanyResponse "Company profile retrieved successfully"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /company/{id} [get]
+func (h *CompanyHandlers) GetCompanyProfileHandler(ctx *gin.Context) {
+	id := ctx.Param("id")
 
 	// Try to get company info with company name included.
 	type CompanyInfo struct {
@@ -147,10 +56,37 @@ func (h *CompanyHandlers) GetProfileHandler(ctx *gin.Context) {
 		Name string `json:"name"`
 	}
 	var company CompanyInfo
-	if err := h.DB.Model(&model.Company{}).Select("companies.*, users.username as name").Joins("INNER JOIN users on users.id = companies.user_id").Where("companies.user_id = ?", input.ID).Take(&company).Error; err != nil {
+	if err := h.DB.Model(&model.Company{}).Select("companies.*, users.username as name").Joins("INNER JOIN users on users.id = companies.user_id").Where("companies.user_id = ?", id).Take(&company).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, company)
+}
+
+// @Summary Get a list of all companies (Admin only)
+// @Description Retrieves a list of all registered companies. This endpoint is restricted to admin users.
+// @Tags Companies
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {array} handlers.CompanyResponse "List of all companies"
+// @Failure 403 {object} object{error=string} "Forbidden"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /company [get]
+func (h *CompanyHandlers) GetCompanyListHandler(ctx *gin.Context) {
+	userId := ctx.MustGet("userID").(string)
+	role := helper.GetRole(userId, h.DB)
+	if role != helper.Admin {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
+		return
+	}
+	var companies []CompanyResponse
+	if err := h.DB.Model(&model.Company{}).
+		Select("companies.id, companies.created_at, companies.updated_at, companies.user_id, companies.email, companies.phone, companies.photo_id, companies.banner_id, companies.address, companies.city, companies.country, companies.website, companies.about_us, users.username as name").
+		Joins("INNER JOIN users on users.id = companies.user_id").
+		Find(&companies).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, companies)
 }
