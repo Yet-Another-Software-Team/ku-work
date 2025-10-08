@@ -75,5 +75,5 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	
 	// Admin Routes
 	admin := protectedRouter.Group("/admin", middlewares.AdminPermissionMiddleware(db))
-	admin.GET("/audit", adminHandlers.FetchAuditLog)
+	admin.GET("/audits", adminHandlers.FetchAuditLog)
 }

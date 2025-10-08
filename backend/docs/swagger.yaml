@@ -296,6 +296,21 @@ definitions:
       code:
         type: string
     type: object
+  model.Audit:
+    properties:
+      action:
+        type: string
+      actorID:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: integer
+      objectID:
+        type: string
+      objectName:
+        type: string
+    type: object
   model.File:
     properties:
       category:
@@ -357,6 +372,38 @@ info:
   title: KU-Work API
   version: "1.0"
 paths:
+  /admin/audits:
+    get:
+      description: Retrieves a list of all audit log entries. This endpoint is restricted
+        to admin users.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of all audit log entries
+          schema:
+            items:
+              $ref: '#/definitions/model.Audit'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get an Audit Log (Admin only)
+      tags:
+      - Admin
   /applications:
     get:
       description: Fetches job applications for the authenticated user. If the user
