@@ -33,7 +33,7 @@
                     color="error"
                     label="Decline"
                     :icon="'iconoir:xmark'"
-                    @click.stop="emit('approve')"
+                    @click.stop="emit('reject')"
                 />
                 <UButton
                     class="font-bold p-1 rounded flex items-center gap-1 w-fit px-2"
@@ -41,7 +41,7 @@
                     color="primary"
                     label="Accept"
                     :icon="'iconoir:check'"
-                    @click.stop="emit('reject')"
+                    @click.stop="emit('approve')"
                 />
             </div>
         </div>
