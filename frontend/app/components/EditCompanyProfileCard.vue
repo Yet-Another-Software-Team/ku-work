@@ -217,11 +217,11 @@ interface Profile {
     address?: string;
     website?: string;
     banner?: string;
-    logo?: string;
-    aboutUs?: string;
+    photo?: string;
+    about?: string;
     city?: string;
     country?: string;
-    mail?: string;
+    email?: string;
     phone?: string;
 }
 
@@ -275,7 +275,7 @@ const schema = z.object({
     phone: z
         .string()
         .trim()
-        .regex(/^\+(?:[1-9]\d{0,2})\d{4,14}$/, "Please enter a valid phone number"),
+        .regex(/^\+(?:[1-9]\d{0,2}) \d{4,14}$/, "Please enter a valid phone number"),
     address: z.string().trim().min(5, "Address must be at least 5 characters"),
     city: z.string().trim().min(2, "City must be at least 2 characters"),
     country: z.string().trim().min(2, "Country must be at least 2 characters"),
@@ -298,14 +298,14 @@ watch(
 
 function resetForm(profile: Profile) {
     form.companyName = profile.name ?? "";
-    form.mail = profile.mail ?? "";
+    form.mail = profile.email ?? "";
     form.phone = profile.phone ?? "";
     form.address = profile.address ?? "";
     form.city = profile.city ?? "";
     form.country = profile.country ?? "";
-    form.aboutUs = profile.aboutUs ?? "";
+    form.aboutUs = profile.about ?? "";
 
-    updateLogoPreview(profile.logo ?? "");
+    updateLogoPreview(profile.photo ?? "");
     updateBannerPreview(profile.banner ?? "");
     logoFile.value = null;
     bannerFile.value = null;
@@ -447,14 +447,14 @@ function handleSubmit() {
     emit("saved", {
         ...props.profile,
         name: result.data.companyName,
-        mail: result.data.mail,
+        email: result.data.mail,
         phone: result.data.phone,
         address: result.data.address,
         city: result.data.city,
         country: result.data.country,
-        aboutUs: result.data.aboutUs ?? "",
+        about: result.data.aboutUs ?? "",
         banner: bannerPreview.value || props.profile.banner || "",
-        logo: logoPreview.value || props.profile.logo || "",
+        photo: logoPreview.value || props.profile.photo || "",
         _logoFile: logoFile.value,
         _bannerFile: bannerFile.value,
     });

@@ -234,7 +234,7 @@ const schema = z.object({
         .string()
         .optional()
         .refine(
-            (value) => !value || /^\+(?:[1-9]\d{0,2})\d{4,14}$/.test(value),
+            (value) => !value || /^\+(?:[1-9]\d{0,2}) \d{4,14}$/.test(value),
             "Please enter a valid phone number"
         ),
     github: z

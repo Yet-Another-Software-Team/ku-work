@@ -29,7 +29,7 @@
                     {{ profile.name }}
                 </h2>
                 <p class="text-gray-600 dark:text-gray-300">
-                    {{ profile.address }}
+                    {{ profile.address }} {{ profile.city }} {{ profile.country }}
                 </p>
             </div>
 
@@ -81,6 +81,15 @@
                             <span class="w-[10rem] text-sm truncate">{{ profile.email }}</span>
                         </a>
                     </li>
+                    <li v-if="profile.phone">
+                        <span class="flex items-center gap-2">
+                            <Icon
+                                name="material-symbols:call-outline"
+                                class="size-[2em] text-black dark:text-white"
+                            />
+                            <span class="w-[10rem] text-sm truncate">{{ profile.phone }}</span>
+                        </span>
+                    </li>
                 </ul>
             </div>
 
@@ -103,7 +112,7 @@
         >
             <template #content>
                 <EditCompanyProfileCard
-                    :profile="data.profile"
+                    :profile="profile"
                     @close="openEditModal = false"
                     @saved="onSaved"
                 />
@@ -115,7 +124,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import EditCompanyProfileCard from "~/components/EditCompanyProfileCard.vue";
-import { mockCompanyData } from "~/data/mockData";
 
 withDefaults(
     defineProps<{
@@ -134,18 +142,20 @@ const profile = ref({
     about: "",
     address: "",
     name: "",
+    city: "",
+    country: "",
+    phone: "",
 });
-
-// const email = "john.doe@ku.th";
 
 const openEditModal = ref(false);
 
-function onSaved(updated: typeof data.profile) {
-    Object.assign(data.profile, updated);
+function onSaved(updated: unknown) {
+    Object.assign(profile, updated);
     openEditModal.value = false;
 }
 
-// const api = useApi();
+const api = useApi();
+const config = useRuntimeConfig();
 
 onMounted(async () => {
     try {
