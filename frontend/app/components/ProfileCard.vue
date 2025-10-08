@@ -113,8 +113,8 @@
         >
             <template #content>
                 <EditProfileCard
-                    :profile="data.profile"
-                    @close="closeEditModal"
+                    :profile="profile"
+                    @close="isEditModalOpen=false"
                     @saved="handleProfileSaved"
                 />
             </template>
@@ -123,18 +123,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
 import { mockUserData } from "~/data/mockData";
 import EditProfileCard from "./EditProfileCard.vue";
 
 const data = mockUserData;
 
-const email = "john.doe@ku.th";
 const isEditModalOpen = ref(false);
-
-const closeEditModal = () => {
-    isEditModalOpen.value = false;
-};
 
 type StudentProfileUpdate = typeof data.profile & { _avatarFile?: File | null };
 
@@ -143,18 +137,6 @@ const handleProfileSaved = (updated: StudentProfileUpdate) => {
     Object.assign(data.profile, profile);
     isEditModalOpen.value = false;
 };
-
-const age = computed(() => {
-    const birth = new Date(data.profile.birthDate);
-    const today = new Date();
-    let years = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-        years--;
-    }
-    return years;
-// import { computed } from "vue";
-// import { mockUserData } from "~/data/mockData";
 
 const profile = ref({
     photo: "",
@@ -168,21 +150,7 @@ const profile = ref({
     lastName: "",
     email: "",
 });
-// const data = mockUserData;
 
-// Compute age
-// const age = computed(() => {
-//     const birth = new Date(data.profile.birthDate);
-//     const today = new Date();
-//     let years = today.getFullYear() - birth.getFullYear();
-//     const m = today.getMonth() - birth.getMonth();
-//     if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-//         years--;
-//     }
-//     return years;
-// });
-
-// const email = "john.doe@ku.th";
 const config = useRuntimeConfig();
 const api = useApi();
 

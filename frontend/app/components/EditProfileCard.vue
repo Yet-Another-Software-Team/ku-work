@@ -43,7 +43,7 @@
                 <div
                     class="rounded-lg border border- primary-700/50 bg-gray-100 px-4 py-2 text-gray-900 dark:border- primary-700/40 dark:bg-[#013B49] dark:text-white"
                 >
-                    {{ displayName }}
+                    {{ `${profile.firstName} ${profile.lastName}` }}
                 </div>
             </div>
 
@@ -132,7 +132,7 @@
                     variant="outline"
                     color="neutral"
                     class="rounded-md px-4"
-                    @click="openDiscardModal"
+                    @click="tryDiscard"
                 >
                     Discard
                 </UButton>
@@ -155,7 +155,7 @@
             </template>
             <template #footer>
                 <div class="flex justify-end gap-2">
-                    <UButton variant="outline" color="neutral" @click="hideDiscardModal"
+                    <UButton variant="outline" color="neutral" @click="showDiscardConfirm = false"
                         >Cancel</UButton
                     >
                     <UButton color="primary" @click="confirmDiscard">Discard</UButton>
@@ -166,7 +166,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
+import { onBeforeUnmount, reactive, ref, watch } from "vue";
 import * as z from "zod";
 
 const { add: addToast } = useToast();
@@ -193,7 +193,20 @@ type FormKey = keyof FormState;
 
 type SavedPayload = StudentProfile & { _avatarFile?: File | null };
 
-const props = defineProps<{ profile: StudentProfile }>();
+const props = defineProps<{
+    profile: {
+        photo: string;
+        birthDate: string;
+        phone: string;
+        major: string;
+        linkedIn: string;
+        github: string;
+        aboutMe: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+    };
+}>();
 const emit = defineEmits<{
     (e: "close"): void;
     (e: "saved", payload: SavedPayload): void;
@@ -242,8 +255,6 @@ const avatarPreview = ref<string>("");
 const avatarFile = ref<File | null>(null);
 const showDiscardConfirm = ref(false);
 
-const displayName = computed(() => props.profile?.name?.trim() || "N/A");
-
 watch(
     () => props.profile,
     (profile) => resetForm(profile),
@@ -251,7 +262,8 @@ watch(
 );
 
 function resetForm(profile: StudentProfile) {
-    form.dob = profile.birthDate ? profile.birthDate.slice(0, 10) : "";
+    console.log(profile.birthDate!);
+    form.dob = (profile.birthDate ?? new Date(Date.now()).toISOString()).split("T")[0]!;
     form.phone = profile.phone ?? "";
     form.github = profile.github ?? "";
     form.linkedin = profile.linkedIn ?? "";
@@ -302,16 +314,24 @@ function updateAvatarPreview(source: string) {
     avatarPreview.value = source;
 }
 
-function openDiscardModal() {
-    showDiscardConfirm.value = true;
-}
-
-function hideDiscardModal() {
-    showDiscardConfirm.value = false;
+function tryDiscard() {
+    if (
+        form.dob !==
+            (props.profile.birthDate ?? new Date(Date.now()).toISOString()).split("T")[0]! ||
+        form.github !== props.profile.github ||
+        form.phone !== props.profile.phone ||
+        form.linkedin !== props.profile.linkedIn ||
+        form.aboutMe !== props.profile.aboutMe ||
+        avatarFile.value != null
+    ) {
+        showDiscardConfirm.value = true;
+        return;
+    }
+    confirmDiscard();
 }
 
 function confirmDiscard() {
-    hideDiscardModal();
+    showDiscardConfirm.value = false;
     resetForm(props.profile);
     addToast({ title: "Changes discarded", description: "Old data reloaded.", color: "success" });
     emit("close");
