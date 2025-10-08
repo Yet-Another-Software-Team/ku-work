@@ -362,7 +362,6 @@ definitions:
     - JobApplicationAccepted
     - JobApplicationRejected
     - JobApplicationPending
-host: localhost:8000
 info:
   contact: {}
   description: This is a sample API for KU-Work

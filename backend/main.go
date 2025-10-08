@@ -22,7 +22,6 @@ import (
 // @description This is a sample API for KU-Work
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
-// @host localhost:8000
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
@@ -50,6 +49,14 @@ func main() {
 
 	// Setup routes
 	handlers.SetupRoutes(router, db)
+
+	// Setup Swagger
+	swagger_host, has_swagger_host := os.LookupEnv("SWAGGER_HOST")
+	if has_swagger_host {
+		docs.SwaggerInfo.Host = swagger_host
+	} else {
+		docs.SwaggerInfo.Host = "localhost:8000"
+	}
 
 	docs.SwaggerInfo.BasePath = ""
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
