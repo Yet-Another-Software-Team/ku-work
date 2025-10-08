@@ -14,6 +14,8 @@ interface Profile {
         major: "Software Engineering" | "Computer Science";
         status: "Graduated" | "Undergraduate";
         statusFile: string;
+        email: string;
+        files: { name: string; url: string }[];
     };
 }
 
@@ -86,6 +88,11 @@ const mockUserData: Profile = {
         major: "Software Engineering",
         status: "Undergraduate",
         statusFile: "https://example.com/status.pdf",
+        email: "john.doe@example.com",
+        files: [
+            { name: "Resume.pdf", url: "https://example.com/resume.pdf" },
+            { name: "Cover_Letter.pdf", url: "https://example.com/cover_letter.pdf" },
+        ],
     },
 };
 
@@ -107,6 +114,11 @@ const multipleMockUserData: Profile[] = [
             major: "Software Engineering",
             status: "Undergraduate",
             statusFile: "https://example.com/status.pdf",
+            email: "john.doe@example.com",
+            files: [
+                { name: "Resume.pdf", url: "https://example.com/resume.pdf" },
+                { name: "Cover_Letter.pdf", url: "https://example.com/cover_letter.pdf" },
+            ],
         },
     },
     {
@@ -125,6 +137,11 @@ const multipleMockUserData: Profile[] = [
             major: "Computer Science",
             status: "Graduated",
             statusFile: "https://example.com/very/long/path/to/status/file/status.pdf",
+            email: "long.name@example.com",
+            files: [
+                { name: "File1.pdf", url: "https://example.com/file1.pdf" },
+                { name: "File2.zip", url: "https://example.com/file2.zip" },
+            ],
         },
     },
     {
@@ -143,6 +160,8 @@ const multipleMockUserData: Profile[] = [
             major: "Software Engineering",
             status: "Undergraduate",
             statusFile: "javascript:alert('XSS')", // Malicious-looking link
+            email: "jane.doe@example.com",
+            files: [{ name: "Transcript.pdf", url: "https://example.com/transcript.pdf" }],
         },
     },
 ];
