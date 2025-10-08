@@ -258,10 +258,11 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 	studentID := ctx.Param("id")
 
 	// Get student data from database
+	tx := h.DB.Begin()
 	student := model.Student{
 		UserID: studentID,
 	}
-	result := h.DB.First(&student)
+	result := tx.Take(&student)
 	if result.Error != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "Student not found"})
 		return
@@ -274,12 +275,25 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 		student.ApprovalStatus = model.StudentApprovalRejected
 	}
 
-	result = h.DB.Save(&student)
+	result = tx.Save(&student)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
-
+	if err := tx.Create(&model.Audit{
+		ActorID:    ctx.MustGet("userID").(string),
+		Action:     string(student.ApprovalStatus),
+		ObjectName: "Student",
+		ObjectID:   student.UserID,
+	}).Error; err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if err := tx.Commit().Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "ok",
 	})

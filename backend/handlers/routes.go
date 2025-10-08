@@ -18,6 +18,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	studentHandlers := NewStudentHandler(db, fileHandlers)
 	companyHandlers := NewCompanyHandlers(db)
 	userHandlers := NewUserHandlers(db)
+	adminHandlers := NewAdminHandlers(db)
 
 	// Authentication Routes
 	auth := router.Group("/auth")
@@ -71,5 +72,8 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 
 	studentAdmin := student.Group("", middlewares.AdminPermissionMiddleware(db))
 	studentAdmin.POST("/:id/approval", studentHandlers.ApproveHandler)
-
+	
+	// Admin Routes
+	admin := protectedRouter.Group("/admin", middlewares.AdminPermissionMiddleware(db))
+	admin.GET("/audit", adminHandlers.FetchAuditLog)
 }
