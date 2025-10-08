@@ -26,7 +26,7 @@
             </div>
         </section>
         <!-- Navigation bar -->
-        <section class="h-[3em] overflow-hidden border-b-1 my-5">
+        <section v-if="job" class="h-[3em] overflow-hidden border-b-1 my-5">
             <div class="flex flex-row gap-2 h-[6em] max-w-[40em] left-0 top-0">
                 <div
                     class="hover:cursor-pointer transition-all duration-150 text-center"
@@ -52,13 +52,19 @@
             </div>
         </section>
         <!-- Job Applications List -->
-        <section>
+        <section v-if="job">
             <div class="flex justify-between">
                 <h1 class="text-2xl font-semibold mb-2">{{ countedApplication }} Applicants</h1>
                 <div class="flex gap-5">
                     <h1 class="text-2xl font-semibold mb-2">Sort by:</h1>
                     <!-- TODO: Implement sorting later -->
-                    <!-- <USelectMenu value-key="id" placement="bottom-end" class="w-[10em]" /> -->
+                    <USelectMenu
+                        v-model="selectSortOption"
+                        value-key="id"
+                        placement="bottom-end"
+                        class="w-[10em]"
+                        :items="sortOptions"
+                    />
                 </div>
             </div>
             <hr class="w-full my-5" />
@@ -107,6 +113,15 @@ interface getApplicationForm {
     offset?: number;
     jobId?: number;
 }
+
+const sortOptions = ref([
+    { label: "Latest", id: "latest" },
+    { label: "Oldest", id: "oldest" },
+    { label: "Name A-Z", id: "name_az" },
+    { label: "Name Z-A", id: "name_za" },
+]);
+
+const selectSortOption = ref("latest");
 
 onMounted(async () => {
     isLoading.value = true;
