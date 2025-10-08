@@ -127,10 +127,10 @@ export default defineNuxtPlugin({
 
                     try {
                         // Start a new request for the refresh operation
-                        const refreshRequestId = startRequest("/refresh", "POST");
+                        const refreshRequestId = startRequest("/auth/refresh", "POST");
                         // Try to refresh the token
                         const response = await axios.post(
-                            `${config.public.apiBaseUrl}/refresh`,
+                            `${config.public.apiBaseUrl}/auth/refresh`,
                             {},
                             {
                                 withCredentials: true,
@@ -147,6 +147,15 @@ export default defineNuxtPlugin({
 
                         if (import.meta.client) {
                             localStorage.setItem("token", newToken);
+                            if (response.data.userId) {
+                                localStorage.setItem("userId", response.data.userId);
+                            }
+                            if (response.data.username) {
+                                localStorage.setItem("username", response.data.username);
+                            }
+                            if (response.data.role) {
+                                localStorage.setItem("role", response.data.role);
+                            }
                         }
 
                         // Update the authorization header for the original request

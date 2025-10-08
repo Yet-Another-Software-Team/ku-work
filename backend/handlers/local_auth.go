@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"time"
 
+	"ku-work/backend/helper"
 	"ku-work/backend/model"
 
 	"github.com/gin-gonic/gin"
@@ -42,7 +43,27 @@ type RegisterRequest struct {
 	AboutUs  string                `form:"about" binding:"max=16384"`
 }
 
-// Register handles user registration
+// @Summary Register a new company
+// @Description Handles the registration of a new company account. It takes company details and credentials, creates a new user and company profile, and returns JWT tokens upon successful registration.
+// @Tags Authentication
+// @Accept multipart/form-data
+// @Produce json
+// @Param username formData string true "Company's username"
+// @Param password formData string true "Password (min 8 characters)"
+// @Param email formData string true "Company's contact email"
+// @Param website formData string false "Company's website URL"
+// @Param phone formData string true "Company's contact phone number"
+// @Param address formData string true "Company's physical address"
+// @Param city formData string true "City"
+// @Param country formData string true "Country"
+// @Param photo formData file true "Company's profile photo"
+// @Param banner formData file true "Company's banner image"
+// @Param about formData string false "About the company"
+// @Success 200 {object} object{token=string, username=string, role=string, userId=string} "Registration successful"
+// @Failure 400 {object} object{error=string} "Bad Request"
+// @Failure 409 {object} object{error=string} "Conflict: Username already exists"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /auth/company/register [post]
 func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 	var req RegisterRequest
 	if err := ctx.MustBindWith(&req, binding.FormMultipart); err != nil {
@@ -138,10 +159,10 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", true, true)
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"token":     jwtToken,
-		"username":  newUser.Username,
-		"isStudent": false,
-		"isCompany": true, // This registration flow only used for Company.
+		"token":    jwtToken,
+		"username": newUser.Username,
+		"role":     helper.Company,
+		"userId":   newUser.ID,
 	})
 }
 
@@ -151,9 +172,17 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-// Handle Local Authentication of Company User
-//
-// Rejects if user is not a company
+// @Summary Company login
+// @Description Authenticates a company user with their username and password. On successful authentication, it returns a JWT token for session management and sets a refresh token in a cookie.
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param credentials body LoginRequest true "Login Credentials"
+// @Success 200 {object} object{token=string, username=string, role=string, userId=string} "Login successful"
+// @Failure 400 {object} object{error=string} "Bad Request"
+// @Failure 401 {object} object{error=string} "Unauthorized: Invalid credentials"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /auth/company/login [post]
 func (h *LocalAuthHandlers) CompanyLoginHandler(ctx *gin.Context) {
 	var req LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -190,16 +219,24 @@ func (h *LocalAuthHandlers) CompanyLoginHandler(ctx *gin.Context) {
 	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", true, true)
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"token":     jwtToken,
-		"username":  user.Username,
-		"isStudent": false,
-		"isCompany": true,
+		"token":    jwtToken,
+		"username": user.Username,
+		"role":     helper.Company,
+		"userId":   user.ID,
 	})
 }
 
-// Handle Local Authentication of Admin User
-//
-// Rejects if user is not a admin
+// @Summary Admin login
+// @Description Authenticates an admin user with their username and password. On successful authentication, it returns a JWT token for session management and sets a refresh token in a cookie.
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param credentials body LoginRequest true "Login Credentials"
+// @Success 200 {object} object{token=string, username=string, role=string, userId=string} "Login successful"
+// @Failure 400 {object} object{error=string} "Bad Request"
+// @Failure 401 {object} object{error=string} "Unauthorized: Invalid credentials"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /auth/admin/login [post]
 func (h *LocalAuthHandlers) AdminLoginHandler(ctx *gin.Context) {
 	var req LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -236,9 +273,9 @@ func (h *LocalAuthHandlers) AdminLoginHandler(ctx *gin.Context) {
 	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", true, true)
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"token":     jwtToken,
-		"username":  user.Username,
-		"isStudent": false,
-		"isCompany": false,
+		"token":    jwtToken,
+		"username": user.Username,
+		"role":     helper.Admin,
+		"userId":   user.ID,
 	})
 }
