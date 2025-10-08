@@ -121,7 +121,7 @@ function colorPicker() {
 function selectJob() {
     console.log("Job ID:", props.data.id);
     if (props.data.approvalStatus === "accepted") {
-        navigateTo(`/dashboard/post/${props.data.id}`);
+        navigateTo(`/dashboard/${props.data.id}`);
     }
 }
 
