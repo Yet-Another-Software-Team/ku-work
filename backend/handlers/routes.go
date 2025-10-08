@@ -46,6 +46,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	admin.POST("/job/approve", jobHandlers.ApproveJob)
 	authed.POST("/job/apply", jobHandlers.ApplyJob)
 	authed.GET("/job/application", jobHandlers.FetchJobApplications)
+	authed.POST("/job/application/accept", jobHandlers.AcceptJobApplication)
 
 	// Company routes
 	authed.PATCH("/company", companyHandler.EditProfileHandler)

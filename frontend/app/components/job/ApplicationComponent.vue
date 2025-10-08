@@ -28,7 +28,7 @@
             <!-- Buttons -->
             <div class="flex items-center gap-2">
                 <UButton
-                    class="font-bold p-1 rounded flex items-center gap-1 w-fit px-2"
+                    class="font-bold p-1 rounded flex items-center gap-1 w-fit px-2 cursor-pointer"
                     variant="outline"
                     color="error"
                     label="Decline"
@@ -36,7 +36,7 @@
                     @click.stop="emit('reject')"
                 />
                 <UButton
-                    class="font-bold p-1 rounded flex items-center gap-1 w-fit px-2"
+                    class="font-bold p-1 rounded flex items-center gap-1 w-fit px-2 cursor-pointer"
                     variant="outline"
                     color="primary"
                     label="Accept"
@@ -66,7 +66,9 @@ const avatar = ref("");
 onMounted(async () => {
     if (props.applicationData.userId) {
         try {
-            const response = await api.get(`/students/${props.applicationData.userId}`);
+            const response = await api.get(`/students`, {
+                params: { id: props.applicationData.userId },
+            });
             if (response && response.data && response.data.photoId) {
                 avatar.value = `${config.public.apiBaseUrl}/files/${response.data.photoId}`;
             }

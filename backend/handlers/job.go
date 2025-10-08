@@ -444,6 +444,7 @@ func (h *JobHandlers) ApplyJob(ctx *gin.Context) {
 		JobID:    job.ID,
 		AltPhone: input.AltPhone,
 		AltEmail: input.AltEmail,
+		Status:   model.JobApplicationPending,
 	}
 	success := false
 	// If create job application fails remove files
@@ -483,10 +484,11 @@ func (h *JobHandlers) FetchJobApplications(ctx *gin.Context) {
 
 	// Bind input data to struct
 	type FetchJobApplicationsInput struct {
-		ID     *uint `json:"id" form:"id"`
-		JobID  *uint `json:"jobId" form:"jobId"`
-		Offset uint  `json:"offset" form:"offset"`
-		Limit  uint  `json:"limit" form:"limit" binding:"max=64"`
+		ID     *uint  `json:"id" form:"id"`
+		JobID  *uint  `json:"jobId" form:"jobId"`
+		Offset uint   `json:"offset" form:"offset"`
+		Limit  uint   `json:"limit" form:"limit" binding:"max=64"`
+		SortBy string `json:"sortBy" form:"sortBy" binding:"oneof='latest' 'oldest' 'name_az' 'name_za'"`
 	}
 	input := FetchJobApplicationsInput{}
 	err := ctx.Bind(&input)
@@ -500,7 +502,7 @@ func (h *JobHandlers) FetchJobApplications(ctx *gin.Context) {
 		model.JobApplication
 		Username string `json:"username"`
 	}
-	query := h.DB.Model(&model.JobApplication{}).Joins("INNER JOIN users ON users.id = job_applications.user_id").Select("job_applications.*", "users.username as username")
+	query := h.DB.Model(&model.JobApplication{}).Joins("INNER JOIN google_o_auth_details ON google_o_auth_details.user_id = job_applications.user_id").Select("job_applications.*", "CONCAT(google_o_auth_details.first_name, ' ', google_o_auth_details.last_name) as username")
 
 	// If ID is provided fetch only that job application
 	if input.ID != nil {
@@ -550,12 +552,69 @@ func (h *JobHandlers) FetchJobApplications(ctx *gin.Context) {
 		}
 	}
 
+	switch input.SortBy {
+	case "latest":
+		query = query.Order("created_at DESC")
+	case "oldest":
+		query = query.Order("created_at ASC")
+	case "name_az":
+		query = query.Order("username ASC")
+	case "name_za":
+		query = query.Order("username DESC")
+	}
+
 	// Return job application with name and preloaded files
 	var jobApplications []JobApplicationWithApplicantName
-	result := query.Offset(int(input.Offset)).Limit(int(input.Limit)).Preload("Files").Find(&jobApplications)
+	result := query.Offset(int(input.Offset)).Limit(int(input.Limit)).Preload("Files").Scan(&jobApplications)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
 	ctx.JSON(http.StatusOK, jobApplications)
+}
+
+// Accept or reject job applications
+func (h *JobHandlers) AcceptJobApplication(ctx *gin.Context) {
+	// Get user ID from context (auth middleware)
+	userId := ctx.MustGet("userID").(string)
+
+	// Bind input data to struct
+	type AcceptJobApplicationInput struct {
+		ID     uint `json:"id" form:"id"`
+		Accept bool `json:"accept" form:"accept"`
+	}
+
+	input := AcceptJobApplicationInput{}
+	err := ctx.Bind(&input)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Get Job application
+	jobApplication := model.JobApplication{}
+	if err := h.DB.Model(&jobApplication).
+		Joins("INNER JOIN jobs ON jobs.id = job_applications.job_id").
+		Where("jobs.company_id = ?", userId).
+		Where("job_applications.id = ?", input.ID).
+		Take(&jobApplication).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Set new status
+	if input.Accept {
+		jobApplication.Status = model.JobApplicationAccepted
+	} else {
+		jobApplication.Status = model.JobApplicationRejected
+	}
+
+	// Save
+	if err := h.DB.Save(&jobApplication).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Return ok message
+	ctx.JSON(http.StatusOK, gin.H{"message": "ok"})
 }

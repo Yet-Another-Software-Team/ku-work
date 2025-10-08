@@ -78,8 +78,8 @@
                     v-for="app in filteredApplications()"
                     :key="app.id"
                     :application-data="app"
-                    @approve="console.log('Approved application ID:', app.id)"
-                    @reject="console.log('Rejected application ID:', app.id)"
+                    @approve="acceptApplication(app.id, true)"
+                    @reject="acceptApplication(app.id, false)"
                 />
             </div>
         </section>
@@ -95,7 +95,7 @@ definePageMeta({
 });
 
 // test: set to true to use mock data
-const test = ref(true);
+const test = ref(false);
 
 // Jobs and applications
 const job = ref<JobPost>();
@@ -113,6 +113,7 @@ interface getApplicationForm {
     limit?: number;
     offset?: number;
     jobId?: number;
+    sortBy?: string;
 }
 
 const sortOptions = ref([
@@ -124,7 +125,7 @@ const sortOptions = ref([
 
 const selectSortOption = ref("latest");
 
-onMounted(async () => {
+const loadContents = async () => {
     isLoading.value = true;
     try {
         const jobId = route.params.id ? Number(route.params.id) : -1;
@@ -146,7 +147,31 @@ onMounted(async () => {
     } finally {
         isLoading.value = false;
     }
-});
+};
+
+onMounted(loadContents);
+
+const acceptApplication = async (jobApplicationId: number, accept: boolean) => {
+    try {
+        await api.post(
+            "/job/application/accept",
+            {
+                id: jobApplicationId,
+                accept: accept,
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+            }
+        );
+        currentJobOffset = 0;
+        applications.value = undefined;
+        await loadContents();
+    } catch (error) {
+        console.error("Error accepting/rejecting job application:", error);
+    }
+};
 
 const fetchJob = async (token: string | null, jobId: number) => {
     try {
@@ -167,13 +192,14 @@ const fetchApplication = async (token: string | null, jobId: number) => {
         limit: limit,
         offset: currentJobOffset,
         jobId: jobId,
+        sortBy: selectSortOption.value,
     };
     try {
         const response = await api.get("/job/application", {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
-            params: { jobForm },
+            params: jobForm,
         });
         if (applications.value === undefined) {
             applications.value = response.data;
