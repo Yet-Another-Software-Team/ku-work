@@ -1,8 +1,8 @@
 <template>
     <div>
         <!-- Role-based rendering -->
-        <div v-if="userRole === 'student' || userRole === 'viewer'" class="pt-5 pb-2">
-            <CompanyProfileCard :is-owner="false" :is-viewer="userRole === 'viewer'" />
+        <div v-if="['student', 'viewer'].includes(userRole)" class="pt-5 pb-2">
+            <CompanyProfileCard :is-owner="false" :company-id="companyId" />
         </div>
 
         <!-- Access denied for other roles -->
@@ -14,11 +14,15 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
+
 const userRole = ref<string>("viewer");
+const route = useRoute();
+const companyId = computed(() => route.query.id as string);
 
 definePageMeta({
     layout: "viewer",
-    middleware: "viewer",
+    middleware: "student-or-viewer",
 });
 
 onMounted(() => {

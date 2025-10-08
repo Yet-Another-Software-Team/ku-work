@@ -32,6 +32,7 @@ interface CompanyProfile {
     };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Company {
     id: string;
     createdAt: string;
@@ -52,13 +53,14 @@ interface JobPost {
     createdAt: string;
     name: string;
     companyId: string;
-    company: Company;
+    photoId: string;
+    bannerId: string;
     position: string;
     duration: string;
     description: string;
     location: string;
     jobType: string;
-    experienceType: string;
+    experience: string;
     minSalary: number;
     maxSalary: number;
     approved: boolean;

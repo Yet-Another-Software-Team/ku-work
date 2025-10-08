@@ -51,6 +51,9 @@ A full-stack web application with Go backend and Nuxt.js frontend, featuring use
    GOOGLE_CLIENT_ID=your_google_client_id_here
    GOOGLE_CLIENT_SECRET=your_google_client_secret_here
    
+   # Swagger Configuration
+   SWAGGER_HOST=localhost:8000
+   
    ```
 
 #### Run Docker Compose

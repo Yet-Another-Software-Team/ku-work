@@ -214,15 +214,18 @@ const onSubmit = async () => {
         formData.append("photo", form.companyLogo);
         formData.append("banner", form.banner);
 
-        const response = await api.postFormData<AuthResponse>("/company/register", formData);
+        const response = await api.postFormData<AuthResponse>("/auth/company/register", formData);
 
         if (response.data.token) {
             localStorage.setItem("token", response.data.token);
             localStorage.setItem("username", response.data.username as string);
-            if (response.data.isCompany) {
+            if (response.data.userId) {
+                localStorage.setItem("userId", response.data.userId);
+            }
+            if (response.data.role) {
+                localStorage.setItem("role", response.data.role);
+            } else {
                 localStorage.setItem("role", "company");
-            } else if (response.data.isStudent) {
-                localStorage.setItem("role", "student");
             }
         }
 

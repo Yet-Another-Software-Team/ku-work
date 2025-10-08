@@ -18,7 +18,7 @@ const logout = async () => {
     try {
         const api = useApi();
         await api.post(
-            "/logout",
+            "/auth/logout",
             {},
             {
                 withCredentials: true,
@@ -28,6 +28,7 @@ const logout = async () => {
         localStorage.removeItem("token");
         localStorage.removeItem("username");
         localStorage.removeItem("role");
+        localStorage.removeItem("userId");
 
         toast.add({
             title: "Logged Out",

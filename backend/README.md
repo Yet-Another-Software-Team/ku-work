@@ -65,6 +65,9 @@ Copy `sample.env` to `.env` and configure the following variables:
 - `GOOGLE_CLIENT_ID`: Client ID for Google OAuth
 - `GOOGLE_CLIENT_SECRET`: Client secret for Google OAuth
 
+### Swagger Configuration
+- `SWAGGER_HOST`: Swagger host (default: localhost:8000)
+
 ## Running the Application
 
 ### Development Mode

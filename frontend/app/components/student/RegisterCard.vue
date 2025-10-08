@@ -260,7 +260,7 @@ const onSubmit = async () => {
             formData.append("linkedIn", form.linkedinURL);
         }
 
-        await api.postFormData("/students/register", formData);
+        await api.postFormData("/auth/student/register", formData);
         localStorage.setItem("isRegistered", "true"); // Set isRegistered to True.
         currentStep.value++;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

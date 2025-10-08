@@ -95,12 +95,14 @@
 <script setup lang="ts">
 // import { mockCompanyData } from "~/data/mockData";
 
-withDefaults(
+const props = withDefaults(
     defineProps<{
         isOwner?: boolean;
+        companyId?: string;
     }>(),
     {
         isOwner: true,
+        companyId: "",
     }
 );
 
@@ -114,14 +116,24 @@ const profile = ref({
     name: "",
 });
 
-// const email = "john.doe@ku.th";
-
 const config = useRuntimeConfig();
 const api = useApi();
 
 onMounted(async () => {
     try {
-        const response = await api.get("/company");
+        let idToFetch: string | null = props.companyId;
+        if (props.isOwner && !idToFetch) {
+            // Get user ID from localStorage for owner view
+            idToFetch = localStorage.getItem("userId");
+        }
+
+        if (!idToFetch) {
+            console.error("No company ID provided or found");
+            return;
+        }
+
+        // Fetch full company profile using company ID
+        const response = await api.get(`/company/${idToFetch}`);
         if (response.status === 200) {
             console.log("Successfully fetched company profile:", response.data);
             response.data.banner = `${config.public.apiBaseUrl}/files/${response.data.bannerId}`;

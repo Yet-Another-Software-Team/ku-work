@@ -19,6 +19,15 @@ func NewAdminHandlers(db *gorm.DB) *AdminHandlers {
 	}
 }
 
+// @Summary Get an Audit Log (Admin only)
+// @Description Retrieves a list of all audit log entries. This endpoint is restricted to admin users.
+// @Tags Admin
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {array} model.Audit "List of all audit log entries"
+// @Failure 403 {object} object{error=string} "Forbidden"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /admin/audits [get]
 func (h *AdminHandlers) FetchAuditLog(ctx *gin.Context) {
 	type FetchAuditLogInput struct {
 		Offset uint `json:"offset" form:"offset"`
