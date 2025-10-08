@@ -13,6 +13,8 @@
         <section>
             <div v-if="isLoading">
                 <USkeleton class="h-[20em] w-full mb-5" />
+                <USkeleton class="h-[10em] w-full mb-5" />
+                <div class="flex"></div>
             </div>
             <CompanyPostComponent
                 v-else-if="job"
@@ -71,12 +73,11 @@
             <div v-if="isLoading">
                 <USkeleton v-for="n in 10" :key="n" class="h-[20em] w-full mb-5" />
             </div>
-            <div v-else>
+            <div v-else class="flex flex-wrap gap-5 mb-10">
                 <JobApplicationComponent
                     v-for="app in filteredApplications()"
                     :key="app.id"
                     :application-data="app"
-                    class="mb-5"
                     @approve="console.log('Approved application ID:', app.id)"
                     @reject="console.log('Rejected application ID:', app.id)"
                 />
@@ -94,7 +95,7 @@ definePageMeta({
 });
 
 // test: set to true to use mock data
-const test = ref(false);
+const test = ref(true);
 
 // Jobs and applications
 const job = ref<JobPost>();
@@ -125,18 +126,26 @@ const selectSortOption = ref("latest");
 
 onMounted(async () => {
     isLoading.value = true;
-    const jobId = route.params.id ? Number(route.params.id) : -1;
-    if (jobId === -1) {
-        return;
+    try {
+        const jobId = route.params.id ? Number(route.params.id) : -1;
+        if (jobId === -1) {
+            return;
+        }
+        const token = localStorage.getItem("token");
+        await fetchJob(token, jobId);
+        await fetchApplication(token, jobId);
+        if (test.value) {
+            applications.value = [mockJobApplicationData];
+            for (let index = 0; index < 10; index++) {
+                applications.value.push({ ...mockJobApplicationData, id: index + 2 });
+            }
+            if (job.value) job.value.pending = applications.value.length;
+        }
+    } catch (error) {
+        console.error("Error during onMounted:", error);
+    } finally {
+        isLoading.value = false;
     }
-    const token = localStorage.getItem("token");
-    await fetchJob(token, jobId);
-    await fetchApplication(token, jobId);
-    if (test.value) {
-        applications.value = [mockJobApplicationData];
-        if (job.value) job.value.pending = 1;
-    }
-    isLoading.value = false;
 });
 
 const fetchJob = async (token: string | null, jobId: number) => {
