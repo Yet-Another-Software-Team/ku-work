@@ -95,7 +95,7 @@ definePageMeta({
 });
 
 // test: set to true to use mock data
-const test = ref(true);
+const test = ref(false);
 
 // Jobs and applications
 const job = ref<JobPost>();
@@ -173,7 +173,7 @@ const fetchApplication = async (token: string | null, jobId: number) => {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
-            params: { jobForm },
+            params: jobForm,
         });
         if (applications.value === undefined) {
             applications.value = response.data;

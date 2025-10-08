@@ -501,7 +501,7 @@ func (h *JobHandlers) FetchJobApplications(ctx *gin.Context) {
 		model.JobApplication
 		Username string `json:"username"`
 	}
-	query := h.DB.Model(&model.JobApplication{}).Joins("INNER JOIN users ON users.id = job_applications.user_id").Select("job_applications.*", "users.username as username")
+	query := h.DB.Model(&model.JobApplication{}).Joins("INNER JOIN google_o_auth_details ON google_o_auth_details.user_id = job_applications.user_id").Select("job_applications.*", "CONCAT(google_o_auth_details.first_name, ' ', google_o_auth_details.last_name) as username")
 
 	// If ID is provided fetch only that job application
 	if input.ID != nil {
@@ -553,7 +553,7 @@ func (h *JobHandlers) FetchJobApplications(ctx *gin.Context) {
 
 	// Return job application with name and preloaded files
 	var jobApplications []JobApplicationWithApplicantName
-	result := query.Offset(int(input.Offset)).Limit(int(input.Limit)).Preload("Files").Find(&jobApplications)
+	result := query.Offset(int(input.Offset)).Limit(int(input.Limit)).Preload("Files").Scan(&jobApplications)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
