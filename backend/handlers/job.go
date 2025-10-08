@@ -590,7 +590,7 @@ func (h *JobHandlers) AcceptJobApplication(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// Get Job application
 	jobApplication := model.JobApplication{}
 	if err := h.DB.Model(&jobApplication).
