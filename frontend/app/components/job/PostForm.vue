@@ -186,7 +186,7 @@ const form = ref<CreateJobPost>({
     experience: undefined,
     minSalary: undefined,
     maxSalary: undefined,
-    open: true,
+    open: false,
 });
 
 const errors = reactive({
