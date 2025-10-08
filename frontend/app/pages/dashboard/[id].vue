@@ -113,6 +113,7 @@ interface getApplicationForm {
     limit?: number;
     offset?: number;
     jobId?: number;
+    sortBy?: string;
 }
 
 const sortOptions = ref([
@@ -167,6 +168,7 @@ const fetchApplication = async (token: string | null, jobId: number) => {
         limit: limit,
         offset: currentJobOffset,
         jobId: jobId,
+        sortBy: selectSortOption.value,
     };
     try {
         const response = await api.get("/job/application", {

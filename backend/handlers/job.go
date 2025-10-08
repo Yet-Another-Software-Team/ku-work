@@ -444,7 +444,7 @@ func (h *JobHandlers) ApplyJob(ctx *gin.Context) {
 		JobID:    job.ID,
 		AltPhone: input.AltPhone,
 		AltEmail: input.AltEmail,
-		Status: model.JobApplicationPending,
+		Status:   model.JobApplicationPending,
 	}
 	success := false
 	// If create job application fails remove files
@@ -484,10 +484,11 @@ func (h *JobHandlers) FetchJobApplications(ctx *gin.Context) {
 
 	// Bind input data to struct
 	type FetchJobApplicationsInput struct {
-		ID     *uint `json:"id" form:"id"`
-		JobID  *uint `json:"jobId" form:"jobId"`
-		Offset uint  `json:"offset" form:"offset"`
-		Limit  uint  `json:"limit" form:"limit" binding:"max=64"`
+		ID     *uint  `json:"id" form:"id"`
+		JobID  *uint  `json:"jobId" form:"jobId"`
+		Offset uint   `json:"offset" form:"offset"`
+		Limit  uint   `json:"limit" form:"limit" binding:"max=64"`
+		SortBy string `json:"sortBy" form:"sortBy" binding:"oneof='latest' 'oldest' 'name_az' 'name_za'"`
 	}
 	input := FetchJobApplicationsInput{}
 	err := ctx.Bind(&input)
@@ -549,6 +550,17 @@ func (h *JobHandlers) FetchJobApplications(ctx *gin.Context) {
 				return
 			}
 		}
+	}
+
+	switch input.SortBy {
+	case "latest":
+		query = query.Order("created_at DESC")
+	case "oldest":
+		query = query.Order("created_at ASC")
+	case "name_az":
+		query = query.Order("username ASC")
+	case "name_za":
+		query = query.Order("username DESC")
 	}
 
 	// Return job application with name and preloaded files
