@@ -78,7 +78,7 @@
                 <div class="col-span-12 md:col-span-8 relative z-50">
                     <USelect
                         v-model="form.duration"
-                        placeholder="Select Job Type"
+                        placeholder="Select Duration"
                         class="w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
                         :items="durationOptions"
                     />
@@ -230,7 +230,7 @@ const durationOptions = [
 
 const schema = z
     .object({
-        name: z.string().min(1, "Logged in user is required"),
+        name: z.string().min(1, "Logged in company user is required"),
         position: z.string().min(1, "Job Title is required"),
         duration: z.string().min(1, "Duration is required"),
         location: z.string().min(1, "Job Location is required"),
