@@ -114,7 +114,7 @@
             <template #content>
                 <EditProfileCard
                     :profile="profile"
-                    @close="isEditModalOpen=false"
+                    @close="isEditModalOpen = false"
                     @saved="handleProfileSaved"
                 />
             </template>
