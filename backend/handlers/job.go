@@ -5,6 +5,7 @@ import (
 	"ku-work/backend/model"
 	"mime/multipart"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -371,8 +372,10 @@ func (h *JobHandlers) ApproveJob(ctx *gin.Context) {
 	job := model.Job{
 		ID: input.ID,
 	}
-	result := h.DB.First(&job)
+	tx := h.DB.Begin()
+	result := tx.Take(&job)
 	if result.Error != nil {
+		tx.Rollback()
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
@@ -381,9 +384,23 @@ func (h *JobHandlers) ApproveJob(ctx *gin.Context) {
 	} else {
 		job.ApprovalStatus = model.JobApprovalRejected
 	}
-	result = h.DB.Save(&job)
-	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+	if err := tx.Save(&job).Error; err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if err := tx.Create(&model.Audit{
+		ActorID:    ctx.MustGet("userID").(string),
+		Action:     string(job.ApprovalStatus),
+		ObjectName: "Job",
+		ObjectID:   strconv.FormatUint(uint64(job.ID), 10),
+	}).Error; err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if err := tx.Commit().Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{
