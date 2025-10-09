@@ -125,8 +125,10 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 		input.AltPhone = student.Phone
 	}
 	if input.AltEmail == "" {
-		user := model.User{}
-		result = h.DB.Where("user_id = ?", student.UserID).First(&user)
+		user := model.User{
+			ID: student.UserID,
+		}
+		result = h.DB.First(&user)
 		if result.Error != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 			return
@@ -303,16 +305,20 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 
 	// Query for the specific job application with full student details
 	var jobApplication FullApplicantDetail
+	
+    // Fetch the main application data, without preloading Files.
 	query := h.DB.Model(&model.JobApplication{}).
 		Joins("INNER JOIN users ON users.id = job_applications.user_id").
-		Joins("LEFT JOIN students ON students.user_id = job_applications.user_id").
-		Select(`job_applications.*, users.username as username,
+		Joins("INNER JOIN students ON students.user_id = job_applications.user_id").
+		Joins("INNER JOIN google_o_auth_details ON google_o_auth_details.user_id = job_applications.user_id").
+		Select(`job_applications.*,
+		 	CONCAT(google_o_auth_details.first_name, ' ', google_o_auth_details.last_name) as username,
+			users.username as email,
 			students.phone as phone, students.photo_id as photo_id,
 			students.birth_date as birth_date, students.about_me as about_me,
 			students.git_hub as github, students.linked_in as linked_in,
 			students.student_id as student_id, students.major as major`).
-		Where("job_applications.job_id = ? AND student_id = ?", jobId, studentId).
-		Preload("Files")
+		Where("job_applications.job_id = ? AND students.student_id = ?", jobId, studentId)
 
 	if err := query.First(&jobApplication).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -320,6 +326,12 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 		} else {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
+		return
+	}
+
+    // explicitly load the "Files" association into the struct.
+	if err := h.DB.Model(&jobApplication.JobApplication).Association("Files").Find(&jobApplication.Files); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load application files"})
 		return
 	}
 
@@ -429,7 +441,7 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 // @Failure 403 {object} object{error=string} "Forbidden: User is not authorized to update this application"
 // @Failure 404 {object} object{error=string} "Not Found: Job or application not found"
 // @Failure 500 {object} object{error=string} "Internal Server Error"
-// @Router /jobs/{id}/applications/{studentId}/status [patch]
+// @Router /jobs/{id}/applications/{studentId} [patch]
 func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context) {
 	// Extract authenticated user ID from context
 	userId := ctx.MustGet("userID").(string)
@@ -476,7 +488,9 @@ func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context
 
 	// Find the job application
 	jobApplication := &model.JobApplication{}
-	if err := h.DB.Where("job_id = ? AND user_id = ?", jobId, studentId).First(jobApplication).Error; err != nil {
+	if err := h.DB.Model(&model.JobApplication{}).
+		Joins("INNER JOIN students ON job_applications.user_id = students.user_id").
+		Where("job_id = ? AND students.student_id = ?", jobId, studentId).First(jobApplication).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "job application not found"})
 		} else {

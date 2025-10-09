@@ -24,7 +24,6 @@ interface ExtendedAxiosRequestConfig extends AxiosRequestConfig {
 export const useApi = () => {
     const { $axios } = useNuxtApp();
     const toast = useToast();
-    const { startRequest, endRequest } = useApiLoading();
 
     const handleError = (error: any): ApiError => {
         let apiError: ApiError = {

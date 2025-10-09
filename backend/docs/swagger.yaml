@@ -1371,7 +1371,6 @@ paths:
       summary: Get a specific job application
       tags:
       - Job Applications
-  /jobs/{id}/applications/{studentId}/status:
     patch:
       consumes:
       - application/json
