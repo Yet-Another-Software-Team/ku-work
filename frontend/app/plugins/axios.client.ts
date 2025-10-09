@@ -116,8 +116,24 @@ export default defineNuxtPlugin(() => {
                 isRefreshing = true;
 
                 try {
-                    const { data } = await axiosInstance.post("/auth/refresh");
-                    const newToken = data.token;
+                    // Start a new request for the refresh operation
+                    const refreshRequestId = startRequest("/auth/refresh", "POST");
+                    // Try to refresh the token
+                    const response = await axios.post(
+                        `${config.public.apiBaseUrl}/auth/refresh`,
+                        {},
+                        {
+                            withCredentials: true,
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                        }
+                    );
+
+                    const newToken = response.data.token;
+
+                    // End the refresh request
+                    endRequest(refreshRequestId);
 
                     if (import.meta.client) {
                         localStorage.setItem("token", newToken);
