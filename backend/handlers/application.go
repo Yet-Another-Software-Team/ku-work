@@ -305,8 +305,8 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 
 	// Query for the specific job application with full student details
 	var jobApplication FullApplicantDetail
-	
-    // Fetch the main application data, without preloading Files.
+
+	// Fetch the main application data, without preloading Files.
 	query := h.DB.Model(&model.JobApplication{}).
 		Joins("INNER JOIN users ON users.id = job_applications.user_id").
 		Joins("INNER JOIN students ON students.user_id = job_applications.user_id").
@@ -329,7 +329,7 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 		return
 	}
 
-    // explicitly load the "Files" association into the struct.
+	// explicitly load the "Files" association into the struct.
 	if err := h.DB.Model(&jobApplication.JobApplication).Association("Files").Find(&jobApplication.Files); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load application files"})
 		return

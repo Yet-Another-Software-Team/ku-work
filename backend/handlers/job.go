@@ -214,8 +214,8 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 	role := helper.GetRole(userId, h.DB)
 
 	query := h.DB.Model(&model.Job{}).
-			Joins("INNER JOIN users ON users.id = jobs.company_id").
-			Joins("INNER JOIN companies ON companies.user_id = jobs.company_id")
+		Joins("INNER JOIN users ON users.id = jobs.company_id").
+		Joins("INNER JOIN companies ON companies.user_id = jobs.company_id")
 
 	// Optional id limit
 	if input.JobID != nil {
@@ -226,18 +226,18 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 
 	// Filter Job post by keyword
 	if input.Keyword != "" {
-        keywords := strings.Fields(input.Keyword) // Split by whitespace
-        for _, keyword := range keywords {
-            keywordPattern := fmt.Sprintf("%%%s%%", keyword)
-            searchGroup := h.DB.Where("name ILIKE ?", keywordPattern).
-                Or("description ILIKE ?", keywordPattern).
-                Or("position ILIKE ?", keywordPattern).
-                Or("duration ILIKE ?", keywordPattern).
-                Or("users.username ILIKE ?", keywordPattern)
+		keywords := strings.Fields(input.Keyword) // Split by whitespace
+		for _, keyword := range keywords {
+			keywordPattern := fmt.Sprintf("%%%s%%", keyword)
+			searchGroup := h.DB.Where("name ILIKE ?", keywordPattern).
+				Or("description ILIKE ?", keywordPattern).
+				Or("position ILIKE ?", keywordPattern).
+				Or("duration ILIKE ?", keywordPattern).
+				Or("users.username ILIKE ?", keywordPattern)
 
-            query = query.Where(searchGroup)
-        }
-    }
+			query = query.Where(searchGroup)
+		}
+	}
 
 	// Filter Job post by salary range
 	query = query.Where("min_salary >= ?", input.MinSalary)
