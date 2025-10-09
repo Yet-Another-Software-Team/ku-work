@@ -117,13 +117,18 @@ const fetchJobs = async () => {
 
 const isLoading = ref(true);
 
-onMounted(() => {
+onMounted(async () => {
     isLoading.value = true;
     if (import.meta.client) {
         userRole.value = localStorage.getItem("role") || "viewer";
     }
-    fetchJobs();
-    isLoading.value = false;
+    try {
+        await fetchJobs();
+    } catch (error) {
+        console.error("Error during onMounted:", error);
+    } finally {
+        isLoading.value = false;
+    }
 });
 
 const updateJobOpen = (id: number, value: boolean) => {
