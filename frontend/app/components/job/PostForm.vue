@@ -90,7 +90,7 @@
             <!-- Duration -->
             <div class="grid grid-cols-12 gap-4 items-center w-full">
                 <label
-                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
+                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 dark:text-primary-500 font-semibold"
                 >
                     Job Duration
                 </label>
@@ -136,23 +136,6 @@
                     <span class="text-error text-sm">
                         {{ errors.salary || errors.minSalary || errors.maxSalary }}
                     </span>
-                </div>
-            </div>
-
-            <!-- Duration -->
-            <div class="grid grid-cols-12 gap-4 items-center w-full">
-                <label
-                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 dark:text-primary-500 font-semibold"
-                >
-                    Duration
-                </label>
-                <div class="col-span-12 md:col-span-8">
-                    <UInput
-                        v-model="form.duration"
-                        placeholder="e.g., 6 months, 1 year, Permanent"
-                        class="w-full"
-                    />
-                    <span class="text-error text-sm">{{ errors.duration }}</span>
                 </div>
             </div>
 
@@ -215,7 +198,7 @@ const isSubmitting = ref(false);
 const form = ref<CreateJobPost>({
     name: "",
     position: "",
-    duration: "",
+    duration: undefined,
     description: undefined,
     location: "",
     jobType: undefined,
@@ -266,7 +249,7 @@ const durationOptions = [
 
 const schema = z
     .object({
-        name: z.string().min(1, "Logged in company user is required"),
+        name: z.string().min(1, "Job Name is required"),
         position: z.string().min(1, "Job Title is required"),
         duration: z.string().min(1, "Duration is required"),
         location: z.string().min(1, "Job Location is required"),
@@ -354,7 +337,6 @@ watch(
 
 async function onSubmit() {
     isSubmitting.value = true;
-    form.value.name = localStorage.getItem("username") ?? "";
     const result = schema.safeParse(form.value);
     if (!result.success) {
         for (const issue of result.error.issues) {
@@ -374,9 +356,13 @@ async function onSubmit() {
     }
 
     try {
+        const token = localStorage.getItem("token");
         await api.post("/jobs", result.data, {
-            withCredentials: true,
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
         });
+        console.log("Job submitted:", result.data);
         addToast({
             title: "Form submitted",
             description: "Your job post has been saved successfully.",
@@ -393,12 +379,5 @@ async function onSubmit() {
         });
         return;
     }
-
-    addToast({
-        title: "Form submitted",
-        description: "Your job post has been saved successfully.",
-        color: "success",
-    });
-    emit("close");
 }
 </script>

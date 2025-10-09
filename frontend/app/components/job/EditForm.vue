@@ -71,7 +71,7 @@
             <!-- Duration -->
             <div class="grid grid-cols-12 gap-4 items-center w-full">
                 <label
-                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
+                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 dark:text-primary-500 font-semibold"
                 >
                     Job Duration
                 </label>

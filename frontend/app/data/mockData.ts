@@ -50,7 +50,7 @@ interface Company {
 interface CreateJobPost {
     name: string;
     position: string;
-    duration: string;
+    duration: string | undefined;
     description: string | undefined;
     location: string;
     jobType: string | undefined;
@@ -250,19 +250,8 @@ const mockJobData: Job = {
             minSalary: 1,
             maxSalary: 1,
             approvalStatus: "rejected",
-            company: {
-                id: "734fc1e6-34b5-4810-b139-ce575b1a52c6",
-                createdAt: "2025-10-01T22:06:52.152089+07:00",
-                email: "AAA@AAA.AAA",
-                phone: "+6699999999999",
-                photoId: "305419d1-2d0e-4b0b-9137-f4689e39198d",
-                bannerId: "28769ce2-7a40-4ff3-8067-c2b56f926518",
-                address: "That St.",
-                city: "Quebec",
-                country: "Canada",
-                about: "",
-                site: "",
-            },
+            photoId: "305419d1-2d0e-4b0b-9137-f4689e39198d",
+            bannerId: "28769ce2-7a40-4ff3-8067-c2b56f926518",
             companyName: "AA",
             open: true,
         },
@@ -280,19 +269,8 @@ const mockJobData: Job = {
             minSalary: 30000,
             maxSalary: 45000,
             approvalStatus: "accepted",
-            company: {
-                id: "734fc1e6-34b5-4810-b139-ce575b1a52c6",
-                createdAt: "2025-10-01T22:06:52.152089+07:00",
-                email: "AAA@AAA.AAA",
-                phone: "+6699999999999",
-                photoId: "305419d1-2d0e-4b0b-9137-f4689e39198d",
-                bannerId: "28769ce2-7a40-4ff3-8067-c2b56f926518",
-                address: "That St.",
-                city: "Quebec",
-                country: "Canada",
-                about: "",
-                site: "",
-            },
+            photoId: "305419d1-2d0e-4b0b-9137-f4689e39198d",
+            bannerId: "28769ce2-7a40-4ff3-8067-c2b56f926518",
             companyName: "AA",
             open: false,
         },
@@ -311,19 +289,8 @@ const mockJobData: Job = {
             minSalary: 50000,
             maxSalary: 55000,
             approvalStatus: "accepted",
-            company: {
-                id: "734fc1e6-34b5-4810-b139-ce575b1a52c6",
-                createdAt: "2025-10-01T22:06:52.152089+07:00",
-                email: "AAA@AAA.AAA",
-                phone: "+6699999999999",
-                photoId: "305419d1-2d0e-4b0b-9137-f4689e39198d",
-                bannerId: "28769ce2-7a40-4ff3-8067-c2b56f926518",
-                address: "That St.",
-                city: "Quebec",
-                country: "Canada",
-                about: "",
-                site: "",
-            },
+            photoId: "305419d1-2d0e-4b0b-9137-f4689e39198d",
+            bannerId: "28769ce2-7a40-4ff3-8067-c2b56f926518",
             companyName: "AA",
             open: true,
         },
