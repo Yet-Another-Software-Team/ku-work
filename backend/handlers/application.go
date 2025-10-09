@@ -277,6 +277,78 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, jobApplications)
 }
 
+// @Summary Delete job applications for a job
+// @Description Delete all job applications for a job, includes filter for only rejected, pending, or accepted jobs.
+// @Tags Job Applications
+// @Security BearerAuth
+// @Produce json
+// @Param id path uint true "Job ID"
+// @Param pending body handlers.ClearJobApplicationsHandler.ClearJobApplicationsInput true "Whether to include pending job applications or not"
+// @Param accepted body handlers.ClearJobApplicationsHandler.ClearJobApplicationsInput true "Whether to include accepted job applications or not"
+// @Param rejected body handlers.ClearJobApplicationsHandler.ClearJobApplicationsInput true "Whether to include rejected job applications or not"
+// @Success 200 {object} object{message=string} "Success"
+// @Failure 400 {object} object{error=string} "Bad Request: Invalid job ID"
+// @Failure 401 {object} object{error=string} "Unauthorized"
+// @Failure 404 {object} object{error=string} "Not Found: Job not found"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /jobs/{id}/applications [get]
+func (h *ApplicationHandlers) ClearJobApplicationsHandler(ctx *gin.Context) {
+	// Extract authenticated user ID from context
+	userId := ctx.MustGet("userID").(string)
+
+	// Convert job id to uint from URL parameter
+	jobIdStr := ctx.Param("id")
+	jobId64, err := strconv.ParseUint(jobIdStr, 10, 64)
+	if err != nil || jobId64 <= 0 || jobId64 > math.MaxUint32 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid job id"})
+		return
+	}
+	jobId := uint(jobId64)
+
+	// Parse parameters
+	type ClearJobApplicationsInput struct {
+		Pending  bool `json:"pending"`
+		Rejected bool `json:"rejected"`
+		Accepted bool `json:"accepted"`
+	}
+	var input ClearJobApplicationsInput
+	if err := ctx.ShouldBind(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Verify the job exists and check authorization
+	job := &model.Job{
+		ID:        jobId,
+		CompanyID: userId,
+	}
+	if err := h.DB.Take(&job).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "job not found"})
+		} else {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	// Delete job applications
+	query := h.DB.Where("job_id = ?", jobId)
+	if !input.Accepted {
+		query = query.Not("status = ?", model.JobApplicationAccepted)
+	}
+	if !input.Rejected {
+		query = query.Not("status = ?", model.JobApplicationRejected)
+	}
+	if !input.Pending {
+		query = query.Not("status = ?", model.JobApplicationPending)
+	}
+	if err := query.Delete(&model.JobApplication{}).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"message": "ok"})
+}
+
 // @Summary Get a specific job application
 // @Description Retrieves detailed information about a single job application for a specific student, including the applicant's full profile, contact information, and attached files (resume, etc.).
 // @Tags Job Applications
