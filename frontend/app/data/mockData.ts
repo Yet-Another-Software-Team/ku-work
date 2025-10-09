@@ -41,10 +41,36 @@ interface Company {
     photoId: string;
     bannerId: string;
     about: string;
-    website: string;
+    site: string;
     address: string;
     city: string;
     country: string;
+}
+
+interface CreateJobPost {
+    name: string;
+    position: string;
+    duration: string | undefined;
+    description: string | undefined;
+    location: string;
+    jobType: string | undefined;
+    experience: string | undefined;
+    minSalary: number | undefined;
+    maxSalary: number | undefined;
+    open: boolean;
+}
+
+interface EditJobPost {
+    name: string;
+    position: string;
+    duration: string;
+    description: string;
+    location: string;
+    jobType: string;
+    experience: string;
+    minSalary: number;
+    maxSalary: number;
+    open: boolean;
 }
 
 interface JobPost {
@@ -63,13 +89,56 @@ interface JobPost {
     experience: string;
     minSalary: number;
     maxSalary: number;
-    approved: boolean;
+    approvalStatus: "pending" | "accepted" | "rejected";
     open: boolean;
+    accepted?: number;
+    rejected?: number;
+    pending?: number;
 }
 
 interface Job {
     jobs: JobPost[];
 }
+
+interface JobApplicationFile {
+    id: string;
+    createdAt: string;
+    userId: string;
+    fileType: string;
+    category: string;
+}
+
+interface JobApplication {
+    id: number;
+    createdAt: string;
+    jobId: number;
+    userId: string;
+    phone: string;
+    email: string;
+    status: string;
+    username: string;
+    files: JobApplicationFile[];
+}
+
+const mockJobApplicationData: JobApplication = {
+    id: 1,
+    createdAt: "2023-10-01T12:00:00Z",
+    jobId: 101,
+    userId: "12345678-1234-1234-1234-123456789012",
+    phone: "012-345-6789",
+    email: "abc@ku.th",
+    status: "pending",
+    username: "John Doe",
+    files: [
+        {
+            id: "file-uuid-1",
+            createdAt: "2023-10-01T12:00:00Z",
+            userId: "12345678-1234-1234-1234-123456789012",
+            fileType: "resume",
+            category: "application",
+        },
+    ],
+};
 
 const mockUserData: Profile = {
     profile: {
@@ -177,23 +246,12 @@ const mockJobData: Job = {
             description: "IT position",
             location: "thailand",
             jobType: "casual",
-            experienceType: "newgrad",
+            experience: "newgrad",
             minSalary: 1,
             maxSalary: 1,
-            approved: false,
-            company: {
-                id: "734fc1e6-34b5-4810-b139-ce575b1a52c6",
-                createdAt: "2025-10-01T22:06:52.152089+07:00",
-                email: "AAA@AAA.AAA",
-                phone: "+6699999999999",
-                photoId: "305419d1-2d0e-4b0b-9137-f4689e39198d",
-                bannerId: "28769ce2-7a40-4ff3-8067-c2b56f926518",
-                address: "That St.",
-                city: "Quebec",
-                country: "Canada",
-                about: "",
-                website: "",
-            },
+            approvalStatus: "rejected",
+            photoId: "305419d1-2d0e-4b0b-9137-f4689e39198d",
+            bannerId: "28769ce2-7a40-4ff3-8067-c2b56f926518",
             companyName: "AA",
             open: true,
         },
@@ -207,23 +265,12 @@ const mockJobData: Job = {
             description: "Work on building modern web applications with Vue.js and TypeScript.",
             location: "Thailand",
             jobType: "Contract",
-            experienceType: "Junior",
+            experience: "Junior",
             minSalary: 30000,
             maxSalary: 45000,
-            approved: true,
-            company: {
-                id: "734fc1e6-34b5-4810-b139-ce575b1a52c6",
-                createdAt: "2025-10-01T22:06:52.152089+07:00",
-                email: "AAA@AAA.AAA",
-                phone: "+6699999999999",
-                photoId: "305419d1-2d0e-4b0b-9137-f4689e39198d",
-                bannerId: "28769ce2-7a40-4ff3-8067-c2b56f926518",
-                address: "That St.",
-                city: "Quebec",
-                country: "Canada",
-                about: "",
-                website: "",
-            },
+            approvalStatus: "accepted",
+            photoId: "305419d1-2d0e-4b0b-9137-f4689e39198d",
+            bannerId: "28769ce2-7a40-4ff3-8067-c2b56f926518",
             companyName: "AA",
             open: false,
         },
@@ -238,28 +285,17 @@ const mockJobData: Job = {
                 "Analyze financial data and create reports to assist management decisions.",
             location: "Singapore",
             jobType: "Full Time",
-            experienceType: "Mid-level",
+            experience: "Mid-level",
             minSalary: 50000,
             maxSalary: 55000,
-            approved: true,
-            company: {
-                id: "734fc1e6-34b5-4810-b139-ce575b1a52c6",
-                createdAt: "2025-10-01T22:06:52.152089+07:00",
-                email: "AAA@AAA.AAA",
-                phone: "+6699999999999",
-                photoId: "305419d1-2d0e-4b0b-9137-f4689e39198d",
-                bannerId: "28769ce2-7a40-4ff3-8067-c2b56f926518",
-                address: "That St.",
-                city: "Quebec",
-                country: "Canada",
-                about: "",
-                website: "",
-            },
+            approvalStatus: "accepted",
+            photoId: "305419d1-2d0e-4b0b-9137-f4689e39198d",
+            bannerId: "28769ce2-7a40-4ff3-8067-c2b56f926518",
             companyName: "AA",
             open: true,
         },
     ],
 };
 
-export { mockUserData, multipleMockUserData, mockCompanyData, mockJobData };
-export type { Profile, CompanyProfile, JobPost, Job };
+export { mockUserData, multipleMockUserData, mockCompanyData, mockJobData, mockJobApplicationData };
+export type { Profile, CompanyProfile, CreateJobPost, EditJobPost, JobPost, Job, JobApplication };

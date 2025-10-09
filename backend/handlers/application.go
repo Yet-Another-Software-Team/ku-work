@@ -125,8 +125,10 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 		input.AltPhone = student.Phone
 	}
 	if input.AltEmail == "" {
-		user := model.User{}
-		result = h.DB.Where("user_id = ?", student.UserID).First(&user)
+		user := model.User{
+			ID: student.UserID,
+		}
+		result = h.DB.First(&user)
 		if result.Error != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 			return
@@ -231,9 +233,10 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 
 	// Parse and validate query parameters
 	type FetchJobApplicationsInput struct {
-		Status *string `json:"status" form:"status"`
+		Status *string `json:"status" form:"status" binding:"omitempty,max=64"`
 		Offset uint    `json:"offset" form:"offset"`
 		Limit  uint    `json:"limit" form:"limit" binding:"max=64"`
+		SortBy string  `json:"sortBy" form:"sortBy" binding:"oneof='latest' 'oldest' 'name_az' 'name_za'"`
 	}
 
 	input := FetchJobApplicationsInput{}
@@ -251,12 +254,12 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 	// Build base query joining with users table to fetch applicant username
 	// Filter by the job ID from the URL parameter
 	query := h.DB.Model(&model.JobApplication{}).
-		Joins("INNER JOIN google_o_auth_details ON google_o_auth_details.id = job_applications.user_id").
+		Joins("INNER JOIN google_o_auth_details ON google_o_auth_details.user_id = job_applications.user_id").
 		Joins("INNER JOIN students ON students.user_id = job_applications.user_id").
 		Select("job_applications.*",
-			"CONCAT(google_o_auth_details.FirstName, ' ', google_o_auth_details.LastName) as username",
+			"CONCAT(google_o_auth_details.first_name, ' ', google_o_auth_details.last_name) as username",
 			"students.major as major",
-			"students.student_id as studentId",
+			"students.student_id as student_id",
 			"job_applications.status as status").
 		Where("job_applications.job_id = ?", jobId)
 
@@ -265,9 +268,21 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 		query = query.Where("job_applications.status = ?", *input.Status)
 	}
 
+	// Sort results
+	switch input.SortBy {
+	case "latest":
+		query = query.Order("created_at DESC")
+	case "oldest":
+		query = query.Order("created_at ASC")
+	case "name_az":
+		query = query.Order("username ASC")
+	case "name_za":
+		query = query.Order("username DESC")
+	}
+
 	// Execute query with pagination and preload associated files
 	var jobApplications []ShortApplicationDetail
-	result := query.Offset(int(input.Offset)).Limit(int(input.Limit)).Preload("Files").Find(&jobApplications)
+	result := query.Offset(int(input.Offset)).Limit(int(input.Limit)).Preload("Files").Scan(&jobApplications)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
@@ -303,16 +318,20 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 
 	// Query for the specific job application with full student details
 	var jobApplication FullApplicantDetail
+
+	// Fetch the main application data, without preloading Files.
 	query := h.DB.Model(&model.JobApplication{}).
 		Joins("INNER JOIN users ON users.id = job_applications.user_id").
-		Joins("LEFT JOIN students ON students.user_id = job_applications.user_id").
-		Select(`job_applications.*, users.username as username,
+		Joins("INNER JOIN students ON students.user_id = job_applications.user_id").
+		Joins("INNER JOIN google_o_auth_details ON google_o_auth_details.user_id = job_applications.user_id").
+		Select(`job_applications.*,
+		 	CONCAT(google_o_auth_details.first_name, ' ', google_o_auth_details.last_name) as username,
+			users.username as email,
 			students.phone as phone, students.photo_id as photo_id,
 			students.birth_date as birth_date, students.about_me as about_me,
 			students.git_hub as github, students.linked_in as linked_in,
 			students.student_id as student_id, students.major as major`).
-		Where("job_applications.job_id = ? AND student_id = ?", jobId, studentId).
-		Preload("Files")
+		Where("job_applications.job_id = ? AND students.student_id = ?", jobId, studentId)
 
 	if err := query.First(&jobApplication).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -320,6 +339,12 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 		} else {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
+		return
+	}
+
+	// explicitly load the "Files" association into the struct.
+	if err := h.DB.Model(&jobApplication.JobApplication).Association("Files").Find(&jobApplication.Files); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load application files"})
 		return
 	}
 
@@ -429,7 +454,7 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 // @Failure 403 {object} object{error=string} "Forbidden: User is not authorized to update this application"
 // @Failure 404 {object} object{error=string} "Not Found: Job or application not found"
 // @Failure 500 {object} object{error=string} "Internal Server Error"
-// @Router /jobs/{id}/applications/{studentId}/status [patch]
+// @Router /jobs/{id}/applications/{studentId} [patch]
 func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context) {
 	// Extract authenticated user ID from context
 	userId := ctx.MustGet("userID").(string)
@@ -476,7 +501,9 @@ func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context
 
 	// Find the job application
 	jobApplication := &model.JobApplication{}
-	if err := h.DB.Where("job_id = ? AND user_id = ?", jobId, studentId).First(jobApplication).Error; err != nil {
+	if err := h.DB.Model(&model.JobApplication{}).
+		Joins("INNER JOIN students ON job_applications.user_id = students.user_id").
+		Where("job_id = ? AND students.student_id = ?", jobId, studentId).First(jobApplication).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "job application not found"})
 		} else {

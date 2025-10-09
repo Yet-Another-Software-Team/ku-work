@@ -15,6 +15,7 @@ require (
 	github.com/swaggo/gin-swagger v1.6.1
 	github.com/swaggo/swag v1.16.6
 	golang.org/x/oauth2 v0.30.0
+	golang.org/x/term v0.35.0
 )
 
 require (

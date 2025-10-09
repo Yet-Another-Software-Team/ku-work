@@ -54,7 +54,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	job.POST("", jobHandlers.CreateJobHandler)
 	job.GET("/:id/applications", applicationHandlers.GetJobApplicationsHandler)
 	job.GET("/:id/applications/:studentId", applicationHandlers.GetJobApplicationHandler)
-	job.PATCH("/:id/applications/:studentId", applicationHandlers.UpdateJobApplicationStatusHandler)
+	job.PATCH("/:id/applications/:studentId/status", applicationHandlers.UpdateJobApplicationStatusHandler)
 	job.GET("/:id", jobHandlers.GetJobDetailHandler)
 	job.POST("/:id/apply", applicationHandlers.CreateJobApplicationHandler)
 	job.PATCH("/:id", jobHandlers.EditJobHandler)
