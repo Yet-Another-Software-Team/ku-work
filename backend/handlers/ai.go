@@ -5,6 +5,7 @@ import (
 	"ku-work/backend/handlers/ai"
 	"ku-work/backend/model"
 	"os"
+	"strconv"
 	"strings"
 
 	"gorm.io/gorm"
@@ -32,7 +33,7 @@ func (current *AIHandler) AutoApproveJob(job *model.Job) {
 		Action:     string(approvalStatus),
 		ObjectName: "Job",
 		Reason:     "- " + strings.Join(reasons, "\n- "),
-		ObjectID:   string(job.ID),
+		ObjectID:   strconv.FormatUint(uint64(job.ID), 10),
 	}).Error; err != nil {
 		tx.Rollback()
 		return
