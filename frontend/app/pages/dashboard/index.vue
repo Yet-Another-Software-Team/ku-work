@@ -1,13 +1,17 @@
 <template>
     <div class="pt-5 pb-2">
-        <!-- Loading Spinner -->
-        <div v-if="userRole === null" class="w-full text-center py-10">
-            <icon name="svg-spinners:180-ring-with-bg" class="text-[10em] text-primary mb-4" />
-            <p class="mt-4 text-lg text-neutral-500 dark:text-neutral-400">Loading dashboard...</p>
+        <div v-if="isLoading">
+            <USkeleton class="h-12 w-1/3 mb-5" />
+            <div class="flex flex-wrap gap-10">
+                <USkeleton
+                    v-for="n in 10"
+                    :key="n"
+                    class="h-[18em] w-full lg:w-[25em] drop-shadow-md"
+                />
+            </div>
         </div>
-
         <!-- Company Dashboard -->
-        <div v-else-if="userRole === 'company'">
+        <div v-else-if="userRole === 'company' && !isLoading">
             <h1 class="text-5xl text-primary-800 dark:text-primary font-bold mb-5">
                 Company Dashboard
             </h1>
@@ -21,6 +25,7 @@
                     v-for="job in data"
                     v-else
                     :key="job.id"
+                    :data="job"
                     class="h-[18em] w-full lg:w-[25em] drop-shadow-md"
                     :job-i-d="job.id.toString()"
                     :open="job.open"
@@ -30,6 +35,7 @@
                     :pending="job.pending"
                     :approval-status="job.approvalStatus"
                     @update:open="(value: boolean) => updateJobOpen(job.id, value)"
+                    @close="fetchJobs"
                 />
             </div>
             <div
@@ -51,7 +57,7 @@
         </div>
 
         <!-- Student Dashboard -->
-        <div v-else-if="userRole === 'student'">
+        <div v-else-if="userRole === 'student' && !isLoading">
             <h1 class="text-5xl text-primary-800 dark:text-primary font-bold mb-5">
                 Student Dashboard
             </h1>
@@ -74,7 +80,9 @@
 </template>
 
 <script setup lang="ts">
-const userRole = ref<string | null>(null);
+import type { JobPost } from "~/data/mockData";
+
+const userRole = ref<string>("viewer");
 
 definePageMeta({
     layout: "viewer",
@@ -83,17 +91,7 @@ definePageMeta({
 
 const openJobPostForm = ref(false);
 
-type Job = {
-    id: number;
-    position: string;
-    accepted: number;
-    rejected: number;
-    pending: number;
-    open: boolean;
-    approvalStatus: string;
-};
-
-const data = ref<Job[]>([]);
+const data = ref<JobPost[]>([]);
 
 const api = useApi();
 const { add: addToast } = useToast();
@@ -117,11 +115,20 @@ const fetchJobs = async () => {
     }
 };
 
-onMounted(() => {
+const isLoading = ref(true);
+
+onMounted(async () => {
+    isLoading.value = true;
     if (import.meta.client) {
         userRole.value = localStorage.getItem("role") || "viewer";
     }
-    fetchJobs();
+    try {
+        await fetchJobs();
+    } catch (error) {
+        console.error("Error during onMounted:", error);
+    } finally {
+        isLoading.value = false;
+    }
 });
 
 const updateJobOpen = (id: number, value: boolean) => {

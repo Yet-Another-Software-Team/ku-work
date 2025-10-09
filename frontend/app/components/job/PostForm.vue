@@ -58,13 +58,13 @@
                 </label>
                 <div class="col-span-12 md:col-span-8 relative z-50">
                     <USelect
-                        v-model="form.jobtype"
+                        v-model="form.jobType!"
                         placeholder="Select Job Type"
                         style="min-height: 37px"
                         class="w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
                         :items="jobTypes"
                     />
-                    <span class="text-error text-sm">{{ errors.jobtype }}</span>
+                    <span class="text-error text-sm">{{ errors.jobType }}</span>
                 </div>
             </div>
 
@@ -77,13 +77,31 @@
                 </label>
                 <div class="col-span-12 md:col-span-8 relative z-50">
                     <USelect
-                        v-model="form.experience"
+                        v-model="form.experience!"
                         placeholder="Select Required Experience"
                         style="min-height: 37px"
                         class="w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
                         :items="experiences"
                     />
                     <span class="text-error text-sm">{{ errors.experience }}</span>
+                </div>
+            </div>
+
+            <!-- Duration -->
+            <div class="grid grid-cols-12 gap-4 items-center w-full">
+                <label
+                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 dark:text-primary-500 font-semibold"
+                >
+                    Job Duration
+                </label>
+                <div class="col-span-12 md:col-span-8 relative z-50">
+                    <USelect
+                        v-model="form.duration"
+                        placeholder="Select Duration"
+                        class="w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
+                        :items="durationOptions"
+                    />
+                    <span class="text-error text-sm">{{ errors.duration }}</span>
                 </div>
             </div>
 
@@ -96,41 +114,28 @@
                 </label>
                 <div class="col-span-12 md:col-span-8">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <UInputNumber
-                            v-model="form.minsalary"
-                            placeholder="Minimum Salary"
-                            orientation="vertical"
-                            class="w-full"
-                            :min="0"
-                        />
-                        <UInputNumber
-                            v-model="form.maxsalary"
-                            placeholder="Maximum Salary"
-                            orientation="vertical"
-                            class="w-full"
-                            :min="0"
-                        />
+                        <UFormField label="Minimum Salary">
+                            <UInputNumber
+                                v-model="form.minSalary"
+                                placeholder="Minimum Salary"
+                                orientation="vertical"
+                                class="w-full"
+                                :min="0"
+                            />
+                        </UFormField>
+                        <UFormField label="Maximum Salary">
+                            <UInputNumber
+                                v-model="form.maxSalary"
+                                placeholder="Maximum Salary"
+                                orientation="vertical"
+                                class="w-full"
+                                :min="0"
+                            />
+                        </UFormField>
                     </div>
                     <span class="text-error text-sm">
-                        {{ errors.salary || errors.minsalary || errors.maxsalary }}
+                        {{ errors.salary || errors.minSalary || errors.maxSalary }}
                     </span>
-                </div>
-            </div>
-
-            <!-- Duration -->
-            <div class="grid grid-cols-12 gap-4 items-center w-full">
-                <label
-                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 dark:text-primary-500 font-semibold"
-                >
-                    Duration
-                </label>
-                <div class="col-span-12 md:col-span-8">
-                    <UInput
-                        v-model="form.duration"
-                        placeholder="e.g., 6 months, 1 year, Permanent"
-                        class="w-full"
-                    />
-                    <span class="text-error text-sm">{{ errors.duration }}</span>
                 </div>
             </div>
 
@@ -154,7 +159,7 @@
 
             <!-- Post & Cancel -->
             <div class="grid grid-cols-12 w-full">
-                <div class="col-span-12 md:col-start-9 md:col-span-4 flex justify-end gap-x-3 mb-5">
+                <div class="col-span-12 md:col-start-9 md:col-span-4 flex justify-end gap-x-3">
                     <!-- Cancel -->
                     <UButton
                         class="size-fit text-xl rounded-md px-15 font-medium hover:bg-gray-200 hover:cursor-pointer"
@@ -169,7 +174,6 @@
                         class="size-fit text-xl text-white rounded-md px-15 font-medium bg-primary-500 hover:bg-primary-700 hover:cursor-pointer active:bg-primary-800"
                         type="submit"
                         label="Post"
-                        :disabled="isSubmitting || !isFormValid"
                     />
                 </div>
             </div>
@@ -177,30 +181,44 @@
     </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, watch } from "vue";
+import type { CreateJobPost } from "~/data/mockData";
 import * as z from "zod";
 
 const emit = defineEmits(["close"]);
 
 const { add: addToast } = useToast();
-const isSubmitting = ref(false);
 
 const showDiscardConfirm = ref(false);
 
 const api = useApi();
+const isSubmitting = ref(false);
 
-const form = ref({
+const form = ref<CreateJobPost>({
+    name: "",
+    position: "",
+    duration: undefined,
+    description: undefined,
+    location: "",
+    jobType: undefined,
+    experience: undefined,
+    minSalary: undefined,
+    maxSalary: undefined,
+    open: false,
+});
+
+const errors = reactive({
     name: "",
     position: "",
     duration: "",
-    location: "",
-    jobtype: "",
-    experience: "",
-    minsalary: 0,
-    maxsalary: 0,
     description: "",
-    duration: "",
+    location: "",
+    jobType: "",
+    experience: "",
+    minSalary: "",
+    maxSalary: "",
+    salary: "",
 });
 
 const jobTypes = [
@@ -219,43 +237,35 @@ const experiences = [
     { label: "Internship", value: "internship" },
 ];
 
-const errors = reactive({
-    name: "",
-    position: "",
-    duration: "",
-    location: "",
-    jobtype: "",
-    experience: "",
-    minsalary: "",
-    maxsalary: "",
-    description: "",
-    duration: "",
-    salary: "",
-});
+const durationOptions = [
+    { label: "1 Month", value: "1 month" },
+    { label: "2 Months", value: "2 months" },
+    { label: "3 Months", value: "3 months" },
+    { label: "6 Months", value: "6 months" },
+    { label: "12 Months", value: "12 months" },
+    { label: "Contract", value: "contract" },
+    { label: "Permanent", value: "permanent" },
+];
 
 const schema = z
     .object({
-        name: z.string().min(1, "Job Title is required"),
-        position: z.string().min(1, "Job Position is required"),
-        location: z.string().min(1, "Job Location is required"),
-        duration: z.string().min(1, "Job Duration is required"),
-        jobtype: z.string().min(1, "Job Type is required"),
-        experience: z.string().min(1, "Experience is required"),
-        minsalary: z.coerce.number().min(0, "Minimum salary cannot be negative"),
-        maxsalary: z.coerce.number().min(0, "Maximum salary cannot be negative"),
-        description: z.string().min(1, "Job Description is required"),
+        name: z.string().min(1, "Job Name is required"),
+        position: z.string().min(1, "Job Title is required"),
         duration: z.string().min(1, "Duration is required"),
+        location: z.string().min(1, "Job Location is required"),
+        jobType: z.string().min(1, "Job Type is required"),
+        experience: z.string().min(1, "Experience is required"),
+        minSalary: z.coerce.number().min(0, "Minimum salary cannot be negative"),
+        maxSalary: z.coerce.number().min(0, "Maximum salary cannot be negative"),
+        description: z.string().min(1, "Job Description is required"),
+        open: z.boolean().optional(),
     })
-    .refine((d) => d.minsalary <= d.maxsalary, {
+    .refine((d) => d.minSalary <= d.maxSalary, {
         message: "Minimum salary must be less than or equal to maximum salary",
         path: ["salary"],
     });
 
-const isFormValid = computed(() => {
-    return schema.safeParse(form.value).success;
-});
-
-function validateField(fieldName, value) {
+function validateField(fieldName: keyof typeof errors, value: string | number | undefined) {
     try {
         schema.pick({ [fieldName]: true }).parse({ [fieldName]: value });
         if (typeof value === "string" && value.trim() === "") {
@@ -276,8 +286,8 @@ function validateField(fieldName, value) {
 
 function validateSalaryCross() {
     errors.salary = "";
-    const min = Number(form.value.minsalary);
-    const max = Number(form.value.maxsalary);
+    const min = Number(form.value.minSalary);
+    const max = Number(form.value.maxSalary);
     if (!Number.isFinite(min) || !Number.isFinite(max)) return;
     if (min > max) {
         errors.salary = "Minimum salary must be less than or equal to maximum salary";
@@ -290,10 +300,6 @@ function cancel() {
 }
 
 watch(
-    () => form.value.name,
-    (v) => validateField("name", v)
-);
-watch(
     () => form.value.position,
     (v) => validateField("position", v)
 );
@@ -302,8 +308,8 @@ watch(
     (v) => validateField("location", v)
 );
 watch(
-    () => form.value.jobtype,
-    (v) => validateField("jobtype", v)
+    () => form.value.jobType,
+    (v) => validateField("jobType", v)
 );
 watch(
     () => form.value.experience,
@@ -313,22 +319,18 @@ watch(
     () => form.value.description,
     (v) => validateField("description", v)
 );
-watch(
-    () => form.value.duration,
-    (v) => validateField("duration", v)
-);
 
 watch(
-    () => form.value.minsalary,
+    () => form.value.minSalary,
     (v) => {
-        validateField("minsalary", v);
+        validateField("minSalary", v);
         validateSalaryCross();
     }
 );
 watch(
-    () => form.value.maxsalary,
+    () => form.value.maxSalary,
     (v) => {
-        validateField("maxsalary", v);
+        validateField("maxSalary", v);
         validateSalaryCross();
     }
 );
@@ -340,26 +342,27 @@ async function onSubmit() {
         for (const issue of result.error.issues) {
             const key = issue.path?.[0];
             if (typeof key === "string" && key in errors) {
-                errors[key] = issue.message;
+                errors[key as keyof typeof errors] = issue.message;
             } else if (key === "salary" || key === undefined) {
                 errors.salary = issue.message;
             }
         }
         addToast({
             title: "Form submission failed",
-            description: "Please check the highlighted errors and try again.",
+            description: "Please check the errors and try again.",
             color: "warning",
         });
         return;
     }
 
     try {
-        const response = await api.post("/jobs", result.data, {
-            withCredentials: true,
+        const token = localStorage.getItem("token");
+        await api.post("/jobs", result.data, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
         });
-
-        console.log(response);
-
+        console.log("Job submitted:", result.data);
         addToast({
             title: "Form submitted",
             description: "Your job post has been saved successfully.",
@@ -371,10 +374,10 @@ async function onSubmit() {
         console.error("Job submission error:", error);
         addToast({
             title: "Form submission failed",
-            description: error.message || "An error occurred. Please try again.",
+            description: "An error occurred. Please try again.",
             color: "error",
         });
-        isSubmitting.value = false;
+        return;
     }
 }
 </script>

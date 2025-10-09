@@ -21,11 +21,7 @@
                 You are a viewer and don't have a profile page. Register as a student to create your
                 profile.
             </p>
-            <UButton
-                v-if="!isRegistered"
-                class="mt-4"
-                @click="navigateTo('/register/student', { replace: true })"
-            >
+            <UButton v-if="!isRegistered" class="mt-4" @click="navigateToRegisterStudent">
                 Register as Student
             </UButton>
         </div>
@@ -68,6 +64,10 @@ onMounted(() => {
         loading.value = false;
     }
 });
+
+function navigateToRegisterStudent() {
+    navigateTo("/register/student", { replace: true });
+}
 
 definePageMeta({
     layout: "viewer",

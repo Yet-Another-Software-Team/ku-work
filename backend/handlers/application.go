@@ -233,9 +233,10 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 
 	// Parse and validate query parameters
 	type FetchJobApplicationsInput struct {
-		Status *string `json:"status" form:"status"`
+		Status *string `json:"status" form:"status" binding:"omitempty,max=64"`
 		Offset uint    `json:"offset" form:"offset"`
 		Limit  uint    `json:"limit" form:"limit" binding:"max=64"`
+		SortBy string  `json:"sortBy" form:"sortBy" binding:"oneof='latest' 'oldest' 'name_az' 'name_za'"`
 	}
 
 	input := FetchJobApplicationsInput{}
@@ -253,12 +254,12 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 	// Build base query joining with users table to fetch applicant username
 	// Filter by the job ID from the URL parameter
 	query := h.DB.Model(&model.JobApplication{}).
-		Joins("INNER JOIN google_o_auth_details ON google_o_auth_details.id = job_applications.user_id").
+		Joins("INNER JOIN google_o_auth_details ON google_o_auth_details.user_id = job_applications.user_id").
 		Joins("INNER JOIN students ON students.user_id = job_applications.user_id").
 		Select("job_applications.*",
-			"CONCAT(google_o_auth_details.FirstName, ' ', google_o_auth_details.LastName) as username",
+			"CONCAT(google_o_auth_details.first_name, ' ', google_o_auth_details.last_name) as username",
 			"students.major as major",
-			"students.student_id as studentId",
+			"students.student_id as student_id",
 			"job_applications.status as status").
 		Where("job_applications.job_id = ?", jobId)
 
@@ -267,9 +268,21 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 		query = query.Where("job_applications.status = ?", *input.Status)
 	}
 
+	// Sort results
+	switch input.SortBy {
+	case "latest":
+		query = query.Order("created_at DESC")
+	case "oldest":
+		query = query.Order("created_at ASC")
+	case "name_az":
+		query = query.Order("username ASC")
+	case "name_za":
+		query = query.Order("username DESC")
+	}
+
 	// Execute query with pagination and preload associated files
 	var jobApplications []ShortApplicationDetail
-	result := query.Offset(int(input.Offset)).Limit(int(input.Limit)).Preload("Files").Find(&jobApplications)
+	result := query.Offset(int(input.Offset)).Limit(int(input.Limit)).Preload("Files").Scan(&jobApplications)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return

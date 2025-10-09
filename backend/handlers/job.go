@@ -33,10 +33,10 @@ type CreateJobInput struct {
 	Duration    string `json:"duration" binding:"required,max=128"`
 	Description string `json:"description" binding:"required,max=16384"`
 	Location    string `json:"location" binding:"required,max=128"`
-	JobType     string `json:"jobtype" binding:"required,oneof='fulltime' 'parttime' 'contract' 'casual' 'internship'"`
+	JobType     string `json:"jobType" binding:"required,oneof='fulltime' 'parttime' 'contract' 'casual' 'internship'"`
 	Experience  string `json:"experience" binding:"required,oneof='newgrad' 'junior' 'senior' 'manager' 'internship'"`
-	MinSalary   uint   `json:"minsalary"`
-	MaxSalary   uint   `json:"maxsalary"`
+	MinSalary   uint   `json:"minSalary"`
+	MaxSalary   uint   `json:"maxSalary"`
 	Open        bool   `json:"open"`
 }
 
@@ -47,10 +47,10 @@ type EditJobInput struct {
 	Duration    *string `json:"duration" binding:"omitempty,max=128"`
 	Description *string `json:"description" binding:"omitempty,max=16384"`
 	Location    *string `json:"location" binding:"omitempty,max=128"`
-	JobType     *string `json:"jobtype" binding:"omitempty,oneof='fulltime' 'parttime' 'contract' 'casual' 'internship'"`
+	JobType     *string `json:"jobType" binding:"omitempty,oneof='fulltime' 'parttime' 'contract' 'casual' 'internship'"`
 	Experience  *string `json:"experience" binding:"omitempty,oneof='newgrad' 'junior' 'senior' 'manager' 'internship'"`
-	MinSalary   *uint   `json:"minsalary" binding:"omitempty"`
-	MaxSalary   *uint   `json:"maxsalary" binding:"omitempty"`
+	MinSalary   *uint   `json:"minSalary" binding:"omitempty"`
+	MaxSalary   *uint   `json:"maxSalary" binding:"omitempty"`
 	Open        *bool   `json:"open" binding:"omitempty"`
 }
 
@@ -121,7 +121,7 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 
 	// Validate input data
 	if input.MaxSalary < input.MinSalary {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "minsalary must be lower than or equal to maxsalary"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "minSalary must be lower than or equal to maxSalary"})
 		return
 	}
 	company := model.Company{
@@ -167,10 +167,10 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 // @Param offset query uint false "Pagination offset"
 // @Param location query string false "Filter by location"
 // @Param keyword query string false "Search keyword for name and description"
-// @Param jobtype query []string false "Filter by job type(s)"
+// @Param jobType query []string false "Filter by job type(s)"
 // @Param experience query []string false "Filter by experience level(s)"
-// @Param minsalary query uint false "Minimum salary filter"
-// @Param maxsalary query uint false "Maximum salary filter"
+// @Param minSalary query uint false "Minimum salary filter"
+// @Param maxSalary query uint false "Maximum salary filter"
 // @Param open query bool false "Filter by open status (company only)"
 // @Param companyId query string false "Filter by company ID"
 // @Param id query uint false "Filter by specific job ID"
@@ -188,10 +188,10 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 		Offset         uint     `json:"offset" form:"offset"`
 		Location       string   `json:"location" form:"location" binding:"max=128"`
 		Keyword        string   `json:"keyword" form:"keyword" binding:"max=256"`
-		JobType        []string `json:"jobtype" form:"jobtype" binding:"max=5,dive,max=32"`
+		JobType        []string `json:"jobType" form:"jobType" binding:"max=5,dive,max=32"`
 		Experience     []string `json:"experience" form:"experience" binding:"max=5,dive,max=32"`
-		MinSalary      uint     `json:"minsalary" form:"minsalary"`
-		MaxSalary      uint     `json:"maxsalary" form:"maxsalary"`
+		MinSalary      uint     `json:"minSalary" form:"minSalary"`
+		MaxSalary      uint     `json:"maxSalary" form:"maxSalary"`
 		Open           *bool    `json:"open" form:"open"`
 		CompanyID      string   `json:"companyId" form:"companyId" binding:"max=64"`
 		JobID          *uint    `json:"id" form:"id" binding:"omitempty,max=64"`
@@ -409,7 +409,7 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 		job.MaxSalary = *input.MaxSalary
 	}
 	if job.MinSalary > job.MaxSalary {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "minsalary cannot exceed maxsalary"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "minSalary cannot exceed maxSalary"})
 		return
 	}
 
@@ -518,4 +518,50 @@ func (h *JobHandlers) GetJobDetailHandler(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, job)
+}
+
+// Accept or reject job applications
+func (h *JobHandlers) AcceptJobApplication(ctx *gin.Context) {
+	// Get user ID from context (auth middleware)
+	userId := ctx.MustGet("userID").(string)
+
+	// Bind input data to struct
+	type AcceptJobApplicationInput struct {
+		ID     uint `json:"id" form:"id"`
+		Accept bool `json:"accept" form:"accept"`
+	}
+
+	input := AcceptJobApplicationInput{}
+	err := ctx.Bind(&input)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Get Job application
+	jobApplication := model.JobApplication{}
+	if err := h.DB.Model(&jobApplication).
+		Joins("INNER JOIN jobs ON jobs.id = job_applications.job_id").
+		Where("jobs.company_id = ?", userId).
+		Where("job_applications.id = ?", input.ID).
+		Take(&jobApplication).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Set new status
+	if input.Accept {
+		jobApplication.Status = model.JobApplicationAccepted
+	} else {
+		jobApplication.Status = model.JobApplicationRejected
+	}
+
+	// Save
+	if err := h.DB.Save(&jobApplication).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Return ok message
+	ctx.JSON(http.StatusOK, gin.H{"message": "ok"})
 }

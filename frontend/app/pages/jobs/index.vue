@@ -61,7 +61,6 @@ definePageMeta({
 });
 
 // Jobs
-
 const jobs = ref<JobPost[]>([]);
 const selectedIndex = ref<number | null>(null);
 const userRole = ref<string>("viewer");
@@ -146,11 +145,11 @@ const fetchJobs = async (offset?: number) => {
     // Optionally add parameters, prevent cluttering the request parameters with default values
     if (location.value) jobForm.append("location", location.value as unknown as string);
     if (search.value) jobForm.append("keyword", search.value as unknown as string);
-    if (jobType.value) jobType.value.map(String).map((x) => jobForm.append("jobtype", x));
+    if (jobType.value) jobType.value.map(String).map((x) => jobForm.append("jobType", x));
     if (expType.value) expType.value.map(String).map((x) => jobForm.append("experience", x));
     if (salaryRange.value) {
-        jobForm.append("minsalary", salaryRange.value[0] as unknown as string);
-        jobForm.append("maxsalary", salaryRange.value[1] as unknown as string);
+        jobForm.append("minSalary", salaryRange.value[0] as unknown as string);
+        jobForm.append("maxSalary", salaryRange.value[1] as unknown as string);
     }
     try {
         const response = await api.get("/jobs", {
