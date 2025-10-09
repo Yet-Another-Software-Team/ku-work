@@ -40,6 +40,37 @@ func (current *AIHandler) AutoApproveJob(job *model.Job) {
 	_ = tx.Commit()
 }
 
+func (current *AIHandler) AutoApproveStudent(student *model.Student) {
+	// Use AI to check student status
+	// This might take a while
+	approvalStatus, reasons := current.AI.CheckStudent(student)
+
+	// Maybe error occur so it returns
+	if approvalStatus == model.StudentApprovalPending {
+		return
+	}
+
+	// We refetch because since AI take time it might be stale now
+	tx := current.DB.Begin()
+	if err := current.DB.Model(&model.Student{
+		UserID: student.UserID,
+	}).Update("approval_status", approvalStatus).Error; err != nil {
+		tx.Rollback()
+		return
+	}
+	if err := tx.Create(&model.Audit{
+		ActorID:    "ai",
+		Action:     string(approvalStatus),
+		ObjectName: "Student",
+		Reason:     "- " + strings.Join(reasons, "\n- "),
+		ObjectID:   student.UserID,
+	}).Error; err != nil {
+		tx.Rollback()
+		return
+	}
+	_ = tx.Commit()
+}
+
 func NewAIHandler(DB *gorm.DB) (*AIHandler, error) {
 	approvalAIName, hasApprovalAI := os.LookupEnv("APPROVAL_AI")
 	if !hasApprovalAI {

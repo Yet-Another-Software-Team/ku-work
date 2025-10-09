@@ -16,12 +16,14 @@ import (
 type StudentHandler struct {
 	DB           *gorm.DB
 	fileHandlers *FileHandlers
+	aiHandler    *AIHandler
 }
 
-func NewStudentHandler(db *gorm.DB, fileHandlers *FileHandlers) *StudentHandler {
+func NewStudentHandler(db *gorm.DB, fileHandlers *FileHandlers, aiHandler *AIHandler) *StudentHandler {
 	return &StudentHandler{
 		DB:           db,
 		fileHandlers: fileHandlers,
+		aiHandler:    aiHandler,
 	}
 }
 
@@ -116,6 +118,7 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 		StudentID:           input.StudentID,
 		Major:               input.Major,
 		StudentStatus:       input.StudentStatus,
+		StudentStatusFile:   *statusDocument,
 		StudentStatusFileID: statusDocument.ID,
 	}
 
@@ -134,6 +137,9 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "ok",
 	})
+
+	// Tell AI to approve it automagically
+	go h.aiHandler.AutoApproveStudent(&student)
 }
 
 // @Summary Edit student profile

@@ -36,6 +36,14 @@ func NewOllamaApprovalAI() (*OllamaApprovalAI, error) {
 	}, nil
 }
 
+type AIOptions struct {
+	Model  string          `json:"model"`
+	Prompt string          `json:"prompt"`
+	Format json.RawMessage `json:"format"`
+	System string          `json:"system"`
+	Stream bool            `json:"stream"`
+}
+
 func (current *OllamaApprovalAI) CheckJob(job *model.Job) (model.JobApprovalStatus, []string) {
 	type AIInput struct {
 		Name        string               `json:"name,omitempty"`
@@ -47,13 +55,6 @@ func (current *OllamaApprovalAI) CheckJob(job *model.Job) (model.JobApprovalStat
 		Experience  model.ExperienceType `json:"experienceType,omitempty"`
 		MinSalary   uint                 `json:"minSalary,omitempty"`
 		MaxSalary   uint                 `json:"maxSalary,omitempty"`
-	}
-	type AIOptions struct {
-		Model  string          `json:"model"`
-		Prompt string          `json:"prompt"`
-		Format json.RawMessage `json:"format"`
-		System string          `json:"system"`
-		Stream bool            `json:"stream"`
 	}
 	jobData, err := json.Marshal(AIInput{
 		Name:        job.Name,
@@ -108,7 +109,49 @@ func (current *OllamaApprovalAI) CheckJob(job *model.Job) (model.JobApprovalStat
 	return model.JobApprovalRejected, response.Reasons
 }
 
+// This just checks fields only, not file.
+// File comes in different format, docx, doc, pdf, csv, png, jpg.
+// Maybe you can figure out how to convert all of those and input it in AI somehow.
 func (current *OllamaApprovalAI) CheckStudent(student *model.Student) (model.StudentApprovalStatus, []string) {
-	// TODO: Add this
-	return model.StudentApprovalPending, nil
+	studentData, err := json.Marshal(&student)
+	if err != nil {
+		return model.StudentApprovalPending, nil
+	}
+	optsData, err := json.Marshal(AIOptions{
+		Model:  current.model,
+		System: "Please evaluate whether student is a real valid student or just some one trolling pretending to be one. Respond in JSON.",
+		Prompt: string(studentData),
+		Format: json.RawMessage(`{"type":"object","properties":{"reasons":{"type":"array"},"valid":{"type":"boolean"}}}`),
+		Stream: false,
+	})
+	if err != nil {
+		return model.StudentApprovalPending, nil
+	}
+	resp, err := current.client.Post(current.uri.JoinPath("api", "generate").String(), "application/json", bytes.NewReader(optsData))
+	if err != nil {
+		return model.StudentApprovalPending, nil
+	}
+	type OllamaResponse struct {
+		Response string `json:"response"`
+	}
+	rawResponse, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return model.StudentApprovalPending, nil
+	}
+	ollamaResponse := OllamaResponse{}
+	if err := json.Unmarshal(rawResponse, &ollamaResponse); err != nil {
+		return model.StudentApprovalPending, nil
+	}
+	type ResponseType struct {
+		Valid   bool     `json:"valid"`
+		Reasons []string `json:"reasons"`
+	}
+	response := ResponseType{}
+	if json.Unmarshal([]byte(ollamaResponse.Response), &response) != nil {
+		return model.StudentApprovalPending, nil
+	}
+	if response.Valid {
+		return model.StudentApprovalAccepted, response.Reasons
+	}
+	return model.StudentApprovalRejected, response.Reasons
 }
