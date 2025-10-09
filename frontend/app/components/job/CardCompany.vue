@@ -74,7 +74,7 @@
                     <Icon name="ic:outline-insert-drive-file" size="18" class="text-neutral-700" />
                     <span class="text-neutral-500 dark:text-neutral-400">Total Applicants</span>
                 </div>
-                <div>{{ data.rejected! + data.accepted! + data.pending! }}</div>
+                <div>{{ (data.rejected ?? 0) + (data.accepted ?? 0) + (data.pending ?? 0) }}</div>
             </div>
         </div>
     </UCard>
