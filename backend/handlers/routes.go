@@ -9,46 +9,71 @@ import (
 
 func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	// Initialize handlers
-	jwtHandler := NewJWTHandlers(db)
+	jwtHandlers := NewJWTHandlers(db)
 	fileHandlers := NewFileHandlers(db)
-	localAuthHandlers := NewLocalAuthHandlers(db, jwtHandler)
-	googleAuthHandlers := NewOAuthHandlers(db, jwtHandler)
+	localAuthHandlers := NewLocalAuthHandlers(db, jwtHandlers)
+	googleAuthHandlers := NewOAuthHandlers(db, jwtHandlers)
 	jobHandlers := NewJobHandlers(db)
-	studentHandler := NewStudentHandler(db, fileHandlers)
-	companyHandler := NewCompanyHandlers(db)
+	applicationHandlers := NewApplicationHandlers(db)
+	studentHandlers := NewStudentHandler(db, fileHandlers)
+	companyHandlers := NewCompanyHandlers(db)
+	userHandlers := NewUserHandlers(db)
+	adminHandlers := NewAdminHandlers(db)
 
-	//Authentication Routes
-	router.POST("/admin/login", localAuthHandlers.AdminLoginHandler)
-	router.POST("/company/register", localAuthHandlers.CompanyRegisterHandler)
-	router.POST("/company/login", localAuthHandlers.CompanyLoginHandler)
-	router.POST("/google/login", googleAuthHandlers.GoogleOauthHandler)
-	router.POST("/refresh", jwtHandler.RefreshTokenHandler)
-	router.POST("/logout", jwtHandler.LogoutHandler)
+	// Authentication Routes
+	auth := router.Group("/auth")
+	auth.POST("/admin/login", localAuthHandlers.AdminLoginHandler)
+	auth.POST("/company/register", localAuthHandlers.CompanyRegisterHandler)
+	auth.POST("/company/login", localAuthHandlers.CompanyLoginHandler)
+	auth.POST("/google/login", googleAuthHandlers.GoogleOauthHandler)
 
-	router.GET("/files/:fileID", fileHandlers.ServeFile)
+	// Protected Authentication Routes
+	authProtected := auth.Group("", middlewares.AuthMiddleware(jwtHandlers.JWTSecret))
+	authProtected.POST("/student/register", studentHandlers.RegisterHandler)
+	authProtected.POST("/refresh", jwtHandlers.RefreshTokenHandler)
+	authProtected.POST("/logout", jwtHandlers.LogoutHandler)
 
-	// Authentication Protected Routes
-	authed := router.Group("/", middlewares.AuthMiddleware(jwtHandler.JWTSecret))
+	// File Routes (Currently public)
+	router.GET("/files/:fileID", fileHandlers.ServeFileHandler)
+
+	// User Routes
+	protectedRouter := router.Group("", middlewares.AuthMiddleware(jwtHandlers.JWTSecret))
+	protectedRouter.PATCH("/me", userHandlers.EditProfileHandler)
+	protectedRouter.GET("/me", userHandlers.GetProfileHandler)
+
+	// Company Routs
+	company := protectedRouter.Group("/company")
+	company.GET("/:id", companyHandlers.GetCompanyProfileHandler)
+
+	companyAdmin := company.Group("", middlewares.AdminPermissionMiddleware(db))
+	companyAdmin.GET("", companyHandlers.GetCompanyListHandler)
+
+	// Job Routes
+	job := protectedRouter.Group("/jobs")
+	job.GET("", jobHandlers.FetchJobsHandler)
+	job.POST("", jobHandlers.CreateJobHandler)
+	job.GET("/:id/applications", applicationHandlers.GetJobApplicationsHandler)
+	job.GET("/:id/applications/:studentId", applicationHandlers.GetJobApplicationHandler)
+	job.PATCH("/:id/applications/:studentId/status", applicationHandlers.UpdateJobApplicationStatusHandler)
+	job.GET("/:id", jobHandlers.GetJobDetailHandler)
+	job.POST("/:id/apply", applicationHandlers.CreateJobApplicationHandler)
+	job.PATCH("/:id", jobHandlers.EditJobHandler)
+
+	jobAdmin := job.Group("", middlewares.AdminPermissionMiddleware(db))
+	jobAdmin.POST("/:id/approval", jobHandlers.JobApprovalHandler)
+
+	// Application Routes
+	application := protectedRouter.Group("/applications")
+	application.GET("", applicationHandlers.GetAllJobApplicationsHandler)
+
+	// Student Routes
+	student := protectedRouter.Group("/students")
+	student.GET("", studentHandlers.GetProfileHandler)
+
+	studentAdmin := student.Group("", middlewares.AdminPermissionMiddleware(db))
+	studentAdmin.POST("/:id/approval", studentHandlers.ApproveHandler)
 
 	// Admin Routes
-	admin := authed.Group("/", middlewares.AdminPermissionMiddleware(db))
-
-	// Student routes
-	authed.POST("/students/register", studentHandler.RegisterHandler)
-	authed.PATCH("/students", studentHandler.EditProfileHandler)
-	authed.GET("/students", studentHandler.GetProfileHandler)
-	admin.POST("/students/approve", studentHandler.ApproveHandler)
-
-	// Job routes
-	authed.GET("/job", jobHandlers.FetchJobs)
-	authed.POST("/job", jobHandlers.CreateJob)
-	authed.PATCH("/job", jobHandlers.EditJob)
-	admin.POST("/job/approve", jobHandlers.ApproveJob)
-	authed.POST("/job/apply", jobHandlers.ApplyJob)
-	authed.GET("/job/application", jobHandlers.FetchJobApplications)
-	authed.POST("/job/application/accept", jobHandlers.AcceptJobApplication)
-
-	// Company routes
-	authed.PATCH("/company", companyHandler.EditProfileHandler)
-	authed.GET("/company", companyHandler.GetProfileHandler)
+	admin := protectedRouter.Group("/admin", middlewares.AdminPermissionMiddleware(db))
+	admin.GET("/audits", adminHandlers.FetchAuditLog)
 }

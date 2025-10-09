@@ -35,7 +35,7 @@
                             <span
                                 class="px-2 py-1 text-md bg-green-100 text-green-700 rounded-full"
                             >
-                                {{ data.experienceType }}
+                                {{ data.experience }}
                             </span>
                         </div>
                     </span>
@@ -132,20 +132,19 @@ const toast = useToast();
 
 onMounted(() => {
     isOpen.value = props.open;
-    logo.value = `${config.public.apiBaseUrl}/files/${props.data.company.photoId}`;
+    logo.value = `${config.public.apiBaseUrl}/files/${props.data.photoId}`;
 });
 
-interface patchJobForm {
-    id: number;
+interface PatchJobForm {
     name?: string;
     position?: string;
     duration?: string;
     description?: string;
     location?: string;
-    jobtype?: "fulltime" | "parttime" | "contract" | "casual" | "internship";
+    jobType?: "fulltime" | "parttime" | "contract" | "casual" | "internship";
     experience?: "newgrad" | "junior" | "senior" | "manager" | "internship";
-    minsalary?: number;
-    maxsalary?: number;
+    minSalary?: number;
+    maxSalary?: number;
     open?: boolean;
 }
 
@@ -174,12 +173,11 @@ async function handleToggle() {
         return;
     }
 
-    const toggleOpen: patchJobForm = {
-        id: Number(props.data.id),
+    const toggleOpen: PatchJobForm = {
         open: isOpen.value,
     };
     try {
-        await api.patch(`/job`, toggleOpen, {
+        await api.patch(`/jobs/${props.data.id}`, toggleOpen, {
             headers: {
                 Authorization: `Bearer ${token}`,
             },

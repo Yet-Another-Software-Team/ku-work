@@ -78,8 +78,8 @@
                     v-for="app in filteredApplications()"
                     :key="app.id"
                     :application-data="app"
-                    @approve="acceptApplication(app.id, true)"
-                    @reject="acceptApplication(app.id, false)"
+                    @approve="acceptApplication(app, true)"
+                    @reject="acceptApplication(app, false)"
                 />
             </div>
         </section>
@@ -151,13 +151,12 @@ const loadContents = async () => {
 
 onMounted(loadContents);
 
-const acceptApplication = async (jobApplicationId: number, accept: boolean) => {
+const acceptApplication = async (jobApplication: JobApplication, accept: boolean) => {
     try {
-        await api.post(
-            "/job/application/accept",
+        await api.patch(
+            `/jobs/${jobApplication.jobId}/applications/${jobApplication.userId}/status`,
             {
-                id: jobApplicationId,
-                accept: accept,
+                status: accept ? "accepted" : "rejected",
             },
             {
                 headers: {
@@ -175,13 +174,15 @@ const acceptApplication = async (jobApplicationId: number, accept: boolean) => {
 
 const fetchJob = async (token: string | null, jobId: number) => {
     try {
-        const response = await api.get(`/job`, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-            params: { id: jobId, companyId: "self" },
-        });
-        job.value = response.data.jobs[0];
+        const response = await api.get(
+            `/jobs/${jobId ?? (route.params.id ? Number(route.params.id) : -1)}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+        job.value = response.data;
     } catch (error) {
         console.error("Error fetching job details:", error);
     }
@@ -195,7 +196,7 @@ const fetchApplication = async (token: string | null, jobId: number) => {
         sortBy: selectSortOption.value,
     };
     try {
-        const response = await api.get("/job/application", {
+        const response = await api.get(`/jobs/${jobId}/applications`, {
             headers: {
                 Authorization: `Bearer ${token}`,
             },

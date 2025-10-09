@@ -14,6 +14,7 @@ COPY . .
 # image doesn't need the C libraries installed.
 ENV CGO_ENABLED=1
 RUN go build -ldflags '-extldflags "-static"' -o main .
+RUN go build -ldflags '-extldflags "-static"' -o create_admin ./scripts/create_admin.go
 
 # ---
 
@@ -22,6 +23,7 @@ WORKDIR /app
 
 # Copy only the compiled binary from the "builder" stage
 COPY --from=builder /app/main .
+COPY --from=builder /app/create_admin .
 
 EXPOSE 8000
 

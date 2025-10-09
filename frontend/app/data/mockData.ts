@@ -32,6 +32,7 @@ interface CompanyProfile {
     };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Company {
     id: string;
     createdAt: string;
@@ -60,7 +61,6 @@ interface CreateJobPost {
 }
 
 interface EditJobPost {
-    id: number;
     name: string;
     position: string;
     duration: string;
@@ -79,13 +79,14 @@ interface JobPost {
     createdAt: string;
     name: string;
     companyId: string;
-    company: Company;
+    photoId: string;
+    bannerId: string;
     position: string;
     duration: string;
     description: string;
     location: string;
     jobType: string;
-    experienceType: string;
+    experience: string;
     minSalary: number;
     maxSalary: number;
     approvalStatus: "pending" | "accepted" | "rejected";
@@ -245,7 +246,7 @@ const mockJobData: Job = {
             description: "IT position",
             location: "thailand",
             jobType: "casual",
-            experienceType: "newgrad",
+            experience: "newgrad",
             minSalary: 1,
             maxSalary: 1,
             approvalStatus: "rejected",
@@ -275,7 +276,7 @@ const mockJobData: Job = {
             description: "Work on building modern web applications with Vue.js and TypeScript.",
             location: "Thailand",
             jobType: "Contract",
-            experienceType: "Junior",
+            experience: "Junior",
             minSalary: 30000,
             maxSalary: 45000,
             approvalStatus: "accepted",
@@ -306,7 +307,7 @@ const mockJobData: Job = {
                 "Analyze financial data and create reports to assist management decisions.",
             location: "Singapore",
             jobType: "Full Time",
-            experienceType: "Mid-level",
+            experience: "Mid-level",
             minSalary: 50000,
             maxSalary: 55000,
             approvalStatus: "accepted",

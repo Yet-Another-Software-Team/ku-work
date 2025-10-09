@@ -18,10 +18,10 @@ A RESTful API built with Go, Gin framework, PostgreSQL, and GORM for user manage
    ```bash
    # Linux/Unix/MacOS
    cp sample.env .env
-   
+
    # Windows
    copy sample.env .env
-   
+
    # Edit .env with your configuration
    ```
 
@@ -64,6 +64,9 @@ Copy `sample.env` to `.env` and configure the following variables:
 ### GoogleOauth Configuration
 - `GOOGLE_CLIENT_ID`: Client ID for Google OAuth
 - `GOOGLE_CLIENT_SECRET`: Client secret for Google OAuth
+
+### Swagger Configuration
+- `SWAGGER_HOST`: Swagger host (default: localhost:8000)
 
 ## Running the Application
 
@@ -109,7 +112,32 @@ The project includes Docker Compose configuration for easy database usage:
    ```bash
    docker compose down -v
    ```
-  
+
+## Creating an Admin User
+
+You can create an admin user by running a script. You must provide a username, and you will be prompted to enter a password securely.
+
+### Using Docker
+
+To run the script inside a running Docker container, you must use the `-it` flags to enable an interactive terminal for the password prompt.
+
+```bash
+docker compose exec -it <container> /app/create_admin <username>
+```
+
+- Replace `<container>` with the name of the container you want to run the script in.
+- Replace `<username>` with your desired username.
+
+### Locally (requires Go)
+
+If you have Go installed on your machine, you can run the script directly:
+
+```bash
+go run ./scripts/create_admin.go <username>
+```
+
+This will create a new user with admin privileges in the database.
+
 ### Code Organization
 
 The codebase follows a modular structure:
@@ -123,3 +151,21 @@ The codebase follows a modular structure:
 ### Database Migrations
 
 GORM handles automatic migrations when the application starts. New model fields will be automatically added to the database schema.
+
+### Swagger Documentation
+
+Swagger documentation is available at `/swagger/index.html`.
+
+[Swaggo Documentation](https://github.com/swaggo/gin-swagger)
+
+To update the Swagger documentation, run the following command:
+
+On linux
+```bash
+~/go/bin/swag init -g main.go
+```
+
+On windows - Does not tested
+```bash
+swag init -g main.go
+```

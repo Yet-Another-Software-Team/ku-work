@@ -25,12 +25,28 @@ func NewStudentHandler(db *gorm.DB, fileHandlers *FileHandlers) *StudentHandler 
 	}
 }
 
-// Handle Registration to be student
-//
-// Reject if user already registered to be student.
-// use by OAuth users.
-//
-// use multipart/form-data
+// @Summary Register as a student
+// @Description Handles the registration process for a user who has already authenticated (e.g., via Google OAuth) to become a student. The registration is submitted for admin approval. This endpoint is protected and requires authentication.
+// @Tags Students
+// @Security BearerAuth
+// @Accept multipart/form-data
+// @Produce json
+// @Param phone formData string false "Phone number"
+// @Param birthDate formData string false "Birth date in RFC3339 format (e.g., 2006-01-02T15:04:05Z)"
+// @Param aboutMe formData string false "A short bio or about me section"
+// @Param github formData string false "GitHub profile URL"
+// @Param linkedIn formData string false "LinkedIn profile URL"
+// @Param studentId formData string true "10-digit student ID number"
+// @Param major formData string true "Major of study" Enums(Software and Knowledge Engineering, Computer Engineering)
+// @Param studentStatus formData string true "Current student status" Enums(Graduated, Current Student)
+// @Param photo formData file true "Profile photo"
+// @Param statusPhoto formData file true "Document proving student status (e.g., student ID card photo)"
+// @Success 200 {object} object{message=string} "ok"
+// @Failure 400 {object} object{error=string} "Bad Request"
+// @Failure 401 {object} object{error=string} "Unauthorized"
+// @Failure 409 {object} object{error=string} "Conflict: User already registered"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /auth/student/register [post]
 func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 	// Get user ID from context (auth middleware)
 	userId := ctx.MustGet("userID").(string)
@@ -120,11 +136,24 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 	})
 }
 
-// Edit student profile
-//
-// # Support partial updates
-//
-// use multipart/form-data
+// @Summary Edit student profile
+// @Description Allows an authenticated student to edit their profile information. Supports partial updates for most fields.
+// @Tags Students
+// @Security BearerAuth
+// @Accept multipart/form-data
+// @Produce json
+// @Param phone formData string false "New phone number"
+// @Param birthDate formData string false "New birth date in RFC3339 format"
+// @Param aboutMe formData string false "Updated about me section"
+// @Param github formData string false "New GitHub profile URL"
+// @Param linkedIn formData string false "New LinkedIn profile URL"
+// @Param studentStatus formData string true "Updated student status" Enums(Graduated, Current Student)
+// @Param photo formData file false "New profile photo"
+// @Success 200 {object} object{message=string} "ok"
+// @Failure 400 {object} object{error=string} "Bad Request"
+// @Failure 401 {object} object{error=string} "Unauthorized"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /me [patch]
 func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 	// Get user ID from context (auth middleware)
 	userId := ctx.MustGet("userID").(string)
@@ -200,12 +229,23 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 	})
 }
 
-// Approve student registration
+// @Summary Approve or reject a student registration (Admin only)
+// @Description Allows an admin to approve or reject a student's registration application based on their user ID.
+// @Tags Students
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID of the student to be approved/rejected"
+// @Param approval body handlers.StudentHandler.ApproveHandler.StudentRegistrationApprovalInput true "Approval action"
+// @Success 200 {object} object{message=string} "ok"
+// @Failure 400 {object} object{error=string} "Bad Request"
+// @Failure 404 {object} object{error=string} "Not Found: Student not found"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /students/{id}/approval [post]
 func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 	// Bind input data to struct
 	type StudentRegistrationApprovalInput struct {
-		UserID  string `json:"id" binding:"max=128"`
-		Approve bool   `json:"approve"`
+		Approve bool `json:"approve"`
 	}
 	input := StudentRegistrationApprovalInput{}
 	err := ctx.Bind(&input)
@@ -214,13 +254,17 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 		return
 	}
 
+	// Get student ID from URL parameter
+	studentID := ctx.Param("id")
+
 	// Get student data from database
+	tx := h.DB.Begin()
 	student := model.Student{
-		UserID: input.UserID,
+		UserID: studentID,
 	}
-	result := h.DB.First(&student)
+	result := tx.Take(&student)
 	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Student not found"})
 		return
 	}
 
@@ -231,18 +275,43 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 		student.ApprovalStatus = model.StudentApprovalRejected
 	}
 
-	result = h.DB.Save(&student)
+	result = tx.Save(&student)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
-
+	if err := tx.Create(&model.Audit{
+		ActorID:    ctx.MustGet("userID").(string),
+		Action:     string(student.ApprovalStatus),
+		ObjectName: "Student",
+		ObjectID:   student.UserID,
+	}).Error; err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if err := tx.Commit().Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "ok",
 	})
 }
 
-// Get Student Profile from database
+// @Summary Get student profile(s)
+// @Description Fetches student profile information. An admin can retrieve a paginated list of all students and filter by approval status. A regular user will get their own detailed profile. An admin can also specify a user ID to get a specific profile.
+// @Tags Students
+// @Security BearerAuth
+// @Produce json
+// @Param id query string false "User ID of a specific student (for admins)"
+// @Param offset query int false "Pagination offset (for admin list)"
+// @Param limit query int false "Pagination limit (for admin list)" default(64)
+// @Param approvalStatus query string false "Filter by approval status (for admin list)" Enums(pending, accepted, rejected)
+// @Success 200 {object} object{profile=handlers.StudentHandler.GetProfileHandler.StudentInfo} "Returns a single student's detailed profile"
+// @Failure 400 {object} object{error=string} "Bad Request"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /students [get]
 func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 	// Get userId from context (auth middleware)
 	userId := ctx.MustGet("userID").(string)

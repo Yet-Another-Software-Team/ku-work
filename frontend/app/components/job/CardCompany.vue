@@ -50,17 +50,17 @@
         <div class="flex flex-col gap-y-4">
             <div class="flex justify-between">
                 <div class="flex items-center gap-x-2">
-                    <Icon name="ic:outline-access-time" size="18" class="text-warning-700" />
-                    <span class="text-neutral-500 dark:text-neutral-400">Pending</span>
-                </div>
-                <div>{{ data.pending }}</div>
-            </div>
-            <div class="flex justify-between">
-                <div class="flex items-center gap-x-2">
                     <Icon name="ic:outline-check-circle" size="18" class="text-primary-700" />
                     <span class="text-neutral-500 dark:text-neutral-400">Accepted</span>
                 </div>
                 <div>{{ data.accepted }}</div>
+            </div>
+            <div class="flex justify-between">
+                <div class="flex items-center gap-x-2">
+                    <Icon name="ic:outline-access-time" size="18" class="text-warning-700" />
+                    <span class="text-neutral-500 dark:text-neutral-400">Pending</span>
+                </div>
+                <div>{{ data.pending }}</div>
             </div>
             <div class="flex justify-between">
                 <div class="flex items-center gap-x-2">

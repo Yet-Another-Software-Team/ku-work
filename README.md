@@ -51,6 +51,9 @@ A full-stack web application with Go backend and Nuxt.js frontend, featuring use
    GOOGLE_CLIENT_ID=your_google_client_id_here
    GOOGLE_CLIENT_SECRET=your_google_client_secret_here
    
+   # Swagger Configuration
+   SWAGGER_HOST=localhost:8000
+   
    ```
 
 #### Run Docker Compose
@@ -63,6 +66,17 @@ docker compose up
 You can also run frontend and backend service seprately by following the specific service guide
 - [frontend](./frontend/README.md)
 - [backend](./backend/README.md)
+
+### Creating an Admin User (Docker)
+
+To create an admin user while the services are running, execute the following command. It requires an interactive terminal (`-it`) to securely prompt for a password.
+
+```bash
+docker-compose exec -it <container-name> /app/create_admin <username>
+```
+
+- Replace `<container-name>` with the name of the container you want to run the command in.
+- Replace `<username>` with your desired username.
 
 ---
 

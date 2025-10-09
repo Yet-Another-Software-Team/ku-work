@@ -27,11 +27,20 @@
                     :key="job.id"
                     :data="job"
                     class="h-[18em] w-full lg:w-[25em] drop-shadow-md"
+                    :job-i-d="job.id.toString()"
+                    :open="job.open"
+                    :position="job.position"
+                    :accepted="job.accepted"
+                    :rejected="job.rejected"
+                    :pending="job.pending"
+                    :approval-status="job.approvalStatus"
                     @update:open="(value: boolean) => updateJobOpen(job.id, value)"
                     @close="fetchJobs"
                 />
             </div>
-            <div class="bg-primary p-2 rounded-full size-[4em] fixed bottom-5 right-[6vw]">
+            <div
+                class="bg-primary-500 p-2 rounded-full size-[4em] fixed bottom-5 right-[6vw] hover:bg-primary-700 transition-all duration-200"
+            >
                 <UModal v-model:open="openJobPostForm">
                     <Icon
                         name="ic:baseline-plus"
@@ -72,6 +81,7 @@
 
 <script setup lang="ts">
 import type { JobPost } from "~/data/mockData";
+
 const userRole = ref<string>("viewer");
 
 definePageMeta({
@@ -91,11 +101,7 @@ const fetchJobs = async () => {
     if (userRole.value !== "company") return;
 
     try {
-        const response = await api.get("/job", {
-            params: {
-                companyId: "self",
-            },
-        });
+        const response = await api.get("/jobs");
         console.log("Fetched jobs:", response.data);
         data.value = response.data.jobs || [];
     } catch (error) {
@@ -126,9 +132,8 @@ const updateJobOpen = (id: number, value: boolean) => {
     const oldValue = job.open;
     job.open = value;
     api.patch(
-        "/job",
+        `/jobs/${job.id}`,
         {
-            id: job.id,
             open: value,
         },
         {

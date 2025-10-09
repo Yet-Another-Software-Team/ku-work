@@ -207,14 +207,13 @@ const showDiscardConfirm = ref(false);
 const api = useApi();
 
 const form = ref<EditJobPost>({
-    id: props.data.id,
     name: props.data.name,
     position: props.data.position,
     duration: props.data.duration,
     description: props.data.description,
     location: props.data.location,
     jobType: props.data.jobType,
-    experience: props.data.experienceType,
+    experience: props.data.experience,
     minSalary: props.data.minSalary,
     maxSalary: props.data.maxSalary,
     open: props.data.open,
@@ -261,9 +260,8 @@ const durationOptions = [
 
 const schema = z
     .object({
-        id: z.number().min(1, "Job ID is required"),
-        name: z.string().min(1, "Logged in company user is required"),
-        position: z.string().min(1, "Job Title is required"),
+        name: z.string().min(1, "Job Title is required"),
+        position: z.string().min(1, "Job Position is required"),
         duration: z.string().min(1, "Duration is required"),
         location: z.string().min(1, "Job Location is required"),
         jobType: z.string().min(1, "Job Type is required"),
@@ -379,7 +377,7 @@ async function onSubmit() {
     try {
         const token = localStorage.getItem("token");
         console.log("Updating job with data:", result.data);
-        await api.patch(`/job`, result.data, {
+        await api.patch(`/jobs/${props.data.id}`, result.data, {
             headers: {
                 Authorization: `Bearer ${token}`,
             },

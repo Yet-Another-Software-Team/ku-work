@@ -58,6 +58,7 @@ func LoadDB() (*gorm.DB, error) {
 		&model.Company{},
 		&model.File{},
 		&model.JobApplication{},
+		&model.Audit{},
 	}
 
 	db_err := db.AutoMigrate(allModels...)
