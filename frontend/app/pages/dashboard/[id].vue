@@ -1,14 +1,14 @@
 <template>
     <section class="w-full">
         <!-- Back -->
-        <a href="/dashboard">
+        <NuxtLink to="/dashboard">
             <h1
                 class="flex items-center text-5xl text-primary-800 dark:text-primary font-bold mb-6 gap-2 cursor-pointer"
             >
                 <Icon name="iconoir:nav-arrow-left" class="items-center" />
                 <span>Back</span>
             </h1>
-        </a>
+        </NuxtLink>
         <!-- Job Post detail -->
         <section>
             <div v-if="isLoading">
