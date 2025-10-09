@@ -7,6 +7,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -212,7 +213,9 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 
 	role := helper.GetRole(userId, h.DB)
 
-	query := h.DB.Model(&model.Job{})
+	query := h.DB.Model(&model.Job{}).
+			Joins("INNER JOIN users ON users.id = jobs.company_id").
+			Joins("INNER JOIN companies ON companies.user_id = jobs.company_id")
 
 	// Optional id limit
 	if input.JobID != nil {
@@ -223,9 +226,18 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 
 	// Filter Job post by keyword
 	if input.Keyword != "" {
-		keywordPattern := fmt.Sprintf("%%%s%%", input.Keyword)
-		query = query.Where(h.DB.Where("name ILIKE ?", keywordPattern).Or("description ILIKE ?", keywordPattern))
-	}
+        keywords := strings.Fields(input.Keyword) // Split by whitespace
+        for _, keyword := range keywords {
+            keywordPattern := fmt.Sprintf("%%%s%%", keyword)
+            searchGroup := h.DB.Where("name ILIKE ?", keywordPattern).
+                Or("description ILIKE ?", keywordPattern).
+                Or("position ILIKE ?", keywordPattern).
+                Or("duration ILIKE ?", keywordPattern).
+                Or("users.username ILIKE ?", keywordPattern)
+
+            query = query.Where(searchGroup)
+        }
+    }
 
 	// Filter Job post by salary range
 	query = query.Where("min_salary >= ?", input.MinSalary)
@@ -247,7 +259,7 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 
 	// Filter Job post by location
 	if len(input.Location) != 0 {
-		query = query.Where("location = ?", input.Location)
+		query = query.Where("location ILIKE ?", input.Location)
 	}
 
 	// Filter Job post by job type
@@ -272,10 +284,7 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 	}
 
 	// Offset and Limit
-	query = query.Offset(int(input.Offset)).
-		Limit(int(input.Limit)).
-		Joins("INNER JOIN users ON users.id = jobs.company_id").
-		Joins("INNER JOIN companies ON companies.user_id = jobs.company_id")
+	query = query.Offset(int(input.Offset)).Limit(int(input.Limit))
 
 	// return Job posts with application statistics
 	if role == helper.Company {
