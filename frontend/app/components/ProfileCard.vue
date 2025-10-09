@@ -123,19 +123,41 @@
 </template>
 
 <script setup lang="ts">
-import { mockUserData } from "~/data/mockData";
+import type { mockUserData } from "~/data/mockData";
 import EditProfileCard from "./EditProfileCard.vue";
-
-const data = mockUserData;
+const toast = useToast();
 
 const isEditModalOpen = ref(false);
 
-type StudentProfileUpdate = typeof data.profile & { _avatarFile?: File | null };
+type StudentProfileUpdate = typeof mockUserData.profile & { _avatarFile?: File | null };
 
-const handleProfileSaved = (updated: StudentProfileUpdate) => {
-    const { _avatarFile, ...profile } = updated;
-    Object.assign(data.profile, profile);
+const handleProfileSaved = async (updated: StudentProfileUpdate) => {
+    const { _avatarFile, ...newProfile } = updated;
     isEditModalOpen.value = false;
+    const formData = new FormData();
+    if (newProfile.phone !== updated.phone) formData.append("phone", updated.phone!);
+    if (newProfile.birthDate !== updated.birthDate)
+        formData.append("birthDate", updated.birthDate!);
+    if (newProfile.aboutMe !== updated.aboutMe) formData.append("aboutMe", updated.aboutMe!);
+    if (newProfile.github !== updated.github) formData.append("github", updated.github);
+    if (newProfile.linkedIn !== updated.linkedIn) formData.append("linkedIn", updated.linkedIn!);
+    if (_avatarFile) formData.append("photo", _avatarFile!);
+    formData.append("studentStatus", profile.value.status);
+    Object.assign(profile.value, newProfile);
+    try {
+        await api.patch("/me", formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        });
+    } catch (error) {
+        console.log(error);
+        toast.add({
+            title: "Failed to update profile",
+            description: (error as { message: string }).message,
+            color: "error",
+        });
+    }
 };
 
 const profile = ref({
@@ -149,6 +171,7 @@ const profile = ref({
     firstName: "",
     lastName: "",
     email: "",
+    status: "",
 });
 
 const config = useRuntimeConfig();
