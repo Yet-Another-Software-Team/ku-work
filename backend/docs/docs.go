@@ -1530,9 +1530,7 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/jobs/{id}/applications/{studentId}/status": {
+            },
             "patch": {
                 "security": [
                     {

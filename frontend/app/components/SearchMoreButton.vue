@@ -84,10 +84,23 @@ const maxSalary = 2000000;
 const sliderValues = ref([0, 750000]);
 const showFilters = ref(false);
 
-const jobTypeItems = ref<CheckboxGroupItem[]>(["Full Time", "Part Time", "Contract", "Casual"]);
+const jobTypeItems: CheckboxGroupItem[] = [
+    { label: "Full-time", value: "fulltime" },
+    { label: "Part-time", value: "parttime" },
+    { label: "Internship", value: "internship" },
+    { label: "Contract", value: "contract" },
+    { label: "Casual", value: "casual" },
+];
 const jobTypeValue = ref<CheckboxGroupValue[]>([]);
 
-const expTypeItems = ref<CheckboxGroupItem[]>(["New Grad", "Junior", "Senior", "Lead", "Manager"]);
+const expTypeItems: CheckboxGroupItem[] = [
+    { label: "New Grad", value: "newgrad" },
+    { label: "Junior", value: "junior" },
+    { label: "Senior", value: "senior" },
+    { label: "Manager", value: "manager" },
+    { label: "Internship", value: "internship" },
+];
+
 const expTypeValue = ref<CheckboxGroupValue[]>([]);
 
 function formatSalary(salary: number): string {

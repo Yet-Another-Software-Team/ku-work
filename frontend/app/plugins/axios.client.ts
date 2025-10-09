@@ -38,6 +38,7 @@ export default defineNuxtPlugin(() => {
         headers: {
             "Content-Type": "application/json",
         },
+        withCredentials: true,
     });
 
     // Flag to prevent multiple refresh attempts
@@ -55,7 +56,6 @@ export default defineNuxtPlugin(() => {
                 resolve(token!);
             }
         });
-
         failedQueue = [];
     };
 
@@ -74,7 +74,6 @@ export default defineNuxtPlugin(() => {
             return config;
         },
         (error) => {
-            // End loading on request error
             if (error.config?.metadata?.requestId) {
                 endRequest(error.config.metadata.requestId);
             }
@@ -85,39 +84,32 @@ export default defineNuxtPlugin(() => {
     // Response interceptor to handle token refresh and end loading
     axiosInstance.interceptors.response.use(
         (response) => {
-            // End loading on successful response
             if (response.config?.metadata?.requestId) {
                 endRequest(response.config.metadata.requestId);
             }
             return response;
         },
         async (error: ApiError) => {
-            // End loading on error (will be restarted if request is retried)
-            if (error.config?.metadata?.requestId) {
-                endRequest(error.config.metadata.requestId);
-            }
             const originalRequest = error.config as InternalAxiosRequestConfig & {
                 _retry?: boolean;
-                metadata?: { requestId: string };
             };
 
-            if (
-                (error.response?.status === 401 || error.response?.status === 403) &&
-                originalRequest &&
-                !originalRequest._retry
-            ) {
+            if (originalRequest?.metadata?.requestId) {
+                endRequest(originalRequest.metadata.requestId);
+            }
+
+            if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
                 if (isRefreshing) {
-                    // If already refreshing, queue this request
                     return new Promise((resolve, reject) => {
                         failedQueue.push({ resolve, reject });
                     })
                         .then((token) => {
-                            if (originalRequest) {
-                                originalRequest.headers.Authorization = `Bearer ${token}`;
-                                return axiosInstance(originalRequest);
-                            }
+                            originalRequest.headers.Authorization = `Bearer ${token}`;
+                            return axiosInstance(originalRequest);
                         })
-                        .catch((err) => Promise.reject(err));
+                        .catch((err) => {
+                            return Promise.reject(err);
+                        });
                 }
 
                 originalRequest._retry = true;
@@ -156,28 +148,14 @@ export default defineNuxtPlugin(() => {
                         }
                     }
 
-                    // Update the authorization header for the original request
-                    if (originalRequest) {
-                        originalRequest.headers.Authorization = `Bearer ${newToken}`;
-                        // Create new request ID for retry
-                        const retryRequestId = startRequest(
-                            originalRequest.url || "",
-                            originalRequest.method || "GET"
-                        );
-                        originalRequest.metadata = { requestId: retryRequestId };
-                    }
+                    axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${newToken}`;
+                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
 
                     processQueue(null, newToken);
-                    isRefreshing = false;
 
-                    // Retry the original request with new token
                     return axiosInstance(originalRequest);
-                } catch (refreshError) {
-                    // Refresh failed, redirect to login
+                } catch (refreshError: any) {
                     processQueue(refreshError, null);
-                    isRefreshing = false;
-
-                    // Force complete all loading states
                     forceComplete();
 
                     if (import.meta.client) {
@@ -187,14 +165,18 @@ export default defineNuxtPlugin(() => {
 
                         toast.add({
                             title: "Session Expired",
-                            description: "Please log in again",
+                            description: "Please log in again.",
                             color: "error",
                         });
 
-                        await navigateTo("/", { replace: true });
+                        // Use timeout to allow toast to be seen
+                        setTimeout(() => {
+                            window.location.href = "/";
+                        }, 500);
                     }
-
                     return Promise.reject(refreshError);
+                } finally {
+                    isRefreshing = false;
                 }
             }
 

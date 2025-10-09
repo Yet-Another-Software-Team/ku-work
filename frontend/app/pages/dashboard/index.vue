@@ -1,13 +1,19 @@
 <template>
     <div class="pt-5 pb-2">
+        <!-- Loading Spinner -->
+        <div v-if="userRole === null" class="w-full text-center py-10">
+            <icon name="svg-spinners:180-ring-with-bg" class="text-[10em] text-primary mb-4" />
+            <p class="mt-4 text-lg text-neutral-500 dark:text-neutral-400">Loading dashboard...</p>
+        </div>
+
         <!-- Company Dashboard -->
-        <div v-if="userRole === 'company'">
+        <div v-else-if="userRole === 'company'">
             <h1 class="text-5xl text-primary-800 dark:text-primary font-bold mb-5">
                 Company Dashboard
             </h1>
             <div class="flex flex-wrap gap-10">
-                <div v-if="data.length === 0">
-                    <p class="text-center text-neutral-300 dark:text-neutral-400 text-xl">
+                <div v-if="data.length === 0" class="w-full text-center py-10">
+                    <p class="text-neutral-400 dark:text-neutral-500 text-xl">
                         No jobs posted yet.
                     </p>
                 </div>
@@ -68,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-const userRole = ref<string>("viewer");
+const userRole = ref<string | null>(null);
 
 definePageMeta({
     layout: "viewer",
