@@ -24,7 +24,6 @@ interface ExtendedAxiosRequestConfig extends AxiosRequestConfig {
 export const useApi = () => {
     const { $axios } = useNuxtApp();
     const toast = useToast();
-    const { startRequest, endRequest } = useApiLoading();
 
     const handleError = (error: any): ApiError => {
         let apiError: ApiError = {
@@ -58,13 +57,7 @@ export const useApi = () => {
         url: string,
         config?: ExtendedAxiosRequestConfig
     ): Promise<ApiResponse<T>> => {
-        let requestId: string | null = null;
         try {
-            // Start loading if not skipped and not already handled by interceptor
-            if (!config?.skipGlobalLoading && !config?.metadata?.requestId) {
-                requestId = startRequest(url, "GET");
-            }
-
             const response: AxiosResponse<T> = await $axios.get(url, config);
             return {
                 data: response.data,
@@ -72,11 +65,6 @@ export const useApi = () => {
             };
         } catch (error) {
             throw handleError(error);
-        } finally {
-            // End loading if we started it manually
-            if (requestId) {
-                endRequest(requestId);
-            }
         }
     };
 
@@ -85,13 +73,7 @@ export const useApi = () => {
         data?: any,
         config?: ExtendedAxiosRequestConfig
     ): Promise<ApiResponse<T>> => {
-        let requestId: string | null = null;
         try {
-            // Start loading if not skipped and not already handled by interceptor
-            if (!config?.skipGlobalLoading && !config?.metadata?.requestId) {
-                requestId = startRequest(url, "POST");
-            }
-
             const response: AxiosResponse<T> = await $axios.post(url, data, config);
             return {
                 data: response.data,
@@ -99,11 +81,6 @@ export const useApi = () => {
             };
         } catch (error) {
             throw handleError(error);
-        } finally {
-            // End loading if we started it manually
-            if (requestId) {
-                endRequest(requestId);
-            }
         }
     };
 
@@ -112,13 +89,7 @@ export const useApi = () => {
         data?: any,
         config?: ExtendedAxiosRequestConfig
     ): Promise<ApiResponse<T>> => {
-        let requestId: string | null = null;
         try {
-            // Start loading if not skipped and not already handled by interceptor
-            if (!config?.skipGlobalLoading && !config?.metadata?.requestId) {
-                requestId = startRequest(url, "PUT");
-            }
-
             const response: AxiosResponse<T> = await $axios.put(url, data, config);
             return {
                 data: response.data,
@@ -126,11 +97,6 @@ export const useApi = () => {
             };
         } catch (error) {
             throw handleError(error);
-        } finally {
-            // End loading if we started it manually
-            if (requestId) {
-                endRequest(requestId);
-            }
         }
     };
 
@@ -139,13 +105,7 @@ export const useApi = () => {
         data?: any,
         config?: ExtendedAxiosRequestConfig
     ): Promise<ApiResponse<T>> => {
-        let requestId: string | null = null;
         try {
-            // Start loading if not skipped and not already handled by interceptor
-            if (!config?.skipGlobalLoading && !config?.metadata?.requestId) {
-                requestId = startRequest(url, "PATCH");
-            }
-
             const response: AxiosResponse<T> = await $axios.patch(url, data, config);
             return {
                 data: response.data,
@@ -153,11 +113,6 @@ export const useApi = () => {
             };
         } catch (error) {
             throw handleError(error);
-        } finally {
-            // End loading if we started it manually
-            if (requestId) {
-                endRequest(requestId);
-            }
         }
     };
 
@@ -165,13 +120,7 @@ export const useApi = () => {
         url: string,
         config?: ExtendedAxiosRequestConfig
     ): Promise<ApiResponse<T>> => {
-        let requestId: string | null = null;
         try {
-            // Start loading if not skipped and not already handled by interceptor
-            if (!config?.skipGlobalLoading && !config?.metadata?.requestId) {
-                requestId = startRequest(url, "DELETE");
-            }
-
             const response: AxiosResponse<T> = await $axios.delete(url, config);
             return {
                 data: response.data,
@@ -179,11 +128,6 @@ export const useApi = () => {
             };
         } catch (error) {
             throw handleError(error);
-        } finally {
-            // End loading if we started it manually
-            if (requestId) {
-                endRequest(requestId);
-            }
         }
     };
 
@@ -193,13 +137,7 @@ export const useApi = () => {
         formData: FormData,
         config?: ExtendedAxiosRequestConfig
     ): Promise<ApiResponse<T>> => {
-        let requestId: string | null = null;
         try {
-            // Start loading if not skipped and not already handled by interceptor
-            if (!config?.skipGlobalLoading && !config?.metadata?.requestId) {
-                requestId = startRequest(url, "POST");
-            }
-
             const response: AxiosResponse<T> = await $axios.post(url, formData, {
                 ...config,
                 headers: {
@@ -213,11 +151,6 @@ export const useApi = () => {
             };
         } catch (error) {
             throw handleError(error);
-        } finally {
-            // End loading if we started it manually
-            if (requestId) {
-                endRequest(requestId);
-            }
         }
     };
 
