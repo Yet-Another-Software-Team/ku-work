@@ -190,14 +190,14 @@ export const useApi = () => {
 export interface LoginResponse {
     token: string;
     username: string;
-    isCompany: boolean;
-    isStudent: boolean;
+    role: string;
+    userId: string;
 }
 
 export interface AuthResponse {
     token?: string;
     username?: string;
-    isCompany?: boolean;
-    isStudent?: boolean;
+    role?: string;
+    userId?: string;
     message?: string;
 }

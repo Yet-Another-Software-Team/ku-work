@@ -116,11 +116,20 @@ export default defineNuxtPlugin(() => {
                 isRefreshing = true;
 
                 try {
-                    const { data } = await axiosInstance.post("/refresh");
+                    const { data } = await axiosInstance.post("/auth/refresh");
                     const newToken = data.token;
 
                     if (import.meta.client) {
                         localStorage.setItem("token", newToken);
+                        if (response.data.userId) {
+                            localStorage.setItem("userId", response.data.userId);
+                        }
+                        if (response.data.username) {
+                            localStorage.setItem("username", response.data.username);
+                        }
+                        if (response.data.role) {
+                            localStorage.setItem("role", response.data.role);
+                        }
                     }
 
                     axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${newToken}`;

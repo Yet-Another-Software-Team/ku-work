@@ -65,6 +65,9 @@ Copy `sample.env` to `.env` and configure the following variables:
 - `GOOGLE_CLIENT_ID`: Client ID for Google OAuth
 - `GOOGLE_CLIENT_SECRET`: Client secret for Google OAuth
 
+### Swagger Configuration
+- `SWAGGER_HOST`: Swagger host (default: localhost:8000)
+
 ## Running the Application
 
 ### Development Mode
@@ -123,3 +126,21 @@ The codebase follows a modular structure:
 ### Database Migrations
 
 GORM handles automatic migrations when the application starts. New model fields will be automatically added to the database schema.
+
+### Swagger Documentation
+
+Swagger documentation is available at `/swagger/index.html`.
+
+[Swaggo Documentation](https://github.com/swaggo/gin-swagger)
+
+To update the Swagger documentation, run the following command:
+
+On linux
+```bash
+~/go/bin/swag init -g main.go
+```
+
+On windows - Does not tested
+```bash
+swag init -g main.go
+```

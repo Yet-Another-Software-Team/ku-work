@@ -17,13 +17,22 @@
                     </span>
                     <span v-else class="text-error-800 dark:text-error font-bold">Closed</span>
                 </div>
-                <UDropdownMenu class="cursor-pointer" :items="menuItems">
-                    <Icon
-                        name="ic:baseline-more-vert"
-                        size="18"
-                        class="hover:text-primary transition-colors duration-300"
-                    />
-                </UDropdownMenu>
+                <div class="flex items-end gap-x-2">
+                    <p v-if="props.approvalStatus === 'accepted'" class="text-green-500">
+                        Published
+                    </p>
+                    <p v-else-if="props.approvalStatus === 'pending'" class="text-yellow-500">
+                        Pending
+                    </p>
+                    <p v-else class="text-red-500">Rejected</p>
+                    <UDropdownMenu class="cursor-pointer" :items="menuItems">
+                        <Icon
+                            name="ic:baseline-more-vert"
+                            size="18"
+                            class="hover:text-primary transition-colors duration-300"
+                        />
+                    </UDropdownMenu>
+                </div>
             </div>
             <UTooltip :text="props.position">
                 <div class="flex mt-2 font-semibold text-lg truncate">
@@ -35,17 +44,17 @@
         <div class="flex flex-col gap-y-4">
             <div class="flex justify-between">
                 <div class="flex items-center gap-x-2">
-                    <Icon name="ic:outline-access-time" size="18" class="text-warning-700" />
-                    <span class="text-neutral-500 dark:text-neutral-400">Pending</span>
-                </div>
-                <div>{{ props.pending }}</div>
-            </div>
-            <div class="flex justify-between">
-                <div class="flex items-center gap-x-2">
                     <Icon name="ic:outline-check-circle" size="18" class="text-primary-700" />
                     <span class="text-neutral-500 dark:text-neutral-400">Accepted</span>
                 </div>
                 <div>{{ props.accepted }}</div>
+            </div>
+            <div class="flex justify-between">
+                <div class="flex items-center gap-x-2">
+                    <Icon name="ic:outline-access-time" size="18" class="text-warning-700" />
+                    <span class="text-neutral-500 dark:text-neutral-400">Pending</span>
+                </div>
+                <div>{{ props.pending }}</div>
             </div>
             <div class="flex justify-between">
                 <div class="flex items-center gap-x-2">
@@ -95,6 +104,10 @@ const props = defineProps({
     },
     pending: {
         type: Number,
+        required: true,
+    },
+    approvalStatus: {
+        type: String,
         required: true,
     },
 });

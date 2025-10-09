@@ -1,19 +1,15 @@
 <template>
-    <div class="flex w-full p-6 mt-4 bg-white rounded-xl mx-auto max-w-6xl overflow-auto">
+    <div class="flex w-full p-6 mt-4 rounded-xl mx-auto max-w-6xl overflow-auto">
         <form class="space-y-4 w-full flex-1" @submit.prevent="onSubmit">
             <!-- Job Title -->
             <div class="grid grid-cols-12 gap-4 items-center w-full">
                 <label
-                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
+                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 dark:text-primary-500 font-semibold"
                 >
                     Job Title
                 </label>
                 <div class="col-span-12 md:col-span-8">
-                    <UInput
-                        v-model="form.name"
-                        placeholder="Enter job title"
-                        class="w-full bg-white"
-                    />
+                    <UInput v-model="form.name" placeholder="Enter job title" class="w-full" />
                     <span class="text-error text-sm">{{ errors.name }}</span>
                 </div>
             </div>
@@ -21,7 +17,7 @@
             <!-- Job Position -->
             <div class="grid grid-cols-12 gap-4 items-center w-full">
                 <label
-                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
+                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 dark:text-primary-500 font-semibold"
                 >
                     Job Position
                 </label>
@@ -29,7 +25,7 @@
                     <UInput
                         v-model="form.position"
                         placeholder="Enter job position"
-                        class="w-full bg-white"
+                        class="w-full"
                     />
                     <span class="text-error text-sm">{{ errors.position }}</span>
                 </div>
@@ -38,16 +34,16 @@
             <!-- Job Location -->
             <div class="grid grid-cols-12 gap-4 items-center w-full">
                 <label
-                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
+                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 dark:text-primary-500 font-semibold"
                 >
                     Job Location
                 </label>
-                <div class="col-span-12 md:col-span-8 bg-white">
+                <div class="col-span-12 md:col-span-8">
                     <UInput
                         v-model="form.location"
                         placeholder="Location"
                         icon="material-symbols:location-on-outline-rounded"
-                        class="w-full bg-white"
+                        class="w-full"
                     />
                     <span class="text-error text-sm">{{ errors.location }}</span>
                 </div>
@@ -56,7 +52,7 @@
             <!-- Job Type -->
             <div class="grid grid-cols-12 gap-4 items-center w-full">
                 <label
-                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
+                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 dark:text-primary-500 font-semibold"
                 >
                     Job Type
                 </label>
@@ -65,7 +61,7 @@
                         v-model="form.jobtype"
                         placeholder="Select Job Type"
                         style="min-height: 37px"
-                        class="w-full p-2 text-black bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
+                        class="w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
                         :items="jobTypes"
                     />
                     <span class="text-error text-sm">{{ errors.jobtype }}</span>
@@ -75,7 +71,7 @@
             <!-- Required Experience -->
             <div class="grid grid-cols-12 gap-4 items-center w-full">
                 <label
-                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
+                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 dark:text-primary-500 font-semibold"
                 >
                     Required Experience
                 </label>
@@ -84,7 +80,7 @@
                         v-model="form.experience"
                         placeholder="Select Required Experience"
                         style="min-height: 37px"
-                        class="w-full p-2 text-black bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
+                        class="w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 hover:cursor-pointer appearance-none pr-8"
                         :items="experiences"
                     />
                     <span class="text-error text-sm">{{ errors.experience }}</span>
@@ -94,7 +90,7 @@
             <!-- Salary -->
             <div class="grid grid-cols-12 gap-4 items-center w-full">
                 <label
-                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
+                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 dark:text-primary-500 font-semibold"
                 >
                     Salary
                 </label>
@@ -124,7 +120,7 @@
             <!-- Duration -->
             <div class="grid grid-cols-12 gap-4 items-center w-full">
                 <label
-                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
+                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 dark:text-primary-500 font-semibold"
                 >
                     Duration
                 </label>
@@ -132,7 +128,7 @@
                     <UInput
                         v-model="form.duration"
                         placeholder="e.g., 6 months, 1 year, Permanent"
-                        class="w-full bg-white"
+                        class="w-full"
                     />
                     <span class="text-error text-sm">{{ errors.duration }}</span>
                 </div>
@@ -141,7 +137,7 @@
             <!-- Job Description -->
             <div class="grid grid-cols-12 gap-4 items-start w-full">
                 <label
-                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
+                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 dark:text-primary-500 font-semibold"
                 >
                     Job Description
                 </label>
@@ -358,7 +354,7 @@ async function onSubmit() {
     }
 
     try {
-        const response = await api.post("/job", result.data, {
+        const response = await api.post("/jobs", result.data, {
             withCredentials: true,
         });
 

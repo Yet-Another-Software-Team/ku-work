@@ -82,7 +82,7 @@ async function onSubmit(_: FormSubmitEvent<Schema>) {
 
     try {
         const response = await api.post<LoginResponse>(
-            "/company/login",
+            "/auth/company/login",
             {
                 username: state.username,
                 password: state.password,
@@ -94,10 +94,11 @@ async function onSubmit(_: FormSubmitEvent<Schema>) {
 
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("username", response.data.username);
-        if (response.data.isCompany) {
+        localStorage.setItem("userId", response.data.userId);
+        if (response.data.role) {
+            localStorage.setItem("role", response.data.role);
+        } else {
             localStorage.setItem("role", "company");
-        } else if (response.data.isStudent) {
-            localStorage.setItem("role", "student");
         }
 
         api.showSuccessToast("User logged in successfully!");
