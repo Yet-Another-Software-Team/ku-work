@@ -74,14 +74,16 @@ func (h *UserHandlers) EditProfileHandler(ctx *gin.Context) {
 func (h *UserHandlers) editCompanyProfile(ctx *gin.Context, userId string) {
 	// Expected form of data from request (ctx), no data is required, partial data is allowed.
 	type CompanyEditProfileInput struct {
-		Phone   *string               `form:"phone" binding:"omitempty,max=20"`
-		Email   *string               `form:"email" binding:"omitempty,email,max=256"`
-		Website *string               `form:"website" binding:"omitempty,url,max=256"`
-		Address *string               `form:"address" binding:"omitempty,max=512"`
-		City    *string               `form:"city" binding:"omitempty,max=128"`
-		Country *string               `form:"country" binding:"omitempty,max=128"`
-		Photo   *multipart.FileHeader `form:"photo" binding:"omitempty"`
-		Banner  *multipart.FileHeader `form:"banner" binding:"omitempty"`
+		Phone    *string               `form:"phone" binding:"omitempty,max=20"`
+		Email    *string               `form:"email" binding:"omitempty,email,max=256"`
+		Website  *string               `form:"website" binding:"omitempty,url,max=256"`
+		Address  *string               `form:"address" binding:"omitempty,max=512"`
+		City     *string               `form:"city" binding:"omitempty,max=128"`
+		Country  *string               `form:"country" binding:"omitempty,max=128"`
+		AboutUs  *string               `form:"about" binding:"omitempty,max=16384"`
+		Username *string               `form:"username" binding:"omitempty,max=256"`
+		Photo    *multipart.FileHeader `form:"photo" binding:"omitempty"`
+		Banner   *multipart.FileHeader `form:"banner" binding:"omitempty"`
 	}
 	input := CompanyEditProfileInput{}
 
@@ -90,6 +92,33 @@ func (h *UserHandlers) editCompanyProfile(ctx *gin.Context, userId string) {
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+
+	// Update username
+	if input.Username != nil {
+		var usernameCount int64
+		if err := h.DB.Model(&model.User{}).Where(&model.User{
+			Username: *input.Username,
+		}).Count(&usernameCount).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if usernameCount > 0 {
+			ctx.JSON(http.StatusConflict, gin.H{"error": "username already exist"})
+			return
+		}
+		user := model.User{
+			ID: userId,
+		}
+		if err := h.DB.Take(&user).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		user.Username = *input.Username
+		if err := h.DB.Save(&user).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 	}
 
 	// Get current company data
@@ -113,6 +142,9 @@ func (h *UserHandlers) editCompanyProfile(ctx *gin.Context, userId string) {
 	}
 	if input.Country != nil {
 		company.Country = *input.Country
+	}
+	if input.AboutUs != nil {
+		company.AboutUs = *input.AboutUs
 	}
 	if input.Email != nil {
 		if _, err := mail.ParseAddress(*input.Email); err != nil {

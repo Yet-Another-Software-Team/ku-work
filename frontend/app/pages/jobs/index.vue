@@ -85,38 +85,6 @@ useInfiniteScroll(
     }
 );
 
-// const filteredJobs = computed(() => {
-//     return jobs.value.filter((job) => {
-//         const companyName = job.companyName || job.name;
-//         const matchesSearch =
-//             job.position.toLowerCase().includes(search.value.toLowerCase()) ||
-//             job.name.toLowerCase().includes(search.value.toLowerCase()) ||
-//             companyName.toLowerCase().includes(search.value.toLowerCase());
-
-//         const matchesLocation =
-//             !location.value || job.location.toLowerCase().includes(location.value.toLowerCase());
-
-//         const matchesSalary =
-//             !salaryRange.value ||
-//             (job.minSalary >= (salaryRange.value[0] ?? 0) &&
-//                 job.maxSalary <= (salaryRange.value[1] ?? Infinity));
-
-//         const matchesJobType =
-//             !jobType.value || jobType.value.length === 0 || jobType.value.includes(job.jobType);
-
-//         const matchesExpType =
-//             !expType.value ||
-//             expType.value.length === 0 ||
-//             expType.value.includes(job.experienceType);
-
-//         return (
-//             matchesSearch && matchesLocation && matchesSalary && matchesJobType && matchesExpType
-//         );
-//     });
-// });
-
-// const adebuf = refDebounced(search);
-
 watchDebounced(
     [search, location, jobType, expType, salaryRange],
     () =>

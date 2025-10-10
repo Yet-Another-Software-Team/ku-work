@@ -29,18 +29,21 @@
                     {{ profile.name }}
                 </h2>
                 <p class="text-gray-600 dark:text-gray-300">
-                    {{ profile.address }}
+                    {{ profile.address }} {{ profile.city }} {{ profile.country }}
                 </p>
             </div>
 
             <!-- Edit Button -->
-            <button
-                v-if="isOwner"
-                class="px-4 py-2 border border-gray-400 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center mt-4 ml-auto mb-auto cursor-pointer"
+            <UButton
+                v-if="canEdit"
+                variant="outline"
+                color="neutral"
+                class="px-4 py-2 text-sm hover:cursor-pointer flex items-center mt-4 ml-auto mb-auto"
+                @click="openEditModal = true"
             >
                 <Icon name="material-symbols:edit-square-outline-rounded" class="size-[1.5em]" />
                 Edit Profile
-            </button>
+            </UButton>
         </div>
 
         <!-- Divider -->
@@ -67,7 +70,7 @@
                     </li>
                     <li>
                         <a
-                            :href="profile.email"
+                            :href="`mailto:${profile.email}`"
                             target="_blank"
                             class="flex items-center gap-2 hover:underline"
                         >
@@ -77,6 +80,15 @@
                             />
                             <span class="w-[10rem] text-sm truncate">{{ profile.email }}</span>
                         </a>
+                    </li>
+                    <li v-if="profile.phone">
+                        <span class="flex items-center gap-2">
+                            <Icon
+                                name="material-symbols:call-outline"
+                                class="size-[2em] text-black dark:text-white"
+                            />
+                            <span class="w-[10rem] text-sm truncate">{{ profile.phone }}</span>
+                        </span>
                     </li>
                 </ul>
             </div>
@@ -89,11 +101,29 @@
                 </p>
             </div>
         </div>
+
+        <UModal
+            v-model:open="openEditModal"
+            :ui="{
+                container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
+                overlay: 'fixed inset-0 bg-black/50',
+                content: 'w-full max-w-6xl',
+            }"
+        >
+            <template #content>
+                <EditCompanyProfileCard
+                    :profile="profile"
+                    @close="openEditModal = false"
+                    @saved="onSaved"
+                />
+            </template>
+        </UModal>
     </div>
 </template>
 
 <script setup lang="ts">
-// import { mockCompanyData } from "~/data/mockData";
+import { ref, computed } from "vue";
+import EditCompanyProfileCard from "~/components/EditCompanyProfileCard.vue";
 
 const props = withDefaults(
     defineProps<{
@@ -114,28 +144,33 @@ const profile = ref({
     about: "",
     address: "",
     name: "",
+    city: "",
+    country: "",
+    phone: "",
 });
 
-const config = useRuntimeConfig();
+const openEditModal = ref(false);
 const api = useApi();
+const config = useRuntimeConfig();
+const toast = useToast();
 
-onMounted(async () => {
+// Allow editing when owner or when viewing own company ID
+const canEdit = computed(() => {
+    const uid = import.meta.client ? localStorage.getItem("userId") : null;
+    return props.isOwner || (!!props.companyId && props.companyId === uid);
+});
+async function fetchCompanyProfile() {
     try {
         let idToFetch: string | null = props.companyId;
         if (props.isOwner && !idToFetch) {
-            // Get user ID from localStorage for owner view
             idToFetch = localStorage.getItem("userId");
         }
-
         if (!idToFetch) {
             console.error("No company ID provided or found");
             return;
         }
-
-        // Fetch full company profile using company ID
         const response = await api.get(`/company/${idToFetch}`);
         if (response.status === 200) {
-            console.log("Successfully fetched company profile:", response.data);
             response.data.banner = `${config.public.apiBaseUrl}/files/${response.data.bannerId}`;
             response.data.photo = `${config.public.apiBaseUrl}/files/${response.data.photoId}`;
             profile.value = response.data;
@@ -145,5 +180,53 @@ onMounted(async () => {
     } catch (error) {
         console.error("Error fetching company profile:", error);
     }
+}
+
+async function onSaved(updated: {
+    name?: string;
+    address?: string;
+    website?: string;
+    banner?: string;
+    photo?: string;
+    about?: string;
+    city?: string;
+    country?: string;
+    email?: string;
+    phone?: string;
+    _logoFile?: File | null;
+    _bannerFile?: File | null;
+}) {
+    openEditModal.value = false;
+    const formData = new FormData();
+    if (profile.value.name !== updated.name) formData.append("username", updated.name!);
+    if (profile.value.address !== updated.address) formData.append("address", updated.address!);
+    if (profile.value.website !== updated.website) formData.append("website", updated.website!);
+    if (profile.value.city !== updated.city) formData.append("city", updated.city!);
+    if (profile.value.about !== updated.about) formData.append("about", updated.about!);
+    if (profile.value.country !== updated.country) formData.append("country", updated.country!);
+    if (profile.value.email !== updated.email) formData.append("email", updated.email!);
+    if (profile.value.phone !== updated.phone) formData.append("phone", updated.phone!);
+    if (updated._logoFile) formData.append("photo", updated._logoFile!);
+    if (updated._bannerFile) formData.append("banner", updated._bannerFile!);
+    Object.assign(profile.value, updated);
+    try {
+        await api.patch("/me", formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        });
+        await fetchCompanyProfile();
+    } catch (error) {
+        console.log(error);
+        toast.add({
+            title: "Failed to update profile",
+            description: (error as { message: string }).message,
+            color: "error",
+        });
+    }
+}
+
+onMounted(async () => {
+    await fetchCompanyProfile();
 });
 </script>

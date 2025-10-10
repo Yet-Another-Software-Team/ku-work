@@ -47,12 +47,15 @@
             </div>
 
             <!-- Edit Button -->
-            <button
-                class="px-4 py-2 border border-gray-400 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center mt-4 sm:mt-0 sm:ml-10 mr-auto mb-auto cursor-pointer"
+            <UButton
+                variant="outline"
+                color="neutral"
+                class="px-4 py-2 rounded-md text-sm hover:bg-gray-100 hover:cursor-pointer dark:text-white dark:hover:bg-gray-700 flex items-center mt-4 ml-auto mb-auto"
+                @click="isEditModalOpen = true"
             >
                 <Icon name="material-symbols:edit-square-outline-rounded" class="size-[1.5em]" />
                 Edit Profile
-            </button>
+            </UButton>
         </div>
 
         <!-- Divider -->
@@ -99,12 +102,64 @@
                 </p>
             </div>
         </div>
+
+        <UModal
+            v-model:open="isEditModalOpen"
+            :ui="{
+                container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
+                overlay: 'fixed inset-0 bg-black/50',
+                content: 'w-full max-w-2xl',
+            }"
+        >
+            <template #content>
+                <EditProfileCard
+                    :profile="profile"
+                    @close="isEditModalOpen = false"
+                    @saved="handleProfileSaved"
+                />
+            </template>
+        </UModal>
     </div>
 </template>
 
 <script setup lang="ts">
-// import { computed } from "vue";
-// import { mockUserData } from "~/data/mockData";
+import type { mockUserData } from "~/data/mockData";
+import EditProfileCard from "./EditProfileCard.vue";
+const toast = useToast();
+
+const isEditModalOpen = ref(false);
+
+type StudentProfileUpdate = typeof mockUserData.profile & { _avatarFile?: File | null };
+
+const handleProfileSaved = async (updated: StudentProfileUpdate) => {
+    const { _avatarFile, ...newProfile } = updated;
+    isEditModalOpen.value = false;
+    const formData = new FormData();
+    if (profile.value.phone !== updated.phone) formData.append("phone", updated.phone!);
+    if (profile.value.birthDate !== updated.birthDate)
+        formData.append("birthDate", updated.birthDate!);
+    if (profile.value.aboutMe !== updated.aboutMe) formData.append("aboutMe", updated.aboutMe!);
+    if (profile.value.github !== updated.github) formData.append("github", updated.github);
+    if (profile.value.linkedIn !== updated.linkedIn) formData.append("linkedIn", updated.linkedIn!);
+    if (_avatarFile) formData.append("photo", _avatarFile!);
+    formData.append("studentStatus", profile.value.status);
+    Object.assign(profile.value, newProfile);
+    try {
+        await api.patch("/me", formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        });
+        await fetchStudentProfile();
+    } catch (error) {
+        console.log(error);
+        toast.add({
+            title: "Failed to update profile",
+            description: (error as { message: string }).message,
+            color: "error",
+        });
+    }
+};
 
 const profile = ref({
     photo: "",
@@ -117,30 +172,16 @@ const profile = ref({
     firstName: "",
     lastName: "",
     email: "",
+    status: "",
 });
-// const data = mockUserData;
 
-// // Compute age
-// const age = computed(() => {
-//     const birth = new Date(data.profile.birthDate);
-//     const today = new Date();
-//     let years = today.getFullYear() - birth.getFullYear();
-//     const m = today.getMonth() - birth.getMonth();
-//     if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-//         years--;
-//     }
-//     return years;
-// });
-
-// const email = "john.doe@ku.th";
 const config = useRuntimeConfig();
 const api = useApi();
 
-onMounted(async () => {
+async function fetchStudentProfile() {
     try {
         const response = await api.get("/students");
         if (response.status === 200) {
-            console.log("Successfully fetched student profile:", response.data);
             response.data.profile.photo = `${config.public.apiBaseUrl}/files/${response.data.profile.photoId}`;
             profile.value = response.data.profile;
         } else {
@@ -149,5 +190,9 @@ onMounted(async () => {
     } catch (error) {
         console.error("Error fetching student profile:", error);
     }
+}
+
+onMounted(async () => {
+    await fetchStudentProfile();
 });
 </script>
