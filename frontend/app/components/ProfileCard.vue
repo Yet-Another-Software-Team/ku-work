@@ -135,12 +135,12 @@ const handleProfileSaved = async (updated: StudentProfileUpdate) => {
     const { _avatarFile, ...newProfile } = updated;
     isEditModalOpen.value = false;
     const formData = new FormData();
-    if (newProfile.phone !== updated.phone) formData.append("phone", updated.phone!);
-    if (newProfile.birthDate !== updated.birthDate)
+    if (profile.value.phone !== updated.phone) formData.append("phone", updated.phone!);
+    if (profile.value.birthDate !== updated.birthDate)
         formData.append("birthDate", updated.birthDate!);
-    if (newProfile.aboutMe !== updated.aboutMe) formData.append("aboutMe", updated.aboutMe!);
-    if (newProfile.github !== updated.github) formData.append("github", updated.github);
-    if (newProfile.linkedIn !== updated.linkedIn) formData.append("linkedIn", updated.linkedIn!);
+    if (profile.value.aboutMe !== updated.aboutMe) formData.append("aboutMe", updated.aboutMe!);
+    if (profile.value.github !== updated.github) formData.append("github", updated.github);
+    if (profile.value.linkedIn !== updated.linkedIn) formData.append("linkedIn", updated.linkedIn!);
     if (_avatarFile) formData.append("photo", _avatarFile!);
     formData.append("studentStatus", profile.value.status);
     Object.assign(profile.value, newProfile);
@@ -150,6 +150,7 @@ const handleProfileSaved = async (updated: StudentProfileUpdate) => {
                 "Content-Type": "multipart/form-data",
             },
         });
+        await fetchStudentProfile();
     } catch (error) {
         console.log(error);
         toast.add({
@@ -177,11 +178,10 @@ const profile = ref({
 const config = useRuntimeConfig();
 const api = useApi();
 
-onMounted(async () => {
+async function fetchStudentProfile() {
     try {
         const response = await api.get("/students");
         if (response.status === 200) {
-            console.log("Successfully fetched student profile:", response.data);
             response.data.profile.photo = `${config.public.apiBaseUrl}/files/${response.data.profile.photoId}`;
             profile.value = response.data.profile;
         } else {
@@ -190,5 +190,9 @@ onMounted(async () => {
     } catch (error) {
         console.error("Error fetching student profile:", error);
     }
+}
+
+onMounted(async () => {
+    await fetchStudentProfile();
 });
 </script>

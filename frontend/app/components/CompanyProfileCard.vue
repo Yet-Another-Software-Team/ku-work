@@ -35,7 +35,7 @@
 
             <!-- Edit Button -->
             <UButton
-                v-if="isOwner"
+                v-if="canEdit"
                 variant="outline"
                 color="neutral"
                 class="px-4 py-2 text-sm hover:cursor-pointer flex items-center mt-4 ml-auto mb-auto"
@@ -70,7 +70,7 @@
                     </li>
                     <li>
                         <a
-                            :href="profile.email"
+                            :href="`mailto:${profile.email}`"
                             target="_blank"
                             class="flex items-center gap-2 hover:underline"
                         >
@@ -122,7 +122,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import EditCompanyProfileCard from "~/components/EditCompanyProfileCard.vue";
 
 const props = withDefaults(
@@ -154,6 +154,35 @@ const api = useApi();
 const config = useRuntimeConfig();
 const toast = useToast();
 
+
+// Allow editing when owner or when viewing own company ID
+const canEdit = computed(() => {
+  const uid = import.meta.client ? localStorage.getItem("userId") : null;
+  return props.isOwner || (!!props.companyId && props.companyId === uid);
+});
+async function fetchCompanyProfile() {
+    try {
+        let idToFetch: string | null = props.companyId;
+        if (props.isOwner && !idToFetch) {
+            idToFetch = localStorage.getItem("userId");
+        }
+if (!idToFetch) {
+            console.error("No company ID provided or found");
+            return;
+        }
+        const response = await api.get(`/company/${idToFetch}`);
+        if (response.status === 200) {
+            response.data.banner = `${config.public.apiBaseUrl}/files/${response.data.bannerId}`;
+            response.data.photo = `${config.public.apiBaseUrl}/files/${response.data.photoId}`;
+            profile.value = response.data;
+        } else {
+            console.error("Failed to fetch company profile:", response.message);
+        }
+    } catch (error) {
+        console.error("Error fetching company profile:", error);
+    }
+}
+
 async function onSaved(updated: {
     name?: string;
     address?: string;
@@ -180,13 +209,14 @@ async function onSaved(updated: {
     if (profile.value.phone !== updated.phone) formData.append("phone", updated.phone!);
     if (updated._logoFile) formData.append("photo", updated._logoFile!);
     if (updated._bannerFile) formData.append("banner", updated._bannerFile!);
-    Object.assign(profile, updated);
+    Object.assign(profile.value, updated);
     try {
         await api.patch("/me", formData, {
             headers: {
                 "Content-Type": "multipart/form-data",
             },
         });
+        await fetchCompanyProfile();
     } catch (error) {
         console.log(error);
         toast.add({
@@ -198,30 +228,8 @@ async function onSaved(updated: {
 }
 
 onMounted(async () => {
-    try {
-        let idToFetch: string | null = props.companyId;
-        if (props.isOwner && !idToFetch) {
-            // Get user ID from localStorage for owner view
-            idToFetch = localStorage.getItem("userId");
-        }
-
-        if (!idToFetch) {
-            console.error("No company ID provided or found");
-            return;
-        }
-
-        // Fetch full company profile using company ID
-        const response = await api.get(`/company/${idToFetch}`);
-        if (response.status === 200) {
-            console.log("Successfully fetched company profile:", response.data);
-            response.data.banner = `${config.public.apiBaseUrl}/files/${response.data.bannerId}`;
-            response.data.photo = `${config.public.apiBaseUrl}/files/${response.data.photoId}`;
-            profile.value = response.data;
-        } else {
-            console.error("Failed to fetch company profile:", response.message);
-        }
-    } catch (error) {
-        console.error("Error fetching company profile:", error);
-    }
+    await fetchCompanyProfile();
 });
 </script>
+
+

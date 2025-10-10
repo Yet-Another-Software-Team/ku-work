@@ -127,6 +127,7 @@
                     >
                     <div class="mt-1 grid grid-cols-1 gap-2 md:grid-cols-2">
                         <div>
+                            <label class="block font-semibold text-primary-800 dark:text-primary">City</label>
                             <UInput
                                 v-model="form.city"
                                 placeholder="City"
@@ -137,6 +138,7 @@
                             </p>
                         </div>
                         <div>
+                            <label class="block font-semibold text-primary-800 dark:text-primary">Country</label>
                             <UInput
                                 v-model="form.country"
                                 placeholder="Country"
