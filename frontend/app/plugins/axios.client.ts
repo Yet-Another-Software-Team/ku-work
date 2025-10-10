@@ -33,15 +33,15 @@ export default defineNuxtPlugin({
         const toast = useToast();
         const { startRequest, endRequest, forceComplete } = useApiLoading();
 
-    // Create axios instance
-    const axiosInstance: AxiosInstance = axios.create({
-        baseURL: config.public.apiBaseUrl,
-        timeout: 10000,
-        headers: {
-            "Content-Type": "application/json",
-        },
-        withCredentials: true,
-    });
+        // Create axios instance
+        const axiosInstance: AxiosInstance = axios.create({
+            baseURL: config.public.apiBaseUrl,
+            timeout: 10000,
+            headers: {
+                "Content-Type": "application/json",
+            },
+            withCredentials: true,
+        });
 
         // Flag to prevent multiple refresh attempts
         let isRefreshing = false;
@@ -50,16 +50,16 @@ export default defineNuxtPlugin({
             reject: (error: any) => void;
         }> = [];
 
-    const processQueue = (error: any, token: string | null = null) => {
-        failedQueue.forEach(({ resolve, reject }) => {
-            if (error) {
-                reject(error);
-            } else {
-                resolve(token!);
-            }
-        });
-        failedQueue = [];
-    };
+        const processQueue = (error: any, token: string | null = null) => {
+            failedQueue.forEach(({ resolve, reject }) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(token!);
+                }
+            });
+            failedQueue = [];
+        };
 
         // Request interceptor to add auth token and start loading
         axiosInstance.interceptors.request.use(
@@ -73,46 +73,46 @@ export default defineNuxtPlugin({
                 const requestId = startRequest(config.url || "", config.method || "GET");
                 config.metadata = { requestId };
 
-            return config;
-        },
-        (error) => {
-            if (error.config?.metadata?.requestId) {
-                endRequest(error.config.metadata.requestId);
-            }
-            return Promise.reject(error);
-        }
-    );
-
-    // Response interceptor to handle token refresh and end loading
-    axiosInstance.interceptors.response.use(
-        (response) => {
-            if (response.config?.metadata?.requestId) {
-                endRequest(response.config.metadata.requestId);
-            }
-            return response;
-        },
-        async (error: ApiError) => {
-            const originalRequest = error.config as InternalAxiosRequestConfig & {
-                _retry?: boolean;
-            };
-
-            if (originalRequest?.metadata?.requestId) {
-                endRequest(originalRequest.metadata.requestId);
-            }
-
-            if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
-                if (isRefreshing) {
-                    return new Promise((resolve, reject) => {
-                        failedQueue.push({ resolve, reject });
-                    })
-                        .then((token) => {
-                            originalRequest.headers.Authorization = `Bearer ${token}`;
-                            return axiosInstance(originalRequest);
-                        })
-                        .catch((err) => {
-                            return Promise.reject(err);
-                        });
+                return config;
+            },
+            (error) => {
+                if (error.config?.metadata?.requestId) {
+                    endRequest(error.config.metadata.requestId);
                 }
+                return Promise.reject(error);
+            }
+        );
+
+        // Response interceptor to handle token refresh and end loading
+        axiosInstance.interceptors.response.use(
+            (response) => {
+                if (response.config?.metadata?.requestId) {
+                    endRequest(response.config.metadata.requestId);
+                }
+                return response;
+            },
+            async (error: ApiError) => {
+                const originalRequest = error.config as InternalAxiosRequestConfig & {
+                    _retry?: boolean;
+                };
+
+                if (originalRequest?.metadata?.requestId) {
+                    endRequest(originalRequest.metadata.requestId);
+                }
+
+                if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+                    if (isRefreshing) {
+                        return new Promise((resolve, reject) => {
+                            failedQueue.push({ resolve, reject });
+                        })
+                            .then((token) => {
+                                originalRequest.headers.Authorization = `Bearer ${token}`;
+                                return axiosInstance(originalRequest);
+                            })
+                            .catch((err) => {
+                                return Promise.reject(err);
+                            });
+                    }
 
                     originalRequest._retry = true;
                     isRefreshing = true;
@@ -150,37 +150,38 @@ export default defineNuxtPlugin({
                             }
                         }
 
-                    axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${newToken}`;
-                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                        axiosInstance.defaults.headers.common["Authorization"] =
+                            `Bearer ${newToken}`;
+                        originalRequest.headers.Authorization = `Bearer ${newToken}`;
 
-                    processQueue(null, newToken);
+                        processQueue(null, newToken);
 
-                    return axiosInstance(originalRequest);
-                } catch (refreshError: any) {
-                    processQueue(refreshError, null);
-                    forceComplete();
+                        return axiosInstance(originalRequest);
+                    } catch (refreshError: any) {
+                        processQueue(refreshError, null);
+                        forceComplete();
 
                         if (import.meta.client) {
                             localStorage.removeItem("token");
                             localStorage.removeItem("username");
                             localStorage.removeItem("role");
 
-                        toast.add({
-                            title: "Session Expired",
-                            description: "Please log in again.",
-                            color: "error",
-                        });
+                            toast.add({
+                                title: "Session Expired",
+                                description: "Please log in again.",
+                                color: "error",
+                            });
 
-                        // Use timeout to allow toast to be seen
-                        setTimeout(() => {
-                            window.location.href = "/";
-                        }, 500);
+                            // Use timeout to allow toast to be seen
+                            setTimeout(() => {
+                                window.location.href = "/";
+                            }, 500);
+                        }
+                        return Promise.reject(refreshError);
+                    } finally {
+                        isRefreshing = false;
                     }
-                    return Promise.reject(refreshError);
-                } finally {
-                    isRefreshing = false;
                 }
-            }
 
                 return Promise.reject(error);
             }

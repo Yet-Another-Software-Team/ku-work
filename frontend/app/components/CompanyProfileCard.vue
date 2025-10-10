@@ -154,11 +154,10 @@ const api = useApi();
 const config = useRuntimeConfig();
 const toast = useToast();
 
-
 // Allow editing when owner or when viewing own company ID
 const canEdit = computed(() => {
-  const uid = import.meta.client ? localStorage.getItem("userId") : null;
-  return props.isOwner || (!!props.companyId && props.companyId === uid);
+    const uid = import.meta.client ? localStorage.getItem("userId") : null;
+    return props.isOwner || (!!props.companyId && props.companyId === uid);
 });
 async function fetchCompanyProfile() {
     try {
@@ -166,7 +165,7 @@ async function fetchCompanyProfile() {
         if (props.isOwner && !idToFetch) {
             idToFetch = localStorage.getItem("userId");
         }
-if (!idToFetch) {
+        if (!idToFetch) {
             console.error("No company ID provided or found");
             return;
         }
@@ -231,5 +230,3 @@ onMounted(async () => {
     await fetchCompanyProfile();
 });
 </script>
-
-
