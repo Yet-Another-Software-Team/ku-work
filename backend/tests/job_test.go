@@ -542,5 +542,92 @@ func TestJob(t *testing.T) {
 		assert.Equal(t, len(result.Jobs), 1)
 		assert.Equal(t, result.Jobs[0].Position, "software engineer")
 	})
-
+	t.Run("ClearApplications", func(t *testing.T) {
+		var err error
+		// Create admin user for approval
+		var companyUser *UserCreationResult
+		if companyUser, err = CreateUser(UserCreationInfo{
+			Username:  fmt.Sprintf("clearapplications-tester-%d", time.Now().UnixNano()),
+			IsCompany: true,
+		}); err != nil {
+			t.Error(err)
+			return
+		}
+		defer (func() {
+			_ = db.Delete(&companyUser.User)
+		})()
+		// Create company user for job ownership
+		var studentUser *UserCreationResult
+		if studentUser, err = CreateUser(UserCreationInfo{
+			Username:  fmt.Sprintf("clearapplications-student-%d", time.Now().UnixNano()),
+			IsStudent: true,
+			IsOAuth:   true,
+		}); err != nil {
+			t.Error(err)
+			return
+		}
+		defer (func() {
+			_ = db.Delete(&studentUser.User)
+		})()
+		job := model.Job{
+			Name:        fmt.Sprintf("nice-job-%d", time.Now().UnixNano()),
+			CompanyID:   companyUser.Company.UserID,
+			Position:    "software engineer",
+			Duration:    "6 months",
+			Description: "make software",
+			Location:    "bangkok",
+			JobType:     model.JobTypeInternship,
+			Experience:  model.ExperienceInternship,
+			MinSalary:   10,
+			MaxSalary:   100,
+		}
+		err = db.Create(&job).Error
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		jobApplication := model.JobApplication{
+			JobID:  job.ID,
+			UserID: studentUser.User.ID,
+			Status: model.JobApplicationRejected,
+		}
+		err = db.Create(&jobApplication).Error
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		w := httptest.NewRecorder()
+		payload := `{"rejected": true}`
+		req, _ := http.NewRequest("DELETE", fmt.Sprintf("/jobs/%d/applications", job.ID), strings.NewReader(payload))
+		jwtHandler := handlers.NewJWTHandlers(db)
+		jwtToken, _, err := jwtHandler.GenerateTokens(companyUser.Company.UserID)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", jwtToken))
+		req.Header.Add("Content-Type", "application/json")
+		router.ServeHTTP(w, req)
+		assert.Equal(t, w.Code, 200)
+		type Result struct {
+			Message string `json:"message"`
+			Error   string `json:"error"`
+		}
+		result := Result{}
+		err = json.Unmarshal(w.Body.Bytes(), &result)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if result.Error != "" {
+			t.Error(result.Error)
+			return
+		}
+		var jobApplicationCount int64
+		if err := db.Model(&model.JobApplication{}).Where(&model.JobApplication{JobID: job.ID}).Count(&jobApplicationCount).Error; err != nil {
+			t.Error(err)
+			return
+		}
+		assert.Equal(t, jobApplicationCount, int64(0))
+	})
 }

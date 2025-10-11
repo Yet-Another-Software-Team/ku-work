@@ -4,6 +4,15 @@ definitions:
       approve:
         type: boolean
     type: object
+  handlers.ClearJobApplicationsHandler.ClearJobApplicationsInput:
+    properties:
+      accepted:
+        type: boolean
+      pending:
+        type: boolean
+      rejected:
+        type: boolean
+    type: object
   handlers.CompanyResponse:
     properties:
       about:
@@ -1243,38 +1252,42 @@ paths:
       - Jobs
   /jobs/{id}/applications:
     get:
-      description: Fetches all job applications for a specific job posting. This endpoint
-        is for companies to view applicants. It supports status filtering (pending,
-        accepted, rejected) and pagination.
+      description: Delete all job applications for a job, includes filter for only
+        rejected, pending, or accepted jobs.
       parameters:
       - description: Job ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Filter by status (pending, accepted, rejected)
-        in: query
-        name: status
-        type: string
-      - default: 0
-        description: Offset for pagination
-        in: query
-        name: offset
-        type: integer
-      - default: 32
-        description: Limit for pagination
-        in: query
-        name: limit
-        type: integer
+      - description: Whether to include pending job applications or not
+        in: body
+        name: pending
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ClearJobApplicationsHandler.ClearJobApplicationsInput'
+      - description: Whether to include accepted job applications or not
+        in: body
+        name: accepted
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ClearJobApplicationsHandler.ClearJobApplicationsInput'
+      - description: Whether to include rejected job applications or not
+        in: body
+        name: rejected
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ClearJobApplicationsHandler.ClearJobApplicationsInput'
       produces:
       - application/json
       responses:
         "200":
-          description: List of job applications
+          description: Success
           schema:
-            items:
-              $ref: '#/definitions/handlers.ShortApplicationDetail'
-            type: array
+            properties:
+              message:
+                type: string
+            type: object
         "400":
           description: 'Bad Request: Invalid job ID'
           schema:
@@ -1284,13 +1297,6 @@ paths:
             type: object
         "401":
           description: Unauthorized
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "403":
-          description: 'Forbidden: User is not authorized to view these applications'
           schema:
             properties:
               error:
@@ -1312,7 +1318,7 @@ paths:
             type: object
       security:
       - BearerAuth: []
-      summary: Get applications for a specific job
+      summary: Delete job applications for a job
       tags:
       - Job Applications
   /jobs/{id}/applications/{studentId}:

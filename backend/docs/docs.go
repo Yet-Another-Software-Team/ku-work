@@ -1342,14 +1342,14 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Fetches all job applications for a specific job posting. This endpoint is for companies to view applicants. It supports status filtering (pending, accepted, rejected) and pagination.",
+                "description": "Delete all job applications for a job, includes filter for only rejected, pending, or accepted jobs.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Job Applications"
                 ],
-                "summary": "Get applications for a specific job",
+                "summary": "Delete job applications for a job",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1359,33 +1359,42 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "Filter by status (pending, accepted, rejected)",
-                        "name": "status",
-                        "in": "query"
+                        "description": "Whether to include pending job applications or not",
+                        "name": "pending",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ClearJobApplicationsHandler.ClearJobApplicationsInput"
+                        }
                     },
                     {
-                        "type": "integer",
-                        "default": 0,
-                        "description": "Offset for pagination",
-                        "name": "offset",
-                        "in": "query"
+                        "description": "Whether to include accepted job applications or not",
+                        "name": "accepted",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ClearJobApplicationsHandler.ClearJobApplicationsInput"
+                        }
                     },
                     {
-                        "type": "integer",
-                        "default": 32,
-                        "description": "Limit for pagination",
-                        "name": "limit",
-                        "in": "query"
+                        "description": "Whether to include rejected job applications or not",
+                        "name": "rejected",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ClearJobApplicationsHandler.ClearJobApplicationsInput"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of job applications",
+                        "description": "Success",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/handlers.ShortApplicationDetail"
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                }
                             }
                         }
                     },
@@ -1402,17 +1411,6 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden: User is not authorized to view these applications",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -2226,6 +2224,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "approve": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "handlers.ClearJobApplicationsHandler.ClearJobApplicationsInput": {
+            "type": "object",
+            "properties": {
+                "accepted": {
+                    "type": "boolean"
+                },
+                "pending": {
+                    "type": "boolean"
+                },
+                "rejected": {
                     "type": "boolean"
                 }
             }
