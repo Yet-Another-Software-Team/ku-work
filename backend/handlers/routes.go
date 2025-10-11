@@ -13,9 +13,13 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	fileHandlers := NewFileHandlers(db)
 	localAuthHandlers := NewLocalAuthHandlers(db, jwtHandlers)
 	googleAuthHandlers := NewOAuthHandlers(db, jwtHandlers)
-	jobHandlers := NewJobHandlers(db)
+	aiHandler, err := NewAIHandler(db)
+	if err != nil {
+		panic(err)
+	}
+	jobHandlers := NewJobHandlers(db, aiHandler)
 	applicationHandlers := NewApplicationHandlers(db)
-	studentHandlers := NewStudentHandler(db, fileHandlers)
+	studentHandlers := NewStudentHandler(db, fileHandlers, aiHandler)
 	companyHandlers := NewCompanyHandlers(db)
 	userHandlers := NewUserHandlers(db)
 	adminHandlers := NewAdminHandlers(db)

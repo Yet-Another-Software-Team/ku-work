@@ -68,6 +68,13 @@ Copy `sample.env` to `.env` and configure the following variables:
 ### Swagger Configuration
 - `SWAGGER_HOST`: Swagger host (default: localhost:8000)
 
+### AI Configuration
+- `APPROVAL_AI`: Choose what AI to use (dummy, ollama, ...)
+
+**Ollama configuration**
+- `APPROVAL_AI_MODEL`: Choose what AI model to use (e.g. gemma3)
+- `APPROVAL_AI_URI`: Endpoint of AI server
+
 ## Running the Application
 
 ### Development Mode

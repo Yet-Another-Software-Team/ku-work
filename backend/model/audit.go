@@ -7,6 +7,7 @@ type Audit struct {
 	ActorID    string
 	CreatedAt  time.Time
 	Action     string
+	Reason     string
 	ObjectName string
 	ObjectID   string
 }
