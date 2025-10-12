@@ -13,7 +13,8 @@ type User struct {
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	DeletedAt    gorm.DeletedAt `gorm:"index"`
-	Username     string         `gorm:"unique"`
+	Username     string         `gorm:"index:idx_username_user_type,unique"`
+	UserType     string         `gorm:"index:idx_username_user_type,unique"`
 	PasswordHash string         `json:"-"`
 }
 

@@ -39,7 +39,7 @@ func main() {
 
 	// Check if user already exists
 	var count int64
-	err = db.Model(&model.User{}).Where("username = ?", username).Count(&count).Error
+	err = db.Model(&model.User{}).Where("username = ? AND user_type = ?", username, "admin").Count(&count).Error
 	if count > 0 {
 		log.Fatalf("User with username '%s' already exists.", username)
 	} else if err != nil {
@@ -54,6 +54,7 @@ func main() {
 	err = db.Transaction(func(tx *gorm.DB) error {
 		user := model.User{
 			Username:     username,
+			UserType:     "admin",
 			PasswordHash: string(hashedPassword),
 		}
 
