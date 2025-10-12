@@ -74,7 +74,7 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 
 	// Check if a user with the same username already exists.
 	var count int64 = 0
-	h.DB.Model(&model.User{}).Where("username = ?", req.Username).Count(&count)
+	h.DB.Model(&model.User{}).Where("username = ? AND user_type = ?", req.Username, "company").Count(&count)
 
 	if count > 0 {
 		ctx.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
@@ -96,6 +96,7 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 	// Create the new user.
 	newUser := model.User{
 		Username:     req.Username,
+		UserType:     "company",
 		PasswordHash: string(hashedPassword),
 	}
 
@@ -191,7 +192,7 @@ func (h *LocalAuthHandlers) CompanyLoginHandler(ctx *gin.Context) {
 	}
 
 	var user model.User
-	if err := h.DB.Model(&model.User{}).Where("username = ?", req.Username).First(&user).Error; err != nil {
+	if err := h.DB.Model(&model.User{}).Where("username = ? AND user_type = ?", req.Username, "company").First(&user).Error; err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
@@ -245,7 +246,7 @@ func (h *LocalAuthHandlers) AdminLoginHandler(ctx *gin.Context) {
 	}
 
 	var user model.User
-	if err := h.DB.Model(&model.User{}).Where("username = ?", req.Username).First(&user).Error; err != nil {
+	if err := h.DB.Model(&model.User{}).Where("username = ? AND user_type = ?", req.Username, "admin").First(&user).Error; err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}

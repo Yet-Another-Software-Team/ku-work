@@ -98,7 +98,7 @@ func TestCompany(t *testing.T) {
 
 		// Verify user and company in DB
 		var user model.User
-		if err := db.Where("username = ?", username).First(&user).Error; err != nil {
+		if err := db.Where("username = ? AND user_type = ?", username, "company").First(&user).Error; err != nil {
 			t.Fatal(err)
 		}
 
@@ -117,7 +117,7 @@ func TestCompany(t *testing.T) {
 	t.Run("Duplicate Company Creation", func(t *testing.T) {
 		username := fmt.Sprintf("companytester-%d", time.Now().UnixNano())
 		// Create a user first
-		user := model.User{Username: username}
+		user := model.User{Username: username, UserType: "company"}
 		if err := db.Create(&user).Error; err != nil {
 			t.Fatal(err)
 		}

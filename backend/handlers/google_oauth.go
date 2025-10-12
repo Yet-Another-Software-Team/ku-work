@@ -145,6 +145,7 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 		var newUser model.User
 		h.DB.FirstOrCreate(&newUser, model.User{
 			Username: userInfo.Email,
+			UserType: "oauth",
 		})
 
 		oauthDetail = model.GoogleOAuthDetails{
