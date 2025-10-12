@@ -97,7 +97,6 @@ async function onSubmit(_: FormSubmitEvent<Schema>) {
         localStorage.setItem("userId", response.data.userId);
         localStorage.setItem("role", response.data.role);
 
-
         navigateTo("/admin/dashboard", { replace: true });
 
         state.username = "";
