@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"bytes"
 	"fmt"
 	"ku-work/backend/model"
 	"math"
 	"mime/multipart"
 	"net/http"
 	"strconv"
+	"text/template"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,15 +16,23 @@ import (
 )
 
 type ApplicationHandlers struct {
-	DB           *gorm.DB
-	FileHandlers *FileHandlers
+	DB                                      *gorm.DB
+	FileHandlers                            *FileHandlers
+	emailHandler                            *EmailHandler
+	jobApplicationStatusUpdateEmailTemplate *template.Template
 }
 
-func NewApplicationHandlers(db *gorm.DB) *ApplicationHandlers {
-	return &ApplicationHandlers{
-		DB:           db,
-		FileHandlers: NewFileHandlers(db),
+func NewApplicationHandlers(db *gorm.DB, emailHandler *EmailHandler) (*ApplicationHandlers, error) {
+	jobApplicationStatusUpdateEmailTemplate, err := template.New("job_application_status_update.tmpl").ParseFiles("email_templates/job_application_status_update.tmpl")
+	if err != nil {
+		return nil, err
 	}
+	return &ApplicationHandlers{
+		DB:                                      db,
+		FileHandlers:                            NewFileHandlers(db),
+		emailHandler:                            emailHandler,
+		jobApplicationStatusUpdateEmailTemplate: jobApplicationStatusUpdateEmailTemplate,
+	}, nil
 }
 
 // ApplyJobInput defines the structure for the job application form data.
@@ -366,13 +376,13 @@ func (h *ApplicationHandlers) ClearJobApplicationsHandler(ctx *gin.Context) {
 // @Security BearerAuth
 // @Produce json
 // @Param id path uint true "Job ID"
-// @Param studentId path string true "Student User ID"
+// @Param studentUserId query string true "Student Email"
 // @Success 200 {object} handlers.FullApplicantDetail "Detailed job application"
 // @Failure 400 {object} object{error=string} "Bad Request: Invalid job ID"
 // @Failure 401 {object} object{error=string} "Unauthorized"
 // @Failure 404 {object} object{error=string} "Not Found: Job application not found"
 // @Failure 500 {object} object{error=string} "Internal Server Error"
-// @Router /jobs/{id}/applications/{studentId} [get]
+// @Router /jobs/{id}/applications/{studentUserId} [get]
 func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 	// Extract job ID from URL parameter
 	jobIdStr := ctx.Param("id")
@@ -383,8 +393,15 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 	}
 	jobId := uint(jobId64)
 
-	// Extract student ID from URL parameter
-	studentId := ctx.Param("studentId")
+	// Extract email from query
+	type QueryParams struct {
+		Email string `json:"email" form:"email" binding:"required,max=128"`
+	}
+	var queries QueryParams
+	if err := ctx.ShouldBind(&queries); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
 	// Query for the specific job application with full student details
 	var jobApplication FullApplicantDetail
@@ -401,7 +418,7 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 			students.birth_date as birth_date, students.about_me as about_me,
 			students.git_hub as github, students.linked_in as linked_in,
 			students.student_id as student_id, students.major as major`).
-		Where("job_applications.job_id = ? AND students.student_id = ?", jobId, studentId)
+		Where("job_applications.job_id = ? AND google_o_auth_details.user_id = ?", jobId, queries.Email)
 
 	if err := query.First(&jobApplication).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -516,7 +533,7 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path uint true "Job ID"
-// @Param studentId path string true "Student User ID"
+// @Param studentUserId path string true "Student User ID"
 // @Param status body handlers.UpdateJobApplicationStatusHandler.UpdateStatusInput true "New status"
 // @Success 200 {object} object{message=string, status=string} "Application status updated successfully"
 // @Failure 400 {object} object{error=string} "Bad Request: Invalid ID or input"
@@ -524,7 +541,7 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 // @Failure 403 {object} object{error=string} "Forbidden: User is not authorized to update this application"
 // @Failure 404 {object} object{error=string} "Not Found: Job or application not found"
 // @Failure 500 {object} object{error=string} "Internal Server Error"
-// @Router /jobs/{id}/applications/{studentId} [patch]
+// @Router /jobs/{id}/applications/{studentUserId} [patch]
 func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context) {
 	// Extract authenticated user ID from context
 	userId := ctx.MustGet("userID").(string)
@@ -539,7 +556,7 @@ func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context
 	jobId := uint(jobId64)
 
 	// Extract student ID from URL parameter
-	studentId := ctx.Param("studentId")
+	studentUserId := ctx.Param("studentUserId")
 
 	// Verify the job exists and check authorization
 	job := &model.Job{}
@@ -572,8 +589,8 @@ func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context
 	// Find the job application
 	jobApplication := &model.JobApplication{}
 	if err := h.DB.Model(&model.JobApplication{}).
-		Joins("INNER JOIN students ON job_applications.user_id = students.user_id").
-		Where("job_id = ? AND students.student_id = ?", jobId, studentId).First(jobApplication).Error; err != nil {
+		Joins("INNER JOIN students ON students.user_id = students.user_id").
+		Where("job_id = ? AND students.user_id = ?", jobId, studentUserId).First(jobApplication).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "job application not found"})
 		} else {
@@ -593,4 +610,29 @@ func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context
 		"message": "application status updated successfully",
 		"status":  jobApplication.Status,
 	})
+
+	// Send mail
+	go (func() {
+		type Context struct {
+			OAuth  model.GoogleOAuthDetails
+			Job    *model.Job
+			Status string
+		}
+		var context Context
+		context.OAuth.UserID = jobApplication.UserID
+		context.Job = job
+		context.Status = string(input.Status)
+		if err := h.DB.Select("email", "first_name", "last_name").Take(&context.OAuth).Error; err != nil {
+			return
+		}
+		var tpl bytes.Buffer
+		if err := h.jobApplicationStatusUpdateEmailTemplate.Execute(&tpl, context); err != nil {
+			return
+		}
+		_ = h.emailHandler.provider.SendTo(
+			context.OAuth.Email,
+			fmt.Sprintf("[KU-WORK] Your Application Status for %s", job.Name),
+			tpl.String(),
+		)
+	})()
 }

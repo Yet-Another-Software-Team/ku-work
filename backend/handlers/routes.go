@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func SetupRoutes(router *gin.Engine, db *gorm.DB) {
+func SetupRoutes(router *gin.Engine, db *gorm.DB) error {
 	// Initialize handlers
 	jwtHandlers := NewJWTHandlers(db)
 	fileHandlers := NewFileHandlers(db)
@@ -15,11 +15,24 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	googleAuthHandlers := NewOAuthHandlers(db, jwtHandlers)
 	aiHandler, err := NewAIHandler(db)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	jobHandlers := NewJobHandlers(db, aiHandler)
-	applicationHandlers := NewApplicationHandlers(db)
-	studentHandlers := NewStudentHandler(db, fileHandlers, aiHandler)
+	emailHandler, err := NewEmailHandler(db)
+	if err != nil {
+		return err
+	}
+	jobHandlers, err := NewJobHandlers(db, aiHandler, emailHandler)
+	if err != nil {
+		return err
+	}
+	applicationHandlers, err := NewApplicationHandlers(db, emailHandler)
+	if err != nil {
+		return err
+	}
+	studentHandlers, err := NewStudentHandler(db, fileHandlers, aiHandler, emailHandler)
+	if err != nil {
+		return err
+	}
 	companyHandlers := NewCompanyHandlers(db)
 	userHandlers := NewUserHandlers(db)
 	adminHandlers := NewAdminHandlers(db)
@@ -58,8 +71,8 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	job.POST("", jobHandlers.CreateJobHandler)
 	job.GET("/:id/applications", applicationHandlers.GetJobApplicationsHandler)
 	job.DELETE("/:id/applications", applicationHandlers.ClearJobApplicationsHandler)
-	job.GET("/:id/applications/:studentId", applicationHandlers.GetJobApplicationHandler)
-	job.PATCH("/:id/applications/:studentId/status", applicationHandlers.UpdateJobApplicationStatusHandler)
+	job.GET("/:id/applications", applicationHandlers.GetJobApplicationHandler)
+	job.PATCH("/:id/applications/:studentUserId/status", applicationHandlers.UpdateJobApplicationStatusHandler)
 	job.GET("/:id", jobHandlers.GetJobDetailHandler)
 	job.POST("/:id/apply", applicationHandlers.CreateJobApplicationHandler)
 	job.PATCH("/:id", jobHandlers.EditJobHandler)
@@ -81,4 +94,5 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	// Admin Routes
 	admin := protectedRouter.Group("/admin", middlewares.AdminPermissionMiddleware(db))
 	admin.GET("/audits", adminHandlers.FetchAuditLog)
+	return nil
 }

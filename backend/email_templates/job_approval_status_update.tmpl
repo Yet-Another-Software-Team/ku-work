@@ -1,0 +1,15 @@
+Dear {{.User.Username}},
+
+We have completed the review of your job post for {{.Job.Name}}.
+
+The status of your request is {{.Status}}.
+{{if eq .Status "rejected"}}
+Here's why:
+{{.Reason}}
+{{end}}
+If you have any questions or need further assistance, please reach out to us.
+
+Please note: This is a no-reply email. Do not reply to this message.
+
+Best regards,
+The KU-WORK Team

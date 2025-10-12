@@ -83,8 +83,11 @@ func TestMain(m *testing.M) {
 	_ = os.Setenv("GOOGLE_CLIENT_SECRET", "GOCSPX-idklmao")
 	_ = os.Setenv("GOOGLE_CLIENT_ID", "012345678901-1md5idklmao.apps.googleusercontent.com")
 	_ = os.Setenv("APPROVAL_AI", "dummy")
+	_ = os.Setenv("EMAIL_PROVIDER", "dummy")
 	router = gin.Default()
-	handlers.SetupRoutes(router, db)
+	if err := handlers.SetupRoutes(router, db); err != nil {
+		panic(err)
+	}
 	code := m.Run()
 	_ = testcontainers.TerminateContainer(postgresContainer)
 	os.Exit(code)

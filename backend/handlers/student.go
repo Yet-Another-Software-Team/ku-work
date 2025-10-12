@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"bytes"
 	"mime/multipart"
 	"net/http"
+	"text/template"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,17 +16,25 @@ import (
 )
 
 type StudentHandler struct {
-	DB           *gorm.DB
-	fileHandlers *FileHandlers
-	aiHandler    *AIHandler
+	DB                                       *gorm.DB
+	fileHandlers                             *FileHandlers
+	aiHandler                                *AIHandler
+	emailHandler                             *EmailHandler
+	studentApprovalStatusUpdateEmailTemplate *template.Template
 }
 
-func NewStudentHandler(db *gorm.DB, fileHandlers *FileHandlers, aiHandler *AIHandler) *StudentHandler {
-	return &StudentHandler{
-		DB:           db,
-		fileHandlers: fileHandlers,
-		aiHandler:    aiHandler,
+func NewStudentHandler(db *gorm.DB, fileHandlers *FileHandlers, aiHandler *AIHandler, emailHandler *EmailHandler) (*StudentHandler, error) {
+	studentApprovalStatusUpdateEmailTemplate, err := template.New("student_approval_status_update.tmpl").ParseFiles("email_templates/student_approval_status_update.tmpl")
+	if err != nil {
+		return nil, err
 	}
+	return &StudentHandler{
+		DB:                                       db,
+		fileHandlers:                             fileHandlers,
+		aiHandler:                                aiHandler,
+		emailHandler:                             emailHandler,
+		studentApprovalStatusUpdateEmailTemplate: studentApprovalStatusUpdateEmailTemplate,
+	}, nil
 }
 
 // @Summary Register as a student
@@ -305,6 +315,31 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "ok",
 	})
+
+	// Send mail
+	go (func() {
+		type Context struct {
+			OAuth  model.GoogleOAuthDetails
+			Status string
+			Reason string
+		}
+		var context Context
+		context.OAuth.UserID = studentID
+		context.Status = string(student.ApprovalStatus)
+		context.Reason = input.Reason
+		if err := h.DB.Select("email,first_name,last_name").Take(&context.OAuth).Error; err != nil {
+			return
+		}
+		var tpl bytes.Buffer
+		if err := h.studentApprovalStatusUpdateEmailTemplate.Execute(&tpl, context); err != nil {
+			return
+		}
+		_ = h.emailHandler.provider.SendTo(
+			context.OAuth.Email,
+			"[KU-WORK] Your student account has been reviewed",
+			tpl.String(),
+		)
+	})()
 }
 
 // @Summary Get student profile(s)
