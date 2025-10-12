@@ -1,5 +1,5 @@
 <template>
-    <div class="w-screen flex-col items-center justify-center mt-5 overflow-hidden">
+    <div class="main-container w-screen flex-col items-center justify-center pt-5 overflow-hidden">
         <img
             src="~/assets/images/admin.png"
             class="h-[4em] lg:h-[5em] w-full object-contain mb-10"
@@ -12,4 +12,21 @@
     </div>
 </template>
 
-<script setup lang="ts"></script>
+<style scoped>
+.main-container {
+    position: relative;
+}
+
+.main-container::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("~/assets/images/background.png");
+    background-size: cover;
+    background-position: center;
+    z-index: -1;
+}
+</style>
