@@ -54,6 +54,8 @@ A full-stack web application with Go backend and Nuxt.js frontend, featuring use
    # Swagger Configuration
    SWAGGER_HOST=localhost:8000
    
+   # Approval AI Configuration
+   APPROVAL_AI=dummy
    ```
 
 #### Run Docker Compose

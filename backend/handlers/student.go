@@ -16,12 +16,14 @@ import (
 type StudentHandler struct {
 	DB           *gorm.DB
 	fileHandlers *FileHandlers
+	aiHandler    *AIHandler
 }
 
-func NewStudentHandler(db *gorm.DB, fileHandlers *FileHandlers) *StudentHandler {
+func NewStudentHandler(db *gorm.DB, fileHandlers *FileHandlers, aiHandler *AIHandler) *StudentHandler {
 	return &StudentHandler{
 		DB:           db,
 		fileHandlers: fileHandlers,
+		aiHandler:    aiHandler,
 	}
 }
 
@@ -116,6 +118,7 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 		StudentID:           input.StudentID,
 		Major:               input.Major,
 		StudentStatus:       input.StudentStatus,
+		StudentStatusFile:   *statusDocument,
 		StudentStatusFileID: statusDocument.ID,
 	}
 
@@ -134,6 +137,9 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "ok",
 	})
+
+	// Tell AI to approve it automagically
+	go h.aiHandler.AutoApproveStudent(&student)
 }
 
 // @Summary Edit student profile
@@ -245,7 +251,8 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 	// Bind input data to struct
 	type StudentRegistrationApprovalInput struct {
-		Approve bool `json:"approve"`
+		Approve bool   `json:"approve"`
+		Reason  string `json:"reason" binding:"max=16384"`
 	}
 	input := StudentRegistrationApprovalInput{}
 	err := ctx.Bind(&input)
@@ -284,6 +291,7 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 		ActorID:    ctx.MustGet("userID").(string),
 		Action:     string(student.ApprovalStatus),
 		ObjectName: "Student",
+		Reason:     input.Reason,
 		ObjectID:   student.UserID,
 	}).Error; err != nil {
 		tx.Rollback()
