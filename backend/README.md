@@ -75,6 +75,10 @@ Copy `sample.env` to `.env` and configure the following variables:
 - `APPROVAL_AI_MODEL`: Choose what AI model to use (e.g. gemma3)
 - `APPROVAL_AI_URI`: Endpoint of AI server
 
+**Google AI configuration**
+- `GOOGLE_AI_API_KEY`: API key for Google AI
+- `GOOGLE_AI_MODEL`: Choose what AI model to use (e.g. gemini-2.5-flash-lite)
+
 ## Running the Application
 
 ### Development Mode

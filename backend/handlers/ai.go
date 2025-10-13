@@ -78,6 +78,15 @@ func NewAIHandler(DB *gorm.DB) (*AIHandler, error) {
 		return nil, errors.New("approval ai not specified")
 	}
 	switch approvalAIName {
+	case "google":
+		approvalAI, err := ai.NewGoogleAI(DB)
+		if err != nil {
+			return nil, err
+		}
+		return &AIHandler{
+			DB: DB,
+			AI: approvalAI,
+		}, nil
 	case "ollama":
 		approvalAI, err := ai.NewOllamaApprovalAI()
 		if err != nil {
