@@ -60,7 +60,7 @@ func NewGmailEmailProvider() (*GmailEmailProvider, error) {
 
 func (cur *GmailEmailProvider) SendTo(target string, subject string, content string) error {
 	message := gmail.Message{
-		Raw: base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("To: %s\r\nSubject: %s\nMIME-version: 1.0;\nContent-Type: text/plain; charset=\"UTF-8\";\n\n\n%s", strings.ReplaceAll(strings.ReplaceAll(target, "\n", ""), "\r", ""), subject, content))),
+		Raw: base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("To: %s\r\nSubject: %s\nMIME-version: 1.0;\nContent-Type: text/plain; charset=\"UTF-8\";\n\n\n%s", strings.ReplaceAll(strings.ReplaceAll(target, "\n", ""), "\r", ""), strings.ReplaceAll(strings.ReplaceAll(subject, "\n", ""), "\r", ""), content))),
 	}
 	_, err := cur.gmailService.Users.Messages.Send("me", &message).Do()
 	return err

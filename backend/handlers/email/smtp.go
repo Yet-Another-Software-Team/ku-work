@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"net/smtp"
 	"os"
+	"strings"
 )
 
 type SMTPEmailProvider struct {
 	addr   string
-	port   string
 	sender string
 	auth   smtp.Auth
 }
@@ -39,6 +39,6 @@ func NewSMTPEmailProvider() (*SMTPEmailProvider, error) {
 }
 
 func (cur *SMTPEmailProvider) SendTo(target string, subject string, content string) error {
-	msg := fmt.Sprintf("Subject: %s\nMIME-version: 1.0;\nContent-Type: text/plain; charset=\"UTF-8\";\n\n\n%s", subject, content)
+	msg := fmt.Sprintf("Subject: %s\nMIME-version: 1.0;\nContent-Type: text/plain; charset=\"UTF-8\";\n\n\n%s", strings.ReplaceAll(strings.ReplaceAll(subject, "\n", ""), "\r", ""), content)
 	return smtp.SendMail(cur.addr, cur.auth, cur.sender, []string{target}, []byte(msg))
 }
