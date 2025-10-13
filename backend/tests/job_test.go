@@ -451,8 +451,8 @@ func TestJob(t *testing.T) {
 		router.ServeHTTP(w, req)
 		assert.Equal(t, w.Code, 200)
 		type Result struct {
-			Error         string `json:"error"`
-			ApplicationID uint   `json:"id"`
+			Error   string `json:"error"`
+			Message string `json:"message"`
 		}
 		result := Result{}
 		err = json.Unmarshal(w.Body.Bytes(), &result)
@@ -464,8 +464,10 @@ func TestJob(t *testing.T) {
 			t.Error(result.Error)
 			return
 		}
+		assert.Equal(t, result.Message, "ok")
 		jobApp := model.JobApplication{
-			ID: result.ApplicationID,
+			UserID: student.UserID,
+			JobID:  job.ID,
 		}
 		if err := db.First(&jobApp).Error; err != nil {
 			t.Error(err)

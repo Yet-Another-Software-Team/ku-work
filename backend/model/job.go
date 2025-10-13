@@ -62,10 +62,9 @@ const (
 )
 
 type JobApplication struct {
-	ID           uint                 `gorm:"primaryKey" json:"id"`
 	CreatedAt    time.Time            `json:"createdAt"`
-	JobID        uint                 `json:"jobId"`
-	UserID       string               `gorm:"type:uuid" json:"userId"`
+	JobID        uint                 `gorm:"primaryKey" json:"jobId"`
+	UserID       string               `gorm:"primaryKey;type:uuid" json:"userId"`
 	ContactPhone string               `json:"phone"`
 	ContactEmail string               `json:"email"`
 	Status       JobApplicationStatus `json:"status"`
@@ -74,7 +73,8 @@ type JobApplication struct {
 
 func (jobApplication *JobApplication) BeforeDelete(tx *gorm.DB) (err error) {
 	newJobApplication := JobApplication{
-		ID: jobApplication.ID,
+		JobID:  jobApplication.JobID,
+		UserID: jobApplication.UserID,
 	}
 	if err := tx.Preload("Files").First(&newJobApplication).Error; err != nil {
 		return err

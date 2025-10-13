@@ -66,7 +66,7 @@ type FullApplicantDetail struct {
 // @Param Files formData file true "Files to upload (e.g., Resume, Cover Letter). Max 2 files."
 // @Param AltPhone formData string false "Alternate phone number"
 // @Param AltEmail formData string false "Alternate email address"
-// @Success 200 {object} object{id=uint} "Successfully created job application"
+// @Success 200 {object} object{message=string} "Successfully created job application"
 // @Failure 400 {object} object{error=string} "Bad Request: Invalid input"
 // @Failure 401 {object} object{error=string} "Unauthorized"
 // @Failure 403 {object} object{error=string} "Forbidden: Student status not approved"
@@ -169,9 +169,7 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 		return
 	}
 	success = true
-	ctx.JSON(http.StatusOK, gin.H{
-		"id": jobApplication.ID,
-	})
+	ctx.JSON(http.StatusOK, gin.H{"message": "ok"})
 }
 
 // @Summary Get applications for a specific job
