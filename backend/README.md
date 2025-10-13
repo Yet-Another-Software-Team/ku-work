@@ -84,6 +84,12 @@ Copy `sample.env` to `.env` and configure the following variables:
 - `SMTP_SENDER`: The sender email address
 - `SMTP_PASSWORD`: The password for the email sender
 
+**Gmail Configuration**
+- `GMAIL_OAUTH_CLIENT_ID`: The client id of your Google OAuth application
+- `GMAIL_OAUTH_CLIENT_SECRET`: The client secret of your Google OAuth application
+- `GMAIL_OAUTH_ACCESS_TOKEN`: The OAuth access token for your OAuth application for a gmail account
+- `GMAIL_OAUTH_REFRESH_TOKEN`: The OAuth refresh token for your OAuth application for a gmail account
+
 ## Running the Application
 
 ### Development Mode

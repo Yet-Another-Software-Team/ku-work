@@ -26,6 +26,14 @@ func NewEmailHandler(DB *gorm.DB) (*EmailHandler, error) {
 		return &EmailHandler{
 			provider: smtpProvider,
 		}, nil
+	case "gmail":
+		gmailProvider, err := email.NewGmailEmailProvider()
+		if err != nil {
+			return nil, err
+		}
+		return &EmailHandler{
+			provider: gmailProvider,
+		}, nil
 	case "dummy":
 		return &EmailHandler{
 			provider: email.NewDummyEmailProvider(),
