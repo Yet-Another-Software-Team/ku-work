@@ -164,16 +164,17 @@ The student data is as follows: ` + string(studentData)
 
 	if student.StudentStatusFile.ID != "" {
 		filePath := filepath.Join("./files", student.StudentStatusFile.ID)
-		if student.StudentStatusFile.Category == model.FileCategoryImage {
-			fileData, err := os.ReadFile(filePath)
-			if err == nil {
-				parts = append(parts, genai.ImageData(string(student.StudentStatusFile.FileType), fileData))
-			}
-		} else if student.StudentStatusFile.Category == model.FileCategoryDocument {
-			text, err := docconv.ConvertPath(filePath)
-			if err == nil {
-				parts = append(parts, genai.Text("\n\nStudent Status File Content:\n"+text.Body))
-			}
+		switch student.StudentStatusFile.Category {
+			case model.FileCategoryImage:
+				fileData, err := os.ReadFile(filePath)
+				if err == nil {
+					parts = append(parts, genai.ImageData(string(student.StudentStatusFile.FileType), fileData))
+				}
+			case model.FileCategoryDocument:
+				text, err := docconv.ConvertPath(filePath)
+				if err == nil {
+					parts = append(parts, genai.Text("\n\nStudent Status File Content:\n"+text.Body))
+				}
 		}
 	}
 
