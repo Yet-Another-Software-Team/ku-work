@@ -7,6 +7,7 @@ import (
 	"ku-work/backend/handlers"
 	"ku-work/backend/model"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -32,6 +33,14 @@ var pixel = []byte{
 }
 
 func TestMain(m *testing.M) {
+	// Set cwd to parent, otherwise it can't find templates
+	oldWorkingDir, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	if err := os.Chdir(filepath.Dir(oldWorkingDir)); err != nil {
+		panic(err)
+	}
 	ctx := context.Background()
 	// Set XDG_RUNTIME_DIR if not set (required for testcontainers with Podman)
 	if os.Getenv("XDG_RUNTIME_DIR") == "" {

@@ -418,7 +418,7 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 			students.birth_date as birth_date, students.about_me as about_me,
 			students.git_hub as github, students.linked_in as linked_in,
 			students.student_id as student_id, students.major as major`).
-		Where("job_applications.job_id = ? AND google_o_auth_details.user_id = ?", jobId, queries.Email)
+		Where("job_applications.job_id = ? AND google_o_auth_details.email = ?", jobId, queries.Email)
 
 	if err := query.First(&jobApplication).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {

@@ -13,11 +13,11 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) error {
 	fileHandlers := NewFileHandlers(db)
 	localAuthHandlers := NewLocalAuthHandlers(db, jwtHandlers)
 	googleAuthHandlers := NewOAuthHandlers(db, jwtHandlers)
-	aiHandler, err := NewAIHandler(db)
+	emailHandler, err := NewEmailHandler(db)
 	if err != nil {
 		return err
 	}
-	emailHandler, err := NewEmailHandler(db)
+	aiHandler, err := NewAIHandler(db, emailHandler)
 	if err != nil {
 		return err
 	}
