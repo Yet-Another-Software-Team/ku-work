@@ -1,20 +1,22 @@
+interface ProfileInformation {
+    name: string;
+    id: string;
+    approved: boolean;
+    created: string;
+    phone: string;
+    photo: string;
+    birthDate: string;
+    aboutMe: string;
+    github: string;
+    linkedIn: string;
+    studentId: string;
+    major: "Software Engineering" | "Computer Science";
+    status: "Graduated" | "Undergraduate";
+    statusFile: string;
+}
+
 interface Profile {
-    profile: {
-        name: string;
-        id: string;
-        approved: boolean;
-        created: string;
-        phone: string;
-        photo: string;
-        birthDate: string;
-        aboutMe: string;
-        github: string;
-        linkedIn: string;
-        studentId: string;
-        major: "Software Engineering" | "Computer Science";
-        status: "Graduated" | "Undergraduate";
-        statusFile: string;
-    };
+    profile: ProfileInformation;
 }
 
 interface CompanyProfile {
@@ -298,4 +300,13 @@ const mockJobData: Job = {
 };
 
 export { mockUserData, multipleMockUserData, mockCompanyData, mockJobData, mockJobApplicationData };
-export type { Profile, CompanyProfile, CreateJobPost, EditJobPost, JobPost, Job, JobApplication };
+export type {
+    ProfileInformation,
+    Profile,
+    CompanyProfile,
+    CreateJobPost,
+    EditJobPost,
+    JobPost,
+    Job,
+    JobApplication,
+};

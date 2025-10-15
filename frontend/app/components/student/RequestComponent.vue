@@ -3,15 +3,15 @@
         <!-- card container is clickable -->
         <div
             class="flex w-full h-[7em] m-2 shadow-md/20 bg-[#fdfdfd] dark:bg-[#1f2937] rounded-md cursor-pointer"
-            @click="() => navigateToProfile(requestId % 3)"
+            @click="() => navigateToProfile(requestId)"
         >
             <!-- profile pic -->
             <div
-                v-if="data.profile.photo"
+                v-if="data.photo"
                 class="flex items-center justify-center w-20 h-full flex-shrink-0"
             >
                 <img
-                    :src="data.profile.photo"
+                    :src="data.photo"
                     alt="Profile photo"
                     class="w-17 h-17 object-cover rounded-full justify-center items-center m-2"
                 />
@@ -23,8 +23,8 @@
             <!-- user data -->
             <div class="flex flex-col justify-center flex-1 p-2">
                 <!-- name -->
-                <p class="overflow-hidden truncate max-w-[12em]">{{ data.profile.name }}</p>
-                <p class="text-xs">{{ data.profile.major }}</p>
+                <p class="overflow-hidden truncate max-w-[12em]">{{ data.name }}</p>
+                <p class="text-xs">{{ data.major }}</p>
 
                 <!-- buttons -->
                 <div class="flex gap-2 mt-2">
@@ -51,18 +51,18 @@
 </template>
 
 <script setup lang="ts">
-import type { mockUserData } from "~/data/mockData";
+import type { ProfileInformation } from "~/data/mockData";
 
 const props = defineProps<{
-    requestId: number;
-    data: typeof mockUserData;
+    requestId: string;
+    data: ProfileInformation;
 }>();
 
 const toast = useToast();
 
-function navigateToProfile(id: number) {
+function navigateToProfile(id: string) {
     console.log("Navigating to profile of request:", props.requestId);
-    navigateTo(`/admin/dashboard/profile?id=${id}`, { replace: true });
+    navigateTo(`/admin/dashboard/profile/${id}`, { replace: true });
 }
 
 // add function later
@@ -70,7 +70,7 @@ function acceptRequest() {
     console.log("Accepted request:", props.requestId);
     toast.add({
         title: "Request accepted!",
-        description: props.data.profile.name,
+        description: props.data.name,
         color: "success",
     });
 }
@@ -79,7 +79,7 @@ function declineRequest() {
     console.log("Declined request:", props.requestId);
     toast.add({
         title: "Request accepted!",
-        description: props.data.profile.name,
+        description: props.data.name,
         color: "error",
     });
 }

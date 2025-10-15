@@ -36,12 +36,12 @@
         </section>
         <section class="flex flex-wrap w-full h-full place-content-center">
             <!-- User acc req -->
-            <template v-if="!isCompany">
+            <template v-if="!isCompany && studentData">
                 <StudentRequestComponent
-                    v-for="rid in totalRequests"
-                    :key="rid"
-                    :request-id="rid"
-                    :data="multipleMockUserData[rid % 3] ?? mockUserData"
+                    v-for="(data, index) in studentData"
+                    :key="index"
+                    :request-id="index"
+                    :data="data"
                 />
             </template>
             <!-- Company acc req -->
@@ -53,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { mockUserData, multipleMockUserData } from "~/data/mockData";
+import type { Profile } from "~/data/mockData";
 
 definePageMeta({
     layout: "admin",
@@ -61,6 +61,9 @@ definePageMeta({
 
 const totalRequests = 50;
 const isCompany = ref(false);
+
+const api = useApi();
+const studentData = ref<Profile>();
 
 const items = ref([
     {
@@ -81,6 +84,10 @@ const items = ref([
 ]);
 const selectedValue = ref("item1");
 
+onMounted(() => {
+    console.log("Selected Value:", selectedValue.value);
+});
+
 function setTailwindClasses(activeCondition: boolean) {
     if (isCompany.value == activeCondition) {
         return "bg-primary-200 flex flex-col border-1 rounded-3xl w-1/2 text-primary-800 hover:bg-primary-300";
@@ -93,7 +100,23 @@ function selectCompany() {
     isCompany.value = true;
 }
 
-function selectRecruit() {
+const studentOffset = ref(0);
+const studentLimit = ref(10);
+
+async function selectRecruit() {
     isCompany.value = false;
+    try {
+        const response = await api.get("/students", {
+            params: {
+                limit: studentLimit.value,
+                offset: studentOffset.value,
+            },
+            withCredentials: true,
+        });
+        studentData.value = response.data as Profile;
+        console.log("Fetched student data:", studentData.value);
+    } catch (error) {
+        console.error("Error fetching student data:", error);
+    }
 }
 </script>
