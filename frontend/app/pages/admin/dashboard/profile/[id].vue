@@ -8,4 +8,15 @@
 definePageMeta({
     layout: "admin",
 });
+
+const route = useRoute();
+
+const id = ref<string>("");
+
+onMounted(() => {
+    if (route.params.id) {
+        id.value = String(route.params.id);
+    }
+    console.log("Profile ID:", id.value);
+});
 </script>

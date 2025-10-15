@@ -37,7 +37,7 @@
         <section class="flex flex-wrap w-full h-full place-content-center">
             <!-- User acc req -->
             <template v-if="!isCompany">
-                <UserRequestComponent
+                <StudentRequestComponent
                     v-for="rid in totalRequests"
                     :key="rid"
                     :request-id="rid"

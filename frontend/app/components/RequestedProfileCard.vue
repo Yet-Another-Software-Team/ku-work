@@ -149,9 +149,9 @@ import type { mockUserData } from "~/data/mockData";
 import { multipleMockUserData } from "~/data/mockData";
 
 const route = useRoute();
-const query = route.query.id ?? 0;
+const paramId = route.params.id ?? 0;
 const data: typeof mockUserData =
-    multipleMockUserData[Number(query) % 3] ?? (multipleMockUserData[0] as typeof mockUserData);
+    multipleMockUserData[Number(paramId) % 3] ?? (multipleMockUserData[0] as typeof mockUserData);
 const toast = useToast();
 
 // Compute age
@@ -170,7 +170,7 @@ const email = "john.doe@ku.th";
 
 // add function later
 function acceptRequest() {
-    console.log("Accepted request:", query);
+    console.log("Accepted request:", paramId);
     toast.add({
         title: "Request accepted!",
         description: data.profile.name,
@@ -179,7 +179,7 @@ function acceptRequest() {
 }
 
 function declineRequest() {
-    console.log("Declined request:", query);
+    console.log("Declined request:", paramId);
     toast.add({
         title: "Request accepted!",
         description: data.profile.name,
