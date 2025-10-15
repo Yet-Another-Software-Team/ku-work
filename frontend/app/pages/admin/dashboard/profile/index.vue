@@ -1,6 +1,8 @@
 <template>
-    <div class="relative">
-        <RequestedProfileCard />
+    <div class="my-5">
+        <p class="text-xl">If you are seeing this message there is a problem with</p>
+        <p class="text-5xl">YOU</p>
+        <p class="text-xs">(maybe it is the page navigation)</p>
     </div>
 </template>
 
@@ -8,4 +10,5 @@
 definePageMeta({
     layout: "admin",
 });
+navigateTo("/admin/dashboard");
 </script>
