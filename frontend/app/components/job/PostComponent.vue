@@ -40,13 +40,25 @@
                 <p class="capitalize text-sm text-gray-500 dark:text-gray-200">
                     {{ data.companyName }} • {{ data.location }}
                 </p>
-                <div class="flex space-x-2 mt-2">
-                    <span class="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">
-                        {{ data.jobType }}
-                    </span>
-                    <span class="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">
-                        {{ data.experience }}
-                    </span>
+                <div class="flex flex-wrap items-center gap-2 mt-2">
+                    <UBadge
+                        v-if="data.jobType"
+                        color="primary"
+                        variant="subtle"
+                        size="sm"
+                        class="capitalize"
+                    >
+                        {{ formatJobType(data.jobType) }}
+                    </UBadge>
+                    <UBadge
+                        v-if="data.experience"
+                        color="neutral"
+                        variant="subtle"
+                        size="sm"
+                        class="capitalize"
+                    >
+                        {{ formatExperience(data.experience) }}
+                    </UBadge>
                 </div>
             </div>
         </div>
@@ -88,5 +100,27 @@ function timeAgo(createdAt: string): string {
     if (diffHour > 0) return `${diffHour} hour${diffHour > 1 ? "s" : ""} ago`;
     if (diffMin > 0) return `${diffMin} minute${diffMin > 1 ? "s" : ""} ago`;
     return "just now";
+}
+
+function formatJobType(type: string): string {
+    const typeMap: Record<string, string> = {
+        fulltime: "Full Time",
+        parttime: "Part Time",
+        contract: "Contract",
+        casual: "Casual",
+        internship: "Internship",
+    };
+    return typeMap[type.toLowerCase()] || type;
+}
+
+function formatExperience(exp: string): string {
+    const expMap: Record<string, string> = {
+        newgrad: "New Grad",
+        junior: "Junior",
+        senior: "Senior",
+        manager: "Manager",
+        internship: "Internship",
+    };
+    return expMap[exp.toLowerCase()] || exp;
 }
 </script>

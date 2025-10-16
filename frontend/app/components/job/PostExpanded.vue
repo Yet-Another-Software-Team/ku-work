@@ -34,14 +34,14 @@
         <span class="flex flex-row justify-center text-sm">
             <span class="text-center w-1/3 p-2 space-y-1">
                 <p class="text-primary-700 font-semibold">Job Type</p>
-                <p class="font-bold">{{ data.jobType }}</p>
+                <p class="font-bold">{{ formatJobType(data.jobType) }}</p>
             </span>
             <span>
                 <USeparator orientation="vertical" class="h-full items-stretch" size="sm" />
             </span>
             <span class="text-center w-1/3 p-2 space-y-1">
                 <p class="text-primary-700 font-semibold">Experience</p>
-                <p class="font-bold">{{ data.experience }}</p>
+                <p class="font-bold">{{ formatExperience(data.experience) }}</p>
             </span>
             <span>
                 <USeparator orientation="vertical" class="h-full items-stretch" size="sm" />
@@ -112,5 +112,27 @@ function timeAgo(createdAt: string): string {
 
 function formatSalary(salary: number): string {
     return new Intl.NumberFormat("en", { notation: "compact" }).format(salary);
+}
+
+function formatJobType(type: string): string {
+    const typeMap: Record<string, string> = {
+        fulltime: "Full Time",
+        parttime: "Part Time",
+        contract: "Contract",
+        casual: "Casual",
+        internship: "Internship",
+    };
+    return typeMap[type.toLowerCase()] || type;
+}
+
+function formatExperience(exp: string): string {
+    const expMap: Record<string, string> = {
+        newgrad: "New Grad",
+        junior: "Junior",
+        senior: "Senior",
+        manager: "Manager",
+        internship: "Internship",
+    };
+    return expMap[exp.toLowerCase()] || exp;
 }
 </script>

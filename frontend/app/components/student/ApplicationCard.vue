@@ -1,10 +1,9 @@
 <template>
     <div
-        class="flex items-center justify-between shadow-md rounded-xl px-6 py-4 border border-gray-300 dark:border-gray-700 hover:shadow-lg transition-all cursor-pointer bg-white dark:bg-gray-800"
-        @click="navigateTo(`/jobs/${jobId}`)"
+        class="flex flex-col h-full shadow-md rounded-xl px-6 py-4 border border-gray-300 dark:border-gray-700 hover:shadow-lg transition-all bg-white dark:bg-gray-800"
     >
-        <!-- Left Section: Company Logo and Job Info -->
-        <div class="flex items-center gap-4 flex-1 min-w-0">
+        <!-- Company Logo and Job Info -->
+        <div class="flex items-center gap-4 flex-1 min-w-0 mb-4">
             <!-- Company Logo -->
             <div
                 class="w-16 h-16 rounded-lg border border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden flex-shrink-0 bg-white"
@@ -13,7 +12,7 @@
                     v-if="companyLogo"
                     :src="companyLogo"
                     :alt="companyName"
-                    class="object-contain w-full h-full p-2"
+                    class="object-cover w-full h-full"
                 />
                 <Icon v-else name="ic:baseline-business" class="w-10 h-10 text-gray-400" />
             </div>
@@ -31,7 +30,7 @@
                         v-if="jobType"
                         color="primary"
                         variant="subtle"
-                        size="xs"
+                        size="sm"
                         class="capitalize"
                     >
                         {{ formatJobType(jobType) }}
@@ -40,7 +39,7 @@
                         v-if="experience"
                         color="neutral"
                         variant="subtle"
-                        size="xs"
+                        size="sm"
                         class="capitalize"
                     >
                         {{ formatExperience(experience) }}
@@ -49,18 +48,18 @@
             </div>
         </div>
 
-        <!-- Right Section: Salary, Status, and Actions -->
-        <div class="flex items-center gap-6 flex-shrink-0">
+        <!-- Salary, Date, Status, and Actions -->
+        <div class="flex flex-col gap-3 mt-auto">
             <!-- Salary Range -->
-            <div class="text-right hidden md:block">
+            <div>
                 <p class="text-lg font-bold text-gray-900 dark:text-white">
                     {{ formatSalary(minSalary, maxSalary) }}
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">{{ appliedDate }}</p>
             </div>
 
-            <!-- Status Badge -->
-            <div class="flex items-center gap-3">
+            <!-- Status Badge and Actions -->
+            <div class="flex items-center justify-between gap-3">
                 <UBadge :color="statusColor" size="md" class="capitalize">
                     {{ status }}
                 </UBadge>
@@ -72,7 +71,6 @@
                         variant="ghost"
                         color="neutral"
                         size="sm"
-                        @click.stop
                     />
                 </UDropdown>
             </div>
