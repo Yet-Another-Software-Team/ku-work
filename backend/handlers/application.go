@@ -41,6 +41,19 @@ type ShortApplicationDetail struct {
 	Status    string `json:"status"`
 }
 
+type ApplicationWithJobDetails struct {
+	model.JobApplication
+	JobPosition   string `json:"position"`
+	JobName       string `json:"jobName"`
+	CompanyName   string `json:"companyName"`
+	CompanyLogoID string `json:"photoId"`
+	JobType       string `json:"jobType"`
+	Experience    string `json:"experience"`
+	MinSalary     uint   `json:"minSalary"`
+	MaxSalary     uint   `json:"maxSalary"`
+	IsOpen        bool   `json:"isOpen"`
+}
+
 // FullApplicantDetail defines the response structure for a detailed application view.
 type FullApplicantDetail struct {
 	model.JobApplication
@@ -278,13 +291,30 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 		query = query.Order("username DESC")
 	}
 
-	// Execute query with pagination and preload associated files
+	// Execute query with pagination
 	var jobApplications []ShortApplicationDetail
-	result := query.Offset(int(input.Offset)).Limit(int(input.Limit)).Preload("Files").Scan(&jobApplications)
+	result := query.Offset(int(input.Offset)).Limit(int(input.Limit)).Scan(&jobApplications)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
+
+	// Manually load files for each application
+	for i := range jobApplications {
+		var files []model.File
+		err := h.DB.Table("job_application_has_file").
+			Select("files.*").
+			Joins("INNER JOIN files ON files.id = job_application_has_file.file_id").
+			Where("job_application_has_file.job_application_job_id = ? AND job_application_has_file.job_application_user_id = ?",
+				jobApplications[i].JobID, jobApplications[i].UserID).
+			Find(&files).Error
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		jobApplications[i].Files = files
+	}
+
 	ctx.JSON(http.StatusOK, jobApplications)
 }
 
@@ -454,14 +484,21 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 		input.Limit = 32
 	}
 
-	// Build base query joining with users table to fetch applicant username
+	// Build base query joining with job and company tables to fetch all necessary details
 	query := h.DB.Model(&model.JobApplication{}).
-		Joins("INNER JOIN google_o_auth_details ON google_o_auth_details.id = job_applications.user_id").
-		Joins("INNER JOIN students ON students.user_id = job_applications.user_id").
+		Joins("INNER JOIN jobs ON jobs.id = job_applications.job_id").
+		Joins("INNER JOIN companies ON companies.user_id = jobs.company_id").
+		Joins("INNER JOIN users ON users.id = companies.user_id").
 		Select("job_applications.*",
-			"CONCAT(google_o_auth_details.FirstName, ' ', google_o_auth_details.LastName) as username",
-			"students.major as major",
-			"job_applications.status as status")
+			"jobs.position as job_position",
+			"jobs.name as job_name",
+			"jobs.job_type as job_type",
+			"jobs.experience as experience",
+			"jobs.min_salary as min_salary",
+			"jobs.max_salary as max_salary",
+			"jobs.is_open as is_open",
+			"users.username as company_name",
+			"companies.photo_id as company_logo_id")
 
 	// Determine user role and filter applications accordingly
 	// Check if user is a company
@@ -476,7 +513,7 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 
 	if result.RowsAffected != 0 {
 		// User is a company: fetch applications for all their job postings
-		query = query.Joins("INNER JOIN jobs on jobs.id = job_applications.job_id").Where("jobs.company_id = ?", userId)
+		query = query.Where("jobs.company_id = ?", userId)
 	} else {
 		// Check if user is a student
 		student := model.Student{
@@ -498,12 +535,28 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 		}
 	}
 
-	// Execute query with pagination and preload associated files
-	var jobApplications []ShortApplicationDetail
-	result = query.Offset(int(input.Offset)).Limit(int(input.Limit)).Preload("Files").Find(&jobApplications)
+	// Execute query with pagination
+	var jobApplications []ApplicationWithJobDetails
+	result = query.Offset(int(input.Offset)).Limit(int(input.Limit)).Scan(&jobApplications)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
+	}
+
+	// Manually load files for each application
+	for i := range jobApplications {
+		var files []model.File
+		err := h.DB.Table("job_application_has_file").
+			Select("files.*").
+			Joins("INNER JOIN files ON files.id = job_application_has_file.file_id").
+			Where("job_application_has_file.job_application_job_id = ? AND job_application_has_file.job_application_user_id = ?",
+				jobApplications[i].JobID, jobApplications[i].UserID).
+			Find(&files).Error
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		jobApplications[i].Files = files
 	}
 
 	ctx.JSON(http.StatusOK, jobApplications)
