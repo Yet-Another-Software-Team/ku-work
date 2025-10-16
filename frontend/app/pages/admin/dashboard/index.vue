@@ -89,7 +89,7 @@ const selectSortOption = ref("latest");
 
 onMounted(async () => {
     isLoading.value = true;
-    
+
     try {
         await selectStudent();
     } catch (error) {

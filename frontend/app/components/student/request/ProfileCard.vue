@@ -233,30 +233,6 @@ const email = computed(() => {
     return data.value.profile.email || "No email provided";
 });
 
-onMounted(async () => {
-    isLoading.value = true;
-    try {
-        const response = await api.get(`/students`, {
-            params: { id: props.requestId, approvalStatus: "pending" },
-            withCredentials: true,
-        });
-        data.value = response.data as Profile;
-        data.value.profile.name = `${data.value.profile.firstName} ${data.value.profile.lastName}`;
-        photo.value = `${config.public.apiBaseUrl}/files/${data.value.profile.photoId}`;
-        file.value = `${config.public.apiBaseUrl}/files/${data.value.profile.statusFileId}`;
-        console.log("Fetched profile data:", data.value);
-    } catch (error) {
-        console.error("Error fetching profile data:", error);
-        toast.add({
-            title: "Error fetching profile data",
-            description: String(error),
-            color: "error",
-        });
-    } finally {
-        isLoading.value = false;
-    }
-});
-
 // Compute age
 const age = computed(() => {
     const birth = new Date(data.value?.profile.birthDate ?? "");
@@ -301,12 +277,12 @@ async function declineRequest() {
     navigateTo("/admin/dashboard", { replace: true });
 }
 // Extracted data fetching logic into a reusable function
-async function fetchProfileData(requestId) {
+async function fetchProfileData(requestId: string) {
     if (requestId) {
         isLoading.value = true;
         try {
             const response = await api.get(`/students`, {
-                params: { id: requestId, approvalStatus: "pending" },
+                params: { id: requestId },
                 withCredentials: true,
             });
             data.value = response.data as Profile;
@@ -327,6 +303,10 @@ async function fetchProfileData(requestId) {
         }
     }
 }
+
+onMounted(async () => {
+    await fetchProfileData(props.requestId);
+});
 
 watch(
     () => props.requestId,
