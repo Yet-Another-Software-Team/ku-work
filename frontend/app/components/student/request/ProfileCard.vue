@@ -253,7 +253,6 @@ onMounted(async () => {
             color: "error",
         });
     } finally {
-        console.log("Loading finished");
         isLoading.value = false;
     }
 });
