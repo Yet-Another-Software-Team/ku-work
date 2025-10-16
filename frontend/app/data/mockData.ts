@@ -18,8 +18,8 @@ interface ProfileInformation {
     github: string;
     linkedIn: string;
     studentId: string;
-    major: "" | "Software Engineering" | "Computer Science";
-    status: "" | "Graduated" | "Undergraduate" | "Current Student";
+    major?: "Software Engineering" | "Computer Science";
+    status?: "Graduated" | "Undergraduate" | "Current Student";
     statusFileId: string;
     approvalStatus: string;
     statusFile: {
