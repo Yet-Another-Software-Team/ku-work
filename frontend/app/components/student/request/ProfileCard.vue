@@ -315,7 +315,6 @@ watch(
                 data.value.profile.name = `${data.value.profile.firstName} ${data.value.profile.lastName}`;
                 photo.value = `${config.public.apiBaseUrl}/files/${data.value.profile.photoId}`;
                 file.value = `${config.public.apiBaseUrl}/files/${data.value.profile.statusFileId}`;
-                console.log("Fetched profile data:", data.value);
             } catch (error) {
                 console.error("Error fetching profile data:", error);
                 toast.add({
