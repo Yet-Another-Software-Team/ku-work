@@ -17,6 +17,5 @@ onMounted(() => {
     if (route.params.id) {
         id.value = String(route.params.id);
     }
-    console.log("Profile ID:", id.value);
 });
 </script>
