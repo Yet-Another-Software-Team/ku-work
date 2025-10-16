@@ -136,6 +136,17 @@
                     <button
                         class="px-8 py-4 text-lg font-medium transition-all rounded-t-2xl border-2 border-b-0"
                         :class="
+                            activeTab === 'accepted'
+                                ? 'bg-primary-500 text-white border-primary-500 z-10'
+                                : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600'
+                        "
+                        @click="activeTab = 'accepted'"
+                    >
+                        Accepted
+                    </button>
+                    <button
+                        class="px-8 py-4 text-lg font-medium transition-all rounded-t-2xl border-2 border-b-0 -ml-px"
+                        :class="
                             activeTab === 'pending'
                                 ? 'bg-warning-500 text-white border-warning-500 z-10'
                                 : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600'
@@ -147,19 +158,8 @@
                     <button
                         class="px-8 py-4 text-lg font-medium transition-all rounded-t-2xl border-2 border-b-0 -ml-px"
                         :class="
-                            activeTab === 'accepted'
-                                ? 'bg-warning-500 text-white border-warning-500 z-10'
-                                : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600'
-                        "
-                        @click="activeTab = 'accepted'"
-                    >
-                        Accepted
-                    </button>
-                    <button
-                        class="px-8 py-4 text-lg font-medium transition-all rounded-t-2xl border-2 border-b-0 -ml-px"
-                        :class="
                             activeTab === 'rejected'
-                                ? 'bg-warning-500 text-white border-warning-500 z-10'
+                                ? 'bg-error-500 text-white border-error-500 z-10'
                                 : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600'
                         "
                         @click="activeTab = 'rejected'"
@@ -204,7 +204,7 @@
 
             <div v-else class="flex flex-wrap gap-10">
                 <StudentApplicationCard
-                    v-for="application in studentApplications"
+                    v-for="application in filteredApplications"
                     :key="`${application.jobId}-${application.userId}`"
                     class="h-[18em] w-full lg:w-[25em] drop-shadow-md"
                     :job-id="application.jobId"
@@ -313,13 +313,6 @@ const fetchJobs = async () => {
                 approvalStatus: companyActiveTab.value,
             },
         });
-        console.log("Fetched jobs:", response.data);
-        console.log(
-            "Total from API:",
-            response.data.total,
-            "Jobs received:",
-            response.data.jobs?.length
-        );
         data.value = response.data.jobs || [];
         totalJobs.value = response.data.total || 0;
     } catch (error) {
@@ -347,23 +340,16 @@ const fetchStudentApplications = async () => {
                 sortBy: sortBy.value,
             },
         });
-        console.log("Fetched applications:", response.data);
-        console.log(
-            "Total from API:",
-            response.data.total,
-            "Applications received:",
-            response.data.applications?.length
-        );
-        studentApplications.value = response.data.applications || response.data || [];
+        // Handle the response data properly
+        const applications = response.data.applications || [];
+        studentApplications.value = applications;
         totalApplications.value = response.data.total || 0;
     } catch (error) {
         const apiError = error as { message?: string };
-        console.error("Failed to fetch applications:", apiError.message || "Unknown error");
-        addToast({
-            title: "Error",
-            description: "Failed to fetch applications. Please refresh the page.",
-            color: "error",
-        });
+        console.error("Failed to fetch applications:", apiError.message || "Unknown error", error);
+        // Don't show error toast for empty results
+        studentApplications.value = [];
+        totalApplications.value = 0;
     }
 };
 
