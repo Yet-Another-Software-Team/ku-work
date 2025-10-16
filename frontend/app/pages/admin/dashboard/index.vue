@@ -127,7 +127,6 @@ async function selectStudent() {
             withCredentials: true,
         });
         studentData.value = response.data as Profile;
-        console.log("Fetched student data:", studentData.value);
         totalRequests.value = response.data.length;
     } catch (error) {
         console.error("Error fetching student data:", error);
