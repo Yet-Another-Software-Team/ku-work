@@ -300,33 +300,38 @@ async function declineRequest() {
     );
     navigateTo("/admin/dashboard", { replace: true });
 }
+// Extracted data fetching logic into a reusable function
+async function fetchProfileData(requestId) {
+    if (requestId) {
+        isLoading.value = true;
+        try {
+            const response = await api.get(`/students`, {
+                params: { id: requestId, approvalStatus: "pending" },
+                withCredentials: true,
+            });
+            data.value = response.data as Profile;
+            data.value.profile.name = `${data.value.profile.firstName} ${data.value.profile.lastName}`;
+            photo.value = `${config.public.apiBaseUrl}/files/${data.value.profile.photoId}`;
+            file.value = `${config.public.apiBaseUrl}/files/${data.value.profile.statusFileId}`;
+            console.log("Fetched profile data:", data.value);
+        } catch (error) {
+            console.error("Error fetching profile data:", error);
+            toast.add({
+                title: "Error fetching profile data",
+                description: String(error),
+                color: "error",
+            });
+        } finally {
+            console.log("Loading finished");
+            isLoading.value = false;
+        }
+    }
+}
 
 watch(
     () => props.requestId,
-    async (newId) => {
-        if (newId) {
-            isLoading.value = true;
-            try {
-                const response = await api.get(`/students`, {
-                    params: { id: newId, approvalStatus: "pending" },
-                    withCredentials: true,
-                });
-                data.value = response.data as Profile;
-                data.value.profile.name = `${data.value.profile.firstName} ${data.value.profile.lastName}`;
-                photo.value = `${config.public.apiBaseUrl}/files/${data.value.profile.photoId}`;
-                file.value = `${config.public.apiBaseUrl}/files/${data.value.profile.statusFileId}`;
-            } catch (error) {
-                console.error("Error fetching profile data:", error);
-                toast.add({
-                    title: "Error fetching profile data",
-                    description: String(error),
-                    color: "error",
-                });
-            } finally {
-                console.log("Loading finished");
-                isLoading.value = false;
-            }
-        }
+    (newId) => {
+        fetchProfileData(newId);
     },
     { immediate: true }
 );
