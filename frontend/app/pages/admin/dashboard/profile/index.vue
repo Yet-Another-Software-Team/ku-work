@@ -7,8 +7,11 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue';
 definePageMeta({
     layout: "admin",
 });
-navigateTo("/admin/dashboard");
+onMounted(() => {
+    navigateTo("/admin/dashboard");
+});
 </script>
