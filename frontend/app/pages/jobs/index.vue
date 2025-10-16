@@ -120,10 +120,6 @@ useInfiniteScroll(
     jobListElement,
     () => {
         if (!isLoadingMore.value && !endOfFile) {
-            console.log("Infinite scroll triggered, loading more jobs...", {
-                currentOffset: currentJobOffset,
-                endOfFile,
-            });
             fetchJobs(currentJobOffset).then((_) => {});
         }
     },
