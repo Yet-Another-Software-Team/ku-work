@@ -19,12 +19,16 @@
 
             <!-- Job Details -->
             <div class="flex flex-col gap-1 flex-1 min-w-0">
-                <h3 class="text-lg font-semibold truncate text-gray-900 dark:text-white">
-                    {{ position }}
-                </h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400 truncate">
-                    {{ companyName }}
-                </p>
+                <UTooltip :text="position">
+                    <h3 class="text-lg font-semibold truncate text-gray-900 dark:text-white">
+                        {{ position }}
+                    </h3>
+                </UTooltip>
+                <UTooltip :text="companyName">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 truncate">
+                        {{ companyName }}
+                    </p>
+                </UTooltip>
                 <div class="flex flex-wrap items-center gap-2 mt-1">
                     <UBadge
                         v-if="jobType"
@@ -63,16 +67,6 @@
                 <UBadge :color="statusColor" size="md" class="capitalize">
                     {{ status }}
                 </UBadge>
-
-                <!-- Actions Menu -->
-                <UDropdown :items="menuItems" :popper="{ placement: 'bottom-end' }">
-                    <UButton
-                        icon="ic:baseline-more-vert"
-                        variant="ghost"
-                        color="neutral"
-                        size="sm"
-                    />
-                </UDropdown>
             </div>
         </div>
     </div>
@@ -92,10 +86,6 @@ const props = defineProps<{
     appliedDate: string;
 }>();
 
-const emit = defineEmits<{
-    (e: "withdraw" | "viewDetails"): void;
-}>();
-
 const statusColor = computed(() => {
     switch (props.status) {
         case "pending":
@@ -107,33 +97,6 @@ const statusColor = computed(() => {
         default:
             return "neutral";
     }
-});
-
-const menuItems = computed(() => {
-    const items = [
-        [
-            {
-                label: "View Job Details",
-                icon: "ic:baseline-visibility",
-                click: () => {
-                    emit("viewDetails");
-                    navigateTo(`/jobs/${props.jobId}`);
-                },
-            },
-        ],
-    ];
-
-    if (props.status === "pending") {
-        items.push([
-            {
-                label: "Withdraw Application",
-                icon: "ic:baseline-cancel",
-                click: () => emit("withdraw"),
-            },
-        ]);
-    }
-
-    return items;
 });
 
 function formatJobType(type: string): string {
@@ -160,7 +123,9 @@ function formatExperience(exp: string): string {
 
 function formatSalary(min: number, max: number): string {
     if (min === 0 && max === 0) return "Negotiable";
-    if (min === max) return `${min.toLocaleString()}k Baht`;
-    return `${min.toLocaleString()}k - ${max.toLocaleString()}k Baht`;
+    const minK = Math.floor(min / 1000);
+    const maxK = Math.floor(max / 1000);
+    if (min === max) return `${minK}k Baht`;
+    return `${minK}k - ${maxK}k Baht`;
 }
 </script>

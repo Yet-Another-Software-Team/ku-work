@@ -18,12 +18,18 @@
                 />
             </span>
             <span class="mx-3 space-y-1">
-                <h1 class="text-xl font-bold">{{ data.name }}</h1>
+                <UTooltip :text="data.name">
+                    <h1 class="text-xl font-bold truncate max-w-[200px]">{{ data.name }}</h1>
+                </UTooltip>
                 <span>
                     <NuxtLink :to="`/jobs/${data.companyId}`">
-                        <h2 class="text-primary-700 text-md font-semibold">
-                            {{ data.companyName }}
-                        </h2>
+                        <UTooltip :text="data.companyName">
+                            <h2
+                                class="text-primary-700 text-md font-semibold truncate max-w-[200px]"
+                            >
+                                {{ data.companyName }}
+                            </h2>
+                        </UTooltip>
                     </NuxtLink>
                     <p class="text-xs">{{ timeAgo(data.createdAt) }}</p>
                 </span>
@@ -61,7 +67,11 @@
             <h2 class="font-semibold">About This Job</h2>
             <p>
                 <span class="text-primary-700 font-semibold">Position Title: </span>
-                {{ data.position }}
+                <UTooltip :text="data.position">
+                    <span class="truncate inline-block max-w-[250px] align-bottom">
+                        {{ data.position }}
+                    </span>
+                </UTooltip>
             </p>
             <p>
                 <span class="text-primary-700 font-semibold capitalize">Location: </span>

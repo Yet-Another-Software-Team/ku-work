@@ -452,13 +452,15 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 }
 
 // @Summary Get all applications for the current user
-// @Description Fetches job applications for the authenticated user. If the user is a company, it returns all applications for all their job postings. If the user is a student, it returns all of their own applications. Supports pagination.
+// @Description Fetches job applications for the authenticated user. If the user is a company, it returns all applications for all their job postings. If the user is a student, it returns all of their own applications. Supports pagination and status filtering.
 // @Tags Job Applications
 // @Security BearerAuth
 // @Produce json
+// @Param status query string false "Filter by status (pending, accepted, rejected)"
+// @Param sortBy query string false "Sort by (name, date-desc, date-asc)" default(date-desc)
 // @Param offset query int false "Offset for pagination" default(0)
 // @Param limit query int false "Limit for pagination" default(32)
-// @Success 200 {array} handlers.ShortApplicationDetail "List of job applications"
+// @Success 200 {object} object{applications=[]handlers.ApplicationWithJobDetails,total=int} "List of job applications with total count"
 // @Failure 401 {object} object{error=string} "Unauthorized"
 // @Failure 403 {object} object{error=string} "Forbidden: User is not a company or student"
 // @Failure 500 {object} object{error=string} "Internal Server Error"
@@ -469,8 +471,10 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 
 	// Parse and validate query parameters
 	type FetchJobApplicationsInput struct {
-		Offset uint `json:"offset" form:"offset"`
-		Limit  uint `json:"limit" form:"limit" binding:"max=64"`
+		Status *string `json:"status" form:"status" binding:"omitempty,oneof=pending accepted rejected"`
+		SortBy string  `json:"sortBy" form:"sortBy" binding:"omitempty,oneof=name date-desc date-asc"`
+		Offset uint    `json:"offset" form:"offset"`
+		Limit  uint    `json:"limit" form:"limit" binding:"max=64"`
 	}
 	input := FetchJobApplicationsInput{}
 	err := ctx.Bind(&input)
@@ -535,6 +539,24 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 		}
 	}
 
+	// Filter by status if provided
+	if input.Status != nil {
+		query = query.Where("job_applications.status = ?", *input.Status)
+	}
+
+	// Apply sorting
+	switch input.SortBy {
+	case "name":
+		query = query.Order("users.username ASC")
+	case "date-desc":
+		query = query.Order("job_applications.created_at DESC")
+	case "date-asc":
+		query = query.Order("job_applications.created_at ASC")
+	default:
+		// Default sort by creation date descending (newest first)
+		query = query.Order("job_applications.created_at DESC")
+	}
+
 	// Execute query with pagination
 	var jobApplications []ApplicationWithJobDetails
 	result = query.Offset(int(input.Offset)).Limit(int(input.Limit)).Scan(&jobApplications)
@@ -559,7 +581,40 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 		jobApplications[i].Files = files
 	}
 
-	ctx.JSON(http.StatusOK, jobApplications)
+	// Get total count for the same query (without pagination)
+	var totalCount int64
+	countQuery := h.DB.Model(&model.JobApplication{}).
+		Joins("INNER JOIN jobs ON jobs.id = job_applications.job_id").
+		Joins("INNER JOIN companies ON companies.user_id = jobs.company_id").
+		Joins("INNER JOIN users ON users.id = companies.user_id")
+
+	// Determine user role for count query
+	company = model.Company{UserID: userId}
+	companyResult := h.DB.Limit(1).Find(&company)
+
+	// Apply the same filters as the main query
+	if companyResult.RowsAffected != 0 {
+		// User is a company
+		countQuery = countQuery.Where("jobs.company_id = ?", userId)
+	} else {
+		// User is a student
+		countQuery = countQuery.Where("job_applications.user_id = ?", userId)
+	}
+
+	// Apply status filter to count query if provided
+	if input.Status != nil {
+		countQuery = countQuery.Where("job_applications.status = ?", *input.Status)
+	}
+
+	if err := countQuery.Count(&totalCount).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"applications": jobApplications,
+		"total":        totalCount,
+	})
 }
 
 // @Summary Update job application status

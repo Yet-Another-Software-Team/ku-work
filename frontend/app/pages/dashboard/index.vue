@@ -57,9 +57,9 @@
             </div>
 
             <!-- Job Count -->
-            <div class="mb-5">
+            <div class="flex items-center justify-between mb-5">
                 <p class="text-lg font-semibold text-gray-700 dark:text-gray-300">
-                    {{ filteredJobs.length }} Jobs
+                    {{ totalJobs }} Jobs
                 </p>
             </div>
 
@@ -94,6 +94,18 @@
                     @close="fetchJobs"
                 />
             </div>
+
+            <!-- Company Pagination -->
+            <div v-if="totalJobPages > 1" class="flex justify-center mt-8">
+                <UPagination
+                    v-model:page="currentJobPage"
+                    :items-per-page="itemsPerPage"
+                    :total="totalJobs"
+                    show-edges
+                    :sibling-count="1"
+                />
+            </div>
+
             <div
                 class="bg-primary-500 p-2 rounded-full size-[4em] fixed bottom-5 right-[6vw] hover:bg-primary-700 transition-all duration-200"
             >
@@ -161,7 +173,7 @@
             <!-- Application Count and Sort -->
             <div class="flex items-center justify-between mb-5">
                 <p class="text-lg font-semibold text-gray-700 dark:text-gray-300">
-                    {{ filteredApplications.length }} Applicantions
+                    {{ totalApplications }} Applications
                 </p>
                 <div class="flex items-center gap-2">
                     <span class="text-sm text-gray-600 dark:text-gray-400">Sort by:</span>
@@ -192,7 +204,7 @@
 
             <div v-else class="flex flex-wrap gap-10">
                 <StudentApplicationCard
-                    v-for="application in sortedApplications"
+                    v-for="application in studentApplications"
                     :key="`${application.jobId}-${application.userId}`"
                     class="h-[18em] w-full lg:w-[25em] drop-shadow-md"
                     :job-id="application.jobId"
@@ -211,6 +223,17 @@
                     :applied-date="formatDate(application.createdAt)"
                     @withdraw="handleWithdrawApplication(application.jobId)"
                     @view-details="handleViewDetails(application.jobId)"
+                />
+            </div>
+
+            <!-- Student Pagination -->
+            <div v-if="totalApplicationPages > 1" class="flex justify-center mt-8">
+                <UPagination
+                    v-model:page="currentApplicationPage"
+                    :total="totalApplications"
+                    :items-per-page="itemsPerPage"
+                    show-edges
+                    :sibling-count="1"
                 />
             </div>
         </div>
@@ -258,9 +281,14 @@ const openJobPostForm = ref(false);
 
 const data = ref<JobPost[]>([]);
 const studentApplications = ref<JobApplicationResponse[]>([]);
+const totalJobs = ref<number>(0);
+const totalApplications = ref<number>(0);
 const activeTab = ref<"pending" | "accepted" | "rejected">("pending");
 const companyActiveTab = ref<"pending" | "accepted" | "rejected">("accepted");
 const sortBy = ref("name");
+const currentJobPage = ref(1);
+const currentApplicationPage = ref(1);
+const itemsPerPage = 15;
 
 const sortOptions = [
     { label: "Name", value: "name" },
@@ -277,9 +305,23 @@ const fetchJobs = async () => {
     if (userRole.value !== "company") return;
 
     try {
-        const response = await api.get("/jobs");
+        const offset = (currentJobPage.value - 1) * itemsPerPage;
+        const response = await api.get("/jobs", {
+            params: {
+                limit: itemsPerPage,
+                offset: offset,
+                approvalStatus: companyActiveTab.value,
+            },
+        });
         console.log("Fetched jobs:", response.data);
+        console.log(
+            "Total from API:",
+            response.data.total,
+            "Jobs received:",
+            response.data.jobs?.length
+        );
         data.value = response.data.jobs || [];
+        totalJobs.value = response.data.total || 0;
     } catch (error) {
         const apiError = error as { message?: string };
         console.error("Failed to fetch jobs:", apiError.message || "Unknown error");
@@ -296,8 +338,24 @@ const fetchStudentApplications = async () => {
     if (userRole.value !== "student") return;
 
     try {
-        const response = await api.get("/applications");
-        studentApplications.value = response.data || [];
+        const offset = (currentApplicationPage.value - 1) * itemsPerPage;
+        const response = await api.get("/applications", {
+            params: {
+                limit: itemsPerPage,
+                offset: offset,
+                status: activeTab.value,
+                sortBy: sortBy.value,
+            },
+        });
+        console.log("Fetched applications:", response.data);
+        console.log(
+            "Total from API:",
+            response.data.total,
+            "Applications received:",
+            response.data.applications?.length
+        );
+        studentApplications.value = response.data.applications || response.data || [];
+        totalApplications.value = response.data.total || 0;
     } catch (error) {
         const apiError = error as { message?: string };
         console.error("Failed to fetch applications:", apiError.message || "Unknown error");
@@ -309,35 +367,48 @@ const fetchStudentApplications = async () => {
     }
 };
 
+// No need to filter since backend already filters by status
 const filteredApplications = computed(() => {
-    return studentApplications.value.filter((app) => app.status === activeTab.value);
+    return studentApplications.value;
 });
 
+// No need to filter since backend already filters by approval status
 const filteredJobs = computed(() => {
-    return data.value.filter((job) => job.approvalStatus === companyActiveTab.value);
+    return data.value;
 });
 
-const sortedApplications = computed(() => {
-    const apps = [...filteredApplications.value];
+// Watch sortBy changes and refetch data
+watch(sortBy, () => {
+    currentApplicationPage.value = 1;
+    fetchStudentApplications();
+});
 
-    switch (sortBy.value) {
-        case "name":
-            return apps.sort((a, b) => {
-                const nameA = a.companyName || "";
-                const nameB = b.companyName || "";
-                return nameA.localeCompare(nameB);
-            });
-        case "date-desc":
-            return apps.sort(
-                (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            );
-        case "date-asc":
-            return apps.sort(
-                (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-            );
-        default:
-            return apps;
-    }
+const totalJobPages = computed(() => {
+    return Math.ceil(totalJobs.value / itemsPerPage);
+});
+
+const totalApplicationPages = computed(() => {
+    return Math.ceil(totalApplications.value / itemsPerPage);
+});
+
+// Watch for tab changes and reset to page 1
+watch(companyActiveTab, () => {
+    currentJobPage.value = 1;
+    fetchJobs();
+});
+
+watch(activeTab, () => {
+    currentApplicationPage.value = 1;
+    fetchStudentApplications();
+});
+
+// Watch for page changes and fetch data
+watch(currentJobPage, () => {
+    fetchJobs();
+});
+
+watch(currentApplicationPage, () => {
+    fetchStudentApplications();
 });
 
 const formatDate = (dateString: string): string => {
