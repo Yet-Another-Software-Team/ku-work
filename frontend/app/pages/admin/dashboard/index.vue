@@ -89,7 +89,7 @@ const selectSortOption = ref("latest");
 
 onMounted(async () => {
     isLoading.value = true;
-    console.log("Selected Value:", selectSortOption.value);
+    
     try {
         await selectStudent();
     } catch (error) {
