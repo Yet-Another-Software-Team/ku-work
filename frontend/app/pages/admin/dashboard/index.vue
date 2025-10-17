@@ -19,9 +19,11 @@
             </div>
         </section>
         <section>
-            <div class="flex justify-between">
-                <h1 class="text-2xl font-semibold mb-2">{{ totalRequests }} Applicants</h1>
-                <div class="flex gap-5">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-semibold mb-2">
+                    {{ isCompany ? `${companyRequests.length} Posts` : `${totalRequests} Applicants` }}
+                </h1>
+                <div class="flex gap-5 items-center">
                     <h1 class="text-2xl font-semibold mb-2">Sort by:</h1>
                     <USelectMenu
                         v-model="selectedValue"
@@ -46,7 +48,17 @@
             </template>
             <!-- Company acc req -->
             <template v-else>
-                <h1 class="h-full justify-center items-center">Not yet implement</h1>
+                <template v-if="companyRequests.length">
+                    <RequestedCompanyProfileCard
+                        v-for="job in companyRequests"
+                        :key="job.id"
+                        :data="job"
+                        @resolved="onCompanyRequestResolved"
+                    />
+                </template>
+                <template v-else>
+                    <h1 class="h-full justify-center items-center">No pending company posts</h1>
+                </template>
             </template>
         </section>
     </div>
@@ -54,6 +66,9 @@
 
 <script setup lang="ts">
 import { mockUserData, multipleMockUserData } from "~/data/mockData";
+import type { JobPost } from "~/data/mockData";
+import RequestedCompanyProfileCard from "~/components/RequestedCompanyProfileCard.vue";
+import { useApi } from "~/composables/useApi";
 
 definePageMeta({
     layout: "admin",
@@ -61,6 +76,9 @@ definePageMeta({
 
 const totalRequests = 50;
 const isCompany = ref(false);
+const companyRequests = ref<JobPost[]>([]);
+const loggedOnce = ref(false);
+const { get, showErrorToast } = useApi();
 
 const items = ref([
     {
@@ -91,9 +109,30 @@ function setTailwindClasses(activeCondition: boolean) {
 
 function selectCompany() {
     isCompany.value = true;
+    fetchPendingCompanyPosts();
 }
 
 function selectRecruit() {
     isCompany.value = false;
+}
+
+async function fetchPendingCompanyPosts() {
+    try {
+        const res = await get<{ jobs: JobPost[] }>("/jobs", {
+            params: { approvalStatus: "pending", limit: 64 },
+        });
+        if (!loggedOnce.value) {
+            // One-time log to help verify payload during troubleshooting
+            console.log("[Admin Dashboard] Pending jobs response:", res.data);
+            loggedOnce.value = true;
+        }
+        companyRequests.value = (res.data as any)?.jobs ?? [];
+    } catch (e: any) {
+        showErrorToast(e, "Failed to load company posts");
+    }
+}
+
+function onCompanyRequestResolved(jobId: number) {
+    companyRequests.value = companyRequests.value.filter((j) => j.id !== jobId);
 }
 </script>
