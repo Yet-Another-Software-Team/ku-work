@@ -38,6 +38,7 @@
                         :items="sortOptions"
                         placement="bottom-end"
                         class="w-[10em]"
+                        @change="fetchStudents"
                     />
                 </div>
             </div>
@@ -87,7 +88,7 @@ const sortOptions = ref([
 
 const selectSortOption = ref("latest");
 
-onMounted(async () => {
+const fetchStudents = async () => {
     isLoading.value = true;
 
     try {
@@ -97,7 +98,9 @@ onMounted(async () => {
     } finally {
         isLoading.value = false;
     }
-});
+};
+
+onMounted(fetchStudents);
 
 function setTailwindClasses(activeCondition: boolean) {
     if (isCompany.value == activeCondition) {
