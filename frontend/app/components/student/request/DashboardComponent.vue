@@ -23,7 +23,9 @@
             <!-- user data -->
             <div class="flex flex-col justify-center flex-1 p-2">
                 <!-- name -->
-                <p class="overflow-hidden truncate max-w-[12em]">{{ data.name }}</p>
+                <p class="overflow-hidden truncate max-w-[12em]">
+                    {{ data.firstName }} {{ data.lastName }}
+                </p>
                 <p class="text-xs">{{ data.major }}</p>
 
                 <!-- buttons -->

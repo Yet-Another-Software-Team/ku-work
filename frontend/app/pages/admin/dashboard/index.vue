@@ -123,6 +123,7 @@ async function selectStudent() {
                 limit: studentLimit.value,
                 offset: studentOffset.value,
                 approvalStatus: "pending",
+                sortBy: selectSortOption.value,
             },
             withCredentials: true,
         });
