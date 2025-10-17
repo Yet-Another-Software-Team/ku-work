@@ -71,7 +71,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) error {
 	job.POST("", jobHandlers.CreateJobHandler)
 	job.GET("/:id/applications", applicationHandlers.GetJobApplicationsHandler)
 	job.DELETE("/:id/applications", applicationHandlers.ClearJobApplicationsHandler)
-	job.GET("/:id/applications", applicationHandlers.GetJobApplicationHandler)
+	job.GET("/:id/application", applicationHandlers.GetJobApplicationHandler)
 	job.PATCH("/:id/applications/:studentUserId/status", applicationHandlers.UpdateJobApplicationStatusHandler)
 	job.GET("/:id", jobHandlers.GetJobDetailHandler)
 	job.POST("/:id/apply", applicationHandlers.CreateJobApplicationHandler)

@@ -45,7 +45,7 @@ const statusChanged = async (status: string) => {
 const fetchData = async () => {
     try {
         const response = await api.get(
-            `/jobs/${jobId}/applications?${new URLSearchParams({
+            `/jobs/${jobId}/application?${new URLSearchParams({
                 email: `${beforeEmailParam}@ku.th`,
             })}`
         );

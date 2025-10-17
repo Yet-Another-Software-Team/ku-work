@@ -117,7 +117,7 @@
                 <div class="flex gap-5">
                     <span class="c-ubutton w-full sm:w-1/2">
                         <UButton
-                            class="size-full font-bold p-1 rounded flex items-center gap-1 px-2 text-xl"
+                            class="size-full font-bold p-1 rounded flex items-center gap-1 px-2 text-xl cursor-pointer"
                             variant="outline"
                             color="error"
                             label="Reject"
@@ -136,12 +136,14 @@
                                 <div class="flex flex-col gap-2">
                                     <div class="flex justify-end gap-2">
                                         <UButton
+                                            class="cursor-pointer"
                                             variant="outline"
                                             color="neutral"
                                             label="Cancel"
                                             @click="closeModal"
                                         />
                                         <UButton
+                                            class="cursor-pointer"
                                             variant="solid"
                                             color="error"
                                             label="Reject"
@@ -159,7 +161,7 @@
                     </span>
                     <span class="c-ubutton w-full sm:w-1/2">
                         <UButton
-                            class="size-full font-bold p-1 rounded flex items-center gap-1 px-2 text-xl"
+                            class="size-full font-bold p-1 rounded flex items-center gap-1 px-2 text-xl cursor-pointer"
                             variant="outline"
                             color="primary"
                             label="Accept"
@@ -178,12 +180,14 @@
                                 <div class="flex flex-col gap-2">
                                     <div class="flex justify-end gap-2">
                                         <UButton
+                                            class="cursor-pointer"
                                             variant="outline"
                                             color="neutral"
                                             label="Cancel"
                                             @click="closeModal"
                                         />
                                         <UButton
+                                            class="cursor-pointer"
                                             variant="solid"
                                             color="primary"
                                             label="Accept"
