@@ -4,6 +4,7 @@ import (
 	"errors"
 	"ku-work/backend/services/email"
 	"os"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -42,6 +43,10 @@ func NewEmailService(DB *gorm.DB) (*EmailService, error) {
 	return nil, errors.New("invalid EMAIL_PROVIDER specified")
 }
 
+func escapeHeaderValue(value string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(value, "\n", ""), "\r", "")
+}
+
 func (cur *EmailService) SendTo(target string, subject string, content string) error {
-	return cur.provider.SendTo(target, subject, content)
+	return cur.provider.SendTo(escapeHeaderValue(target), escapeHeaderValue(subject), content)
 }
