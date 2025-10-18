@@ -689,7 +689,7 @@ func TestJob(t *testing.T) {
 			return
 		}
 		// Accept and reject job application
-		for _, status := range []model.JobApplicationStatus{ model.JobApplicationAccepted, model.JobApplicationRejected } {
+		for _, status := range []model.JobApplicationStatus{model.JobApplicationAccepted, model.JobApplicationRejected} {
 			err = db.Save(&jobApplication).Error
 			if err != nil {
 				t.Error(err)

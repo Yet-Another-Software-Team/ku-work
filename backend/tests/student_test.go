@@ -21,7 +21,7 @@ func TestStudent(t *testing.T) {
 	t.Run("Register", func(t *testing.T) {
 		userCreationResult, err := CreateUser(UserCreationInfo{
 			Username: fmt.Sprintf("registerstudenttester-%d", time.Now().UnixNano()),
-			IsOAuth: true,
+			IsOAuth:  true,
 		})
 		if err != nil {
 			t.Error(err)

@@ -31,6 +31,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    env_file: ".env"
     environment:
       LISTEN_ADDRESS: ${LISTEN_ADDRESS}
       DB_PORT: ${DB_PORT}

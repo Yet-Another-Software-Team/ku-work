@@ -627,7 +627,7 @@ func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context
 		if err := h.DB.Select("email", "first_name", "last_name").Take(&context.OAuth).Error; err != nil {
 			return
 		}
-		if err := h.DB.Model(&model.User{ ID: job.CompanyID }).Pluck("username", &context.CompanyName).Error; err != nil {
+		if err := h.DB.Model(&model.User{ID: job.CompanyID}).Pluck("username", &context.CompanyName).Error; err != nil {
 			return
 		}
 		var tpl bytes.Buffer
