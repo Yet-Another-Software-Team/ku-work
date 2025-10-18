@@ -21,9 +21,19 @@
         <div class="flex flex-col gap-y-2">
             <!-- Info -->
             <UBadge :color="colorPicker()" class="w-fit">{{ applicationData.status }}</UBadge>
-            <h2 class="text-xl font-semibold">
-                {{ applicationData.username }}
-            </h2>
+            <NuxtLink
+                :to="{
+                    name: 'dashboard-id-beforeEmail',
+                    params: {
+                        id: applicationData.jobId,
+                        beforeEmail: applicationData.email.split('@')[0],
+                    },
+                }"
+            >
+                <h2 class="text-xl font-semibold">
+                    {{ applicationData.username }}
+                </h2>
+            </NuxtLink>
             <p class="text-sm">{{ profile.profile.major }}</p>
             <!-- Buttons -->
             <div class="flex items-center gap-2">

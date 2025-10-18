@@ -1,0 +1,19 @@
+Dear {{.OAuth.FirstName}} {{.OAuth.LastName}},
+
+This email is to provide you with an update on your application for the {{.Job.Position}} with {{.CompanyName}} ({{.Job.Name}})
+
+Status: {{.Status}}
+{{if eq .Status "rejected"}}
+The hiring team has completed their review. After careful consideration, they have decided not to move forward with your application at this time.
+{{else}}
+Congratulation! The hiring team has reviewed your application and would like to move forward.
+The employer, {{.CompanyName}}, will contact you directly with information on the next steps.
+{{end}}
+Please note that KU-Work is the platform provider and is not involved in the hiring decision. For specific questions regarding your application, you must contact {{.CompanyName}} directly.
+
+We wish you the best of luck in your job search.
+
+Best regards,
+The KU-Work Team
+
+Please note: This is a system-generated email. Replies to this address are not monitored.

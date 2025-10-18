@@ -71,9 +71,24 @@ Copy `sample.env` to `.env` and configure the following variables:
 ### AI Configuration
 - `APPROVAL_AI`: Choose what AI to use (dummy, ollama, ...)
 
-**Ollama configuration**
+**Ollama Configuration**
 - `APPROVAL_AI_MODEL`: Choose what AI model to use (e.g. gemma3)
 - `APPROVAL_AI_URI`: Endpoint of AI server
+
+### Email Configuration
+- `EMAIL_PROVIDER`: Choose what email provider to use (dummy, SMTP, gmail, ...)
+
+**SMTP Configuration**
+- `SMTP_SERVER_HOST`: The hostname of the SMTP server
+- `SMTP_SERVER_PORT`: The port of the SMTP server
+- `SMTP_SENDER`: The sender email address
+- `SMTP_PASSWORD`: The password for the email sender
+
+**Gmail Configuration**
+- `GMAIL_OAUTH_CLIENT_ID`: The client id of your Google OAuth application
+- `GMAIL_OAUTH_CLIENT_SECRET`: The client secret of your Google OAuth application
+- `GMAIL_OAUTH_ACCESS_TOKEN`: The OAuth access token for your OAuth application for a gmail account
+- `GMAIL_OAUTH_REFRESH_TOKEN`: The OAuth refresh token for your OAuth application for a gmail account
 
 ## Running the Application
 

@@ -56,6 +56,9 @@ A full-stack web application with Go backend and Nuxt.js frontend, featuring use
    
    # Approval AI Configuration
    APPROVAL_AI=dummy
+
+   # Email Configuration
+   EMAIL_PROVIDER=dummy
    ```
 
 #### Run Docker Compose

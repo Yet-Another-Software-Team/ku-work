@@ -53,7 +53,7 @@ type GoogleOAuthDetails struct {
 	ExternalID string
 	FirstName  string
 	LastName   string
-	Email      string
+	Email      string `gorm:"unique;index"`
 }
 
 // Represents a user's who is an Admin without any additional fields.
