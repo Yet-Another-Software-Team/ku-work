@@ -309,7 +309,7 @@ async function onNext() {
         console.error("Application submission failed:", error);
         toast.add({
             title: "Application Failed",
-            description: error?.data?.message || "Failed to submit application. Please try again.",
+            description: "Failed to submit application. Please try again.",
             color: "error",
         });
     } finally {
