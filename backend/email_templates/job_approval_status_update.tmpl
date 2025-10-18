@@ -1,15 +1,17 @@
 Dear {{.User.Username}},
 
-We have completed the review of your job post for {{.Job.Name}}.
+Thank you for submitting your job post, "{{.Job.Name}}", to KU-Work platform. Our team has completed the review process.
 
-The status of your request is {{.Status}}.
+Status {{.Status}}
 {{if eq .Status "rejected"}}
-Here's why:
+Unfortunately, we were unable to approve your submission for the following reason:
 {{.Reason}}
+{{else}}
+Your job post is now published. You can manage this job post through dashboard.
 {{end}}
-If you have any questions or need further assistance, please reach out to us.
-
-Please note: This is a no-reply email. Do not reply to this message.
+If you have any questions or need further assistance, please feel free to contact our support team.
 
 Best regards,
 The KU-WORK Team
+
+Please note: This is a system-generated email. Replies to this address are not monitored.
