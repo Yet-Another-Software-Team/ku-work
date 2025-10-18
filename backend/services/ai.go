@@ -136,11 +136,11 @@ func NewAIService(DB *gorm.DB, emailService *EmailService) (*AIService, error) {
 	if !hasApprovalAI {
 		return nil, errors.New("approval ai not specified")
 	}
-	jobApprovalStatusUpdateEmailTemplate, err := template.New("job_auto_approval_status_update.tmpl").ParseFiles("email_templates/job_auto_approval_status_update.tmpl")
+	jobApprovalStatusUpdateEmailTemplate, err := template.New("job_approval_status_update.tmpl").ParseFiles("email_templates/job_approval_status_update.tmpl")
 	if err != nil {
 		return nil, err
 	}
-	studentApprovalStatusUpdateEmailTemplate, err := template.New("student_auto_approval_status_update.tmpl").ParseFiles("email_templates/student_auto_approval_status_update.tmpl")
+	studentApprovalStatusUpdateEmailTemplate, err := template.New("student_approval_status_update.tmpl").ParseFiles("email_templates/student_approval_status_update.tmpl")
 	if err != nil {
 		return nil, err
 	}
