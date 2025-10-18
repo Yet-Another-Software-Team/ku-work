@@ -1,11 +1,11 @@
-package handlers
+package services
 
 import (
 	"bytes"
 	"errors"
 	"fmt"
-	"ku-work/backend/handlers/ai"
 	"ku-work/backend/model"
+	"ku-work/backend/services/ai"
 	"os"
 	"strconv"
 	"strings"
@@ -14,15 +14,15 @@ import (
 	"gorm.io/gorm"
 )
 
-type AIHandler struct {
+type AIService struct {
 	DB                                       *gorm.DB
 	AI                                       ai.ApprovalAI
-	emailHandler                             *EmailHandler
+	emailService                             *EmailService
 	jobApprovalStatusUpdateEmailTemplate     *template.Template
 	studentApprovalStatusUpdateEmailTemplate *template.Template
 }
 
-func (current *AIHandler) AutoApproveJob(job *model.Job) {
+func (current *AIService) AutoApproveJob(job *model.Job) {
 	approvalStatus, reasons := current.AI.CheckJob(job)
 	if approvalStatus == model.JobApprovalPending {
 		return
@@ -70,14 +70,14 @@ func (current *AIHandler) AutoApproveJob(job *model.Job) {
 	if err := current.jobApprovalStatusUpdateEmailTemplate.Execute(&tpl, context); err != nil {
 		return
 	}
-	_ = current.emailHandler.provider.SendTo(
+	_ = current.emailService.provider.SendTo(
 		context.Company.Email,
 		fmt.Sprintf("[KU-WORK] Your \"%s\" job has been automatically reviewed", job.Name),
 		tpl.String(),
 	)
 }
 
-func (current *AIHandler) AutoApproveStudent(student *model.Student) {
+func (current *AIService) AutoApproveStudent(student *model.Student) {
 	// Use AI to check student status
 	// This might take a while
 	approvalStatus, reasons := current.AI.CheckStudent(student)
@@ -124,14 +124,14 @@ func (current *AIHandler) AutoApproveStudent(student *model.Student) {
 	if err := current.studentApprovalStatusUpdateEmailTemplate.Execute(&tpl, context); err != nil {
 		return
 	}
-	_ = current.emailHandler.provider.SendTo(
+	_ = current.emailService.provider.SendTo(
 		context.OAuth.Email,
 		"[KU-WORK] Your student account has been automatically reviewed",
 		tpl.String(),
 	)
 }
 
-func NewAIHandler(DB *gorm.DB, emailHandler *EmailHandler) (*AIHandler, error) {
+func NewAIService(DB *gorm.DB, emailService *EmailService) (*AIService, error) {
 	approvalAIName, hasApprovalAI := os.LookupEnv("APPROVAL_AI")
 	if !hasApprovalAI {
 		return nil, errors.New("approval ai not specified")
@@ -144,11 +144,11 @@ func NewAIHandler(DB *gorm.DB, emailHandler *EmailHandler) (*AIHandler, error) {
 	if err != nil {
 		return nil, err
 	}
-	aiHandler := &AIHandler{
+	aiService := &AIService{
 		DB:                                       DB,
 		jobApprovalStatusUpdateEmailTemplate:     jobApprovalStatusUpdateEmailTemplate,
 		studentApprovalStatusUpdateEmailTemplate: studentApprovalStatusUpdateEmailTemplate,
-		emailHandler:                             emailHandler,
+		emailService:                             emailService,
 	}
 	switch approvalAIName {
 	case "ollama":
@@ -156,11 +156,11 @@ func NewAIHandler(DB *gorm.DB, emailHandler *EmailHandler) (*AIHandler, error) {
 		if err != nil {
 			return nil, err
 		}
-		aiHandler.AI = approvalAI
-		return aiHandler, nil
+		aiService.AI = approvalAI
+		return aiService, nil
 	case "dummy":
-		aiHandler.AI = ai.NewDummyApprovalAI()
-		return aiHandler, nil
+		aiService.AI = ai.NewDummyApprovalAI()
+		return aiService, nil
 	}
 	return nil, errors.New("invalid approval ai specified")
 }

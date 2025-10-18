@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"ku-work/backend/model"
+	"ku-work/backend/services"
 	"math"
 	"mime/multipart"
 	"net/http"
@@ -18,11 +19,11 @@ import (
 type ApplicationHandlers struct {
 	DB                                      *gorm.DB
 	FileHandlers                            *FileHandlers
-	emailHandler                            *EmailHandler
+	emailService                            *services.EmailService
 	jobApplicationStatusUpdateEmailTemplate *template.Template
 }
 
-func NewApplicationHandlers(db *gorm.DB, emailHandler *EmailHandler) (*ApplicationHandlers, error) {
+func NewApplicationHandlers(db *gorm.DB, emailService *services.EmailService) (*ApplicationHandlers, error) {
 	jobApplicationStatusUpdateEmailTemplate, err := template.New("job_application_status_update.tmpl").ParseFiles("email_templates/job_application_status_update.tmpl")
 	if err != nil {
 		return nil, err
@@ -30,7 +31,7 @@ func NewApplicationHandlers(db *gorm.DB, emailHandler *EmailHandler) (*Applicati
 	return &ApplicationHandlers{
 		DB:                                      db,
 		FileHandlers:                            NewFileHandlers(db),
-		emailHandler:                            emailHandler,
+		emailService:                            emailService,
 		jobApplicationStatusUpdateEmailTemplate: jobApplicationStatusUpdateEmailTemplate,
 	}, nil
 }
@@ -629,7 +630,7 @@ func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context
 		if err := h.jobApplicationStatusUpdateEmailTemplate.Execute(&tpl, context); err != nil {
 			return
 		}
-		_ = h.emailHandler.provider.SendTo(
+		_ = h.emailService.SendTo(
 			context.OAuth.Email,
 			fmt.Sprintf("[KU-WORK] Your Application Status for %s", job.Name),
 			tpl.String(),

@@ -1,18 +1,18 @@
-package handlers
+package services
 
 import (
 	"errors"
-	"ku-work/backend/handlers/email"
+	"ku-work/backend/services/email"
 	"os"
 
 	"gorm.io/gorm"
 )
 
-type EmailHandler struct {
+type EmailService struct {
 	provider email.EmailProvider
 }
 
-func NewEmailHandler(DB *gorm.DB) (*EmailHandler, error) {
+func NewEmailService(DB *gorm.DB) (*EmailService, error) {
 	emailProvider, hasEmailProvider := os.LookupEnv("EMAIL_PROVIDER")
 	if !hasEmailProvider {
 		return nil, errors.New("EMAIL_PROVIDER not specified")
@@ -23,7 +23,7 @@ func NewEmailHandler(DB *gorm.DB) (*EmailHandler, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &EmailHandler{
+		return &EmailService{
 			provider: smtpProvider,
 		}, nil
 	case "gmail":
@@ -31,17 +31,17 @@ func NewEmailHandler(DB *gorm.DB) (*EmailHandler, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &EmailHandler{
+		return &EmailService{
 			provider: gmailProvider,
 		}, nil
 	case "dummy":
-		return &EmailHandler{
+		return &EmailService{
 			provider: email.NewDummyEmailProvider(),
 		}, nil
 	}
 	return nil, errors.New("invalid EMAIL_PROVIDER specified")
 }
 
-func (cur *EmailHandler) SendTo(target string, subject string, content string) error {
+func (cur *EmailService) SendTo(target string, subject string, content string) error {
 	return cur.provider.SendTo(target, subject, content)
 }

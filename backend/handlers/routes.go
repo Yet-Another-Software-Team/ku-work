@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"ku-work/backend/middlewares"
+	"ku-work/backend/services"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -13,23 +14,23 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) error {
 	fileHandlers := NewFileHandlers(db)
 	localAuthHandlers := NewLocalAuthHandlers(db, jwtHandlers)
 	googleAuthHandlers := NewOAuthHandlers(db, jwtHandlers)
-	emailHandler, err := NewEmailHandler(db)
+	emailService, err := services.NewEmailService(db)
 	if err != nil {
 		return err
 	}
-	aiHandler, err := NewAIHandler(db, emailHandler)
+	aiService, err := services.NewAIService(db, emailService)
 	if err != nil {
 		return err
 	}
-	jobHandlers, err := NewJobHandlers(db, aiHandler, emailHandler)
+	jobHandlers, err := NewJobHandlers(db, aiService, emailService)
 	if err != nil {
 		return err
 	}
-	applicationHandlers, err := NewApplicationHandlers(db, emailHandler)
+	applicationHandlers, err := NewApplicationHandlers(db, emailService)
 	if err != nil {
 		return err
 	}
-	studentHandlers, err := NewStudentHandler(db, fileHandlers, aiHandler, emailHandler)
+	studentHandlers, err := NewStudentHandler(db, fileHandlers, aiService, emailService)
 	if err != nil {
 		return err
 	}

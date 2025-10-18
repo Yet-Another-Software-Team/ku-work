@@ -13,17 +13,18 @@ import (
 	"gorm.io/gorm"
 
 	"ku-work/backend/model"
+	"ku-work/backend/services"
 )
 
 type StudentHandler struct {
 	DB                                       *gorm.DB
 	fileHandlers                             *FileHandlers
-	aiHandler                                *AIHandler
-	emailHandler                             *EmailHandler
+	aiService                                *services.AIService
+	emailService                             *services.EmailService
 	studentApprovalStatusUpdateEmailTemplate *template.Template
 }
 
-func NewStudentHandler(db *gorm.DB, fileHandlers *FileHandlers, aiHandler *AIHandler, emailHandler *EmailHandler) (*StudentHandler, error) {
+func NewStudentHandler(db *gorm.DB, fileHandlers *FileHandlers, aiService *services.AIService, emailService *services.EmailService) (*StudentHandler, error) {
 	studentApprovalStatusUpdateEmailTemplate, err := template.New("student_approval_status_update.tmpl").ParseFiles("email_templates/student_approval_status_update.tmpl")
 	if err != nil {
 		return nil, err
@@ -31,8 +32,8 @@ func NewStudentHandler(db *gorm.DB, fileHandlers *FileHandlers, aiHandler *AIHan
 	return &StudentHandler{
 		DB:                                       db,
 		fileHandlers:                             fileHandlers,
-		aiHandler:                                aiHandler,
-		emailHandler:                             emailHandler,
+		aiService:                                aiService,
+		emailService:                             emailService,
 		studentApprovalStatusUpdateEmailTemplate: studentApprovalStatusUpdateEmailTemplate,
 	}, nil
 }
@@ -149,7 +150,7 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 	})
 
 	// Tell AI to approve it automagically
-	go h.aiHandler.AutoApproveStudent(&student)
+	go h.aiService.AutoApproveStudent(&student)
 }
 
 // @Summary Edit student profile
@@ -334,7 +335,7 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 		if err := h.studentApprovalStatusUpdateEmailTemplate.Execute(&tpl, context); err != nil {
 			return
 		}
-		_ = h.emailHandler.provider.SendTo(
+		_ = h.emailService.SendTo(
 			context.OAuth.Email,
 			"[KU-WORK] Your student account has been reviewed",
 			tpl.String(),

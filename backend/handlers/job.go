@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
+	"ku-work/backend/services"
 	"math"
 	"net/http"
 	"strconv"
@@ -19,12 +20,12 @@ import (
 type JobHandlers struct {
 	DB                                   *gorm.DB
 	FileHandlers                         *FileHandlers
-	AIHandler                            *AIHandler
-	emailHandler                         *EmailHandler
+	aiService                            *services.AIService
+	emailService                         *services.EmailService
 	jobApprovalStatusUpdateEmailTemplate *template.Template
 }
 
-func NewJobHandlers(db *gorm.DB, aiHandler *AIHandler, emailHandler *EmailHandler) (*JobHandlers, error) {
+func NewJobHandlers(db *gorm.DB, aiService *services.AIService, emailService *services.EmailService) (*JobHandlers, error) {
 	jobApprovalStatusUpdateEmailTemplate, err := template.New("job_approval_status_update.tmpl").ParseFiles("email_templates/job_approval_status_update.tmpl")
 	if err != nil {
 		return nil, err
@@ -32,8 +33,8 @@ func NewJobHandlers(db *gorm.DB, aiHandler *AIHandler, emailHandler *EmailHandle
 	return &JobHandlers{
 		DB:                                   db,
 		FileHandlers:                         NewFileHandlers(db),
-		AIHandler:                            aiHandler,
-		emailHandler:                         emailHandler,
+		aiService:                            aiService,
+		emailService:                         emailService,
 		jobApprovalStatusUpdateEmailTemplate: jobApprovalStatusUpdateEmailTemplate,
 	}, nil
 }
@@ -171,7 +172,7 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 	})
 
 	// Tell AI to approve it for me
-	go h.AIHandler.AutoApproveJob(&job)
+	go h.aiService.AutoApproveJob(&job)
 }
 
 // @Summary Fetch job listings
@@ -529,7 +530,7 @@ func (h *JobHandlers) JobApprovalHandler(ctx *gin.Context) {
 		if err := h.jobApprovalStatusUpdateEmailTemplate.Execute(&tpl, context); err != nil {
 			return
 		}
-		_ = h.emailHandler.provider.SendTo(
+		_ = h.emailService.SendTo(
 			context.Company.Email,
 			fmt.Sprintf("[KU-WORK] Your \"%s\" job has been reviewed", job.Name),
 			tpl.String(),
