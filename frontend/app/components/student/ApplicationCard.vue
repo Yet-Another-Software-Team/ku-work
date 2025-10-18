@@ -1,0 +1,131 @@
+<template>
+    <div
+        class="flex flex-col h-full shadow-md rounded-xl px-6 py-4 border border-gray-300 dark:border-gray-700 hover:shadow-lg transition-all bg-white dark:bg-gray-800"
+    >
+        <!-- Company Logo and Job Info -->
+        <div class="flex items-center gap-4 flex-1 min-w-0 mb-4">
+            <!-- Company Logo -->
+            <div
+                class="w-16 h-16 rounded-lg border border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden flex-shrink-0 bg-white"
+            >
+                <img
+                    v-if="companyLogo"
+                    :src="companyLogo"
+                    :alt="companyName"
+                    class="object-cover w-full h-full"
+                />
+                <Icon v-else name="ic:baseline-business" class="w-10 h-10 text-gray-400" />
+            </div>
+
+            <!-- Job Details -->
+            <div class="flex flex-col gap-1 flex-1 min-w-0">
+                <UTooltip :text="position">
+                    <h3 class="text-lg font-semibold truncate text-gray-900 dark:text-white">
+                        {{ position }}
+                    </h3>
+                </UTooltip>
+                <UTooltip :text="companyName">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 truncate">
+                        {{ companyName }}
+                    </p>
+                </UTooltip>
+                <div class="flex flex-wrap items-center gap-2 mt-1">
+                    <UBadge
+                        v-if="jobType"
+                        color="primary"
+                        variant="subtle"
+                        size="sm"
+                        class="capitalize"
+                    >
+                        {{ formatJobType(jobType) }}
+                    </UBadge>
+                    <UBadge
+                        v-if="experience"
+                        color="neutral"
+                        variant="subtle"
+                        size="sm"
+                        class="capitalize"
+                    >
+                        {{ formatExperience(experience) }}
+                    </UBadge>
+                </div>
+            </div>
+        </div>
+
+        <!-- Salary, Date, Status, and Actions -->
+        <div class="flex flex-col gap-3 mt-auto">
+            <!-- Salary Range -->
+            <div>
+                <p class="text-lg font-bold text-gray-900 dark:text-white">
+                    {{ formatSalary(minSalary, maxSalary) }}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ appliedDate }}</p>
+            </div>
+
+            <!-- Status Badge and Actions -->
+            <div class="flex items-center justify-between gap-3">
+                <UBadge :color="statusColor" size="md" class="capitalize">
+                    {{ status }}
+                </UBadge>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script setup lang="ts">
+const props = defineProps<{
+    jobId: number;
+    position: string;
+    companyName: string;
+    companyLogo?: string;
+    jobType?: string;
+    experience?: string;
+    minSalary: number;
+    maxSalary: number;
+    status: "pending" | "accepted" | "rejected";
+    appliedDate: string;
+}>();
+
+const statusColor = computed(() => {
+    switch (props.status) {
+        case "pending":
+            return "warning";
+        case "accepted":
+            return "primary";
+        case "rejected":
+            return "error";
+        default:
+            return "neutral";
+    }
+});
+
+function formatJobType(type: string): string {
+    const typeMap: Record<string, string> = {
+        fulltime: "Full Time",
+        parttime: "Part Time",
+        contract: "Contract",
+        casual: "Casual",
+        internship: "Internship",
+    };
+    return typeMap[type.toLowerCase()] || type;
+}
+
+function formatExperience(exp: string): string {
+    const expMap: Record<string, string> = {
+        newgrad: "New Grad",
+        junior: "Junior",
+        senior: "Senior",
+        manager: "Manager",
+        internship: "Internship",
+    };
+    return expMap[exp.toLowerCase()] || exp;
+}
+
+function formatSalary(min: number, max: number): string {
+    if (min === 0 && max === 0) return "Negotiable";
+    const minK = Math.floor(min / 1000);
+    const maxK = Math.floor(max / 1000);
+    if (min === max) return `${minK}k Baht`;
+    return `${minK}k - ${maxK}k Baht`;
+}
+</script>

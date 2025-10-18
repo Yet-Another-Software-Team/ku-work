@@ -33,18 +33,20 @@
                     </UModal>
                 </div>
             </div>
-            <UTooltip :text="data.position" @click="selectJob">
-                <div
-                    class="flex mt-2 font-semibold text-lg truncate"
-                    :class="
-                        data.approvalStatus === 'accepted'
-                            ? 'cursor-pointer hover:underline'
-                            : 'text-gray-500 cursor-not-allowed'
-                    "
-                >
-                    {{ data.position }}
-                </div>
-            </UTooltip>
+            <div @click="selectJob">
+                <UTooltip :text="data.position">
+                    <div
+                        class="flex mt-2 font-semibold text-lg truncate"
+                        :class="
+                            data.approvalStatus === 'accepted'
+                                ? 'cursor-pointer hover:underline'
+                                : 'text-gray-500 cursor-not-allowed'
+                        "
+                    >
+                        {{ data.position }}
+                    </div>
+                </UTooltip>
+            </div>
         </template>
 
         <div class="flex flex-col gap-y-4">

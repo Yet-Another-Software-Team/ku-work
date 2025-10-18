@@ -38,7 +38,7 @@ export default defineNuxtPlugin({
                                     options: { withCredentials: boolean }
                                 ) => Promise<{ data: { token?: string } }>;
                             }
-                        ).post(`${useRuntimeConfig().public.apiBaseUrl}/refresh`, undefined, {
+                        ).post(`${useRuntimeConfig().public.apiBaseUrl}/auth/refresh`, undefined, {
                             withCredentials: true,
                         });
                         const newToken = response.data.token;
