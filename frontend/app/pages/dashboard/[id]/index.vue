@@ -59,7 +59,6 @@
                 <h1 class="text-2xl font-semibold mb-2">{{ countedApplication }} Applicants</h1>
                 <div class="flex gap-5">
                     <h1 class="text-2xl font-semibold mb-2">Sort by:</h1>
-                    <!-- TODO: Implement sorting later -->
                     <USelectMenu
                         v-model="selectSortOption"
                         value-key="id"
