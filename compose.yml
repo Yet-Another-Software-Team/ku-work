@@ -49,6 +49,7 @@ services:
       APPROVAL_AI: ${APPROVAL_AI}
       APPROVAL_AI_MODEL: ${APPROVAL_AI_MODEL}
       APPROVAL_AI_URI: ${APPROVAL_AI_URI}
+      SWAGGER_HOST: ${SWAGGER_HOST}
 
   frontend:
     build:
