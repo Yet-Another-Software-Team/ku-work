@@ -48,7 +48,9 @@ func main() {
 	router.Use(cors.New(corsConfig))
 
 	// Setup routes
-	handlers.SetupRoutes(router, db)
+	if err := handlers.SetupRoutes(router, db); err != nil {
+		log.Fatal(err)
+	}
 
 	// Setup Swagger
 	swagger_host, has_swagger_host := os.LookupEnv("SWAGGER_HOST")

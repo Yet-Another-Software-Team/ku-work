@@ -2,24 +2,38 @@ package handlers
 
 import (
 	"ku-work/backend/middlewares"
+	"ku-work/backend/services"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
-func SetupRoutes(router *gin.Engine, db *gorm.DB) {
+func SetupRoutes(router *gin.Engine, db *gorm.DB) error {
 	// Initialize handlers
 	jwtHandlers := NewJWTHandlers(db)
 	fileHandlers := NewFileHandlers(db)
 	localAuthHandlers := NewLocalAuthHandlers(db, jwtHandlers)
 	googleAuthHandlers := NewOAuthHandlers(db, jwtHandlers)
-	aiHandler, err := NewAIHandler(db)
+	emailService, err := services.NewEmailService(db)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	jobHandlers := NewJobHandlers(db, aiHandler)
-	applicationHandlers := NewApplicationHandlers(db)
-	studentHandlers := NewStudentHandler(db, fileHandlers, aiHandler)
+	aiService, err := services.NewAIService(db, emailService)
+	if err != nil {
+		return err
+	}
+	jobHandlers, err := NewJobHandlers(db, aiService, emailService)
+	if err != nil {
+		return err
+	}
+	applicationHandlers, err := NewApplicationHandlers(db, emailService)
+	if err != nil {
+		return err
+	}
+	studentHandlers, err := NewStudentHandler(db, fileHandlers, aiService, emailService)
+	if err != nil {
+		return err
+	}
 	companyHandlers := NewCompanyHandlers(db)
 	userHandlers := NewUserHandlers(db)
 	adminHandlers := NewAdminHandlers(db)
@@ -58,8 +72,8 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	job.POST("", jobHandlers.CreateJobHandler)
 	job.GET("/:id/applications", applicationHandlers.GetJobApplicationsHandler)
 	job.DELETE("/:id/applications", applicationHandlers.ClearJobApplicationsHandler)
-	job.GET("/:id/applications/:studentId", applicationHandlers.GetJobApplicationHandler)
-	job.PATCH("/:id/applications/:studentId/status", applicationHandlers.UpdateJobApplicationStatusHandler)
+	job.GET("/:id/application", applicationHandlers.GetJobApplicationHandler)
+	job.PATCH("/:id/applications/:studentUserId/status", applicationHandlers.UpdateJobApplicationStatusHandler)
 	job.GET("/:id", jobHandlers.GetJobDetailHandler)
 	job.POST("/:id/apply", applicationHandlers.CreateJobApplicationHandler)
 	job.PATCH("/:id", jobHandlers.EditJobHandler)
@@ -81,4 +95,5 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	// Admin Routes
 	admin := protectedRouter.Group("/admin", middlewares.AdminPermissionMiddleware(db))
 	admin.GET("/audits", adminHandlers.FetchAuditLog)
+	return nil
 }

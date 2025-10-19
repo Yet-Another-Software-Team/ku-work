@@ -7,6 +7,7 @@ import (
 	"ku-work/backend/handlers"
 	"ku-work/backend/model"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -32,6 +33,14 @@ var pixel = []byte{
 }
 
 func TestMain(m *testing.M) {
+	// Set cwd to parent, otherwise it can't find templates
+	oldWorkingDir, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	if err := os.Chdir(filepath.Dir(oldWorkingDir)); err != nil {
+		panic(err)
+	}
 	ctx := context.Background()
 	// Set XDG_RUNTIME_DIR if not set (required for testcontainers with Podman)
 	if os.Getenv("XDG_RUNTIME_DIR") == "" {
@@ -83,8 +92,11 @@ func TestMain(m *testing.M) {
 	_ = os.Setenv("GOOGLE_CLIENT_SECRET", "GOCSPX-idklmao")
 	_ = os.Setenv("GOOGLE_CLIENT_ID", "012345678901-1md5idklmao.apps.googleusercontent.com")
 	_ = os.Setenv("APPROVAL_AI", "dummy")
+	_ = os.Setenv("EMAIL_PROVIDER", "dummy")
 	router = gin.Default()
-	handlers.SetupRoutes(router, db)
+	if err := handlers.SetupRoutes(router, db); err != nil {
+		panic(err)
+	}
 	code := m.Run()
 	_ = testcontainers.TerminateContainer(postgresContainer)
 	os.Exit(code)

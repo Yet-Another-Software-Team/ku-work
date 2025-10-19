@@ -22,7 +22,7 @@ definePageMeta({
 
 const route = useRoute();
 const jobId = route.params.id as string;
-const studentIdParam = route.params.studentId as string;
+const beforeEmailParam = route.params.beforeEmail as string;
 
 const applicantData = ref(null);
 const isLoading = ref(false);
@@ -30,7 +30,10 @@ const isLoading = ref(false);
 const statusChanged = async (status: string) => {
     isLoading.value = true;
     try {
-        await api.patch(`/jobs/${jobId}/applications/${studentIdParam}`, { status });
+        await api.patch(
+            `/jobs/${jobId}/applications/${(applicantData.value! as { userId: string }).userId}/status`,
+            { status }
+        );
         await fetchData();
     } catch (error) {
         console.error("Failed to update status:", error);
@@ -41,7 +44,11 @@ const statusChanged = async (status: string) => {
 
 const fetchData = async () => {
     try {
-        const response = await api.get(`/jobs/${jobId}/applications/${studentIdParam}`);
+        const response = await api.get(
+            `/jobs/${jobId}/application?${new URLSearchParams({
+                email: `${beforeEmailParam}@ku.th`,
+            })}`
+        );
         console.log(response.data);
         applicantData.value = response.data;
     } catch (error) {
