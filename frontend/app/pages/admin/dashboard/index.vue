@@ -28,7 +28,7 @@
                 <USkeleton class="h-[3em] w-full left-0 top-0 mb-5" />
             </div>
             <div v-else class="flex justify-between">
-                <h1 class="text-2xl font-semibold mb-2">{{ totalRequests }} Applicants</h1>
+                <h1 class="text-2xl font-semibold mb-2">{{ totalRequests }} {{ headerLabel }}</h1>
                 <div class="flex gap-5">
                     <!-- TODO: Implement sorting -->
                     <h1 class="text-2xl font-semibold mb-2">Sort by:</h1>
@@ -59,11 +59,12 @@
             <!-- Company acc req -->
             <template v-else>
                 <template v-if="companyRequests.length">
-                    <RequestedCompanyProfileCard
+                    <RequestedJobPost
                         v-for="job in companyRequests"
                         :key="job.id"
+                        :request-id="job.id"
                         :data="job"
-                        @resolved="onCompanyRequestResolved"
+                        @job-approval-status="onCompanyRequestResolved"
                     />
                 </template>
                 <template v-else>
@@ -75,7 +76,8 @@
 </template>
 
 <script setup lang="ts">
-import type { Profile } from "~/data/mockData";
+import RequestedJobPost from "~/components/job/request/JobPostReview.vue";
+import type { ProfileInformation, JobPost } from "~/data/mockData";
 
 definePageMeta({
     layout: "admin",
@@ -87,7 +89,9 @@ const totalRequests = ref(0);
 const isCompany = ref(false);
 
 const api = useApi();
-const studentData = ref<Profile>();
+const studentData = ref<ProfileInformation[]>([]);
+const companyRequests = ref<JobPost[]>([]);
+const loggedOnce = ref(false);
 
 const sortOptions = ref([
     { label: "Latest", id: "latest" },
@@ -120,9 +124,13 @@ function setTailwindClasses(activeCondition: boolean) {
     }
 }
 
-function selectCompany() {
+const headerLabel = computed(() => (isCompany.value ? "Posts" : "Applicants"));
+
+async function selectCompany() {
     isCompany.value = true;
     totalRequests.value = 0;
+    await fetchPendingCompanyPosts();
+    totalRequests.value = companyRequests.value.length;
 }
 
 const studentOffset = ref(0);
@@ -131,7 +139,7 @@ const studentLimit = ref(10);
 async function selectStudent() {
     isCompany.value = false;
     try {
-        const response = await api.get("/students", {
+        const response = await api.get<ProfileInformation[]>("/students", {
             params: {
                 limit: studentLimit.value,
                 offset: studentOffset.value,
@@ -140,30 +148,44 @@ async function selectStudent() {
             },
             withCredentials: true,
         });
-        studentData.value = response.data as Profile;
-        totalRequests.value = response.data.length;
+        studentData.value = (response.data as any) ?? [];
+        totalRequests.value = Array.isArray(response.data) ? response.data.length : 0;
     } catch (error) {
         console.error("Error fetching student data:", error);
     }
 }
+const postOffset = ref(0);
+const postLimit = ref(10);
 
 async function fetchPendingCompanyPosts() {
     try {
-        const res = await get<{ jobs: JobPost[] }>("/jobs", {
-            params: { approvalStatus: "pending", limit: 64 },
+        const res = await api.get<{ jobs: JobPost[] }>("/jobs", {
+            params: { 
+                limit: postLimit.value,
+                offset: postOffset.value,
+                approvalStatus: "pending",
+                sortBy: selectSortOption.value
+            },
+            withCredentials: true,
         });
         if (!loggedOnce.value) {
-            // One-time log to help verify payload during troubleshooting
             console.log("[Admin Dashboard] Pending jobs response:", res.data);
             loggedOnce.value = true;
         }
-        companyRequests.value = (res.data as any)?.jobs ?? [];
+        // Some backends return { jobs: [...] }, others return array directly
+        const payload: any = res.data as any;
+        companyRequests.value = Array.isArray(payload)
+            ? (payload as JobPost[])
+            : (payload?.jobs as JobPost[]) ?? [];
     } catch (e: any) {
-        showErrorToast(e, "Failed to load company posts");
+        api.showErrorToast(e, "Failed to load company posts");
     }
 }
 
 function onCompanyRequestResolved(jobId: number) {
     companyRequests.value = companyRequests.value.filter((j) => j.id !== jobId);
+    if (isCompany.value) {
+        totalRequests.value = companyRequests.value.length;
+    }
 }
 </script>
