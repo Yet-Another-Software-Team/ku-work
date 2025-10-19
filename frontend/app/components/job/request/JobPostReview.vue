@@ -13,10 +13,12 @@
                     alt="Company Logo"
                     class="w-17 h-17 object-cover rounded-md justify-center items-center m-2"
                 />
-                <img 
-                    v-else src="/images/company.png" 
-                    alt="Company Logo" 
-                    class="w-17 h-17 object-cover rounded-md m-2" />
+                <img
+                    v-else
+                    src="/images/company.png"
+                    alt="Company Logo"
+                    class="w-17 h-17 object-cover rounded-md m-2"
+                />
             </div>
 
             <!-- job data -->
@@ -137,7 +139,3 @@ watch(
     { immediate: true }
 );
 </script>
-
-
-
-

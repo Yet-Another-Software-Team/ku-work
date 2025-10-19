@@ -160,11 +160,11 @@ const postLimit = ref(10);
 async function fetchPendingCompanyPosts() {
     try {
         const res = await api.get<{ jobs: JobPost[] }>("/jobs", {
-            params: { 
+            params: {
                 limit: postLimit.value,
                 offset: postOffset.value,
                 approvalStatus: "pending",
-                sortBy: selectSortOption.value
+                sortBy: selectSortOption.value,
             },
             withCredentials: true,
         });
@@ -176,7 +176,7 @@ async function fetchPendingCompanyPosts() {
         const payload: any = res.data as any;
         companyRequests.value = Array.isArray(payload)
             ? (payload as JobPost[])
-            : (payload?.jobs as JobPost[]) ?? [];
+            : ((payload?.jobs as JobPost[]) ?? []);
     } catch (e: any) {
         api.showErrorToast(e, "Failed to load company posts");
     }
