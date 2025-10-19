@@ -188,6 +188,7 @@ func TestStudent(t *testing.T) {
 			student, err := CreateUser(UserCreationInfo{
 				Username:  fmt.Sprintf("admingetprofilesstudenttester-%d-%d", i, time.Now().UnixNano()),
 				IsStudent: true,
+				IsOAuth:   true,
 			})
 			if err != nil {
 				t.Error(err)

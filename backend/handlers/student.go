@@ -366,6 +366,7 @@ func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 		Offset         int    `json:"offset" form:"offset"`
 		Limit          int    `json:"limit" form:"limit" binding:"max=64"`
 		ApprovalStatus string `json:"approvalStatus" form:"approvalStatus" binding:"max=64"`
+		SortBy         string `json:"sortBy" form:"sortBy" binding:"omitempty,oneof='latest' 'oldest' 'name_az' 'name_za'"`
 	}
 	input := GetStudentProfileInput{
 		Limit: 64,
@@ -377,6 +378,15 @@ func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 	}
 
 	query := h.DB.Model(&model.Student{})
+	query = query.Select("students.*, google_o_auth_details.first_name as first_name, google_o_auth_details.last_name as last_name, CONCAT(google_o_auth_details.first_name, ' ', google_o_auth_details.last_name) as fullname, google_o_auth_details.email as email")
+	query = query.Joins("INNER JOIN google_o_auth_details on google_o_auth_details.user_id = students.user_id")
+
+	type StudentInfo struct {
+		model.Student
+		FirstName string `json:"firstName"`
+		LastName  string `json:"lastName"`
+		Email     string `json:"email"`
+	}
 
 	// If user ID is provided, use the userId from request
 	if input.UserID != "" {
@@ -389,11 +399,22 @@ func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 			return
 		} else if result.RowsAffected != 0 {
-			var students []model.Student
+			var students []StudentInfo
 			if input.ApprovalStatus != "" {
-				query = query.Where(&model.Student{
-					ApprovalStatus: model.StudentApprovalStatus(input.ApprovalStatus),
-				})
+				query = query.Where("approval_status = ?", model.StudentApprovalStatus(input.ApprovalStatus))
+			}
+			// Sort results
+			if input.SortBy != "" {
+				switch input.SortBy {
+				case "latest":
+					query = query.Order("created_at DESC")
+				case "oldest":
+					query = query.Order("created_at ASC")
+				case "name_az":
+					query = query.Order("fullname ASC")
+				case "name_za":
+					query = query.Order("fullname DESC")
+				}
 			}
 			if err := query.Offset(input.Offset).Limit(input.Limit).Find(&students).Error; err != nil {
 				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -405,14 +426,8 @@ func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 	}
 
 	// Get Student Profile from database
-	type StudentInfo struct {
-		model.Student
-		FirstName string `json:"firstName"`
-		LastName  string `json:"lastName"`
-		Email     string `json:"email"`
-	}
 	var studentInfo StudentInfo
-	if err := query.Select("students.*, google_o_auth_details.first_name as first_name, google_o_auth_details.last_name as last_name, google_o_auth_details.email as email").Joins("INNER JOIN google_o_auth_details on google_o_auth_details.user_id = students.user_id").Where("students.user_id = ?", userId).Take(&studentInfo).Error; err != nil {
+	if err := query.Where("students.user_id = ?", userId).Take(&studentInfo).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
