@@ -69,11 +69,13 @@ const emit = defineEmits<{
     (e: "jobApprovalStatus", id: string): void;
 }>();
 
-const job = props.data as JobPost;
+const job = ref<JobPost>(props.data!);
 const api = useApi();
 
 const toast = useToast();
-const logoSrc = ref<string>("");
+const logoSrc = computed<string>(() =>
+    job.value?.photoId ? `${useRuntimeConfig().public.apiBaseUrl}/files/${job.value.photoId}` : ""
+);
 
 function navigateToJob(id: string) {
     console.log("Navigating to job post of request:", props.requestId);
@@ -82,12 +84,8 @@ function navigateToJob(id: string) {
 
 // Accept request
 async function approveJob() {
-    console.log("Approveed request:", props.requestId);
-    toast.add({
-        title: "Job Approved!",
-        description: job.name,
-        color: "success",
-    });
+    console.log("Approved request:", props.requestId);
+    toast.add({ title: "Job Approved!", description: job.value?.name, color: "success" });
     await api.post(
         `/jobs/${props.requestId}/approval`,
         { approve: true },
@@ -99,11 +97,7 @@ async function approveJob() {
 // Decline request
 async function declineJob() {
     console.log("Declined request:", props.requestId);
-    toast.add({
-        title: "Job declined!",
-        description: job.name,
-        color: "error",
-    });
+    toast.add({ title: "Job declined!", description: job.value?.name, color: "error" });
     await api.post(
         `/jobs/${props.requestId}/approval`,
         { approve: false },
@@ -114,28 +108,7 @@ async function declineJob() {
 watch(
     () => props.data,
     (newData) => {
-        if (!newData) return;
-        job.companyName = newData.companyName;
-        job.id = newData.id;
-        job.createdAt = newData.createdAt;
-        job.name = newData.name;
-        job.companyId = newData.companyId;
-        job.photoId = newData.photoId;
-        job.bannerId = newData.bannerId;
-        job.position = newData.position;
-        job.duration = newData.duration;
-        job.description = newData.description;
-        job.location = newData.location;
-        job.jobType = newData.jobType;
-        job.experience = newData.experience;
-        job.minSalary = newData.minSalary;
-        job.maxSalary = newData.maxSalary;
-        job.approvalStatus = newData.approvalStatus;
-        job.open = newData.open;
-        logoSrc.value = newData.photoId
-            ? `${useRuntimeConfig().public.apiBaseUrl}/files/${newData.photoId}`
-            : "";
-    },
-    { immediate: true }
+        if (newData) job.value = newData;
+    }
 );
 </script>
