@@ -78,17 +78,7 @@ Copy `sample.env` to `.env` and configure the following variables:
 ### Email Configuration
 - `EMAIL_PROVIDER`: Choose what email provider to use (dummy, SMTP, gmail, ...)
 
-**SMTP Configuration**
-- `SMTP_SERVER_HOST`: The hostname of the SMTP server
-- `SMTP_SERVER_PORT`: The port of the SMTP server
-- `SMTP_SENDER`: The sender email address
-- `SMTP_PASSWORD`: The password for the email sender
-
-**Gmail Configuration**
-- `GMAIL_OAUTH_CLIENT_ID`: The client id of your Google OAuth application
-- `GMAIL_OAUTH_CLIENT_SECRET`: The client secret of your Google OAuth application
-- `GMAIL_OAUTH_ACCESS_TOKEN`: The OAuth access token for your OAuth application for a gmail account
-- `GMAIL_OAUTH_REFRESH_TOKEN`: The OAuth refresh token for your OAuth application for a gmail account
+If you use other provider than dummy follow the [configuration guide](./email_config.md) here.
 
 ## Running the Application
 
