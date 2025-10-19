@@ -1010,7 +1010,7 @@ const docTemplate = `{
                         },
                         "collectionFormat": "csv",
                         "description": "Filter by job type(s)",
-                        "name": "jobtype",
+                        "name": "jobType",
                         "in": "query"
                     },
                     {
@@ -1026,13 +1026,13 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "Minimum salary filter",
-                        "name": "minsalary",
+                        "name": "minSalary",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "description": "Maximum salary filter",
-                        "name": "maxsalary",
+                        "name": "maxSalary",
                         "in": "query"
                     },
                     {
@@ -1445,7 +1445,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/jobs/{id}/applications/{studentId}": {
+        "/jobs/{id}/applications/{studentUserId}": {
             "get": {
                 "security": [
                     {
@@ -1471,7 +1471,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Student User ID",
-                        "name": "studentId",
+                        "name": "studentUserId",
                         "in": "path",
                         "required": true
                     }
@@ -1557,7 +1557,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Student User ID",
-                        "name": "studentId",
+                        "name": "studentUserId",
                         "in": "path",
                         "required": true
                     },
@@ -2225,6 +2225,10 @@ const docTemplate = `{
             "properties": {
                 "approve": {
                     "type": "boolean"
+                },
+                "reason": {
+                    "type": "string",
+                    "maxLength": 16384
                 }
             }
         },
@@ -2295,7 +2299,7 @@ const docTemplate = `{
                 "description",
                 "duration",
                 "experience",
-                "jobtype",
+                "jobType",
                 "location",
                 "name",
                 "position"
@@ -2319,7 +2323,7 @@ const docTemplate = `{
                         "internship"
                     ]
                 },
-                "jobtype": {
+                "jobType": {
                     "type": "string",
                     "enum": [
                         "fulltime",
@@ -2333,10 +2337,10 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 128
                 },
-                "maxsalary": {
+                "maxSalary": {
                     "type": "integer"
                 },
-                "minsalary": {
+                "minSalary": {
                     "type": "integer"
                 },
                 "name": {
@@ -2373,7 +2377,7 @@ const docTemplate = `{
                         "internship"
                     ]
                 },
-                "jobtype": {
+                "jobType": {
                     "type": "string",
                     "enum": [
                         "fulltime",
@@ -2387,10 +2391,10 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 128
                 },
-                "maxsalary": {
+                "maxSalary": {
                     "type": "integer"
                 },
-                "minsalary": {
+                "minSalary": {
                     "type": "integer"
                 },
                 "name": {
@@ -2687,6 +2691,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "objectName": {
+                    "type": "string"
+                },
+                "reason": {
                     "type": "string"
                 }
             }

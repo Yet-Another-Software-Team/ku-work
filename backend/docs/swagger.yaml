@@ -3,6 +3,9 @@ definitions:
     properties:
       approve:
         type: boolean
+      reason:
+        maxLength: 16384
+        type: string
     type: object
   handlers.ClearJobApplicationsHandler.ClearJobApplicationsInput:
     properties:
@@ -60,7 +63,7 @@ definitions:
         - manager
         - internship
         type: string
-      jobtype:
+      jobType:
         enum:
         - fulltime
         - parttime
@@ -71,9 +74,9 @@ definitions:
       location:
         maxLength: 128
         type: string
-      maxsalary:
+      maxSalary:
         type: integer
-      minsalary:
+      minSalary:
         type: integer
       name:
         maxLength: 128
@@ -87,7 +90,7 @@ definitions:
     - description
     - duration
     - experience
-    - jobtype
+    - jobType
     - location
     - name
     - position
@@ -108,7 +111,7 @@ definitions:
         - manager
         - internship
         type: string
-      jobtype:
+      jobType:
         enum:
         - fulltime
         - parttime
@@ -119,9 +122,9 @@ definitions:
       location:
         maxLength: 128
         type: string
-      maxsalary:
+      maxSalary:
         type: integer
-      minsalary:
+      minSalary:
         type: integer
       name:
         maxLength: 128
@@ -318,6 +321,8 @@ definitions:
       objectID:
         type: string
       objectName:
+        type: string
+      reason:
         type: string
     type: object
   model.File:
@@ -1035,7 +1040,7 @@ paths:
         in: query
         items:
           type: string
-        name: jobtype
+        name: jobType
         type: array
       - collectionFormat: csv
         description: Filter by experience level(s)
@@ -1046,11 +1051,11 @@ paths:
         type: array
       - description: Minimum salary filter
         in: query
-        name: minsalary
+        name: minSalary
         type: integer
       - description: Maximum salary filter
         in: query
-        name: maxsalary
+        name: maxSalary
         type: integer
       - description: Filter by open status (company only)
         in: query
@@ -1321,7 +1326,7 @@ paths:
       summary: Delete job applications for a job
       tags:
       - Job Applications
-  /jobs/{id}/applications/{studentId}:
+  /jobs/{id}/applications/{studentUserId}:
     get:
       description: Retrieves detailed information about a single job application for
         a specific student, including the applicant's full profile, contact information,
@@ -1334,7 +1339,7 @@ paths:
         type: integer
       - description: Student User ID
         in: path
-        name: studentId
+        name: studentUserId
         required: true
         type: string
       produces:
@@ -1391,7 +1396,7 @@ paths:
         type: integer
       - description: Student User ID
         in: path
-        name: studentId
+        name: studentUserId
         required: true
         type: string
       - description: New status

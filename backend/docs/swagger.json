@@ -1002,7 +1002,7 @@
                         },
                         "collectionFormat": "csv",
                         "description": "Filter by job type(s)",
-                        "name": "jobtype",
+                        "name": "jobType",
                         "in": "query"
                     },
                     {
@@ -1018,13 +1018,13 @@
                     {
                         "type": "integer",
                         "description": "Minimum salary filter",
-                        "name": "minsalary",
+                        "name": "minSalary",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "description": "Maximum salary filter",
-                        "name": "maxsalary",
+                        "name": "maxSalary",
                         "in": "query"
                     },
                     {
@@ -1437,7 +1437,7 @@
                 }
             }
         },
-        "/jobs/{id}/applications/{studentId}": {
+        "/jobs/{id}/applications/{studentUserId}": {
             "get": {
                 "security": [
                     {
@@ -1463,7 +1463,7 @@
                     {
                         "type": "string",
                         "description": "Student User ID",
-                        "name": "studentId",
+                        "name": "studentUserId",
                         "in": "path",
                         "required": true
                     }
@@ -1549,7 +1549,7 @@
                     {
                         "type": "string",
                         "description": "Student User ID",
-                        "name": "studentId",
+                        "name": "studentUserId",
                         "in": "path",
                         "required": true
                     },
@@ -2217,6 +2217,10 @@
             "properties": {
                 "approve": {
                     "type": "boolean"
+                },
+                "reason": {
+                    "type": "string",
+                    "maxLength": 16384
                 }
             }
         },
@@ -2287,7 +2291,7 @@
                 "description",
                 "duration",
                 "experience",
-                "jobtype",
+                "jobType",
                 "location",
                 "name",
                 "position"
@@ -2311,7 +2315,7 @@
                         "internship"
                     ]
                 },
-                "jobtype": {
+                "jobType": {
                     "type": "string",
                     "enum": [
                         "fulltime",
@@ -2325,10 +2329,10 @@
                     "type": "string",
                     "maxLength": 128
                 },
-                "maxsalary": {
+                "maxSalary": {
                     "type": "integer"
                 },
-                "minsalary": {
+                "minSalary": {
                     "type": "integer"
                 },
                 "name": {
@@ -2365,7 +2369,7 @@
                         "internship"
                     ]
                 },
-                "jobtype": {
+                "jobType": {
                     "type": "string",
                     "enum": [
                         "fulltime",
@@ -2379,10 +2383,10 @@
                     "type": "string",
                     "maxLength": 128
                 },
-                "maxsalary": {
+                "maxSalary": {
                     "type": "integer"
                 },
-                "minsalary": {
+                "minSalary": {
                     "type": "integer"
                 },
                 "name": {
@@ -2679,6 +2683,9 @@
                     "type": "string"
                 },
                 "objectName": {
+                    "type": "string"
+                },
+                "reason": {
                     "type": "string"
                 }
             }

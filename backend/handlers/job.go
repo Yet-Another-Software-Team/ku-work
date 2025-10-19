@@ -1,13 +1,16 @@
 package handlers
 
 import (
+	"bytes"
 	"fmt"
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
+	"ku-work/backend/services"
 	"math"
 	"net/http"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -15,17 +18,25 @@ import (
 )
 
 type JobHandlers struct {
-	DB           *gorm.DB
-	FileHandlers *FileHandlers
-	AIHandler    *AIHandler
+	DB                                   *gorm.DB
+	FileHandlers                         *FileHandlers
+	aiService                            *services.AIService
+	emailService                         *services.EmailService
+	jobApprovalStatusUpdateEmailTemplate *template.Template
 }
 
-func NewJobHandlers(db *gorm.DB, aiHandler *AIHandler) *JobHandlers {
-	return &JobHandlers{
-		DB:           db,
-		FileHandlers: NewFileHandlers(db),
-		AIHandler:    aiHandler,
+func NewJobHandlers(db *gorm.DB, aiService *services.AIService, emailService *services.EmailService) (*JobHandlers, error) {
+	jobApprovalStatusUpdateEmailTemplate, err := template.New("job_approval_status_update.tmpl").ParseFiles("email_templates/job_approval_status_update.tmpl")
+	if err != nil {
+		return nil, err
 	}
+	return &JobHandlers{
+		DB:                                   db,
+		FileHandlers:                         NewFileHandlers(db),
+		aiService:                            aiService,
+		emailService:                         emailService,
+		jobApprovalStatusUpdateEmailTemplate: jobApprovalStatusUpdateEmailTemplate,
+	}, nil
 }
 
 // CreateJobInput defines the request body for creating a new job.
@@ -161,7 +172,7 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 	})
 
 	// Tell AI to approve it for me
-	go h.AIHandler.AutoApproveJob(&job)
+	go h.aiService.AutoApproveJob(&job)
 }
 
 // @Summary Fetch job listings
@@ -502,6 +513,38 @@ func (h *JobHandlers) JobApprovalHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "ok",
 	})
+
+	// Send mail
+	go (func() {
+		type Context struct {
+			Company model.Company
+			User    model.User
+			Job     model.Job
+			Status  string
+			Reason  string
+		}
+		var context Context
+		context.Company.UserID = job.CompanyID
+		if err := h.DB.Select("email").Take(&context.Company).Error; err != nil {
+			return
+		}
+		context.User.ID = job.CompanyID
+		if err := h.DB.Select("username").Take(&context.User).Error; err != nil {
+			return
+		}
+		context.Job = job
+		context.Status = string(job.ApprovalStatus)
+		context.Reason = input.Reason
+		var tpl bytes.Buffer
+		if err := h.jobApprovalStatusUpdateEmailTemplate.Execute(&tpl, context); err != nil {
+			return
+		}
+		_ = h.emailService.SendTo(
+			context.Company.Email,
+			fmt.Sprintf("[KU-WORK] Your \"%s\" job has been reviewed", job.Name),
+			tpl.String(),
+		)
+	})()
 }
 
 // @Summary Get job details

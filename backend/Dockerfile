@@ -24,6 +24,7 @@ WORKDIR /app
 # Copy only the compiled binary from the "builder" stage
 COPY --from=builder /app/main .
 COPY --from=builder /app/create_admin .
+COPY --from=builder /app/email_templates ./email_templates/
 
 EXPOSE 8000
 

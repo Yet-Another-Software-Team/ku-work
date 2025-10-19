@@ -19,13 +19,21 @@ import (
 
 func TestStudent(t *testing.T) {
 	t.Run("Register", func(t *testing.T) {
-		user := model.User{
+		userCreationResult, err := CreateUser(UserCreationInfo{
 			Username: fmt.Sprintf("registerstudenttester-%d", time.Now().UnixNano()),
+			IsOAuth:  true,
+		})
+		if err != nil {
+			t.Error(err)
+			return
 		}
-		if result := db.Create(&user); result.Error != nil {
+		userCreationResult.OAuth.FirstName = "Sugma"
+		userCreationResult.OAuth.LastName = "Dix"
+		if result := db.Save(&userCreationResult.OAuth); result.Error != nil {
 			t.Error(result.Error)
 			return
 		}
+		user := userCreationResult.User
 		values := map[string]string{
 			"phone":         "0123456789",
 			"birthDate":     "2025-09-01T07:21:14.806Z",
@@ -51,7 +59,6 @@ func TestStudent(t *testing.T) {
 			}
 		}
 		var fiw io.Writer
-		var err error
 		if fiw, err = fw.CreateFormFile("photo", "photo.png"); err != nil {
 			t.Error(err)
 			return
@@ -238,6 +245,7 @@ func TestStudent(t *testing.T) {
 		student, err := CreateUser(UserCreationInfo{
 			Username:  fmt.Sprintf("approvestudenttester-%d", time.Now().UnixNano()),
 			IsAdmin:   true,
+			IsOAuth:   true,
 			IsStudent: true,
 		})
 		if err != nil {

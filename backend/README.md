@@ -71,9 +71,14 @@ Copy `sample.env` to `.env` and configure the following variables:
 ### AI Configuration
 - `APPROVAL_AI`: Choose what AI to use (dummy, ollama, ...)
 
-**Ollama configuration**
+**Ollama Configuration**
 - `APPROVAL_AI_MODEL`: Choose what AI model to use (e.g. gemma3)
 - `APPROVAL_AI_URI`: Endpoint of AI server
+
+### Email Configuration
+- `EMAIL_PROVIDER`: Choose what email provider to use (dummy, SMTP, gmail, ...)
+
+If you use other provider than dummy follow the [configuration guide](./email_config.md) here.
 
 ## Running the Application
 
