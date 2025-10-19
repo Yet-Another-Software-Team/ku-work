@@ -62,7 +62,7 @@
                     <RequestedJobPost
                         v-for="job in companyRequests"
                         :key="job.id"
-                        :request-id="job.id"
+                        :request-id="String(job.id)"
                         :data="job"
                         @job-approval-status="onCompanyRequestResolved"
                     />
@@ -139,17 +139,29 @@ const studentLimit = ref(10);
 async function selectStudent() {
     isCompany.value = false;
     try {
-        const response = await api.get<ProfileInformation[]>("/students", {
-            params: {
-                limit: studentLimit.value,
-                offset: studentOffset.value,
-                approvalStatus: "pending",
-                sortBy: selectSortOption.value,
-            },
-            withCredentials: true,
-        });
-        studentData.value = (response.data as any) ?? [];
-        totalRequests.value = Array.isArray(response.data) ? response.data.length : 0;
+        const response = await api.get<ProfileInformation[] | { profile: ProfileInformation }>(
+            "/students",
+            {
+                params: {
+                    limit: studentLimit.value,
+                    offset: studentOffset.value,
+                    approvalStatus: "pending",
+                    sortBy: selectSortOption.value,
+                },
+                withCredentials: true,
+            }
+        );
+        const data = response.data as ProfileInformation[] | { profile: ProfileInformation };
+        if (Array.isArray(data)) {
+            studentData.value = data;
+            totalRequests.value = data.length;
+        } else if (data && "profile" in data) {
+            studentData.value = [data.profile];
+            totalRequests.value = 1;
+        } else {
+            studentData.value = [];
+            totalRequests.value = 0;
+        }
     } catch (error) {
         console.error("Error fetching student data:", error);
     }
@@ -159,7 +171,7 @@ const postLimit = ref(10);
 
 async function fetchPendingCompanyPosts() {
     try {
-        const res = await api.get<{ jobs: JobPost[] }>("/jobs", {
+        const res = await api.get<JobPost[] | { jobs: JobPost[] }>("/jobs", {
             params: {
                 limit: postLimit.value,
                 offset: postOffset.value,
@@ -173,17 +185,15 @@ async function fetchPendingCompanyPosts() {
             loggedOnce.value = true;
         }
         // Some backends return { jobs: [...] }, others return array directly
-        const payload: any = res.data as any;
-        companyRequests.value = Array.isArray(payload)
-            ? (payload as JobPost[])
-            : ((payload?.jobs as JobPost[]) ?? []);
-    } catch (e: any) {
-        api.showErrorToast(e, "Failed to load company posts");
+        const payload = res.data as JobPost[] | { jobs: JobPost[] };
+        companyRequests.value = Array.isArray(payload) ? payload : (payload.jobs ?? []);
+    } catch (e: unknown) {
+        api.showErrorToast(api.handleError(e), "Failed to load company posts");
     }
 }
 
-function onCompanyRequestResolved(jobId: number) {
-    companyRequests.value = companyRequests.value.filter((j) => j.id !== jobId);
+function onCompanyRequestResolved(jobId: string) {
+    companyRequests.value = companyRequests.value.filter((j) => String(j.id) !== jobId);
     if (isCompany.value) {
         totalRequests.value = companyRequests.value.length;
     }

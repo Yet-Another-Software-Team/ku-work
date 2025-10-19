@@ -136,7 +136,7 @@
 
 <script setup lang="ts">
 import type { JobPost } from "~/data/mockData";
-const props = defineProps<{ requestId: number | string }>();
+const props = defineProps<{ requestId: string }>();
 const api = useApi();
 const toast = useToast();
 
@@ -170,11 +170,11 @@ async function loadJob() {
     isLoading.value = true;
     try {
         const id = Number(idParam);
-        const response = await api.get<{ job: JobPost }>(`/jobs/${id}`, {
+        const response = await api.get<JobPost | { job: JobPost }>(`/jobs/${id}`, {
             withCredentials: true,
         });
-        const payload: any = response.data as any;
-        job.value = (payload?.job as JobPost) ?? (payload as JobPost);
+        const payload = response.data as JobPost | { job: JobPost };
+        job.value = ("job" in payload ? payload.job : payload) as JobPost;
         console.log("Fetched job data:", job.value);
     } catch (error) {
         console.error("Error fetching job data:", error);
@@ -199,8 +199,8 @@ async function acceptRequest() {
         );
         toast.add({ title: "Job approved!", description: job.value?.name || "", color: "success" });
         navigateTo("/admin/dashboard", { replace: true });
-    } catch (e: any) {
-        api.showErrorToast(e, "Approve failed");
+    } catch (e: unknown) {
+        api.showErrorToast(api.handleError(e), "Approve failed");
     } finally {
         actionLoading.value = null;
     }
@@ -217,8 +217,8 @@ async function declineRequest() {
         );
         toast.add({ title: "Job declined!", description: job.value?.name || "", color: "error" });
         navigateTo("/admin/dashboard", { replace: true });
-    } catch (e: any) {
-        api.showErrorToast(e, "Decline failed");
+    } catch (e: unknown) {
+        api.showErrorToast(api.handleError(e), "Decline failed");
     } finally {
         actionLoading.value = null;
     }
