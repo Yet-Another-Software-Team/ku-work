@@ -151,8 +151,6 @@ definitions:
         type: array
       github:
         type: string
-      id:
-        type: integer
       jobId:
         type: integer
       linkedIn:
@@ -273,8 +271,6 @@ definitions:
         items:
           $ref: '#/definitions/model.File'
         type: array
-      id:
-        type: integer
       jobId:
         type: integer
       major:
@@ -1337,8 +1333,8 @@ paths:
         name: id
         required: true
         type: integer
-      - description: Student User ID
-        in: path
+      - description: Student Email
+        in: query
         name: studentUserId
         required: true
         type: string
@@ -1490,8 +1486,8 @@ paths:
           description: Successfully created job application
           schema:
             properties:
-              id:
-                type: integer
+              message:
+                type: string
             type: object
         "400":
           description: 'Bad Request: Invalid input'
