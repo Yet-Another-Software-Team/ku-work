@@ -66,12 +66,12 @@ func verifyToken(token, storedHash string) (bool, error) {
 	if len(parts) != 2 {
 		return false, fmt.Errorf("invalid hash format")
 	}
-	
+
 	salt, err := base64.RawStdEncoding.DecodeString(parts[0])
 	if err != nil {
 		return false, err
 	}
-	
+
 	hash, err := base64.RawStdEncoding.DecodeString(parts[1])
 	if err != nil {
 		return false, err

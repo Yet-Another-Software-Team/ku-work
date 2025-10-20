@@ -51,7 +51,6 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) error {
 	authProtected.POST("/refresh", middlewares.RateLimiterWithLimits(5, 20), jwtHandlers.RefreshTokenHandler)
 	authProtected.POST("/logout", jwtHandlers.LogoutHandler)
 
-
 	// User Routes
 	protectedRouter := router.Group("", middlewares.AuthMiddleware(jwtHandlers.JWTSecret))
 	protectedRouter.PATCH("/me", userHandlers.EditProfileHandler)
@@ -59,7 +58,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) error {
 
 	// File Routes (Only Authed)
 	protectedRouter.GET("/files/:fileID", fileHandlers.ServeFileHandler)
-	
+
 	// Company Routs
 	company := protectedRouter.Group("/company")
 	company.GET("/:id", companyHandlers.GetCompanyProfileHandler)
