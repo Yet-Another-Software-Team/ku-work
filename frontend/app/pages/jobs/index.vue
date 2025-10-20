@@ -28,6 +28,15 @@
             </section>
             <!-- Job Post -->
             <section ref="jobListElement">
+                <!-- Initial Loading -->
+                <div v-if="isInitialLoad" class="flex justify-center py-12">
+                    <div class="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                        <Icon name="svg-spinners:ring-resize" class="w-8 h-8" />
+                        <span class="text-lg">Loading jobs...</span>
+                    </div>
+                </div>
+
+                <!-- Job Posts -->
                 <div v-for="(job, index) in jobs" :key="job.id">
                     <JobPostComponent
                         :is-selected="selectedIndex === index"
@@ -64,14 +73,6 @@
                     <p class="text-gray-500 dark:text-gray-500 text-sm mt-2">
                         Try adjusting your search filters
                     </p>
-                </div>
-
-                <!-- Initial Loading -->
-                <div v-if="isInitialLoad" class="flex justify-center py-12">
-                    <div class="flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                        <Icon name="svg-spinners:ring-resize" class="w-8 h-8" />
-                        <span class="text-lg">Loading jobs...</span>
-                    </div>
                 </div>
             </section>
         </section>
