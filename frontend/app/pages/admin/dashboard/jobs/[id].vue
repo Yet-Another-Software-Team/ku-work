@@ -1,6 +1,6 @@
 <template>
     <div class="py-6">
-        <RequestedJobPost :request-id="jobId" />
+        <RequestedJobPost :request-id="String(jobId)" />
     </div>
 </template>
 
