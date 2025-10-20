@@ -180,8 +180,8 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	var allTokens []model.RefreshToken
 	if err := h.DB.Find(&allTokens).Error; err != nil {
 		log.Printf("SECURITY: Database error during token lookup from IP: %s", clientIP)
-		ctx.SetSameSite(http.SameSiteLaxMode)
-		ctx.SetCookie("refresh_token", "", -1, "/", "", true, true)
+		ctx.SetSameSite(helper.GetCookieSameSite())
+		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
 		return
 	}
@@ -201,8 +201,8 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 
 	if refreshTokenDB == nil {
 		log.Printf("SECURITY: Invalid refresh token from IP: %s", clientIP)
-		ctx.SetSameSite(http.SameSiteLaxMode)
-		ctx.SetCookie("refresh_token", "", -1, "/", "", true, true)
+		ctx.SetSameSite(helper.GetCookieSameSite())
+		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
 		return
 	}
@@ -218,8 +218,8 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 			Where("user_id = ?", refreshTokenDB.UserID).
 			Update("revoked_at", now)
 
-		ctx.SetSameSite(http.SameSiteLaxMode)
-		ctx.SetCookie("refresh_token", "", -1, "/", "", true, true)
+		ctx.SetSameSite(helper.GetCookieSameSite())
+		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
 		return
 	}
@@ -229,8 +229,8 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 		log.Printf("SECURITY: Expired refresh token from IP: %s, User: %s", clientIP, refreshTokenDB.UserID)
 		now := time.Now()
 		h.DB.Model(refreshTokenDB).Update("revoked_at", now)
-		ctx.SetSameSite(http.SameSiteLaxMode)
-		ctx.SetCookie("refresh_token", "", -1, "/", "", true, true)
+		ctx.SetSameSite(helper.GetCookieSameSite())
+		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
 		return
 	}
@@ -247,8 +247,8 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	role := helper.GetRole(refreshTokenDB.UserID, h.DB)
 	username := helper.GetUsername(refreshTokenDB.UserID, role, h.DB)
 
-	ctx.SetSameSite(http.SameSiteLaxMode)
-	ctx.SetCookie("refresh_token", newRefreshToken, int(time.Hour*24*30/time.Second), "/", "", true, true)
+	ctx.SetSameSite(helper.GetCookieSameSite())
+	ctx.SetCookie("refresh_token", newRefreshToken, int(time.Hour*24*30/time.Second), "/", "", helper.GetCookieSecure(), true)
 
 	log.Printf("INFO: Token refreshed successfully for user: %s, IP: %s", refreshTokenDB.UserID, clientIP)
 
@@ -272,8 +272,8 @@ func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
 
 	refreshToken, err := ctx.Cookie("refresh_token")
 	if err != nil {
-		ctx.SetSameSite(http.SameSiteLaxMode)
-		ctx.SetCookie("refresh_token", "", -1, "/", "", true, true)
+		ctx.SetSameSite(helper.GetCookieSameSite())
+		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
 		ctx.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 		return
 	}
@@ -292,8 +292,8 @@ func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
 		}
 	}
 
-	ctx.SetSameSite(http.SameSiteLaxMode)
-	ctx.SetCookie("refresh_token", "", -1, "/", "", true, true)
+	ctx.SetSameSite(helper.GetCookieSameSite())
+	ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
 	ctx.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }
 

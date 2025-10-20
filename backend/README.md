@@ -61,6 +61,12 @@ Copy `sample.env` to `.env` and configure the following variables:
 ### JWT Configuration
 - `JWT_SECRET`: Secret key for JWT token generation
 
+### Cookie Configuration
+- `COOKIE_SECURE`: Enable secure flag for cookies (true/false, default: true)
+  - Set to `true` for HTTPS environments (production)
+  - Set to `false` for HTTP environments (local development)
+  - Note: Cookies use SameSite=None for cross-origin support
+
 ### GoogleOauth Configuration
 - `GOOGLE_CLIENT_ID`: Client ID for Google OAuth
 - `GOOGLE_CLIENT_SECRET`: Client secret for Google OAuth

@@ -47,6 +47,9 @@ A full-stack web application with Go backend and Nuxt.js frontend, featuring use
    # JWT Configuration
    JWT_SECRET=your_jwt_secret_here
    
+   # Cookie Configuration
+   COOKIE_SECURE=true
+   
    # Google OAuth Configuration
    GOOGLE_CLIENT_ID=your_google_client_id_here
    GOOGLE_CLIENT_SECRET=your_google_client_secret_here
