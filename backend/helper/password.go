@@ -10,10 +10,11 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
+// User OWASP reccommended parameters
 const (
 	argonTime    = 3         // Number of iterations
 	argonMemory  = 64 * 1024 // 64 MB
-	argonThreads = 2         // Parallelism
+	argonThreads = 1         // Parallelism
 	argonKeyLen  = 32        // Output key length in bytes
 	argonSaltLen = 16        // Salt length in bytes
 )
