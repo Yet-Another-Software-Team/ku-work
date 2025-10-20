@@ -43,15 +43,15 @@ func GetUsername(userID string, role Role, db *gorm.DB) string {
 	if userID == "" {
 		return "unknown"
 	}
-	if role == Company {
+	if role == Company || role == Admin {
 		var user model.User
-		if db.Find(&user, userID).Error == nil {
+		if db.Where("id = ?", userID).First(&user).Error == nil {
 			return user.Username
 		}
 	}
 	if role == Viewer || role == Student {
 		var profile model.GoogleOAuthDetails
-		if db.Find(&profile, userID).Error == nil {
+		if db.Where("user_id = ?", userID).First(&profile).Error == nil {
 			return profile.FirstName + " " + profile.LastName
 		}
 	}
@@ -68,11 +68,10 @@ func CleanupExpiredTokens(db *gorm.DB) error {
 	// Delete tokens that are:
 	// 1. Expired AND not revoked (normal expiration), OR
 	// 2. Revoked more than 7 days ago (grace period for reuse detection)
-	result := db.Unscoped().Where(
-		"(expires_at < ? AND revoked_at IS NULL) OR (revoked_at IS NOT NULL AND revoked_at < ?)",
-		now,
-		gracePeriod,
-	).Delete(&model.RefreshToken{})
+	result := db.Unscoped().
+		Where("expires_at < ? AND revoked_at IS NULL", now).
+		Or("revoked_at IS NOT NULL AND revoked_at < ?", gracePeriod).
+		Delete(&model.RefreshToken{})
 
 	if result.Error != nil {
 		return result.Error
