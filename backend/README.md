@@ -6,6 +6,7 @@ A RESTful API built with Go, Gin framework, PostgreSQL, and GORM for user manage
 
 - Go 1.23.3 or higher
 - PostgreSQL 13+ (or Docker for containerized setup)
+- Redis 7+ (or Docker for containerized setup)
 
 ## Installation
 
@@ -47,6 +48,12 @@ Copy `sample.env` to `.env` and configure the following variables:
 - `DB_USERNAME`: Database username
 - `DB_PASSWORD`: Database password
 - `DB_NAME`: Database name
+
+### Redis Configuration
+- `REDIS_HOST`: Redis host (default: localhost)
+- `REDIS_PORT`: Redis port (default: 6379)
+- `REDIS_PASSWORD`: Redis password (optional, leave empty if not required)
+- `REDIS_DB`: Redis database number (default: 0)
 
 ### Server Configuration
 - `LISTEN_ADDRESS`: Server listen address (default: :8080)

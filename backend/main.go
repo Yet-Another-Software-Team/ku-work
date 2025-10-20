@@ -47,6 +47,15 @@ func main() {
 		return
 	}
 
+	// Initialize Redis for rate limiting
+	redisClient, redis_err := database.LoadRedis()
+	if redis_err != nil {
+		log.Printf("Warning: Redis initialization failed: %v. Rate limiting will fail open.", redis_err)
+		redisClient = nil
+	} else {
+		log.Println("Redis connected successfully")
+	}
+
 	// Create context for graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -65,7 +74,7 @@ func main() {
 	router.Use(cors.New(corsConfig))
 
 	// Setup routes
-	if err := handlers.SetupRoutes(router, db); err != nil {
+	if err := handlers.SetupRoutes(router, db, redisClient); err != nil {
 		log.Fatal(err)
 	}
 
@@ -118,6 +127,13 @@ func main() {
 	// Stop scheduler
 	cancel()
 	scheduler.Wait()
+
+	// Close Redis connection
+	if redisClient != nil {
+		if err := redisClient.Close(); err != nil {
+			log.Printf("Error closing Redis connection: %v", err)
+		}
+	}
 
 	log.Println("Server stopped gracefully")
 }
