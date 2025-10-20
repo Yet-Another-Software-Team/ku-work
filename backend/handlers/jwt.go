@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
 	"log"
@@ -32,6 +34,12 @@ func NewJWTHandlers(db *gorm.DB) *JWTHandlers {
 	}
 }
 
+// hashToken hashes a refresh token using SHA-256 before storage
+func hashToken(token string) string {
+	hash := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(hash[:])
+}
+
 // Generate JWT and Refresh Tokens
 func (h *JWTHandlers) GenerateTokens(userID string) (string, string, error) {
 	// JWT Token
@@ -56,10 +64,16 @@ func (h *JWTHandlers) GenerateTokens(userID string) (string, string, error) {
 	}
 	refreshTokenString := base64.URLEncoding.EncodeToString(refreshTokenBytes)
 
-	// Create or update the refresh token in the database.
+	// Hash the refresh token before storing
+	hashedToken := hashToken(refreshTokenString)
+
+	// Delete old refresh tokens for this user (token rotation - single token per user)
+	h.DB.Where("user_id = ?", userID).Unscoped().Delete(&model.RefreshToken{})
+
+	// Create the new refresh token in the database with hashed value
 	refreshTokenDB := model.RefreshToken{
 		UserID:    userID,
-		Token:     refreshTokenString,
+		Token:     hashedToken,
 		ExpiresAt: time.Now().Add(time.Hour * 24 * 30), // Refresh token expires in 30 days.
 	}
 
@@ -84,8 +98,11 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 		return
 	}
 
+	// Hash token from request
+	hashedToken := hashToken(refreshToken)
+
 	var refreshTokenDB model.RefreshToken
-	if err := h.DB.Where("token = ?", refreshToken).First(&refreshTokenDB).Error; err != nil {
+	if err := h.DB.Where("token = ?", hashedToken).First(&refreshTokenDB).Error; err != nil {
 		ctx.SetCookie("refresh_token", "", -1, "/", "", true, true)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid refresh token"})
 		return
@@ -135,8 +152,11 @@ func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
 		return
 	}
 
+	// Hash the incoming token to compare with stored hash
+	hashedToken := hashToken(refreshToken)
+
 	var refreshTokenDB model.RefreshToken
-	if err := h.DB.Where("token = ?", refreshToken).First(&refreshTokenDB).Error; err == nil {
+	if err := h.DB.Where("token = ?", hashedToken).First(&refreshTokenDB).Error; err == nil {
 		h.DB.Unscoped().Delete(&refreshTokenDB)
 	}
 
