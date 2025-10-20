@@ -69,8 +69,7 @@ func CleanupExpiredTokens(db *gorm.DB) error {
 	// 1. Expired AND not revoked (normal expiration), OR
 	// 2. Revoked more than 7 days ago (grace period for reuse detection)
 	result := db.Unscoped().
-		Where("expires_at < ? AND revoked_at IS NULL", now).
-		Or("revoked_at IS NOT NULL AND revoked_at < ?", gracePeriod).
+		Where("(expires_at < ? AND revoked_at IS NULL) OR (revoked_at IS NOT NULL AND revoked_at < ?)", now, gracePeriod).
 		Delete(&model.RefreshToken{})
 
 	if result.Error != nil {
