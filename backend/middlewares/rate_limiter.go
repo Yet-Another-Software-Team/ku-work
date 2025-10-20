@@ -16,8 +16,7 @@ type rateLimitEntry struct {
 	hourResetAt   time.Time
 	mu            sync.Mutex
 }
-
-// RateLimiter stores rate limit data for IP addresses
+d// RateLimiter stores rate limit data for IP addresses
 type RateLimiter struct {
 	entries map[string]*rateLimitEntry
 	mu      sync.RWMutex

@@ -45,7 +45,7 @@ A full-stack web application with Go backend and Nuxt.js frontend, featuring use
    CORS_ALLOW_CREDENTIALS=false
    
    # JWT Configuration
-   JWT_SECRET=please-change-this-is-insecure!!
+   JWT_SECRET=CHANGE_ME_GENERATE_RANDOM_SECRET_AT_LEAST_32_BYTES_LONG
    
    # Session Configuration
    MAX_SESSIONS_PER_USER=10

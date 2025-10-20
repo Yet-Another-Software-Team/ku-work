@@ -62,31 +62,17 @@ func hashToken(token string) (string, error) {
 // verifyToken verifies a token against a stored Argon2id hash
 func verifyToken(token, storedHash string) (bool, error) {
 	// Parse the stored hash to extract salt
-	parts := make([]byte, len(storedHash))
-	copy(parts, storedHash)
-
-	var salt, hash []byte
-	var err error
-
-	// Find the separator
-	sepIdx := -1
-	for i, b := range parts {
-		if b == '$' {
-			sepIdx = i
-			break
-		}
-	}
-
-	if sepIdx == -1 {
+	parts := strings.Split(storedHash, "$")
+	if len(parts) != 2 {
 		return false, fmt.Errorf("invalid hash format")
 	}
-
-	salt, err = base64.RawStdEncoding.DecodeString(string(parts[:sepIdx]))
+	
+	salt, err := base64.RawStdEncoding.DecodeString(parts[0])
 	if err != nil {
 		return false, err
 	}
-
-	hash, err = base64.RawStdEncoding.DecodeString(string(parts[sepIdx+1:]))
+	
+	hash, err := base64.RawStdEncoding.DecodeString(parts[1])
 	if err != nil {
 		return false, err
 	}
