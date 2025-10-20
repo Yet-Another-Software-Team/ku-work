@@ -398,9 +398,10 @@ func TestRateLimiterConcurrency(t *testing.T) {
 
 	for i := 0; i < numConcurrent; i++ {
 		code := <-results
-		if code == http.StatusOK {
+		switch code {
+		case http.StatusOK:
 			successCount++
-		} else if code == http.StatusTooManyRequests {
+		case http.StatusTooManyRequests:
 			rateLimitedCount++
 		}
 	}

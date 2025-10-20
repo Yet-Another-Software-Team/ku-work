@@ -73,7 +73,8 @@ func TestJWTBlacklistOnLogout(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, w.Code, "Should access protected route")
 		var response map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &response)
+		err = json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err, "Should parse JSON response")
 		assert.Equal(t, testUserID, response["userID"], "Should return correct user ID")
 	})
 
@@ -86,12 +87,13 @@ func TestJWTBlacklistOnLogout(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, w.Code, "Logout should succeed")
 		var response map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &response)
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err, "Should parse JSON response")
 		assert.Equal(t, "Logged out successfully", response["message"])
 
 		// Verify JWT is in blacklist
 		var revokedJWT model.RevokedJWT
-		err := db.Where("user_id = ?", testUserID).First(&revokedJWT).Error
+		err = db.Where("user_id = ?", testUserID).First(&revokedJWT).Error
 		assert.NoError(t, err, "JWT should be in blacklist")
 		assert.NotEmpty(t, revokedJWT.JTI, "JTI should be set")
 		assert.Equal(t, testUserID, revokedJWT.UserID, "User ID should match")
@@ -106,7 +108,8 @@ func TestJWTBlacklistOnLogout(t *testing.T) {
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code, "Should reject revoked token")
 		var response map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &response)
+		err = json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err, "Should parse JSON response")
 		assert.Equal(t, "Token has been revoked", response["error"])
 	})
 }
