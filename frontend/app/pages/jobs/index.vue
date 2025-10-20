@@ -93,6 +93,14 @@
                     :is-selected="true"
                     :data="jobs[selectedIndex]!"
                 />
+                <JobPostDrawer
+                    v-if="jobs.length > 0"
+                    class="min-[770px]:hidden"
+                    :is-viewer="userRole === 'viewer'"
+                    :is-selected="true"
+                    :data="jobs[selectedIndex]!"
+                    @close="setSelectedIndex(null)"
+                />
             </section>
         </section>
     </div>
