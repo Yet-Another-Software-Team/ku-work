@@ -1,6 +1,6 @@
 <template>
     <div
-        class="relative flex flex-wrap justify-between w-full min-h-[8em] border-b border-gray-400"
+        class="relative flex justify-between items-center w-full min-h-[8em] border-b border-gray-400"
         :class="
             !isSelected
                 ? 'bg-transparent hover:bg-gray-50 dark:hover:bg-[#1f2937] cursor-pointer'
@@ -15,7 +15,7 @@
         ></div>
 
         <!-- Left side -->
-        <div class="flex flex-row items-center gap-4 pl-[1em]">
+        <div class="flex flex-row items-center gap-4 pl-[1em] flex-1 min-w-0">
             <!-- Icon -->
             <div class="flex items-center justify-center w-20 h-20 rounded-md">
                 <img
@@ -33,26 +33,43 @@
             </div>
 
             <!-- Job info -->
-            <div class="flex flex-col py-5">
-                <h2 class="font-semibold text-gray-900 dark:text-[#fdfdfd]">
-                    {{ data.name }} - {{ data.position }}
-                </h2>
-                <p class="capitalize text-sm text-gray-500 dark:text-gray-200">
-                    {{ data.companyName }} • {{ data.location }}
-                </p>
-                <div class="flex space-x-2 mt-2">
-                    <span class="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">
-                        {{ data.jobType }}
-                    </span>
-                    <span class="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">
-                        {{ data.experience }}
-                    </span>
+            <!-- Job Details -->
+            <div class="flex flex-col py-5 flex-1 min-w-0">
+                <UTooltip :text="data.position">
+                    <h2 class="font-semibold text-gray-900 dark:text-[#fdfdfd] truncate">
+                        {{ data.position }}
+                    </h2>
+                </UTooltip>
+                <UTooltip :text="`${data.companyName} • ${data.location}`">
+                    <p class="capitalize text-sm text-gray-500 dark:text-gray-200 truncate">
+                        {{ data.companyName }} • {{ data.location }}
+                    </p>
+                </UTooltip>
+                <div class="flex flex-wrap items-center gap-2 mt-2">
+                    <UBadge
+                        v-if="data.jobType"
+                        color="primary"
+                        variant="subtle"
+                        size="sm"
+                        class="capitalize"
+                    >
+                        {{ formatJobType(data.jobType) }}
+                    </UBadge>
+                    <UBadge
+                        v-if="data.experience"
+                        color="neutral"
+                        variant="subtle"
+                        size="sm"
+                        class="capitalize"
+                    >
+                        {{ formatExperience(data.experience) }}
+                    </UBadge>
                 </div>
             </div>
         </div>
 
         <!-- Right side -->
-        <div class="text-xs text-gray-400 whitespace-nowrap p-5 pb-1">
+        <div class="text-xs text-gray-400 whitespace-nowrap p-5 pb-1 flex-shrink-0">
             {{ timeAgo(data.createdAt) }}
         </div>
     </div>
@@ -88,5 +105,27 @@ function timeAgo(createdAt: string): string {
     if (diffHour > 0) return `${diffHour} hour${diffHour > 1 ? "s" : ""} ago`;
     if (diffMin > 0) return `${diffMin} minute${diffMin > 1 ? "s" : ""} ago`;
     return "just now";
+}
+
+function formatJobType(type: string): string {
+    const typeMap: Record<string, string> = {
+        fulltime: "Full Time",
+        parttime: "Part Time",
+        contract: "Contract",
+        casual: "Casual",
+        internship: "Internship",
+    };
+    return typeMap[type.toLowerCase()] || type;
+}
+
+function formatExperience(exp: string): string {
+    const expMap: Record<string, string> = {
+        newgrad: "New Grad",
+        junior: "Junior",
+        senior: "Senior",
+        manager: "Manager",
+        internship: "Internship",
+    };
+    return expMap[exp.toLowerCase()] || exp;
 }
 </script>
