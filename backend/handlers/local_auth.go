@@ -12,7 +12,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -82,7 +81,7 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 	}
 
 	// Hash the password before saving it.
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	hashedPassword, err := helper.HashPassword(req.Password)
 
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
@@ -97,7 +96,7 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 	newUser := model.User{
 		Username:     req.Username,
 		UserType:     "company",
-		PasswordHash: string(hashedPassword),
+		PasswordHash: hashedPassword,
 	}
 
 	if err := tx.Create(&newUser).Error; err != nil {
@@ -157,6 +156,7 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 	}
 
 	maxAge := int(time.Hour * 24 * 30 / time.Second)
+	ctx.SetSameSite(http.SameSiteLaxMode)
 	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", true, true)
 
 	ctx.JSON(http.StatusOK, gin.H{
@@ -198,7 +198,8 @@ func (h *LocalAuthHandlers) CompanyLoginHandler(ctx *gin.Context) {
 	}
 
 	// Compare the provided password with the stored hashed password.
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+	match, err := helper.VerifyPassword(req.Password, user.PasswordHash)
+	if err != nil || !match {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
@@ -217,6 +218,7 @@ func (h *LocalAuthHandlers) CompanyLoginHandler(ctx *gin.Context) {
 	}
 
 	maxAge := int(time.Hour * 24 * 30 / time.Second)
+	ctx.SetSameSite(http.SameSiteLaxMode)
 	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", true, true)
 
 	ctx.JSON(http.StatusOK, gin.H{
@@ -252,7 +254,8 @@ func (h *LocalAuthHandlers) AdminLoginHandler(ctx *gin.Context) {
 	}
 
 	// Compare the provided password with the stored hashed password.
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+	match, err := helper.VerifyPassword(req.Password, user.PasswordHash)
+	if err != nil || !match {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
@@ -271,6 +274,7 @@ func (h *LocalAuthHandlers) AdminLoginHandler(ctx *gin.Context) {
 	}
 
 	maxAge := int(time.Hour * 24 * 30 / time.Second)
+	ctx.SetSameSite(http.SameSiteLaxMode)
 	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", true, true)
 
 	ctx.JSON(http.StatusOK, gin.H{
