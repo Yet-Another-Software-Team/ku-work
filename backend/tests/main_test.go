@@ -88,7 +88,7 @@ func TestMain(m *testing.M) {
 		_ = testcontainers.TerminateContainer(postgresContainer)
 		panic(err)
 	}
-	_ = os.Setenv("JWT_SECRET", "1234")
+	_ = os.Setenv("JWT_SECRET", "please-change-this-is-insecure!!")
 	_ = os.Setenv("GOOGLE_CLIENT_SECRET", "GOCSPX-idklmao")
 	_ = os.Setenv("GOOGLE_CLIENT_ID", "012345678901-1md5idklmao.apps.googleusercontent.com")
 	_ = os.Setenv("APPROVAL_AI", "dummy")
