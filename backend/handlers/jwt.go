@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
 	"ku-work/backend/helper"
@@ -91,17 +92,8 @@ func verifyToken(token, storedHash string) (bool, error) {
 	// Hash the provided token with the same salt
 	computedHash := argon2.IDKey([]byte(token), salt, 3, 64*1024, 2, 32)
 
-	// Constant-time comparison
-	if len(hash) != len(computedHash) {
-		return false, nil
-	}
-
-	match := true
-	for i := range hash {
-		if hash[i] != computedHash[i] {
-			match = false
-		}
-	}
+	// Constant-time comparison using crypto/subtle
+	match := subtle.ConstantTimeCompare(hash, computedHash) == 1
 
 	return match, nil
 }

@@ -2,6 +2,7 @@ package helper
 
 import (
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
 	"strings"
@@ -82,12 +83,8 @@ func VerifyPassword(password, encodedHash string) (bool, error) {
 		return false, nil
 	}
 
-	match := true
-	for i := range hash {
-		if hash[i] != computedHash[i] {
-			match = false
-		}
-	}
+	match := subtle.ConstantTimeCompare(hash, computedHash) == 1
+
 
 	return match, nil
 }
