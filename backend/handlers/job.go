@@ -300,6 +300,13 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 		query = query.Where(&model.Job{ApprovalStatus: model.JobApprovalAccepted})
 	}
 
+	// Get total count before applying pagination
+	var totalCount int64
+	if err := query.Count(&totalCount).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	// Offset and Limit
 	query = query.Offset(int(input.Offset)).Limit(int(input.Limit))
 
@@ -317,7 +324,8 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 			return
 		}
 		ctx.JSON(http.StatusOK, gin.H{
-			"jobs": jobsWithStats,
+			"jobs":  jobsWithStats,
+			"total": totalCount,
 		})
 		return
 	}
@@ -330,7 +338,8 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{
-		"jobs": jobs,
+		"jobs":  jobs,
+		"total": totalCount,
 	})
 }
 

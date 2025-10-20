@@ -27,12 +27,52 @@
                 </div>
             </section>
             <!-- Job Post -->
-            <section v-for="(job, index) in jobs" :key="index">
-                <JobPostComponent
-                    :is-selected="selectedIndex === index"
-                    :data="job"
-                    @click="selectedIndex = index"
-                />
+            <section ref="jobListElement">
+                <div v-for="(job, index) in jobs" :key="job.id">
+                    <JobPostComponent
+                        :is-selected="selectedIndex === index"
+                        :data="job"
+                        @click="selectedIndex = index"
+                    />
+                </div>
+
+                <!-- Loading Indicator -->
+                <div v-if="isLoadingMore" class="flex justify-center py-8">
+                    <div class="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                        <Icon name="svg-spinners:ring-resize" class="w-6 h-6" />
+                        <span>Loading more jobs...</span>
+                    </div>
+                </div>
+
+                <!-- End of Results -->
+                <div v-else-if="endOfFile && jobs.length > 0" class="flex justify-center py-8">
+                    <div class="text-gray-500 dark:text-gray-400">
+                        <Icon name="ic:baseline-check-circle" class="w-6 h-6 inline-block mr-2" />
+                        You've reached the end of the job listings
+                    </div>
+                </div>
+
+                <!-- No Results -->
+                <div
+                    v-else-if="!isLoadingMore && jobs.length === 0 && !isInitialLoad"
+                    class="flex flex-col items-center justify-center py-12"
+                >
+                    <Icon name="ic:baseline-work-off" class="w-16 h-16 text-gray-400 mb-4" />
+                    <p class="text-gray-600 dark:text-gray-400 text-lg font-medium">
+                        No jobs found
+                    </p>
+                    <p class="text-gray-500 dark:text-gray-500 text-sm mt-2">
+                        Try adjusting your search filters
+                    </p>
+                </div>
+
+                <!-- Initial Loading -->
+                <div v-if="isInitialLoad" class="flex justify-center py-12">
+                    <div class="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                        <Icon name="svg-spinners:ring-resize" class="w-8 h-8" />
+                        <span class="text-lg">Loading jobs...</span>
+                    </div>
+                </div>
             </section>
         </section>
         <!-- Expanded Job Post -->
@@ -52,7 +92,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import type { JobPost } from "~/data/datatypes";
+import type { JobPost } from "~/data/mockData";
 import type { CheckboxGroupValue } from "@nuxt/ui";
 import { useInfiniteScroll, watchDebounced } from "@vueuse/core";
 
@@ -64,6 +104,8 @@ definePageMeta({
 const jobs = ref<JobPost[]>([]);
 const selectedIndex = ref<number | null>(null);
 const userRole = ref<string>("viewer");
+const isLoadingMore = ref(false);
+const isInitialLoad = ref(true);
 
 // Search and Location
 const search = ref("");
@@ -77,21 +119,24 @@ const jobListElement = useTemplateRef<HTMLElement>("jobListElement");
 useInfiniteScroll(
     jobListElement,
     () => {
-        fetchJobs(currentJobOffset).then((_) => {});
+        if (!isLoadingMore.value && !endOfFile) {
+            fetchJobs(currentJobOffset).then((_) => {});
+        }
     },
     {
-        distance: 10,
-        canLoadMore: (_) => !endOfFile,
+        distance: 200,
+        canLoadMore: (_) => !endOfFile && !isLoadingMore.value,
     }
 );
 
 watchDebounced(
     [search, location, jobType, expType, salaryRange],
-    () =>
-        fetchJobs().then((_) => {
-            endOfFile = false;
-            currentJobOffset = 0;
-        }),
+    () => {
+        endOfFile = false;
+        currentJobOffset = 0;
+        isInitialLoad.value = true;
+        fetchJobs().then((_) => {});
+    },
     {
         debounce: 300,
         maxWait: 2000,
@@ -102,11 +147,20 @@ watchDebounced(
 const api = useApi();
 let currentJobOffset = 0;
 let endOfFile = false;
-const jobsLimitPerFetch = 10;
+const jobsLimitPerFetch = 30;
 
 const fetchJobs = async (offset?: number) => {
     // Only invoke fetch jobs on client-side
     if (!import.meta.client) return;
+
+    // Prevent multiple simultaneous requests
+    if (isLoadingMore.value) return;
+
+    // Set loading state
+    if (offset !== undefined && offset > 0) {
+        isLoadingMore.value = true;
+    }
+
     const jobForm = new URLSearchParams();
     jobForm.append("limit", jobsLimitPerFetch as unknown as string);
     jobForm.append("offset", (offset ?? 0) as unknown as string);
@@ -119,19 +173,49 @@ const fetchJobs = async (offset?: number) => {
         jobForm.append("minSalary", salaryRange.value[0] as unknown as string);
         jobForm.append("maxSalary", salaryRange.value[1] as unknown as string);
     }
+
     try {
         const response = await api.get("/jobs", {
             params: jobForm,
         });
-        currentJobOffset += jobsLimitPerFetch;
-        if (response.data.jobs.length < jobsLimitPerFetch) endOfFile = true;
-        if (offset !== undefined) {
-            jobs.value.push(...response.data.jobs);
+
+        const fetchedJobs = response.data.jobs || [];
+        const totalCount = response.data.total || 0;
+
+        console.log("Fetched jobs response:", {
+            fetchedCount: fetchedJobs.length,
+            totalCount: totalCount,
+            currentOffset: offset ?? 0,
+            isAppending: offset !== undefined && offset > 0,
+        });
+
+        if (offset !== undefined && offset > 0) {
+            // Append new jobs for infinite scroll
+            jobs.value.push(...fetchedJobs);
         } else {
-            jobs.value = response.data.jobs;
+            // Replace jobs for initial load or filter change
+            jobs.value = fetchedJobs;
+            currentJobOffset = jobsLimitPerFetch; // Reset offset for fresh start
+        }
+
+        // Update offset for next fetch (only when appending)
+        if (offset !== undefined && offset > 0) {
+            currentJobOffset = offset + jobsLimitPerFetch;
+        }
+
+        // Check if we've reached the end
+        if (fetchedJobs.length < jobsLimitPerFetch || jobs.value.length >= totalCount) {
+            endOfFile = true;
+            console.log("Reached end of job listings");
+        } else {
+            endOfFile = false;
         }
     } catch (error) {
         console.error("Error fetching jobs:", error);
+        endOfFile = true; // Stop trying to load more on error
+    } finally {
+        isLoadingMore.value = false;
+        isInitialLoad.value = false;
     }
 };
 
