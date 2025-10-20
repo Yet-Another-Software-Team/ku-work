@@ -47,13 +47,13 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client) err
 	auth.POST("/google/login", middlewares.RateLimiterWithLimits(redisClient, 5, 20), googleAuthHandlers.GoogleOauthHandler)
 
 	// Protected Authentication Routes
-	authProtected := auth.Group("", middlewares.AuthMiddleware(jwtHandlers.JWTSecret))
+	authProtected := auth.Group("", middlewares.AuthMiddlewareWithDB(jwtHandlers.JWTSecret, db))
 	authProtected.POST("/student/register", studentHandlers.RegisterHandler)
 	authProtected.POST("/refresh", middlewares.RateLimiterWithLimits(redisClient, 5, 20), jwtHandlers.RefreshTokenHandler)
 	authProtected.POST("/logout", jwtHandlers.LogoutHandler)
 
 	// User Routes
-	protectedRouter := router.Group("", middlewares.AuthMiddleware(jwtHandlers.JWTSecret))
+	protectedRouter := router.Group("", middlewares.AuthMiddlewareWithDB(jwtHandlers.JWTSecret, db))
 	protectedRouter.PATCH("/me", userHandlers.EditProfileHandler)
 	protectedRouter.GET("/me", userHandlers.GetProfileHandler)
 

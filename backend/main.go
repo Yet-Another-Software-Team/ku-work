@@ -65,6 +65,9 @@ func main() {
 	scheduler.AddTask("token-cleanup", time.Hour, func() error {
 		return helper.CleanupExpiredTokens(db)
 	})
+	scheduler.AddTask("jwt-blacklist-cleanup", time.Hour, func() error {
+		return helper.CleanupExpiredRevokedJWTs(db)
+	})
 	scheduler.Start()
 
 	router := gin.Default()

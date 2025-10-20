@@ -80,3 +80,25 @@ func CleanupExpiredTokens(db *gorm.DB) error {
 	}
 	return nil
 }
+
+// CleanupExpiredRevokedJWTs removes expired JWT tokens from the blacklist.
+// Once a JWT's expiration time has passed, it can no longer be used anyway,
+// so we can safely remove it from the blacklist to keep the table size manageable.
+// OWASP compliance: This maintains the revoked tokens list while preventing unbounded growth.
+func CleanupExpiredRevokedJWTs(db *gorm.DB) error {
+	now := time.Now()
+
+	// Delete revoked JWTs that have already expired
+	// These tokens can't be used anyway due to expiration, so no need to keep them in blacklist
+	result := db.Unscoped().
+		Where("expires_at < ?", now).
+		Delete(&model.RevokedJWT{})
+
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected > 0 {
+		log.Printf("Cleaned up %d expired revoked JWTs from blacklist", result.RowsAffected)
+	}
+	return nil
+}

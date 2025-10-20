@@ -16,6 +16,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/argon2"
 	"gorm.io/gorm"
 )
@@ -88,10 +89,14 @@ func verifyToken(token, storedHash string) (bool, error) {
 
 // Generate JWT and Refresh Tokens
 func (h *JWTHandlers) GenerateTokens(userID string) (string, string, error) {
-	// JWT Token
+	// Generate unique JTI (JWT ID) for blacklist tracking
+	jti := uuid.New().String()
+
+	// JWT Token with JTI for blacklist support (OWASP requirement)
 	jwtClaims := &model.UserClaims{
 		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        jti,                                                  // Unique identifier for this JWT
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)), // JWT expires in 15 minutes.
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -287,7 +292,7 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 }
 
 // @Summary Logout user
-// @Description Invalidates the user's session by revoking the refresh token and clearing the cookie. This is a best-effort operation that always succeeds.
+// @Description Invalidates the user's session by revoking both the JWT token (blacklist) and refresh token. Complies with OWASP session termination requirements.
 // @Tags Authentication
 // @Security BearerAuth
 // @Produce json
@@ -295,7 +300,43 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 // @Router /auth/logout [post]
 func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
 	clientIP := ctx.ClientIP()
+	userID, _ := ctx.Get("userID")
 
+	// OWASP Requirement: Blacklist the JWT token to prevent further use
+	// Extract JWT from Authorization header
+	authHeader := ctx.GetHeader("Authorization")
+	if authHeader != "" {
+		parts := strings.Split(authHeader, " ")
+		if len(parts) == 2 && parts[0] == "Bearer" {
+			tokenString := parts[1]
+
+			// Parse the token to extract JTI and expiration
+			token, err := jwt.ParseWithClaims(tokenString, &model.UserClaims{}, func(token *jwt.Token) (interface{}, error) {
+				return h.JWTSecret, nil
+			})
+
+			if err == nil && token.Valid {
+				if claims, ok := token.Claims.(*model.UserClaims); ok {
+					// Add JWT to blacklist (revoked tokens table)
+					revokedJWT := model.RevokedJWT{
+						JTI:       claims.ID, // JWT ID from claims
+						UserID:    claims.UserID,
+						ExpiresAt: claims.ExpiresAt.Time,
+						RevokedAt: time.Now(),
+					}
+
+					// Insert into blacklist - ignore duplicate errors (idempotent operation)
+					if err := h.DB.Create(&revokedJWT).Error; err != nil {
+						log.Printf("WARNING: Failed to blacklist JWT for user %s: %v", claims.UserID, err)
+					} else {
+						log.Printf("INFO: JWT blacklisted for user: %s, JTI: %s, IP: %s", claims.UserID, claims.ID, clientIP)
+					}
+				}
+			}
+		}
+	}
+
+	// Revoke the refresh token
 	refreshToken, err := ctx.Cookie("refresh_token")
 	if err == nil && refreshToken != "" {
 		// Split token into selector and validator
@@ -312,7 +353,7 @@ func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
 				if err == nil && match {
 					now := time.Now()
 					h.DB.Model(&tokenDB).Update("revoked_at", now)
-					log.Printf("INFO: User logged out and token revoked: %s, IP: %s", tokenDB.UserID, clientIP)
+					log.Printf("INFO: Refresh token revoked for user: %s, IP: %s", tokenDB.UserID, clientIP)
 				}
 			}
 		}
@@ -321,6 +362,11 @@ func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
 	// Always clear the cookie, even if token revocation failed
 	ctx.SetSameSite(helper.GetCookieSameSite())
 	ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
+
+	if userID != nil {
+		log.Printf("INFO: User logged out successfully: %s, IP: %s", userID, clientIP)
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }
 
