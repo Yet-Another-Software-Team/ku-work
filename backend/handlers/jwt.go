@@ -51,7 +51,7 @@ func hashToken(token string) (string, error) {
 
 	// Argon2id parameters (OWASP recommended)
 	// Memory: 64 MB, Iterations: 3, Parallelism: 2, Key length: 32 bytes
-	hash := argon2.IDKey([]byte(token), salt, 3, 64*1024, 2, 32)
+	hash := argon2.IDKey([]byte(token), salt, 3, 64*1024, 1, 32)
 
 	// Encode salt and hash together for storage
 	// Format: base64(salt) + "$" + base64(hash)
@@ -78,7 +78,7 @@ func verifyToken(token, storedHash string) (bool, error) {
 	}
 
 	// Hash the provided token with the same salt
-	computedHash := argon2.IDKey([]byte(token), salt, 3, 64*1024, 2, 32)
+	computedHash := argon2.IDKey([]byte(token), salt, 3, 64*1024, 1, 32)
 
 	// Constant-time comparison using crypto/subtle
 	match := subtle.ConstantTimeCompare(hash, computedHash) == 1
