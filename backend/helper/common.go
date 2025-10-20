@@ -2,6 +2,8 @@ package helper
 
 import (
 	"ku-work/backend/model"
+	"log"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -54,4 +56,17 @@ func GetUsername(userID string, role Role, db *gorm.DB) string {
 		}
 	}
 	return "unknown"
+}
+
+// CleanupExpiredTokens removes all expired refresh tokens from the database.
+// This function is designed to be called by the scheduler.
+func CleanupExpiredTokens(db *gorm.DB) error {
+	result := db.Unscoped().Where("expires_at < ?", time.Now()).Delete(&model.RefreshToken{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected > 0 {
+		log.Printf("Cleaned up %d expired refresh tokens", result.RowsAffected)
+	}
+	return nil
 }
