@@ -48,7 +48,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) error {
 	// Protected Authentication Routes
 	authProtected := auth.Group("", middlewares.AuthMiddleware(jwtHandlers.JWTSecret))
 	authProtected.POST("/student/register", studentHandlers.RegisterHandler)
-	authProtected.POST("/refresh", jwtHandlers.RefreshTokenHandler)
+	authProtected.POST("/refresh", middlewares.RefreshTokenRateLimiter(), jwtHandlers.RefreshTokenHandler)
 	authProtected.POST("/logout", jwtHandlers.LogoutHandler)
 
 	// File Routes (Currently public)

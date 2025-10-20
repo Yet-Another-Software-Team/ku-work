@@ -14,6 +14,7 @@ type RefreshToken struct {
 	UserID    string `gorm:"type:uuid;foreignkey:UserID"`
 	Token     string `gorm:"unique"`
 	ExpiresAt time.Time
+	RevokedAt *time.Time `gorm:"index"` // NULL = active, set = revoked (for reuse detection)
 }
 
 // JWT Payload (NOT DATABASE INSTANCE)
