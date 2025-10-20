@@ -85,6 +85,5 @@ func VerifyPassword(password, encodedHash string) (bool, error) {
 
 	match := subtle.ConstantTimeCompare(hash, computedHash) == 1
 
-
 	return match, nil
 }

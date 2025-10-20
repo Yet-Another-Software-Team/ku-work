@@ -194,7 +194,6 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	selector := parts[0]
 	validator := parts[1]
 
-	// Fast O(1) lookup using selector
 	var refreshTokenDB model.RefreshToken
 	if err := h.DB.Where("token_selector = ?", selector).First(&refreshTokenDB).Error; err != nil {
 		log.Printf("SECURITY: Invalid refresh token from IP: %s", clientIP)
@@ -230,44 +229,12 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
 		return
 	}
-</parameter>
-
-<old_text line=262>
-func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
-	clientIP := ctx.ClientIP()
-
-	refreshToken, err := ctx.Cookie("refresh_token")
-	if err == nil && refreshToken != "" {
-		// Best-effort token revocation: Try to find and revoke the token
-		// Limit query to non-revoked, non-expired tokens for efficiency
-		var activeTokens []model.RefreshToken
-		if err := h.DB.Where("revoked_at IS NULL AND expires_at > ?", time.Now()).
-			Limit(100). // Reasonable limit to prevent loading too many tokens
-			Find(&activeTokens).Error; err == nil {
-
-			for i := range activeTokens {
-				match, err := verifyToken(refreshToken, activeTokens[i].Token)
-				if err == nil && match {
-					now := time.Now()
-					h.DB.Model(&activeTokens[i]).Update("revoked_at", now)
-					log.Printf("INFO: User logged out and token revoked: %s, IP: %s", activeTokens[i].UserID, clientIP)
-					break
-				}
-			}
-		}
-	}
-
-	// Always clear the cookie, even if token revocation failed
-	ctx.SetSameSite(helper.GetCookieSameSite())
-	ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
-	ctx.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
-}
 
 	// Check if token is expired
 	if refreshTokenDB.ExpiresAt.Before(time.Now()) {
 		log.Printf("SECURITY: Expired refresh token from IP: %s, User: %s", clientIP, refreshTokenDB.UserID)
 		now := time.Now()
-		h.DB.Model(refreshTokenDB).Update("revoked_at", now)
+		h.DB.Model(&refreshTokenDB).Update("revoked_at", now)
 		ctx.SetSameSite(helper.GetCookieSameSite())
 		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
@@ -311,17 +278,21 @@ func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
 
 	refreshToken, err := ctx.Cookie("refresh_token")
 	if err == nil && refreshToken != "" {
-		var activeTokens []model.RefreshToken
-		if err := h.DB.Where("revoked_at IS NULL AND expires_at > ?", time.Now()).
-			Find(&activeTokens).Error; err == nil {
+		// Split token into selector and validator
+		parts := strings.SplitN(refreshToken, ":", 2)
+		if len(parts) == 2 {
+			selector := parts[0]
+			validator := parts[1]
 
-			for i := range activeTokens {
-				match, err := verifyToken(refreshToken, activeTokens[i].Token)
+			// Fast O(1) lookup using selector
+			var tokenDB model.RefreshToken
+			if err := h.DB.Where("token_selector = ? AND revoked_at IS NULL", selector).First(&tokenDB).Error; err == nil {
+				// Verify the validator
+				match, err := verifyToken(validator, tokenDB.Token)
 				if err == nil && match {
 					now := time.Now()
-					h.DB.Model(&activeTokens[i]).Update("revoked_at", now)
-					log.Printf("INFO: User logged out and token revoked: %s, IP: %s", activeTokens[i].UserID, clientIP)
-					break
+					h.DB.Model(&tokenDB).Update("revoked_at", now)
+					log.Printf("INFO: User logged out and token revoked: %s, IP: %s", tokenDB.UserID, clientIP)
 				}
 			}
 		}
