@@ -16,7 +16,8 @@ type rateLimitEntry struct {
 	hourResetAt   time.Time
 	mu            sync.Mutex
 }
-d// RateLimiter stores rate limit data for IP addresses
+
+// RateLimiter stores rate limit data for IP addresses
 type RateLimiter struct {
 	entries map[string]*rateLimitEntry
 	mu      sync.RWMutex
@@ -45,17 +46,29 @@ func (rl *RateLimiter) cleanup() {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		rl.mu.Lock()
 		now := time.Now()
+		entriesToDelete := make([]string, 0)
+
+		// First pass: identify entries to delete (with read lock)
+		rl.mu.RLock()
 		for ip, entry := range rl.entries {
 			entry.mu.Lock()
-			// Remove entries that are past both reset times
+			// Mark entries that are past both reset times for deletion
 			if now.After(entry.minuteResetAt) && now.After(entry.hourResetAt) {
-				delete(rl.entries, ip)
+				entriesToDelete = append(entriesToDelete, ip)
 			}
 			entry.mu.Unlock()
 		}
-		rl.mu.Unlock()
+		rl.mu.RUnlock()
+
+		// Second pass: delete marked entries (with write lock)
+		if len(entriesToDelete) > 0 {
+			rl.mu.Lock()
+			for _, ip := range entriesToDelete {
+				delete(rl.entries, ip)
+			}
+			rl.mu.Unlock()
+		}
 	}
 }
 
@@ -104,15 +117,16 @@ func (rl *RateLimiter) checkLimit(ip string, minuteLimit, hourLimit int) (bool, 
 	return true, ""
 }
 
-// RefreshTokenRateLimiter creates a rate limiting middleware for refresh token endpoint
-// Limits: 5 attempts per minute per IP, 20 attempts per hour per IP
-func RefreshTokenRateLimiter() gin.HandlerFunc {
+// RateLimiterWithLimits creates a configurable rate limiting middleware
+// minuteLimit: maximum attempts per minute per IP
+// hourLimit: maximum attempts per hour per IP
+func RateLimiterWithLimits(minuteLimit, hourLimit int) gin.HandlerFunc {
 	limiter := GetRateLimiter()
 
 	return func(ctx *gin.Context) {
 		ip := ctx.ClientIP()
 
-		allowed, message := limiter.checkLimit(ip, 5, 20)
+		allowed, message := limiter.checkLimit(ip, minuteLimit, hourLimit)
 		if !allowed {
 			ctx.JSON(http.StatusTooManyRequests, gin.H{
 				"error": message,

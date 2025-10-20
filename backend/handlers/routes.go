@@ -40,25 +40,26 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) error {
 
 	// Authentication Routes
 	auth := router.Group("/auth")
-	auth.POST("/admin/login", localAuthHandlers.AdminLoginHandler)
+	auth.POST("/admin/login", middlewares.RateLimiterWithLimits(5, 20), localAuthHandlers.AdminLoginHandler)
 	auth.POST("/company/register", localAuthHandlers.CompanyRegisterHandler)
-	auth.POST("/company/login", localAuthHandlers.CompanyLoginHandler)
-	auth.POST("/google/login", googleAuthHandlers.GoogleOauthHandler)
+	auth.POST("/company/login", middlewares.RateLimiterWithLimits(5, 20), localAuthHandlers.CompanyLoginHandler)
+	auth.POST("/google/login", middlewares.RateLimiterWithLimits(5, 20), googleAuthHandlers.GoogleOauthHandler)
 
 	// Protected Authentication Routes
 	authProtected := auth.Group("", middlewares.AuthMiddleware(jwtHandlers.JWTSecret))
 	authProtected.POST("/student/register", studentHandlers.RegisterHandler)
-	authProtected.POST("/refresh", middlewares.RefreshTokenRateLimiter(), jwtHandlers.RefreshTokenHandler)
+	authProtected.POST("/refresh", middlewares.RateLimiterWithLimits(5, 20), jwtHandlers.RefreshTokenHandler)
 	authProtected.POST("/logout", jwtHandlers.LogoutHandler)
 
-	// File Routes (Currently public)
-	router.GET("/files/:fileID", fileHandlers.ServeFileHandler)
 
 	// User Routes
 	protectedRouter := router.Group("", middlewares.AuthMiddleware(jwtHandlers.JWTSecret))
 	protectedRouter.PATCH("/me", userHandlers.EditProfileHandler)
 	protectedRouter.GET("/me", userHandlers.GetProfileHandler)
 
+	// File Routes (Only Authed)
+	protectedRouter.GET("/files/:fileID", fileHandlers.ServeFileHandler)
+	
 	// Company Routs
 	company := protectedRouter.Group("/company")
 	company.GET("/:id", companyHandlers.GetCompanyProfileHandler)
