@@ -41,7 +41,7 @@
                     <JobPostComponent
                         :is-selected="selectedIndex === index"
                         :data="job"
-                        @click="selectedIndex = index"
+                        @click="setSelectedIndex(index)"
                     />
                 </div>
 
@@ -78,10 +78,17 @@
         </section>
         <!-- Expanded Job Post -->
         <section v-if="selectedIndex !== null && selectedIndex < jobs.length" class="flex">
-            <USeparator orientation="vertical" class="w-fit mx-5" color="neutral" size="lg" />
-            <section>
+            <!-- Normal Expand job (bigger than tablet) -->
+            <USeparator
+                orientation="vertical"
+                class="w-fit mx-5 hidden min-[770px]:block"
+                color="neutral"
+                size="lg"
+            />
+            <section aria-label="job expand normal">
                 <JobPostExpanded
                     v-if="jobs.length > 0"
+                    class="hidden min-[770px]:block"
                     :is-viewer="userRole === 'viewer'"
                     :is-selected="true"
                     :data="jobs[selectedIndex]!"
@@ -219,6 +226,15 @@ const fetchJobs = async (offset?: number) => {
         isInitialLoad.value = false;
     }
 };
+
+function setSelectedIndex(index: number | null) {
+    if (selectedIndex.value === index) {
+        // Deselect if the same index is clicked
+        selectedIndex.value = null;
+    } else {
+        selectedIndex.value = index;
+    }
+}
 
 // Get user role from localStorage
 onMounted(() => {
