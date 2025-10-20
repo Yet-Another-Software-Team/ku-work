@@ -61,6 +61,13 @@ Copy `sample.env` to `.env` and configure the following variables:
 ### JWT Configuration
 - `JWT_SECRET`: Secret key for JWT token generation
 
+### Session Configuration
+- `MAX_SESSIONS_PER_USER`: Maximum number of concurrent sessions per user (default: 10)
+  - Users can be logged in on multiple devices simultaneously
+  - When limit is reached, oldest sessions are automatically revoked
+  - Set to 1 for single-session-only (most secure)
+  - Higher values allow more convenience but increase token storage
+
 ### Cookie Configuration
 - `COOKIE_SECURE`: Enable secure flag for cookies (true/false, default: true)
   - Set to `true` for HTTPS environments (production)

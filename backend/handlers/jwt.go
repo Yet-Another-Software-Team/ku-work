@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -137,11 +138,44 @@ func (h *JWTHandlers) GenerateTokens(userID string) (string, string, error) {
 		return "", "", err
 	}
 
-	// Mark old refresh tokens as revoked for this user (for reuse detection)
-	now := time.Now()
+	// Get session limit from environment variable (default: 10)
+	maxSessions := 10
+	if maxSessionsStr := os.Getenv("MAX_SESSIONS_PER_USER"); maxSessionsStr != "" {
+		if parsed, err := strconv.Atoi(maxSessionsStr); err == nil && parsed > 0 {
+			maxSessions = parsed
+		}
+	}
+
+	// Limit concurrent sessions per user
+	// Count active tokens for this user
+	var activeTokenCount int64
 	h.DB.Model(&model.RefreshToken{}).
-		Where("user_id = ? AND revoked_at IS NULL", userID).
-		Update("revoked_at", now)
+		Where("user_id = ? AND revoked_at IS NULL AND expires_at > ?", userID, time.Now()).
+		Count(&activeTokenCount)
+
+	// If at or over limit, revoke the oldest tokens
+	if activeTokenCount >= int64(maxSessions) {
+		// Find the oldest active tokens to revoke
+		var oldestTokens []model.RefreshToken
+		tokensToRevoke := int(activeTokenCount) - (maxSessions - 1) // Keep (max-1), revoke excess to make room for the new one
+		h.DB.Where("user_id = ? AND revoked_at IS NULL", userID).
+			Order("created_at ASC").
+			Limit(tokensToRevoke).
+			Find(&oldestTokens)
+
+		// Revoke the oldest tokens
+		if len(oldestTokens) > 0 {
+			now := time.Now()
+			tokenIDs := make([]uint, len(oldestTokens))
+			for i, token := range oldestTokens {
+				tokenIDs[i] = token.ID
+			}
+			h.DB.Model(&model.RefreshToken{}).
+				Where("id IN ?", tokenIDs).
+				Update("revoked_at", now)
+			log.Printf("INFO: Revoked %d oldest tokens for user %s (session limit: %d)", len(oldestTokens), userID, maxSessions)
+		}
+	}
 
 	// Create the new refresh token in the database
 	refreshTokenDB := model.RefreshToken{
