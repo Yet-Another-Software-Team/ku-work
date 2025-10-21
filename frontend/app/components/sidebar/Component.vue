@@ -75,7 +75,7 @@
                                 :ui="{
                                     base: 'justify-start text-left text-white hover:bg-white/10',
                                 }"
-                                @click="navigateTo('/register/student', { replace: true })"
+                                @click="navigateStudentRegister"
                             />
                             <LogoutButton />
                         </div>
@@ -138,7 +138,7 @@
                         size="xl"
                         icon="ic:baseline-add-circle-outline"
                         :ui="{ base: 'justify-start text-left text-white hover:bg-white/10' }"
-                        @click="navigateTo('/register/student', { replace: true })"
+                        @click="navigateRegister"
                     />
                     <LogoutButton />
                 </div>
@@ -174,19 +174,32 @@ onMounted(() => {
         isViewer.value = false;
         isCompany.value = true;
         isAdmin.value = false;
-    }
-    if (role === "student") {
+    } else if (role === "student") {
         isViewer.value = false;
         isCompany.value = false;
         isAdmin.value = false;
-    }
-    if (role === "viewer") {
+    } else if (role === "viewer") {
         isViewer.value = true;
         isCompany.value = false;
         isAdmin.value = false;
+    } else if (role === "admin") {
+        isViewer.value = false;
+        isCompany.value = false;
+        isAdmin.value = true;
+    } else {
+        // Data is wrong --> logout
+        logout();
     }
     loading.value = false;
 });
+
+function navigateRegister() {
+    navigateTo("/register/student", { replace: true });
+}
+
+function navigateStudentRegister() {
+    navigateTo("/register/student", { replace: true });
+}
 
 function getSidebarItems(
     isViewer: boolean,
