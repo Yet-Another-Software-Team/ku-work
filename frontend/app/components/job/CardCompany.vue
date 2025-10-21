@@ -29,8 +29,8 @@
                         <Icon
                             :name="
                                 emailNotifyOn
-                                    ? 'fluent:mail-off-24-regular'
-                                    : 'fluent:mail-24-regular'
+                                    ? 'fluent:mail-24-regular'
+                                    : 'fluent:mail-off-24-regular'
                             "
                             size="24"
                             class="hover:text-primary transition-colors duration-300"
