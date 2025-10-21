@@ -1,6 +1,9 @@
 <template>
-    <UDrawer :open="isSelected">
-        <template #content>
+    <UDrawer :open="isSelected" :ui="{ header: 'flex items-center justify-end' }">
+        <template #header>
+            <UButton color="neutral" variant="ghost" icon="i-lucide-x" @click="emit('close')" />
+        </template>
+        <template #body>
             <div
                 v-if="isSelected"
                 class="mt-[4.5rem] sticky top-10 overflow-y-auto p-4 sm:p-8 gap-2 max-w-[95vw] sm:max-w-none"
@@ -118,6 +121,10 @@ defineProps<{
     data: JobPost;
     isSelected: boolean;
     isViewer: boolean;
+}>();
+
+const emit = defineEmits<{
+    (e: "close"): void;
 }>();
 
 function timeAgo(createdAt: string): string {

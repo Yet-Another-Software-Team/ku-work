@@ -95,7 +95,7 @@
                 />
                 <JobPostDrawer
                     v-if="jobs.length > 0"
-                    class="tablet:hidden"
+                    class="block tablet:hidden"
                     :is-viewer="userRole === 'viewer'"
                     :is-selected="true"
                     :data="jobs[selectedIndex]!"
