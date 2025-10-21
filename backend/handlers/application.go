@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"ku-work/backend/model"
 	"ku-work/backend/services"
+	"log"
 	"math"
 	"mime/multipart"
 	"net/http"
@@ -29,7 +30,7 @@ func NewApplicationHandlers(db *gorm.DB, emailService *services.EmailService) (*
 	if err != nil {
 		return nil, err
 	}
-	newApplicantEmailTemplate, err := template.New("job__newapplicant.tmpl").ParseFiles("email_templates/job__newapplicant.tmpl")
+	newApplicantEmailTemplate, err := template.New("job_new_applicant.tmpl").ParseFiles("email_templates/job_new_applicant.tmpl")
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +205,7 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 	// Send Email to company about new applicant
 	go (func() {
 		type Context struct {
-			CompanyUser        model.User
+			CompanyUser model.User
 			Job         model.Job
 			Applicant   model.GoogleOAuthDetails
 			Application struct {
@@ -228,7 +229,7 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 
 		// Get applicant details (student who applied)
 		context.Applicant.UserID = student.UserID
-		if err := h.DB.Select("first_name", "last_name", "email").Where("user_id = ?", student.UserID).First(&context.Applicant).Error; err != nil {
+		if err := h.DB.Select("first_name", "last_name").Where("user_id = ?", student.UserID).First(&context.Applicant).Error; err != nil {
 			return
 		}
 
@@ -241,7 +242,7 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 		// Send email to company
 		_ = h.emailService.SendTo(
 			company.Email,
-			fmt.Sprintf("[KU-WORK] New Application for %s", job.Position),
+			fmt.Sprintf("[KU-WORK] New Application for %s (%s)", job.Name, job.Position),
 			tpl.String(),
 		)
 	})()
