@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
-@theme {
-    --breakpoint-*: initial;
+/* Use @theme if doesn't work but linter will kill you */
+:root {
     --breakpoint-tablet: 770px;
 }
