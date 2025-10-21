@@ -212,7 +212,7 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 		Open           *bool    `json:"open" form:"open"`
 		CompanyID      string   `json:"companyId" form:"companyId" binding:"max=64"`
 		JobID          *uint    `json:"id" form:"id" binding:"omitempty,max=64"`
-		ApprovalStatus string   `json:"approvalStatus" form:"approvalStatus" binding:"max=64"`
+		ApprovalStatus *string  `json:"approvalStatus" form:"approvalStatus" binding:"omitempty,max=64"`
 	}
 
 	// Set default values for some fields and bind the input
@@ -263,14 +263,17 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 	// Company should only see their own jobs
 	if role == helper.Company {
 		query = query.Where("company_id = ?", userId)
-		if input.Open != nil {
-			query = query.Where("is_open = ?", *input.Open)
-		}
+
 	} else {
 		// Non-company users can filter by company ID if provided
 		if input.CompanyID != "" {
 			query = query.Where("company_id = ?", input.CompanyID)
 		}
+	}
+	
+	if (role == helper.Company || role == helper.Admin) && input.Open != nil {
+		query = query.Where("is_open = ?", *input.Open)
+	} else if role == helper.Viewer || role == helper.Student || role == helper.Unknown {
 		query = query.Where("is_open = ?", true)
 	}
 
@@ -292,8 +295,8 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 	// Only Admin and Company can see unapproved jobs
 	if role == helper.Admin || role == helper.Company {
 		// If is admin, or company then consider approval status
-		if input.ApprovalStatus != "" {
-			query = query.Where(&model.Job{ApprovalStatus: model.JobApprovalStatus(input.ApprovalStatus)})
+		if  input.ApprovalStatus != nil && *input.ApprovalStatus != "" {
+			query = query.Where("approval_status = ?", *input.ApprovalStatus)
 		}
 	} else {
 		// Non-admin and non-company users can only see approved jobs
