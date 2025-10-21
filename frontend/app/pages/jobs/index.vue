@@ -81,21 +81,21 @@
             <!-- Normal Expand job (bigger than tablet) -->
             <USeparator
                 orientation="vertical"
-                class="w-fit mx-5 hidden min-[770px]:block"
+                class="w-fit mx-5 hidden tablet:block"
                 color="neutral"
                 size="lg"
             />
             <section aria-label="job expand normal">
                 <JobPostExpanded
                     v-if="jobs.length > 0"
-                    class="hidden min-[770px]:block"
+                    class="hidden tablet:block"
                     :is-viewer="userRole === 'viewer'"
                     :is-selected="true"
                     :data="jobs[selectedIndex]!"
                 />
                 <JobPostDrawer
                     v-if="jobs.length > 0"
-                    class="min-[770px]:hidden"
+                    class="tablet:hidden"
                     :is-viewer="userRole === 'viewer'"
                     :is-selected="true"
                     :data="jobs[selectedIndex]!"
