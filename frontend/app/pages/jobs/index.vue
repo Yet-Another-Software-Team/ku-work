@@ -94,7 +94,7 @@
                     :data="jobs[selectedIndex]!"
                 />
                 <JobPostDrawer
-                    v-if="jobs.length > 0"
+                    v-if="jobs.length > 0 && !isTablet"
                     class="block tablet:hidden"
                     :is-viewer="userRole === 'viewer'"
                     :is-selected="true"
@@ -110,7 +110,7 @@
 import { ref } from "vue";
 import type { JobPost } from "~/data/mockData";
 import type { CheckboxGroupValue } from "@nuxt/ui";
-import { useInfiniteScroll, watchDebounced } from "@vueuse/core";
+import { useMediaQuery, useInfiniteScroll, watchDebounced } from "@vueuse/core";
 
 definePageMeta({
     layout: "viewer",
@@ -122,6 +122,8 @@ const selectedIndex = ref<number | null>(null);
 const userRole = ref<string>("viewer");
 const isLoadingMore = ref(false);
 const isInitialLoad = ref(true);
+// Media Query
+const isTablet = useMediaQuery("(min-width: 770px)");
 
 // Search and Location
 const search = ref("");
