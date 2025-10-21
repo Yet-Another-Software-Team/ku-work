@@ -1,7 +1,7 @@
 <template>
     <UCard class="dark:bg-[#1f2937]">
         <template #header>
-            <div class="flex justify-between ">
+            <div class="flex justify-between">
                 <div class="flex gap-x-4 items-center">
                     <USwitch
                         :model-value="data.open"
@@ -27,7 +27,11 @@
                         @click.stop.prevent="toggleEmailNotification"
                     >
                         <Icon
-                            :name="emailNotifyOn ? 'fluent:mail-off-24-regular' : 'fluent:mail-24-regular'"
+                            :name="
+                                emailNotifyOn
+                                    ? 'fluent:mail-off-24-regular'
+                                    : 'fluent:mail-24-regular'
+                            "
                             size="24"
                             class="hover:text-primary transition-colors duration-300"
                         />
@@ -37,8 +41,8 @@
                             variant="ghost"
                             color="neutral"
                             class="cursor-pointer"
-                            @click.stop.prevent="openJobEditForm = true"
                             aria-label="Edit job"
+                            @click.stop.prevent="openJobEditForm = true"
                         >
                             <Icon
                                 name="fluent:edit-24-regular"
@@ -116,7 +120,6 @@ const props = defineProps<{
     data: JobPost;
 }>();
 
-
 function selectJob() {
     console.log("Job ID:", props.data.id);
     if (props.data.approvalStatus === "accepted") {
@@ -134,5 +137,4 @@ function toggleEmailNotification() {
     emailNotifyOn.value = !emailNotifyOn.value;
     console.log("New applicant email notifications:", emailNotifyOn.value ? "enabled" : "disabled");
 }
-
 </script>
