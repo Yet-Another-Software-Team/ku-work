@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"ku-work/backend/model"
 	"ku-work/backend/services"
-	"log"
 	"math"
 	"mime/multipart"
 	"net/http"
@@ -242,7 +241,7 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 		// Send email to company
 		_ = h.emailService.SendTo(
 			company.Email,
-			fmt.Sprintf("[KU-WORK] New Application for %s (%s)", job.Name, job.Position),
+			fmt.Sprintf("[KU-Work] New Application for %s - %s", job.Name, job.Position),
 			tpl.String(),
 		)
 	})()
@@ -796,7 +795,7 @@ func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context
 		}
 		_ = h.emailService.SendTo(
 			context.OAuth.Email,
-			fmt.Sprintf("[KU-WORK] Your Application Status for %s", job.Name),
+			fmt.Sprintf("[KU-Work] Your Application Status for %s - %s", job.Name, job.Position),
 			tpl.String(),
 		)
 	})()

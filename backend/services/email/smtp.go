@@ -39,7 +39,7 @@ func NewSMTPEmailProvider() (*SMTPEmailProvider, error) {
 }
 
 func (cur *SMTPEmailProvider) SendTo(ctx context.Context, target string, subject string, content string) error {
-	msg := fmt.Sprintf("Subject: %s\nMIME-version: 1.0;\nContent-Type: text/plain; charset=\"UTF-8\";\n\n\n%s", subject, content)
+	msg := fmt.Sprintf("Subject: %s\r\nMIME-version: 1.0;\r\nContent-Type: text/html; charset=\"UTF-8\";\r\n\r\n%s", subject, content)
 
 	// Use a channel to handle the email sending with timeout
 	errChan := make(chan error, 1)

@@ -544,7 +544,7 @@ func (h *JobHandlers) JobApprovalHandler(ctx *gin.Context) {
 		}
 		_ = h.emailService.SendTo(
 			context.Company.Email,
-			fmt.Sprintf("[KU-WORK] Your \"%s\" job has been reviewed", job.Name),
+			fmt.Sprintf("[KU-Work] Your \"%s - %s\" job has been reviewed", job.Name, job.Position),
 			tpl.String(),
 		)
 	})()

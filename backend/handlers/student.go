@@ -337,7 +337,7 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 		}
 		_ = h.emailService.SendTo(
 			context.OAuth.Email,
-			"[KU-WORK] Your student account has been reviewed",
+			"[KU-Work] Your student account has been reviewed",
 			tpl.String(),
 		)
 	})()
