@@ -77,6 +77,7 @@ Copy `sample.env` to `.env` and configure the following variables:
 
 ### Email Configuration
 - `EMAIL_PROVIDER`: Choose what email provider to use (dummy, SMTP, gmail, ...)
+- `EMAIL_TIMEOUT_SECONDS`: Specify the timeout duration of email sending attempt in seconds
 
 If you use other provider than dummy follow the [configuration guide](./email_config.md) here.
 

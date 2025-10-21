@@ -59,6 +59,7 @@ A full-stack web application with Go backend and Nuxt.js frontend, featuring use
 
    # Email Configuration
    EMAIL_PROVIDER=dummy
+   EMAIL_TIMEOUT_SECONDS=30
    ```
 
 #### Run Docker Compose
@@ -66,6 +67,10 @@ A full-stack web application with Go backend and Nuxt.js frontend, featuring use
 docker compose up
 ```
 
+
+### Email Configuration
+
+For detailed information about configuring email providers, timeouts, and troubleshooting, see the [Email Configuration Guide](./backend/docs/EMAIL_CONFIGURATION.md).
 
 ### Alternatives
 You can also run frontend and backend service seprately by following the specific service guide

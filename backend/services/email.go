@@ -1,10 +1,12 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"ku-work/backend/model"
 	"ku-work/backend/services/email"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,6 +16,7 @@ import (
 type EmailService struct {
 	provider email.EmailProvider
 	db       *gorm.DB
+	timeout  time.Duration
 }
 
 func NewEmailService(DB *gorm.DB) (*EmailService, error) {
@@ -42,9 +45,18 @@ func NewEmailService(DB *gorm.DB) (*EmailService, error) {
 		return nil, errors.New("invalid EMAIL_PROVIDER specified")
 	}
 
+	// Get timeout from environment variable, default to 30 seconds
+	timeout := 30 * time.Second
+	if timeoutStr, hasTimeout := os.LookupEnv("EMAIL_TIMEOUT_SECONDS"); hasTimeout {
+		if timeoutSeconds, err := strconv.Atoi(timeoutStr); err == nil && timeoutSeconds > 0 {
+			timeout = time.Duration(timeoutSeconds) * time.Second
+		}
+	}
+
 	return &EmailService{
 		provider: provider,
 		db:       DB,
+		timeout:  timeout,
 	}, nil
 }
 
@@ -67,8 +79,12 @@ func (cur *EmailService) SendTo(target string, subject string, content string) e
 		Status:    model.MailLogStatusDelivered,
 	}
 
-	// Attempt to send email
-	err := cur.provider.SendTo(escapedTarget, escapedSubject, content)
+	// Create context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), cur.timeout)
+	defer cancel()
+
+	// Attempt to send email with timeout
+	err := cur.provider.SendTo(ctx, escapedTarget, escapedSubject, content)
 
 	// Update log status based on result
 	if err != nil {
@@ -104,6 +120,8 @@ func isTemporaryError(errorMsg string) bool {
 		"450", // SMTP mailbox unavailable
 		"451", // SMTP local error
 		"452", // SMTP insufficient storage
+		"deadline exceeded",
+		"context deadline exceeded",
 	}
 
 	errorLower := strings.ToLower(errorMsg)

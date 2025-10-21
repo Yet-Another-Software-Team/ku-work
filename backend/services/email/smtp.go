@@ -1,6 +1,7 @@
 package email
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/smtp"
@@ -37,7 +38,20 @@ func NewSMTPEmailProvider() (*SMTPEmailProvider, error) {
 	}, nil
 }
 
-func (cur *SMTPEmailProvider) SendTo(target string, subject string, content string) error {
+func (cur *SMTPEmailProvider) SendTo(ctx context.Context, target string, subject string, content string) error {
 	msg := fmt.Sprintf("Subject: %s\nMIME-version: 1.0;\nContent-Type: text/plain; charset=\"UTF-8\";\n\n\n%s", subject, content)
-	return smtp.SendMail(cur.addr, cur.auth, cur.sender, []string{target}, []byte(msg))
+
+	// Use a channel to handle the email sending with timeout
+	errChan := make(chan error, 1)
+
+	go func() {
+		errChan <- smtp.SendMail(cur.addr, cur.auth, cur.sender, []string{target}, []byte(msg))
+	}()
+
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("email sending timeout: %w", ctx.Err())
+	case err := <-errChan:
+		return err
+	}
 }
