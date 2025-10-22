@@ -45,7 +45,21 @@ func (cur *SMTPEmailProvider) SendTo(ctx context.Context, target string, subject
 	errChan := make(chan error, 1)
 
 	go func() {
-		errChan <- smtp.SendMail(cur.addr, cur.auth, cur.sender, []string{target}, []byte(msg))
+		defer func() {
+			if r := recover(); r != nil {
+				select {
+				case errChan <- fmt.Errorf("panic in email sending: %v", r):
+				default:
+					// Context was already cancelled, don't block
+				}
+			}
+		}()
+		err := smtp.SendMail(cur.addr, cur.auth, cur.sender, []string{target}, []byte(msg))
+		select {
+		case errChan <- err:
+		default:
+			// Context was already cancelled, don't block
+		}
 	}()
 
 	select {
