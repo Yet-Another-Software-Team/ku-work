@@ -76,7 +76,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Fetches job applications for the authenticated user. If the user is a company, it returns all applications for all their job postings. If the user is a student, it returns all of their own applications. Supports pagination.",
+                "description": "Fetches job applications for the authenticated user. If the user is a company, it returns all applications for all their job postings. If the user is a student, it returns all of their own applications. Supports pagination and status filtering.",
                 "produces": [
                     "application/json"
                 ],
@@ -85,6 +85,19 @@ const docTemplate = `{
                 ],
                 "summary": "Get all applications for the current user",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by status (pending, accepted, rejected)",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "date-desc",
+                        "description": "Sort by (name, date-desc, date-asc)",
+                        "name": "sortBy",
+                        "in": "query"
+                    },
                     {
                         "type": "integer",
                         "default": 0,
@@ -102,11 +115,19 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of job applications",
+                        "description": "List of job applications with total count",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/handlers.ShortApplicationDetail"
+                            "type": "object",
+                            "properties": {
+                                "applications": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/handlers.ApplicationWithJobDetails"
+                                    }
+                                },
+                                "total": {
+                                    "type": "integer"
+                                }
                             }
                         }
                     },
@@ -1470,9 +1491,9 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Student User ID",
+                        "description": "Student Email",
                         "name": "studentUserId",
-                        "in": "path",
+                        "in": "query",
                         "required": true
                     }
                 ],
@@ -1696,8 +1717,8 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "properties": {
-                                "id": {
-                                    "type": "integer"
+                                "message": {
+                                    "type": "string"
                                 }
                             }
                         }
@@ -2220,6 +2241,62 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "handlers.ApplicationWithJobDetails": {
+            "type": "object",
+            "properties": {
+                "companyName": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "experience": {
+                    "type": "string"
+                },
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.File"
+                    }
+                },
+                "isOpen": {
+                    "type": "boolean"
+                },
+                "jobId": {
+                    "type": "integer"
+                },
+                "jobName": {
+                    "type": "string"
+                },
+                "jobType": {
+                    "type": "string"
+                },
+                "maxSalary": {
+                    "type": "integer"
+                },
+                "minSalary": {
+                    "type": "integer"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "photoId": {
+                    "type": "string"
+                },
+                "position": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/model.JobApplicationStatus"
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
         "handlers.ApproveJobInput": {
             "type": "object",
             "properties": {
@@ -2301,6 +2378,8 @@ const docTemplate = `{
                 "experience",
                 "jobType",
                 "location",
+                "maxSalary",
+                "minSalary",
                 "name",
                 "position"
             ],
@@ -2346,6 +2425,9 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "maxLength": 128
+                },
+                "notifyOnApplication": {
+                    "type": "boolean"
                 },
                 "open": {
                     "type": "boolean"
@@ -2401,6 +2483,9 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 128
                 },
+                "notifyOnApplication": {
+                    "type": "boolean"
+                },
                 "open": {
                     "type": "boolean"
                 },
@@ -2433,9 +2518,6 @@ const docTemplate = `{
                 },
                 "github": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "jobId": {
                     "type": "integer"
@@ -2618,9 +2700,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/model.File"
                     }
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "jobId": {
                     "type": "integer"

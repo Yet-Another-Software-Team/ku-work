@@ -41,30 +41,32 @@ func NewJobHandlers(db *gorm.DB, aiService *services.AIService, emailService *se
 
 // CreateJobInput defines the request body for creating a new job.
 type CreateJobInput struct {
-	Name        string `json:"name" binding:"required,max=128"`
-	Position    string `json:"position" binding:"required,max=128"`
-	Duration    string `json:"duration" binding:"required,max=128"`
-	Description string `json:"description" binding:"required,max=16384"`
-	Location    string `json:"location" binding:"required,max=128"`
-	JobType     string `json:"jobType" binding:"required,oneof='fulltime' 'parttime' 'contract' 'casual' 'internship'"`
-	Experience  string `json:"experience" binding:"required,oneof='newgrad' 'junior' 'senior' 'manager' 'internship'"`
-	MinSalary   uint   `json:"minSalary"`
-	MaxSalary   uint   `json:"maxSalary"`
-	Open        bool   `json:"open"`
+	Name                string `json:"name" binding:"required,max=128"`
+	Position            string `json:"position" binding:"required,max=128"`
+	Duration            string `json:"duration" binding:"required,max=128"`
+	Description         string `json:"description" binding:"required,max=16384"`
+	Location            string `json:"location" binding:"required,max=128"`
+	JobType             string `json:"jobType" binding:"required,oneof='fulltime' 'parttime' 'contract' 'casual' 'internship'"`
+	Experience          string `json:"experience" binding:"required,oneof='newgrad' 'junior' 'senior' 'manager' 'internship'"`
+	MinSalary           uint   `json:"minSalary" binding:"required"`
+	MaxSalary           uint   `json:"maxSalary" binding:"required"`
+	Open                bool   `json:"open"`
+	NotifyOnApplication *bool  `json:"notifyOnApplication"`
 }
 
 // EditJobInput defines the request body for editing an existing job.
 type EditJobInput struct {
-	Name        *string `json:"name" binding:"omitempty,max=128"`
-	Position    *string `json:"position" binding:"omitempty,max=128"`
-	Duration    *string `json:"duration" binding:"omitempty,max=128"`
-	Description *string `json:"description" binding:"omitempty,max=16384"`
-	Location    *string `json:"location" binding:"omitempty,max=128"`
-	JobType     *string `json:"jobType" binding:"omitempty,oneof='fulltime' 'parttime' 'contract' 'casual' 'internship'"`
-	Experience  *string `json:"experience" binding:"omitempty,oneof='newgrad' 'junior' 'senior' 'manager' 'internship'"`
-	MinSalary   *uint   `json:"minSalary" binding:"omitempty"`
-	MaxSalary   *uint   `json:"maxSalary" binding:"omitempty"`
-	Open        *bool   `json:"open" binding:"omitempty"`
+	Name                *string `json:"name" binding:"omitempty,max=128"`
+	Position            *string `json:"position" binding:"omitempty,max=128"`
+	Duration            *string `json:"duration" binding:"omitempty,max=128"`
+	Description         *string `json:"description" binding:"omitempty,max=16384"`
+	Location            *string `json:"location" binding:"omitempty,max=128"`
+	JobType             *string `json:"jobType" binding:"omitempty,oneof='fulltime' 'parttime' 'contract' 'casual' 'internship'"`
+	Experience          *string `json:"experience" binding:"omitempty,oneof='newgrad' 'junior' 'senior' 'manager' 'internship'"`
+	MinSalary           *uint   `json:"minSalary" binding:"omitempty"`
+	MaxSalary           *uint   `json:"maxSalary" binding:"omitempty"`
+	Open                *bool   `json:"open" binding:"omitempty"`
+	NotifyOnApplication *bool   `json:"notifyOnApplication" binding:"omitempty"`
 }
 
 // ApproveJobInput defines the request body for approving a job.
@@ -145,19 +147,26 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
+
+	if input.NotifyOnApplication == nil {
+		defaultNotify := true
+		input.NotifyOnApplication = &defaultNotify
+	}
+
 	job := model.Job{
-		Name:           input.Name,
-		CompanyID:      company.UserID,
-		Position:       input.Position,
-		Duration:       input.Duration,
-		Description:    input.Description,
-		Location:       input.Location,
-		JobType:        model.JobType(input.JobType),
-		Experience:     model.ExperienceType(input.Experience),
-		MinSalary:      input.MinSalary,
-		MaxSalary:      input.MaxSalary,
-		ApprovalStatus: model.JobApprovalPending,
-		IsOpen:         input.Open,
+		Name:                input.Name,
+		CompanyID:           company.UserID,
+		Position:            input.Position,
+		Duration:            input.Duration,
+		Description:         input.Description,
+		Location:            input.Location,
+		JobType:             model.JobType(input.JobType),
+		Experience:          model.ExperienceType(input.Experience),
+		MinSalary:           input.MinSalary,
+		MaxSalary:           input.MaxSalary,
+		ApprovalStatus:      model.JobApprovalPending,
+		IsOpen:              input.Open,
+		NotifyOnApplication: *input.NotifyOnApplication,
 	}
 
 	// Create Job into database
@@ -270,7 +279,7 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 			query = query.Where("company_id = ?", input.CompanyID)
 		}
 	}
-	
+
 	if (role == helper.Company || role == helper.Admin) && input.Open != nil {
 		query = query.Where("is_open = ?", *input.Open)
 	} else if role == helper.Viewer || role == helper.Student || role == helper.Unknown {
@@ -295,7 +304,7 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 	// Only Admin and Company can see unapproved jobs
 	if role == helper.Admin || role == helper.Company {
 		// If is admin, or company then consider approval status
-		if  input.ApprovalStatus != nil && *input.ApprovalStatus != "" {
+		if input.ApprovalStatus != nil && *input.ApprovalStatus != "" {
 			query = query.Where("approval_status = ?", *input.ApprovalStatus)
 		}
 	} else {
@@ -440,6 +449,9 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 	if job.MinSalary > job.MaxSalary {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "minSalary cannot exceed maxSalary"})
 		return
+	}
+	if input.NotifyOnApplication != nil {
+		job.NotifyOnApplication = *input.NotifyOnApplication
 	}
 
 	result = h.DB.Save(&job)

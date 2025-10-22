@@ -201,7 +201,12 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 	success = true
 	ctx.JSON(http.StatusOK, gin.H{"message": "ok"})
 
-	// Send Email to company about new applicant
+	// Send Email to company about new applicant.
+	// Only if Company opted for email on new application on this job post.
+	if !job.NotifyOnApplication {
+		return // Return early if notification is not required
+	}
+	
 	go (func() {
 		type Context struct {
 			CompanyUser model.User

@@ -50,6 +50,7 @@ type Job struct {
 	MaxSalary       uint              `json:"maxSalary"`
 	ApprovalStatus  JobApprovalStatus `json:"approvalStatus"`
 	IsOpen          bool              `json:"open"`
+	NotifyOnApplication bool          `json:"notifyOnApplication default:true"`
 	JobApplications []JobApplication  `gorm:"foreignkey:JobID;constraint:OnDelete:CASCADE;" json:"-"`
 }
 
