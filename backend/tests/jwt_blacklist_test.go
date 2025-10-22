@@ -13,7 +13,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -39,9 +38,6 @@ func setupTestRouter(db *gorm.DB, jwtHandlers *handlers.JWTHandlers) *gin.Engine
 
 // TestJWTBlacklistOnLogout tests that JWT is blacklisted after logout
 func TestJWTBlacklistOnLogout(t *testing.T) {
-	// Load environment variables
-	_ = godotenv.Load("../.env")
-
 	// Setup test database
 	db, err := database.LoadDB()
 	if err != nil {
@@ -116,8 +112,6 @@ func TestJWTBlacklistOnLogout(t *testing.T) {
 
 // TestJWTBlacklistMultipleSessions tests that only the logged out session is invalidated
 func TestJWTBlacklistMultipleSessions(t *testing.T) {
-	_ = godotenv.Load("../.env")
-
 	db, err := database.LoadDB()
 	if err != nil {
 		t.Skipf("Database not available: %v", err)
@@ -187,8 +181,6 @@ func TestJWTBlacklistMultipleSessions(t *testing.T) {
 
 // TestJWTBlacklistCleanup tests that expired JWTs are removed from blacklist
 func TestJWTBlacklistCleanup(t *testing.T) {
-	_ = godotenv.Load("../.env")
-
 	db, err := database.LoadDB()
 	if err != nil {
 		t.Skipf("Database not available: %v", err)
@@ -251,8 +243,6 @@ func TestJWTWithoutJTI(t *testing.T) {
 
 // TestMultipleLogoutAttempts tests idempotent logout behavior
 func TestMultipleLogoutAttempts(t *testing.T) {
-	_ = godotenv.Load("../.env")
-
 	db, err := database.LoadDB()
 	if err != nil {
 		t.Skipf("Database not available: %v", err)
@@ -293,8 +283,6 @@ func TestMultipleLogoutAttempts(t *testing.T) {
 
 // Benchmark JWT blacklist lookup performance
 func BenchmarkJWTBlacklistLookup(b *testing.B) {
-	_ = godotenv.Load("../.env")
-
 	db, err := database.LoadDB()
 	if err != nil {
 		b.Skipf("Database not available: %v", err)
