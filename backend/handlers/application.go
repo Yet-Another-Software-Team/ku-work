@@ -217,7 +217,9 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 			}
 		}
 		var context Context
-		context.Application.Date = jobApplication.CreatedAt
+		// Convert to Bangkok timezone (GMT+7)
+		bangkokLocation, _ := time.LoadLocation("Asia/Bangkok")
+		context.Application.Date = jobApplication.CreatedAt.In(bangkokLocation)
 		context.Job = job
 
 		// Get company user details
