@@ -206,7 +206,7 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 	if !job.NotifyOnApplication {
 		return // Return early if notification is not required
 	}
-	
+
 	go (func() {
 		type Context struct {
 			CompanyUser model.User
