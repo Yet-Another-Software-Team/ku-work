@@ -1,7 +1,9 @@
 <template>
-    <UDrawer :open="isSelected" :ui="{ header: 'flex items-center justify-end' }">
+    <UDrawer :open="isSelected">
         <template #content>
-            <UButton color="neutral" variant="ghost" icon="i-lucide-x" @click="emit('close')" />
+            <div class="flex items-center justify-end">
+                <UButton color="neutral" variant="ghost" icon="i-lucide-x" @click="emit('close')" />
+            </div>
             <div
                 v-if="isSelected"
                 class="sticky top-10 overflow-y-auto p-4 sm:p-8 gap-2 max-w-[95vw] h-[95vh] sm:max-w-none"

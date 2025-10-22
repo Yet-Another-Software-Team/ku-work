@@ -77,32 +77,34 @@
             </section>
         </section>
         <!-- Expanded Job Post -->
-        <section v-if="selectedIndex !== null && selectedIndex < jobs.length" class="flex">
-            <!-- Normal Expand job (bigger than tablet) -->
-            <USeparator
-                orientation="vertical"
-                class="w-fit mx-5 hidden tablet:block"
-                color="neutral"
-                size="lg"
-            />
-            <section aria-label="job expand normal">
-                <JobPostExpanded
-                    v-if="jobs.length > 0"
-                    class="hidden tablet:block"
-                    :is-viewer="userRole === 'viewer'"
-                    :is-selected="true"
-                    :data="jobs[selectedIndex]!"
+        <Transition name="expand-slide-right" appear>
+            <section v-if="selectedIndex !== null && selectedIndex < jobs.length" class="flex">
+                <!-- Normal Expand job (bigger than tablet) -->
+                <USeparator
+                    orientation="vertical"
+                    class="w-fit mx-5 hidden tablet:block"
+                    color="neutral"
+                    size="lg"
                 />
-                <JobPostDrawer
-                    v-if="jobs.length > 0 && !isTablet"
-                    class="block tablet:hidden"
-                    :is-viewer="userRole === 'viewer'"
-                    :is-selected="true"
-                    :data="jobs[selectedIndex]!"
-                    @close="setSelectedIndex(null)"
-                />
+                <section aria-label="job expand normal">
+                    <JobPostExpanded
+                        v-if="jobs.length > 0"
+                        class="hidden tablet:block ease-in-out duration-100"
+                        :is-viewer="userRole === 'viewer'"
+                        :is-selected="true"
+                        :data="jobs[selectedIndex]!"
+                    />
+                    <JobPostDrawer
+                        v-if="jobs.length > 0 && !isTablet"
+                        class="block tablet:hidden"
+                        :is-viewer="userRole === 'viewer'"
+                        :is-selected="true"
+                        :data="jobs[selectedIndex]!"
+                        @close="setSelectedIndex(null)"
+                    />
+                </section>
             </section>
-        </section>
+        </Transition>
     </div>
 </template>
 
@@ -255,3 +257,32 @@ onMounted(() => {
 
 await fetchJobs();
 </script>
+
+<style scoped>
+/* Slide in from the right (more pronounced) when the expanded panel first appears */
+.expand-slide-right-enter-active,
+.expand-slide-right-leave-active {
+    transition-property: opacity, transform;
+    transition-duration: 100ms;
+    transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.expand-slide-right-enter-from,
+.expand-slide-right-appear-from {
+    opacity: 0;
+    transform: translateX(32px) scale(0.98);
+}
+.expand-slide-right-enter-to,
+.expand-slide-right-appear-to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+}
+/* Leave (slide out to the right) */
+.expand-slide-right-leave-from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+}
+.expand-slide-right-leave-to {
+    opacity: 0;
+    transform: translateX(32px) scale(0.98);
+}
+</style>
