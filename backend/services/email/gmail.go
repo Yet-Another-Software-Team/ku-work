@@ -68,7 +68,11 @@ func (cur *GmailEmailProvider) SendTo(ctx context.Context, target string, subjec
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				errChan <- fmt.Errorf("panic in email sending: %v", r)
+				select {
+				case errChan <- fmt.Errorf("panic in email sending: %v", r):
+				default:
+					// Context was already cancelled, don't block
+				}
 			}
 		}()
 		_, err := cur.gmailService.Users.Messages.Send("me", &message).Context(ctx).Do()
