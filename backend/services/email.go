@@ -89,7 +89,7 @@ func (cur *EmailService) SendTo(target string, subject string, content string) e
 		Body:      sanitizedContent,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
-		Status:    model.MailLogStatusDelivered,
+		Status:    model.MailLogStatusTemporaryError, // If it fail for no reason, log as temporary error to retry later.
 	}
 
 	// Create context with timeout
@@ -109,6 +109,8 @@ func (cur *EmailService) SendTo(target string, subject string, content string) e
 			mailLog.Status = model.MailLogStatusPermanentError
 		}
 		mailLog.ErrorDescription = errorMsg
+	} else {
+		mailLog.Status = model.MailLogStatusDelivered
 	}
 
 	// Save log to database
