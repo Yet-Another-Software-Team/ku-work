@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"fmt"
+	"html/template"
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
 	"ku-work/backend/services"
@@ -10,7 +11,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -549,7 +549,8 @@ func (h *JobHandlers) JobApprovalHandler(ctx *gin.Context) {
 		}
 		context.Job = job
 		context.Status = string(job.ApprovalStatus)
-		context.Reason = input.Reason
+		// Sanitize reason to prevent email header injection
+		context.Reason = helper.SanitizeEmailField(input.Reason)
 		var tpl bytes.Buffer
 		if err := h.jobApprovalStatusUpdateEmailTemplate.Execute(&tpl, context); err != nil {
 			return

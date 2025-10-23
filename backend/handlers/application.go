@@ -3,13 +3,13 @@ package handlers
 import (
 	"bytes"
 	"fmt"
+	"html/template"
 	"ku-work/backend/model"
 	"ku-work/backend/services"
 	"math"
 	"mime/multipart"
 	"net/http"
 	"strconv"
-	"text/template"
 	"time"
 
 	"github.com/gin-gonic/gin"
