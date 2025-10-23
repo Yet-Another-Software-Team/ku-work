@@ -3,8 +3,10 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"ku-work/backend/model"
 	"ku-work/backend/services/email"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -84,12 +86,13 @@ func (cur *EmailService) SendTo(target string, subject string, content string) e
 
 	// Create initial log entry
 	mailLog := model.MailLog{
-		To:        escapedTarget,
-		Subject:   escapedSubject,
-		Body:      sanitizedContent,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		Status:    model.MailLogStatusTemporaryError, // If it fail for no reason, log as temporary error to retry later.
+		To:         escapedTarget,
+		Subject:    escapedSubject,
+		Body:       sanitizedContent,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+		Status:     model.MailLogStatusTemporaryError, // If it fail for no reason, log as temporary error to retry later.
+		RetryCount: 0,
 	}
 
 	// Create context with timeout
@@ -147,4 +150,112 @@ func isTemporaryError(errorMsg string) bool {
 	}
 
 	return false
+}
+
+// RetryFailedEmails attempts to resend emails that failed with temporary errors
+func (cur *EmailService) RetryFailedEmails() error {
+
+	// Get retry configuration from environment variables
+	maxAttempts := 3
+	if maxAttemptsStr, hasMaxAttempts := os.LookupEnv("EMAIL_RETRY_MAX_ATTEMPTS"); hasMaxAttempts {
+		if attempts, err := strconv.Atoi(maxAttemptsStr); err == nil && attempts > 0 {
+			maxAttempts = attempts
+		}
+	}
+
+	retryIntervalMinutes := 30
+	if intervalStr, hasInterval := os.LookupEnv("EMAIL_RETRY_INTERVAL_MINUTES"); hasInterval {
+		if interval, err := strconv.Atoi(intervalStr); err == nil && interval > 0 {
+			retryIntervalMinutes = interval
+		}
+	}
+
+	maxAgeHours := 24
+	if maxAgeStr, hasMaxAge := os.LookupEnv("EMAIL_RETRY_MAX_AGE_HOURS"); hasMaxAge {
+		if age, err := strconv.Atoi(maxAgeStr); err == nil && age > 0 {
+			maxAgeHours = age
+		}
+	}
+
+	// Calculate cutoff times
+	retryAfter := time.Now().Add(-time.Duration(retryIntervalMinutes) * time.Minute)
+	maxAge := time.Now().Add(-time.Duration(maxAgeHours) * time.Hour)
+
+	// Query for emails with temporary errors that are ready to retry
+	var failedEmails []model.MailLog
+	result := cur.db.Where(
+		"status = ? AND updated_at < ? AND created_at > ?",
+		model.MailLogStatusTemporaryError,
+		retryAfter,
+		maxAge,
+	).Find(&failedEmails)
+
+	if result.Error != nil {
+		return fmt.Errorf("failed to query failed emails: %w", result.Error)
+	}
+
+	if len(failedEmails) == 0 {
+		log.Println("No failed emails to retry")
+		return nil
+	}
+
+	log.Printf("Found %d failed emails to retry", len(failedEmails))
+
+	successCount := 0
+	permanentFailCount := 0
+	temporaryFailCount := 0
+
+	for _, mailLog := range failedEmails {
+		// Check if we've exceeded max attempts
+		if mailLog.RetryCount >= maxAttempts {
+			// Mark as permanent error after max attempts
+			mailLog.Status = model.MailLogStatusPermanentError
+			mailLog.ErrorDescription = fmt.Sprintf("Max retry attempts (%d) exceeded. Last error: %s",
+				maxAttempts, mailLog.ErrorDescription)
+			mailLog.UpdatedAt = time.Now()
+			cur.db.Save(&mailLog)
+			permanentFailCount++
+			log.Printf("Email ID %d marked as permanent error after %d attempts", mailLog.ID, mailLog.RetryCount)
+			continue
+		}
+
+		// Increment retry count
+		mailLog.RetryCount++
+
+		// Create context with timeout
+		ctx, cancel := context.WithTimeout(context.Background(), cur.timeout)
+
+		// Attempt to resend
+		err := cur.provider.SendTo(ctx, mailLog.To, mailLog.Subject, mailLog.Body)
+		cancel()
+
+		// Update mail log based on result
+		mailLog.UpdatedAt = time.Now()
+		if err != nil {
+			errorMsg := err.Error()
+			if isTemporaryError(errorMsg) {
+				mailLog.Status = model.MailLogStatusTemporaryError
+				mailLog.ErrorDescription = errorMsg
+				temporaryFailCount++
+				log.Printf("Email ID %d retry failed with temporary error: %s", mailLog.ID, errorMsg)
+			} else {
+				mailLog.Status = model.MailLogStatusPermanentError
+				mailLog.ErrorDescription = errorMsg
+				permanentFailCount++
+				log.Printf("Email ID %d retry failed with permanent error: %s", mailLog.ID, errorMsg)
+			}
+		} else {
+			mailLog.Status = model.MailLogStatusDelivered
+			mailLog.ErrorDescription = ""
+			successCount++
+			log.Printf("Email ID %d successfully resent", mailLog.ID)
+		}
+
+		cur.db.Save(&mailLog)
+	}
+
+	log.Printf("Retry summary - Success: %d, Temporary Fail: %d, Permanent Fail: %d",
+		successCount, temporaryFailCount, permanentFailCount)
+
+	return nil
 }

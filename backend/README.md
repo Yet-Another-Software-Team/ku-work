@@ -134,6 +134,13 @@ For detailed documentation, see [`docs/JWT_BLACKLIST.md`](./docs/JWT_BLACKLIST.m
 - `EMAIL_PROVIDER`: Choose what email provider to use (dummy, SMTP, gmail, ...)
 - `EMAIL_TIMEOUT_SECONDS`: Specify the timeout duration of email sending attempt in seconds
 
+**Email Retry Configuration**
+- `EMAIL_RETRY_MAX_ATTEMPTS`: Maximum number of retry attempts for failed emails (default: 3)
+- `EMAIL_RETRY_INTERVAL_MINUTES`: Minutes to wait before retrying failed emails (default: 5)
+- `EMAIL_RETRY_MAX_AGE_HOURS`: Maximum age of emails to retry in hours (default: 24)
+
+The email service automatically retries emails that fail with temporary errors (e.g., network issues, rate limits, timeouts). Each retry attempt is tracked in the database (`RetryCount` field), and emails that exceed the maximum retry attempts are marked as permanent failures.
+
 If you use other provider than dummy follow the [configuration guide](./email_config.md) here.
 
 ## Running the Application
@@ -261,6 +268,13 @@ The application runs scheduled background tasks:
 2. **JWT Blacklist Cleanup** (hourly)
    - Removes expired JWTs from blacklist
    - Prevents unbounded table growth
+
+3. **Email Retry** (configurable)
+   - Automatically retries emails that failed with temporary errors
+   - Tracks actual retry attempts in database (`RetryCount` field)
+   - Respects configured retry interval and max attempts
+   - Marks emails as permanent failures after max attempts exceeded
+   - Only retries emails within the configured maximum age window
 
 ### Security Monitoring
 

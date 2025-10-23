@@ -20,4 +20,5 @@ type MailLog struct {
 	Status           MailLogStatus `gorm:"not null"`
 	ErrorCode        string
 	ErrorDescription string
+	RetryCount       int `gorm:"default:0"` // Number of retry attempts made
 }

@@ -66,6 +66,11 @@ A full-stack web application with Go backend and Nuxt.js frontend, featuring use
    # Email Configuration
    EMAIL_PROVIDER=dummy
    EMAIL_TIMEOUT_SECONDS=30
+   
+   # Email Retry Configuration
+   EMAIL_RETRY_MAX_ATTEMPTS=3
+   EMAIL_RETRY_INTERVAL_MINUTES=5
+   EMAIL_RETRY_MAX_AGE_HOURS=24
    ```
 
 #### Run Docker Compose
