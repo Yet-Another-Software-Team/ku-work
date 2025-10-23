@@ -12,7 +12,6 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
-	"ku-work/backend/helper"
 	"ku-work/backend/model"
 	"ku-work/backend/services"
 )
@@ -329,8 +328,7 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 		var context Context
 		context.OAuth.UserID = studentID
 		context.Status = string(student.ApprovalStatus)
-		// Sanitize reason to prevent email header injection
-		context.Reason = helper.SanitizeEmailField(input.Reason)
+		context.Reason = input.Reason
 		if err := h.DB.Select("email,first_name,last_name").Take(&context.OAuth).Error; err != nil {
 			return
 		}

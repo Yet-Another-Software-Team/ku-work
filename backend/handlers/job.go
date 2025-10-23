@@ -549,8 +549,7 @@ func (h *JobHandlers) JobApprovalHandler(ctx *gin.Context) {
 		}
 		context.Job = job
 		context.Status = string(job.ApprovalStatus)
-		// Sanitize reason to prevent email header injection
-		context.Reason = helper.SanitizeEmailField(input.Reason)
+		context.Reason = input.Reason
 		var tpl bytes.Buffer
 		if err := h.jobApprovalStatusUpdateEmailTemplate.Execute(&tpl, context); err != nil {
 			return

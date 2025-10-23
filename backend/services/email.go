@@ -64,16 +64,29 @@ func escapeHeaderValue(value string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(value, "\n", ""), "\r", "")
 }
 
+// sanitizeEmailContent removes potential email injection sequences from content
+// This prevents attackers from injecting email headers through the body
+func sanitizeEmailContent(content string) string {
+	// Remove any sequence that could break out of the email body section
+	// Replace \r\n with just \n to normalize line endings
+	sanitized := strings.ReplaceAll(content, "\r\n", "\n")
+	// Remove any standalone \r characters
+	sanitized = strings.ReplaceAll(sanitized, "\r", "")
+	return sanitized
+}
+
 func (cur *EmailService) SendTo(target string, subject string, content string) error {
 	// Escape header values
 	escapedTarget := escapeHeaderValue(target)
 	escapedSubject := escapeHeaderValue(subject)
+	// Sanitize content to prevent email injection
+	sanitizedContent := sanitizeEmailContent(content)
 
 	// Create initial log entry
 	mailLog := model.MailLog{
 		To:        escapedTarget,
 		Subject:   escapedSubject,
-		Body:      content,
+		Body:      sanitizedContent,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 		Status:    model.MailLogStatusDelivered,
@@ -84,7 +97,7 @@ func (cur *EmailService) SendTo(target string, subject string, content string) e
 	defer cancel()
 
 	// Attempt to send email with timeout
-	err := cur.provider.SendTo(ctx, escapedTarget, escapedSubject, content)
+	err := cur.provider.SendTo(ctx, escapedTarget, escapedSubject, sanitizedContent)
 
 	// Update log status based on result
 	if err != nil {
