@@ -228,7 +228,7 @@ func TestCompany(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		jwtHandler := handlers.NewJWTHandlers(db)
+		jwtHandler := handlers.NewJWTHandlers(db, redisClient)
 		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
 		if err != nil {
 			t.Error(err)
@@ -277,7 +277,7 @@ func TestCompany(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		jwtHandler := handlers.NewJWTHandlers(db)
+		jwtHandler := handlers.NewJWTHandlers(db, redisClient)
 		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
 		if err != nil {
 			t.Error(err)

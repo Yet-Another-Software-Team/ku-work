@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
+	"ku-work/backend/services"
 	"log"
 	"net/http"
 	"os"
@@ -17,16 +19,19 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/argon2"
 	"gorm.io/gorm"
 )
 
 type JWTHandlers struct {
-	DB        *gorm.DB
-	JWTSecret []byte
+	DB                *gorm.DB
+	RedisClient       *redis.Client
+	RevocationService *services.JWTRevocationService
+	JWTSecret         []byte
 }
 
-func NewJWTHandlers(db *gorm.DB) *JWTHandlers {
+func NewJWTHandlers(db *gorm.DB, redisClient *redis.Client) *JWTHandlers {
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 
 	if len(jwtSecret) == 0 {
@@ -35,9 +40,18 @@ func NewJWTHandlers(db *gorm.DB) *JWTHandlers {
 	if len(jwtSecret) < 32 {
 		log.Fatal("JWT_SECRET must be at least 32 bytes long for security")
 	}
+
+	if redisClient == nil {
+		log.Fatal("Redis client is required for JWT revocation")
+	}
+
+	revocationService := services.NewJWTRevocationService(redisClient)
+
 	return &JWTHandlers{
-		DB:        db,
-		JWTSecret: jwtSecret,
+		DB:                db,
+		RedisClient:       redisClient,
+		RevocationService: revocationService,
+		JWTSecret:         jwtSecret,
 	}
 }
 
@@ -317,19 +331,12 @@ func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
 
 			if err == nil && token.Valid {
 				if claims, ok := token.Claims.(*model.UserClaims); ok {
-					// Add JWT to blacklist (revoked tokens table)
-					revokedJWT := model.RevokedJWT{
-						JTI:       claims.ID, // JWT ID from claims
-						UserID:    claims.UserID,
-						ExpiresAt: claims.ExpiresAt.Time,
-						RevokedAt: time.Now(),
-					}
-
-					// Insert into blacklist - ignore duplicate errors (idempotent operation)
-					if err := h.DB.Create(&revokedJWT).Error; err != nil {
-						log.Printf("WARNING: Failed to blacklist JWT for user %s: %v", claims.UserID, err)
+					// Add JWT to Redis blacklist with automatic TTL expiration
+					err := h.RevocationService.RevokeJWT(context.Background(), claims.ID, claims.UserID, claims.ExpiresAt.Time)
+					if err != nil {
+						log.Printf("ERROR: Failed to blacklist JWT in Redis for user %s: %v", claims.UserID, err)
 					} else {
-						log.Printf("INFO: JWT blacklisted for user: %s, JTI: %s, IP: %s", claims.UserID, claims.ID, clientIP)
+						log.Printf("INFO: JWT blacklisted in Redis for user: %s, JTI: %s, IP: %s", claims.UserID, claims.ID, clientIP)
 					}
 				}
 			}

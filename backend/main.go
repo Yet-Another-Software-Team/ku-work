@@ -47,14 +47,13 @@ func main() {
 		return
 	}
 
-	// Initialize Redis for rate limiting
+	// Initialize Redis for JWT revocation and rate limiting (REQUIRED)
 	redisClient, redis_err := database.LoadRedis()
 	if redis_err != nil {
-		log.Printf("Warning: Redis initialization failed: %v. Rate limiting will fail open.", redis_err)
-		redisClient = nil
-	} else {
-		log.Println("Redis connected successfully")
+		log.Fatalf("FATAL: Redis initialization failed: %v. Redis is required for JWT revocation.", redis_err)
+		return
 	}
+	log.Println("Redis connected successfully")
 
 	// Create context for graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
@@ -64,9 +63,6 @@ func main() {
 	scheduler := helper.NewScheduler(ctx)
 	scheduler.AddTask("token-cleanup", time.Hour, func() error {
 		return helper.CleanupExpiredTokens(db)
-	})
-	scheduler.AddTask("jwt-blacklist-cleanup", time.Hour, func() error {
-		return helper.CleanupExpiredRevokedJWTs(db)
 	})
 	scheduler.Start()
 

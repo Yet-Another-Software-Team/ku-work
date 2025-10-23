@@ -54,6 +54,8 @@ func TestMain(m *testing.M) {
 		_ = os.Setenv("DOCKER_HOST", "unix://"+podmanSocketPath)
 	}
 	_ = os.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
+
+	// Setup PostgreSQL testcontainer
 	req := testcontainers.ContainerRequest{
 		Name:         "kuwork-test-database",
 		Image:        "postgres:17-alpine",
@@ -70,43 +72,86 @@ func TestMain(m *testing.M) {
 		Started:          true,
 		Reuse:            true,
 	})
+
 	if err != nil {
 		panic(err)
 	}
-	port, err := postgresContainer.MappedPort(ctx, "5432/tcp")
+
+	// Setup Redis testcontainer
+	redisReq := testcontainers.ContainerRequest{
+		Name:         "kuwork-test-redis",
+		Image:        "redis:7-alpine",
+		ExposedPorts: []string{"6379/tcp"},
+		WaitingFor:   wait.ForLog("Ready to accept connections"),
+	}
+	redisContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: redisReq,
+		Started:          true,
+		Reuse:            true,
+	})
 	if err != nil {
 		_ = testcontainers.TerminateContainer(postgresContainer)
 		panic(err)
 	}
+
+	// Get PostgreSQL port
+	port, err := postgresContainer.MappedPort(ctx, "5432/tcp")
+	if err != nil {
+		_ = testcontainers.TerminateContainer(postgresContainer)
+		_ = testcontainers.TerminateContainer(redisContainer)
+		panic(err)
+	}
+
 	// idk why but sometimes it couldn't connect to db even though it said ready to accept connections in the logs
 	time.Sleep(500000000)
+
+	// Configure PostgreSQL
 	_ = os.Setenv("DB_USERNAME", "tester")
 	_ = os.Setenv("DB_PASSWORD", "1234")
 	_ = os.Setenv("DB_HOST", "127.0.0.1")
 	_ = os.Setenv("DB_PORT", port.Port())
 	_ = os.Setenv("DB_NAME", "kuwork")
+
 	db, err = database.LoadDB()
 	if err != nil {
 		_ = testcontainers.TerminateContainer(postgresContainer)
+		_ = testcontainers.TerminateContainer(redisContainer)
 		panic(err)
 	}
+
+	// Get Redis port
+	redisPort, err := redisContainer.MappedPort(ctx, "6379/tcp")
+	if err != nil {
+		_ = testcontainers.TerminateContainer(postgresContainer)
+		_ = testcontainers.TerminateContainer(redisContainer)
+		panic(err)
+	}
+
+	// Configure Redis
+	_ = os.Setenv("REDIS_HOST", "127.0.0.1")
+	_ = os.Setenv("REDIS_PORT", redisPort.Port())
+	_ = os.Setenv("REDIS_PASSWORD", "")
+	_ = os.Setenv("REDIS_DB", "0")
+
+	redisClient, err = database.LoadRedis()
+	if err != nil {
+		_ = testcontainers.TerminateContainer(postgresContainer)
+		_ = testcontainers.TerminateContainer(redisContainer)
+		panic(err)
+	}
+
+	// Configure other environment variables
 	_ = os.Setenv("JWT_SECRET", "please-change-this-is-insecure!!")
 	_ = os.Setenv("GOOGLE_CLIENT_SECRET", "GOCSPX-idklmao")
 	_ = os.Setenv("GOOGLE_CLIENT_ID", "012345678901-1md5idklmao.apps.googleusercontent.com")
 	_ = os.Setenv("APPROVAL_AI", "dummy")
 	_ = os.Setenv("EMAIL_PROVIDER", "dummy")
 
-	// Initialize Redis for rate limiting (optional for tests)
-	redisClient, err = database.LoadRedis()
-	if err != nil {
-		// Redis is optional for tests - rate limiter will fail open
-		redisClient = nil
-	}
-
 	router = gin.Default()
 	if err := handlers.SetupRoutes(router, db, redisClient); err != nil {
 		panic(err)
 	}
+
 	code := m.Run()
 
 	// Clean up Redis connection
@@ -114,7 +159,10 @@ func TestMain(m *testing.M) {
 		_ = redisClient.Close()
 	}
 
+	// Terminate containers
+	_ = testcontainers.TerminateContainer(redisContainer)
 	_ = testcontainers.TerminateContainer(postgresContainer)
+
 	os.Exit(code)
 }
 

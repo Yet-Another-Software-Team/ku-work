@@ -2,7 +2,6 @@ package tests
 
 import (
 	"encoding/json"
-	"ku-work/backend/database"
 	"ku-work/backend/handlers"
 	"ku-work/backend/middlewares"
 	"ku-work/backend/model"
@@ -13,22 +12,22 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 // setupTestRouter creates a test router with all necessary handlers
-func setupTestRouter(db *gorm.DB, jwtHandlers *handlers.JWTHandlers) *gin.Engine {
+func setupTestRouter(redisClient *redis.Client, jwtHandlers *handlers.JWTHandlers) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 
 	// Setup routes similar to production
 	auth := router.Group("/auth")
-	authProtected := auth.Group("", middlewares.AuthMiddlewareWithDB(jwtHandlers.JWTSecret, db))
+	authProtected := auth.Group("", middlewares.AuthMiddlewareWithRedis(jwtHandlers.JWTSecret, redisClient))
 	authProtected.POST("/logout", jwtHandlers.LogoutHandler)
 
 	// Protected route to test authentication
-	router.GET("/protected", middlewares.AuthMiddlewareWithDB(jwtHandlers.JWTSecret, db), func(c *gin.Context) {
+	router.GET("/protected", middlewares.AuthMiddlewareWithRedis(jwtHandlers.JWTSecret, redisClient), func(c *gin.Context) {
 		userID, _ := c.Get("userID")
 		c.JSON(http.StatusOK, gin.H{"userID": userID})
 	})
@@ -38,22 +37,14 @@ func setupTestRouter(db *gorm.DB, jwtHandlers *handlers.JWTHandlers) *gin.Engine
 
 // TestJWTBlacklistOnLogout tests that JWT is blacklisted after logout
 func TestJWTBlacklistOnLogout(t *testing.T) {
-	// Setup test database
-	db, err := database.LoadDB()
-	if err != nil {
-		t.Skipf("Database not available: %v", err)
-		return
-	}
-
 	// Clean up test data
-	db.Unscoped().Where("1 = 1").Delete(&model.RevokedJWT{})
 	db.Unscoped().Where("1 = 1").Delete(&model.RefreshToken{})
 
 	// Create JWT handlers
-	jwtHandlers := handlers.NewJWTHandlers(db)
+	jwtHandlers := handlers.NewJWTHandlers(db, redisClient)
 
 	// Setup router
-	router := setupTestRouter(db, jwtHandlers)
+	router := setupTestRouter(redisClient, jwtHandlers)
 
 	// Generate test tokens for a test user with valid UUID
 	testUserID := uuid.New().String()
@@ -82,17 +73,10 @@ func TestJWTBlacklistOnLogout(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code, "Logout should succeed")
-		var response map[string]interface{}
+		var response map[string]any
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err, "Should parse JSON response")
 		assert.Equal(t, "Logged out successfully", response["message"])
-
-		// Verify JWT is in blacklist
-		var revokedJWT model.RevokedJWT
-		err = db.Where("user_id = ?", testUserID).First(&revokedJWT).Error
-		assert.NoError(t, err, "JWT should be in blacklist")
-		assert.NotEmpty(t, revokedJWT.JTI, "JTI should be set")
-		assert.Equal(t, testUserID, revokedJWT.UserID, "User ID should match")
 	})
 
 	// Step 3: Verify token is rejected after logout
@@ -103,7 +87,7 @@ func TestJWTBlacklistOnLogout(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code, "Should reject revoked token")
-		var response map[string]interface{}
+		var response map[string]any
 		err = json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err, "Should parse JSON response")
 		assert.Equal(t, "Token has been revoked", response["error"])
@@ -112,18 +96,11 @@ func TestJWTBlacklistOnLogout(t *testing.T) {
 
 // TestJWTBlacklistMultipleSessions tests that only the logged out session is invalidated
 func TestJWTBlacklistMultipleSessions(t *testing.T) {
-	db, err := database.LoadDB()
-	if err != nil {
-		t.Skipf("Database not available: %v", err)
-		return
-	}
-
 	// Clean up
-	db.Unscoped().Where("1 = 1").Delete(&model.RevokedJWT{})
 	db.Unscoped().Where("1 = 1").Delete(&model.RefreshToken{})
 
-	jwtHandlers := handlers.NewJWTHandlers(db)
-	router := setupTestRouter(db, jwtHandlers)
+	jwtHandlers := handlers.NewJWTHandlers(db, redisClient)
+	router := setupTestRouter(redisClient, jwtHandlers)
 
 	testUserID := uuid.New().String()
 
@@ -179,56 +156,12 @@ func TestJWTBlacklistMultipleSessions(t *testing.T) {
 	})
 }
 
-// TestJWTBlacklistCleanup tests that expired JWTs are removed from blacklist
+// TestJWTBlacklistCleanup tests that Redis automatically handles TTL expiration
 func TestJWTBlacklistCleanup(t *testing.T) {
-	db, err := database.LoadDB()
-	if err != nil {
-		t.Skipf("Database not available: %v", err)
-		return
-	}
+	t.Skip("Redis handles cleanup automatically via TTL - no manual cleanup needed")
 
-	// Clean up
-	db.Unscoped().Where("1 = 1").Delete(&model.RevokedJWT{})
-
-	// Insert some test revoked JWTs with valid UUID
-	testUserID := uuid.New().String()
-	expiredJWT := model.RevokedJWT{
-		JTI:       "expired-jwt-123",
-		UserID:    testUserID,
-		ExpiresAt: time.Now().Add(-1 * time.Hour), // Expired 1 hour ago
-		RevokedAt: time.Now().Add(-2 * time.Hour),
-	}
-	db.Create(&expiredJWT)
-
-	activeJWT := model.RevokedJWT{
-		JTI:       "active-jwt-456",
-		UserID:    testUserID,
-		ExpiresAt: time.Now().Add(10 * time.Minute), // Still valid
-		RevokedAt: time.Now(),
-	}
-	db.Create(&activeJWT)
-
-	// Verify both exist
-	var count int64
-	db.Model(&model.RevokedJWT{}).Count(&count)
-	assert.Equal(t, int64(2), count, "Should have 2 revoked JWTs")
-
-	// Run cleanup (this would normally be done by scheduler)
-	// Note: In real test, import the cleanup function from helper package
-	now := time.Now()
-	result := db.Unscoped().
-		Where("expires_at < ?", now).
-		Delete(&model.RevokedJWT{})
-	assert.NoError(t, result.Error)
-	assert.Equal(t, int64(1), result.RowsAffected, "Should delete 1 expired JWT")
-
-	// Verify only active JWT remains
-	var remaining []model.RevokedJWT
-	db.Find(&remaining)
-	assert.Equal(t, 1, len(remaining), "Should have 1 JWT remaining")
-	if len(remaining) > 0 {
-		assert.Equal(t, "active-jwt-456", remaining[0].JTI, "Active JWT should remain")
-	}
+	// With Redis, expired JWTs are automatically removed when their TTL expires
+	// No cleanup task or test needed - this is a Redis built-in feature
 }
 
 // TestJWTWithoutJTI tests backward compatibility with JWTs without JTI
@@ -243,17 +176,10 @@ func TestJWTWithoutJTI(t *testing.T) {
 
 // TestMultipleLogoutAttempts tests idempotent logout behavior
 func TestMultipleLogoutAttempts(t *testing.T) {
-	db, err := database.LoadDB()
-	if err != nil {
-		t.Skipf("Database not available: %v", err)
-		return
-	}
-
-	db.Unscoped().Where("1 = 1").Delete(&model.RevokedJWT{})
 	db.Unscoped().Where("1 = 1").Delete(&model.RefreshToken{})
 
-	jwtHandlers := handlers.NewJWTHandlers(db)
-	router := setupTestRouter(db, jwtHandlers)
+	jwtHandlers := handlers.NewJWTHandlers(db, redisClient)
+	router := setupTestRouter(redisClient, jwtHandlers)
 
 	testUserID := uuid.New().String()
 	jwtToken, _, err := jwtHandlers.GenerateTokens(testUserID)
@@ -279,32 +205,4 @@ func TestMultipleLogoutAttempts(t *testing.T) {
 		assert.True(t, w.Code == http.StatusOK || w.Code == http.StatusUnauthorized,
 			"Should handle multiple logout attempts gracefully")
 	})
-}
-
-// Benchmark JWT blacklist lookup performance
-func BenchmarkJWTBlacklistLookup(b *testing.B) {
-	db, err := database.LoadDB()
-	if err != nil {
-		b.Skipf("Database not available: %v", err)
-		return
-	}
-
-	// Seed some revoked JWTs
-	for i := 0; i < 100; i++ {
-		jwt := model.RevokedJWT{
-			JTI:       "benchmark-jwt-" + string(rune(i)),
-			UserID:    "bench-user",
-			ExpiresAt: time.Now().Add(15 * time.Minute),
-			RevokedAt: time.Now(),
-		}
-		db.Create(&jwt)
-	}
-
-	testJTI := "benchmark-jwt-50"
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		var revokedJWT model.RevokedJWT
-		db.Where("jti = ?", testJTI).First(&revokedJWT)
-	}
 }
