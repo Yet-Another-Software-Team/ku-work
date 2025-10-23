@@ -1470,9 +1470,9 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Student User ID",
+                        "description": "Student Email",
                         "name": "studentUserId",
-                        "in": "path",
+                        "in": "query",
                         "required": true
                     }
                 ],
@@ -1696,8 +1696,8 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "properties": {
-                                "id": {
-                                    "type": "integer"
+                                "message": {
+                                    "type": "string"
                                 }
                             }
                         }
@@ -2434,9 +2434,6 @@ const docTemplate = `{
                 "github": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "integer"
-                },
                 "jobId": {
                     "type": "integer"
                 },
@@ -2618,9 +2615,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/model.File"
                     }
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "jobId": {
                     "type": "integer"

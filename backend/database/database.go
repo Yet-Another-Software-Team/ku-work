@@ -53,6 +53,7 @@ func LoadDB() (*gorm.DB, error) {
 		&model.Admin{},
 		&model.GoogleOAuthDetails{},
 		&model.RefreshToken{},
+		&model.RevokedJWT{},
 		&model.Job{},
 		&model.Student{},
 		&model.Company{},

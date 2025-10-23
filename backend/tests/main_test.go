@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -20,6 +21,7 @@ import (
 )
 
 var db *gorm.DB
+var redisClient *redis.Client
 var router *gin.Engine
 
 // A 1x1 pixel black PNG for testing file uploads.
@@ -88,16 +90,30 @@ func TestMain(m *testing.M) {
 		_ = testcontainers.TerminateContainer(postgresContainer)
 		panic(err)
 	}
-	_ = os.Setenv("JWT_SECRET", "1234")
+	_ = os.Setenv("JWT_SECRET", "please-change-this-is-insecure!!")
 	_ = os.Setenv("GOOGLE_CLIENT_SECRET", "GOCSPX-idklmao")
 	_ = os.Setenv("GOOGLE_CLIENT_ID", "012345678901-1md5idklmao.apps.googleusercontent.com")
 	_ = os.Setenv("APPROVAL_AI", "dummy")
 	_ = os.Setenv("EMAIL_PROVIDER", "dummy")
+
+	// Initialize Redis for rate limiting (optional for tests)
+	redisClient, err = database.LoadRedis()
+	if err != nil {
+		// Redis is optional for tests - rate limiter will fail open
+		redisClient = nil
+	}
+
 	router = gin.Default()
-	if err := handlers.SetupRoutes(router, db); err != nil {
+	if err := handlers.SetupRoutes(router, db, redisClient); err != nil {
 		panic(err)
 	}
 	code := m.Run()
+
+	// Clean up Redis connection
+	if redisClient != nil {
+		_ = redisClient.Close()
+	}
+
 	_ = testcontainers.TerminateContainer(postgresContainer)
 	os.Exit(code)
 }
