@@ -3,13 +3,13 @@ package main
 import (
 	"fmt"
 	"ku-work/backend/database"
+	"ku-work/backend/helper"
 	"ku-work/backend/model"
 	"log"
 	"os"
 	"syscall"
 
 	"github.com/joho/godotenv"
-	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/term"
 	"gorm.io/gorm"
 )
@@ -46,7 +46,7 @@ func main() {
 		log.Fatalf("Failed to check for existing user: %v", err)
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedPassword, err := helper.HashPassword(password)
 	if err != nil {
 		log.Fatalf("Failed to hash password: %v", err)
 	}
@@ -55,7 +55,7 @@ func main() {
 		user := model.User{
 			Username:     username,
 			UserType:     "admin",
-			PasswordHash: string(hashedPassword),
+			PasswordHash: hashedPassword,
 		}
 
 		if err := tx.Create(&user).Error; err != nil {

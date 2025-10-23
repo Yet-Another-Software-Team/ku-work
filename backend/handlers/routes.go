@@ -5,10 +5,11 @@ import (
 	"ku-work/backend/services"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
-func SetupRoutes(router *gin.Engine, db *gorm.DB) error {
+func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client) error {
 	// Initialize handlers
 	jwtHandlers := NewJWTHandlers(db)
 	fileHandlers := NewFileHandlers(db)
@@ -40,24 +41,24 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) error {
 
 	// Authentication Routes
 	auth := router.Group("/auth")
-	auth.POST("/admin/login", localAuthHandlers.AdminLoginHandler)
+	auth.POST("/admin/login", middlewares.RateLimiterWithLimits(redisClient, 5, 20), localAuthHandlers.AdminLoginHandler)
 	auth.POST("/company/register", localAuthHandlers.CompanyRegisterHandler)
-	auth.POST("/company/login", localAuthHandlers.CompanyLoginHandler)
-	auth.POST("/google/login", googleAuthHandlers.GoogleOauthHandler)
+	auth.POST("/company/login", middlewares.RateLimiterWithLimits(redisClient, 5, 20), localAuthHandlers.CompanyLoginHandler)
+	auth.POST("/google/login", middlewares.RateLimiterWithLimits(redisClient, 5, 20), googleAuthHandlers.GoogleOauthHandler)
 
 	// Protected Authentication Routes
-	authProtected := auth.Group("", middlewares.AuthMiddleware(jwtHandlers.JWTSecret))
+	authProtected := auth.Group("", middlewares.AuthMiddlewareWithDB(jwtHandlers.JWTSecret, db))
 	authProtected.POST("/student/register", studentHandlers.RegisterHandler)
-	authProtected.POST("/refresh", jwtHandlers.RefreshTokenHandler)
+	authProtected.POST("/refresh", middlewares.RateLimiterWithLimits(redisClient, 5, 20), jwtHandlers.RefreshTokenHandler)
 	authProtected.POST("/logout", jwtHandlers.LogoutHandler)
 
-	// File Routes (Currently public)
-	router.GET("/files/:fileID", fileHandlers.ServeFileHandler)
-
 	// User Routes
-	protectedRouter := router.Group("", middlewares.AuthMiddleware(jwtHandlers.JWTSecret))
+	protectedRouter := router.Group("", middlewares.AuthMiddlewareWithDB(jwtHandlers.JWTSecret, db))
 	protectedRouter.PATCH("/me", userHandlers.EditProfileHandler)
 	protectedRouter.GET("/me", userHandlers.GetProfileHandler)
+
+	// File Routes (Only Authed)
+	protectedRouter.GET("/files/:fileID", fileHandlers.ServeFileHandler)
 
 	// Company Routs
 	company := protectedRouter.Group("/company")

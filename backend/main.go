@@ -1,11 +1,17 @@
 package main
 
 import (
+	"context"
 	"ku-work/backend/database"
 	"ku-work/backend/handlers"
+	"ku-work/backend/helper"
 	"ku-work/backend/middlewares"
 	"log"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -41,6 +47,29 @@ func main() {
 		return
 	}
 
+	// Initialize Redis for rate limiting
+	redisClient, redis_err := database.LoadRedis()
+	if redis_err != nil {
+		log.Printf("Warning: Redis initialization failed: %v. Rate limiting will fail open.", redis_err)
+		redisClient = nil
+	} else {
+		log.Println("Redis connected successfully")
+	}
+
+	// Create context for graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Setup scheduler for background tasks
+	scheduler := helper.NewScheduler(ctx)
+	scheduler.AddTask("token-cleanup", time.Hour, func() error {
+		return helper.CleanupExpiredTokens(db)
+	})
+	scheduler.AddTask("jwt-blacklist-cleanup", time.Hour, func() error {
+		return helper.CleanupExpiredRevokedJWTs(db)
+	})
+	scheduler.Start()
+
 	router := gin.Default()
 
 	// Setup CORS middleware
@@ -48,7 +77,7 @@ func main() {
 	router.Use(cors.New(corsConfig))
 
 	// Setup routes
-	if err := handlers.SetupRoutes(router, db); err != nil {
+	if err := handlers.SetupRoutes(router, db, redisClient); err != nil {
 		log.Fatal(err)
 	}
 
@@ -67,8 +96,47 @@ func main() {
 	if !has_listen_address {
 		listen_address = ":8000"
 	}
-	run_err := router.Run(listen_address)
-	if run_err != nil {
-		log.Fatal("Server is Failed to Run")
+
+	// Create HTTP server
+	srv := &http.Server{
+		Addr:    listen_address,
+		Handler: router,
 	}
+
+	// Start server in a goroutine
+	go func() {
+		log.Printf("Starting server on %s", listen_address)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server failed to start: %v", err)
+		}
+	}()
+
+	// Wait for interrupt signal
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	<-sigChan
+
+	log.Println("Shutdown signal received, starting graceful shutdown...")
+
+	// Create shutdown context with timeout
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+
+	// Shutdown HTTP server
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("Server forced to shutdown: %v", err)
+	}
+
+	// Stop scheduler
+	cancel()
+	scheduler.Wait()
+
+	// Close Redis connection
+	if redisClient != nil {
+		if err := redisClient.Close(); err != nil {
+			log.Printf("Error closing Redis connection: %v", err)
+		}
+	}
+
+	log.Println("Server stopped gracefully")
 }

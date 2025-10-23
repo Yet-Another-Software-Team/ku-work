@@ -1,11 +1,12 @@
 # Backend API
 
-A RESTful API built with Go, Gin framework, PostgreSQL, and GORM for user management operations.
+A RESTful API built with Go, Gin framework, PostgreSQL, Redis, and GORM for user management and authentication operations.
 
 ## Prerequisites
 
 - Go 1.23.3 or higher
 - PostgreSQL 13+ (or Docker for containerized setup)
+- Redis 7+ (or Docker for containerized setup)
 
 ## Installation
 
@@ -48,6 +49,16 @@ Copy `sample.env` to `.env` and configure the following variables:
 - `DB_PASSWORD`: Database password
 - `DB_NAME`: Database name
 
+### Redis Configuration
+Redis is used for rate limiting and session management.
+
+- `REDIS_HOST`: Redis host (default: localhost)
+- `REDIS_PORT`: Redis port (default: 6379)
+- `REDIS_PASSWORD`: Redis password (optional, leave empty if not required)
+- `REDIS_DB`: Redis database number (default: 0)
+
+**Note**: The application will start even if Redis is unavailable, but rate limiting will be disabled (fail-open behavior). For production deployments, ensure Redis is running for security features.
+
 ### Server Configuration
 - `LISTEN_ADDRESS`: Server listen address (default: :8080)
 
@@ -59,7 +70,23 @@ Copy `sample.env` to `.env` and configure the following variables:
 - `CORS_MAX_AGE`: Preflight cache duration in seconds
 
 ### JWT Configuration
-- `JWT_SECRET`: Secret key for JWT token generation
+- `JWT_SECRET`: Secret key for JWT token generation (minimum 32 bytes recommended)
+  - JWTs expire in 15 minutes
+  - Include unique JTI (JWT ID) for blacklist support
+  - OWASP-compliant token revocation on logout
+
+### Session Configuration
+- `MAX_SESSIONS_PER_USER`: Maximum number of concurrent sessions per user (default: 10)
+  - Users can be logged in on multiple devices simultaneously
+  - When limit is reached, oldest sessions are automatically revoked
+  - Set to 1 for single-session-only (most secure)
+  - Higher values allow more convenience but increase token storage
+
+### Cookie Configuration
+- `COOKIE_SECURE`: Enable secure flag for cookies (true/false, default: true)
+  - Set to `true` for HTTPS environments (production)
+  - Set to `false` for HTTP environments (local development)
+  - Note: Cookies use SameSite=None for cross-origin support
 
 ### GoogleOauth Configuration
 - `GOOGLE_CLIENT_ID`: Client ID for Google OAuth
@@ -67,6 +94,34 @@ Copy `sample.env` to `.env` and configure the following variables:
 
 ### Swagger Configuration
 - `SWAGGER_HOST`: Swagger host (default: localhost:8000)
+
+## Security Features
+
+### OWASP-Compliant Logout & Session Termination
+
+This application implements OWASP ASVS 3.3.1 requirements for session termination:
+
+**JWT Blacklist Implementation**:
+- When a user logs out, their JWT is immediately added to a blacklist (revoked tokens table)
+- All subsequent requests with that JWT are rejected with 401 Unauthorized
+- Prevents token reuse after logout, even if the token hasn't expired
+- Each JWT has a unique JTI (JWT ID) for precise tracking
+
+**Dual Token System**:
+- **Access Token (JWT)**: Short-lived (15 minutes), stored in client memory
+- **Refresh Token**: Long-lived (30 days), stored as HTTP-only cookie with Argon2id hashing
+
+**Automatic Cleanup**:
+- Expired JWTs are automatically removed from blacklist (runs hourly)
+- Expired refresh tokens are cleaned up after 7-day grace period
+- Prevents unbounded database growth
+
+**Rate Limiting**:
+- Redis-based rate limiting on authentication endpoints
+- Protects against brute force attacks
+- Configurable per-minute and per-hour limits
+
+For detailed documentation, see [`docs/JWT_BLACKLIST.md`](./docs/JWT_BLACKLIST.md)
 
 ### AI Configuration
 - `APPROVAL_AI`: Choose what AI to use (dummy, ollama, ...)
@@ -85,9 +140,9 @@ If you use other provider than dummy follow the [configuration guide](./email_co
 
 ### Development Mode
 
-1. **Start the database** (if using Docker)
+1. **Start the database and Redis** (if using Docker)
    ```bash
-   docker compose up -d db
+   docker compose up -d db redis
    ```
 
 2. **Run the application**
@@ -109,12 +164,13 @@ If you use other provider than dummy follow the [configuration guide](./email_co
 
 ## Docker Compose Usage
 
-The project includes Docker Compose configuration for easy database usage:
+The project includes Docker Compose configuration for easy database and Redis usage:
 
 1. **Start the backend services**
    ```bash
    docker compose up -d
    ```
+   This will start PostgreSQL, Redis, and the backend API.
 
 2. **Stop the server**
    ```bash
@@ -165,6 +221,15 @@ The codebase follows a modular structure:
 
 GORM handles automatic migrations when the application starts. New model fields will be automatically added to the database schema.
 
+**Included Models**:
+- `User`, `Admin`, `Company`, `Student`: User management
+- `RefreshToken`: Refresh token storage with Argon2id hashing
+- `RevokedJWT`: JWT blacklist for logout functionality
+- `Job`, `JobApplication`: Job posting and application management
+- `File`: File upload management
+- `Audit`: Audit logging
+- `GoogleOAuthDetails`: OAuth integration
+
 ### Swagger Documentation
 
 Swagger documentation is available at `/swagger/index.html`.
@@ -182,3 +247,57 @@ On windows - Does not tested
 ```bash
 swag init -g main.go
 ```
+
+## Monitoring & Maintenance
+
+### Background Tasks
+
+The application runs scheduled background tasks:
+
+1. **Token Cleanup** (hourly)
+   - Removes expired refresh tokens
+   - Keeps revoked tokens for 7 days (reuse detection)
+
+2. **JWT Blacklist Cleanup** (hourly)
+   - Removes expired JWTs from blacklist
+   - Prevents unbounded table growth
+
+### Security Monitoring
+
+Monitor these metrics for security:
+- Blocked revoked token attempts (search logs for "SECURITY: Blocked revoked JWT")
+- Rate limit violations
+- Token reuse detection alerts
+- Blacklist table size: `SELECT COUNT(*) FROM revoked_jwts`
+
+### Testing
+
+Run the test suite:
+```bash
+go test ./tests -v
+```
+
+Run specific test:
+```bash
+go test ./tests -v -run TestJWTBlacklist
+```
+
+## Troubleshooting
+
+### Redis Connection Issues
+If Redis is unavailable:
+- Application will start but log warnings
+- Rate limiting will be disabled (fail-open)
+- Consider this acceptable for development, but fix for production
+
+### JWT Issues
+- **"Token has been revoked"**: User logged out, need to login again
+- **"Invalid token"**: Token expired (15 min), use refresh token endpoint
+- **Tokens not being blacklisted**: Check database connection and `revoked_jwts` table
+
+### Database Issues
+- Check connection settings in `.env`
+- Verify PostgreSQL is running: `docker compose ps`
+- Check logs: `docker compose logs db`
+```
+
