@@ -221,7 +221,7 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 		Open           *bool    `json:"open" form:"open"`
 		CompanyID      string   `json:"companyId" form:"companyId" binding:"max=64"`
 		JobID          *uint    `json:"id" form:"id" binding:"omitempty,max=64"`
-		ApprovalStatus *string  `json:"approvalStatus" form:"approvalStatus" binding:"omitempty"`
+		ApprovalStatus *string  `json:"approvalStatus" form:"approvalStatus" binding:"omitempty,oneof=pending accepted rejected"`
 	}
 
 	// Set default values for some fields and bind the input
