@@ -123,8 +123,6 @@ func setupScheduler(ctx context.Context, db *gorm.DB, emailService *services.Ema
 	return scheduler
 }
 
-
-
 // getEmailRetryInterval reads the email retry interval from environment or returns default
 func getEmailRetryInterval() time.Duration {
 	defaultInterval := 5 * time.Minute
