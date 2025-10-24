@@ -23,7 +23,7 @@
                     <span class="flex-shrink-0">
                         <img
                             v-if="job.photoId"
-                            :src="`${useRuntimeConfig().public.apiBaseUrl}/files/${job.photoId}`"
+                            :src="photo"
                             alt="Company Logo"
                             class="rounded-full size-[6em] mt-2 object-cover"
                         />
@@ -138,11 +138,13 @@
 import type { JobPost } from "~/data/mockData";
 const props = defineProps<{ requestId: string }>();
 const api = useApi();
+const config = useRuntimeConfig();
 const toast = useToast();
 
 const isLoading = ref(true);
 const actionLoading = ref<"accept" | "decline" | null>(null);
 const job = ref<JobPost | null>(null);
+const photo = ref<string>("");
 
 function formatSalary(salary: number): string {
     return new Intl.NumberFormat("en", { notation: "compact" }).format(salary);
@@ -175,6 +177,7 @@ async function loadJob() {
         });
         const payload = response.data as JobPost | { job: JobPost };
         job.value = ("job" in payload ? payload.job : payload) as JobPost;
+        photo.value = config.public.apiBaseUrl + "/files/" + job.value.photoId;
         console.log("Fetched job data:", job.value);
     } catch (error) {
         console.error("Error fetching job data:", error);

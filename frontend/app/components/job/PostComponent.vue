@@ -77,6 +77,7 @@
 
 <script setup lang="ts">
 import type { JobPost } from "~/data/mockData";
+import { formatJobType, formatExperience } from "~/utils/formatter";
 
 const runtimeConfig = useRuntimeConfig();
 
@@ -105,27 +106,5 @@ function timeAgo(createdAt: string): string {
     if (diffHour > 0) return `${diffHour} hour${diffHour > 1 ? "s" : ""} ago`;
     if (diffMin > 0) return `${diffMin} minute${diffMin > 1 ? "s" : ""} ago`;
     return "just now";
-}
-
-function formatJobType(type: string): string {
-    const typeMap: Record<string, string> = {
-        fulltime: "Full Time",
-        parttime: "Part Time",
-        contract: "Contract",
-        casual: "Casual",
-        internship: "Internship",
-    };
-    return typeMap[type.toLowerCase()] || type;
-}
-
-function formatExperience(exp: string): string {
-    const expMap: Record<string, string> = {
-        newgrad: "New Grad",
-        junior: "Junior",
-        senior: "Senior",
-        manager: "Manager",
-        internship: "Internship",
-    };
-    return expMap[exp.toLowerCase()] || exp;
 }
 </script>
