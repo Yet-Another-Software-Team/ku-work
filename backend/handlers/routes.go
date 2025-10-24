@@ -9,20 +9,13 @@ import (
 	"gorm.io/gorm"
 )
 
-func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client) error {
+func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, emailService *services.EmailService, aiService *services.AIService) error {
 	// Initialize handlers
 	jwtHandlers := NewJWTHandlers(db, redisClient)
 	fileHandlers := NewFileHandlers(db)
 	localAuthHandlers := NewLocalAuthHandlers(db, jwtHandlers)
 	googleAuthHandlers := NewOAuthHandlers(db, jwtHandlers)
-	emailService, err := services.NewEmailService(db)
-	if err != nil {
-		return err
-	}
-	aiService, err := services.NewAIService(db, emailService)
-	if err != nil {
-		return err
-	}
+
 	jobHandlers, err := NewJobHandlers(db, aiService, emailService)
 	if err != nil {
 		return err

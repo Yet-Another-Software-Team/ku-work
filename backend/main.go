@@ -6,16 +6,20 @@ import (
 	"ku-work/backend/handlers"
 	"ku-work/backend/helper"
 	"ku-work/backend/middlewares"
+	"ku-work/backend/services"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 
 	docs "ku-work/backend/docs"
 
@@ -35,85 +39,179 @@ import (
 func main() {
 	_ = godotenv.Load()
 
-	// Create files directory if it doesn't exist
-	if err := os.MkdirAll("./files", 0755); err != nil {
+	// Initialize infrastructure
+	if err := initializeFilesDirectory(); err != nil {
 		log.Printf("Failed to create files directory: %v", err)
 		return
 	}
 
-	db, db_err := database.LoadDB()
-	if db_err != nil {
-		log.Printf("%v", db_err)
+	db, err := database.LoadDB()
+	if err != nil {
+		log.Printf("Database initialization failed: %v", err)
 		return
 	}
 
-	// Initialize Redis for JWT revocation and rate limiting (REQUIRED)
-	redisClient, redis_err := database.LoadRedis()
-	if redis_err != nil {
-		log.Fatalf("FATAL: Redis initialization failed: %v. Redis is required for JWT revocation.", redis_err)
-		return
-	}
-	log.Println("Redis connected successfully")
+	redisClient := initializeRedis()
+	emailService, aiService := initializeServices(db)
 
-	// Create context for graceful shutdown
+	// Setup background tasks
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Setup scheduler for background tasks
+	scheduler := setupScheduler(ctx, db, emailService)
+	scheduler.Start()
+
+	// Setup HTTP server
+	router := setupRouter(db, redisClient, emailService, aiService)
+	srv := startServer(router)
+
+	// Graceful shutdown
+	waitForShutdownSignal()
+	performGracefulShutdown(srv, cancel, scheduler, redisClient)
+}
+
+// initializeFilesDirectory creates the files directory if it doesn't exist
+func initializeFilesDirectory() error {
+	return os.MkdirAll("./files", 0755)
+}
+
+// initializeRedis initializes Redis client with fail-open behavior
+func initializeRedis() *redis.Client {
+	redisClient, redis_err := database.LoadRedis()
+	if redis_err != nil {
+		log.Fatalf("FATAL: Redis initialization failed: %v.", redis_err)
+		return nil
+	}
+	log.Println("Redis connected successfully")
+	return redisClient
+}
+
+// initializeServices initializes email and AI services with proper error handling
+func initializeServices(db *gorm.DB) (*services.EmailService, *services.AIService) {
+	emailService, err := services.NewEmailService(db)
+	if err != nil {
+		log.Printf("Warning: Email service initialization failed: %v", err)
+		return nil, nil
+	}
+
+	aiService, err := services.NewAIService(db, emailService)
+	if err != nil {
+		log.Printf("Warning: AI service initialization failed: %v", err)
+		return emailService, nil
+	}
+
+	return emailService, aiService
+}
+
+// setupScheduler configures and returns the background task scheduler
+func setupScheduler(ctx context.Context, db *gorm.DB, emailService *services.EmailService) *helper.Scheduler {
 	scheduler := helper.NewScheduler(ctx)
+
+	// Token cleanup task
 	scheduler.AddTask("token-cleanup", time.Hour, func() error {
 		return helper.CleanupExpiredTokens(db)
 	})
-	scheduler.Start()
 
+	// Email retry task (if email service is available)
+	if emailService != nil {
+		interval := getEmailRetryInterval()
+		scheduler.AddTask("email-retry", interval, func() error {
+			return emailService.RetryFailedEmails()
+		})
+	}
+
+	return scheduler
+}
+
+
+
+// getEmailRetryInterval reads the email retry interval from environment or returns default
+func getEmailRetryInterval() time.Duration {
+	defaultInterval := 5 * time.Minute
+
+	intervalStr, hasInterval := os.LookupEnv("EMAIL_RETRY_INTERVAL_MINUTES")
+	if !hasInterval {
+		return defaultInterval
+	}
+
+	minutes, err := strconv.Atoi(intervalStr)
+	if err != nil || minutes <= 0 {
+		return defaultInterval
+	}
+
+	return time.Duration(minutes) * time.Minute
+}
+
+// setupRouter configures the Gin router with middleware and routes
+func setupRouter(db *gorm.DB, redisClient *redis.Client, emailService *services.EmailService, aiService *services.AIService) *gin.Engine {
 	router := gin.Default()
 
-	// Setup CORS middleware
+	// CORS middleware
 	corsConfig := middlewares.SetupCORS()
 	router.Use(cors.New(corsConfig))
 
-	// Setup routes
-	if err := handlers.SetupRoutes(router, db, redisClient); err != nil {
-		log.Fatal(err)
+	// Application routes
+	if err := handlers.SetupRoutes(router, db, redisClient, emailService, aiService); err != nil {
+		log.Fatal("Failed to setup routes:", err)
 	}
 
-	// Setup Swagger
-	swagger_host, has_swagger_host := os.LookupEnv("SWAGGER_HOST")
-	if has_swagger_host {
-		docs.SwaggerInfo.Host = swagger_host
+	// Swagger documentation
+	setupSwagger(router)
+
+	return router
+}
+
+// setupSwagger configures Swagger documentation endpoint
+func setupSwagger(router *gin.Engine) {
+	swaggerHost, hasHost := os.LookupEnv("SWAGGER_HOST")
+	if hasHost {
+		docs.SwaggerInfo.Host = swaggerHost
 	} else {
 		docs.SwaggerInfo.Host = "localhost:8000"
 	}
 
 	docs.SwaggerInfo.BasePath = ""
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+}
 
-	listen_address, has_listen_address := os.LookupEnv("LISTEN_ADDRESS")
-	if !has_listen_address {
-		listen_address = ":8000"
-	}
+// startServer creates and starts the HTTP server in a goroutine
+func startServer(router *gin.Engine) *http.Server {
+	listenAddress := getListenAddress()
 
-	// Create HTTP server
 	srv := &http.Server{
-		Addr:    listen_address,
+		Addr:    listenAddress,
 		Handler: router,
 	}
 
-	// Start server in a goroutine
 	go func() {
-		log.Printf("Starting server on %s", listen_address)
+		log.Printf("Starting server on %s", listenAddress)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Server failed to start: %v", err)
 		}
 	}()
 
-	// Wait for interrupt signal
+	return srv
+}
+
+// getListenAddress returns the server listen address from environment or default
+func getListenAddress() string {
+	listenAddress, hasAddress := os.LookupEnv("LISTEN_ADDRESS")
+	if !hasAddress {
+		return ":8000"
+	}
+	return listenAddress
+}
+
+// waitForShutdownSignal blocks until an interrupt or termination signal is received
+func waitForShutdownSignal() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	<-sigChan
-
 	log.Println("Shutdown signal received, starting graceful shutdown...")
+}
 
+// performGracefulShutdown gracefully shuts down all services
+func performGracefulShutdown(srv *http.Server, cancel context.CancelFunc, scheduler *helper.Scheduler, redisClient *redis.Client) {
 	// Create shutdown context with timeout
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shutdownCancel()

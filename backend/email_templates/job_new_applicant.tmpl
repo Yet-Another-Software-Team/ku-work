@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <p>Dear <strong>{{.CompanyUser.Username}}</strong>,</p>
+
+    <p>You have received a new application for your <strong>{{.Job.Name}} - {{.Job.Position}}</strong> job post on the KU-Work platform.</p>
+
+    <h2 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">Applicant Details:</h2>
+
+    <div style="background-color: #f8f9fa; border-left: 4px solid #3498db; padding: 15px; margin: 15px 0;">
+        <p style="margin: 5px 0;"><strong>Name:</strong> {{.Applicant.FirstName}} {{.Applicant.LastName}}</p>
+        <p style="margin: 5px 0;"><strong>Applied On:</strong> {{.Application.Date.Format "January 2, 2006 at 3:04 PM"}} (Bangkok Time, GMT+7)</p>
+    </div>
+
+    <p style="margin-top: 30px;">Best regards,<br>
+    <strong>The KU-Work Team</strong></p>
+
+    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+    <p style="font-size: 12px; color: #777;"><em>Please note: This is a system-generated email. Replies to this address are not monitored.</em></p>
+</body>
+</html>

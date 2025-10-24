@@ -6,6 +6,7 @@ import (
 	"ku-work/backend/database"
 	"ku-work/backend/handlers"
 	"ku-work/backend/model"
+	"ku-work/backend/services"
 	"os"
 	"path/filepath"
 	"strings"
@@ -147,8 +148,26 @@ func TestMain(m *testing.M) {
 	_ = os.Setenv("APPROVAL_AI", "dummy")
 	_ = os.Setenv("EMAIL_PROVIDER", "dummy")
 
+	// Initialize Redis for rate limiting (optional for tests)
+	redisClient, err = database.LoadRedis()
+	if err != nil {
+		// Redis is optional for tests - rate limiter will fail open
+		redisClient = nil
+	}
+
+	// Initialize services for tests
+	emailService, err := services.NewEmailService(db)
+	if err != nil {
+		panic(err)
+	}
+
+	aiService, err := services.NewAIService(db, emailService)
+	if err != nil {
+		panic(err)
+	}
+
 	router = gin.Default()
-	if err := handlers.SetupRoutes(router, db, redisClient); err != nil {
+	if err := handlers.SetupRoutes(router, db, redisClient, emailService, aiService); err != nil {
 		panic(err)
 	}
 
