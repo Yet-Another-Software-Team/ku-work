@@ -28,7 +28,7 @@
                 <input
                     ref="avatarInput"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/jpg,image/png"
                     class="hidden"
                     @change="onAvatarSelected"
                 />
@@ -303,6 +303,16 @@ function triggerAvatarPicker() {
 function onAvatarSelected(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
+    const isGif = file.type === "image/gif" || file.name.toLowerCase().endsWith(".gif");
+    if (isGif) {
+        addToast({
+            title: "Unsupported image",
+            description: "GIF images are not supported",
+            color: "warning",
+        });
+        (event.target as HTMLInputElement).value = "";
+        return;
+    }
     updateAvatarPreview(URL.createObjectURL(file));
     avatarFile.value = file;
 }
