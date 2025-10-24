@@ -1,4 +1,41 @@
 definitions:
+  handlers.ApplicationWithJobDetails:
+    properties:
+      companyName:
+        type: string
+      createdAt:
+        type: string
+      email:
+        type: string
+      experience:
+        type: string
+      files:
+        items:
+          $ref: '#/definitions/model.File'
+        type: array
+      isOpen:
+        type: boolean
+      jobId:
+        type: integer
+      jobName:
+        type: string
+      jobType:
+        type: string
+      maxSalary:
+        type: integer
+      minSalary:
+        type: integer
+      phone:
+        type: string
+      photoId:
+        type: string
+      position:
+        type: string
+      status:
+        $ref: '#/definitions/model.JobApplicationStatus'
+      userId:
+        type: string
+    type: object
   handlers.ApproveJobInput:
     properties:
       approve:
@@ -81,6 +118,8 @@ definitions:
       name:
         maxLength: 128
         type: string
+      notifyOnApplication:
+        type: boolean
       open:
         type: boolean
       position:
@@ -92,6 +131,8 @@ definitions:
     - experience
     - jobType
     - location
+    - maxSalary
+    - minSalary
     - name
     - position
     type: object
@@ -129,6 +170,8 @@ definitions:
       name:
         maxLength: 128
         type: string
+      notifyOnApplication:
+        type: boolean
       open:
         type: boolean
       position:
@@ -417,8 +460,18 @@ paths:
     get:
       description: Fetches job applications for the authenticated user. If the user
         is a company, it returns all applications for all their job postings. If the
-        user is a student, it returns all of their own applications. Supports pagination.
+        user is a student, it returns all of their own applications. Supports pagination
+        and status filtering.
       parameters:
+      - description: Filter by status (pending, accepted, rejected)
+        in: query
+        name: status
+        type: string
+      - default: date-desc
+        description: Sort by (name, date-desc, date-asc)
+        in: query
+        name: sortBy
+        type: string
       - default: 0
         description: Offset for pagination
         in: query
@@ -433,11 +486,16 @@ paths:
       - application/json
       responses:
         "200":
-          description: List of job applications
+          description: List of job applications with total count
           schema:
-            items:
-              $ref: '#/definitions/handlers.ShortApplicationDetail'
-            type: array
+            properties:
+              applications:
+                items:
+                  $ref: '#/definitions/handlers.ApplicationWithJobDetails'
+                type: array
+              total:
+                type: integer
+            type: object
         "401":
           description: Unauthorized
           schema:

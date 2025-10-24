@@ -6,6 +6,7 @@ import (
 	"ku-work/backend/database"
 	"ku-work/backend/handlers"
 	"ku-work/backend/model"
+	"ku-work/backend/services"
 	"os"
 	"path/filepath"
 	"strings"
@@ -103,8 +104,19 @@ func TestMain(m *testing.M) {
 		redisClient = nil
 	}
 
+	// Initialize services for tests
+	emailService, err := services.NewEmailService(db)
+	if err != nil {
+		panic(err)
+	}
+
+	aiService, err := services.NewAIService(db, emailService)
+	if err != nil {
+		panic(err)
+	}
+
 	router = gin.Default()
-	if err := handlers.SetupRoutes(router, db, redisClient); err != nil {
+	if err := handlers.SetupRoutes(router, db, redisClient, emailService, aiService); err != nil {
 		panic(err)
 	}
 	code := m.Run()

@@ -1,5 +1,7 @@
 package email
 
+import "context"
+
 type EmailProvider interface {
-	SendTo(target string, subject string, content string) error
+	SendTo(ctx context.Context, target string, subject string, content string) error
 }
