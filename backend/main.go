@@ -77,9 +77,9 @@ func initializeFilesDirectory() error {
 
 // initializeRedis initializes Redis client with fail-open behavior
 func initializeRedis() *redis.Client {
-	redisClient, err := database.LoadRedis()
-	if err != nil {
-		log.Printf("Warning: Redis initialization failed: %v. Rate limiting will fail open.", err)
+	redisClient, redis_err := database.LoadRedis()
+	if redis_err != nil {
+		log.Fatalf("FATAL: Redis initialization failed: %v.", redis_err)
 		return nil
 	}
 	log.Println("Redis connected successfully")
@@ -110,11 +110,6 @@ func setupScheduler(ctx context.Context, db *gorm.DB, emailService *services.Ema
 	// Token cleanup task
 	scheduler.AddTask("token-cleanup", time.Hour, func() error {
 		return helper.CleanupExpiredTokens(db)
-	})
-
-	// JWT blacklist cleanup task
-	scheduler.AddTask("jwt-blacklist-cleanup", time.Hour, func() error {
-		return helper.CleanupExpiredRevokedJWTs(db)
 	})
 
 	// Email retry task (if email service is available)

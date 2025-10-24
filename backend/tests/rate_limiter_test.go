@@ -3,73 +3,14 @@ package tests
 import (
 	"context"
 	"fmt"
-	"ku-work/backend/database"
 	"ku-work/backend/middlewares"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
-
-// setupTestRedis creates a Redis container for testing
-func setupTestRedis(t *testing.T) (*redis.Client, func()) {
-	ctx := context.Background()
-
-	req := testcontainers.ContainerRequest{
-		Name:         "kuwork-test-redis",
-		Image:        "redis:7-alpine",
-		ExposedPorts: []string{"6379/tcp"},
-		WaitingFor:   wait.ForLog("Ready to accept connections"),
-	}
-
-	redisContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-		Reuse:            true,
-	})
-	if err != nil {
-		t.Fatalf("Failed to start Redis container: %v", err)
-	}
-
-	port, err := redisContainer.MappedPort(ctx, "6379/tcp")
-	if err != nil {
-		_ = testcontainers.TerminateContainer(redisContainer)
-		t.Fatalf("Failed to get Redis port: %v", err)
-	}
-
-	// Set environment variables for Redis connection
-	_ = os.Setenv("REDIS_HOST", "127.0.0.1")
-	_ = os.Setenv("REDIS_PORT", port.Port())
-	_ = os.Setenv("REDIS_PASSWORD", "")
-	_ = os.Setenv("REDIS_DB", "0")
-
-	// Small delay to ensure Redis is ready
-	time.Sleep(100 * time.Millisecond)
-
-	// Load Redis client
-	redisClient, err := database.LoadRedis()
-	if err != nil {
-		_ = testcontainers.TerminateContainer(redisContainer)
-		t.Fatalf("Failed to connect to Redis: %v", err)
-	}
-
-	// Cleanup function
-	cleanup := func() {
-		if redisClient != nil {
-			_ = redisClient.FlushDB(context.Background()).Err()
-			_ = redisClient.Close()
-		}
-		_ = testcontainers.TerminateContainer(redisContainer)
-	}
-
-	return redisClient, cleanup
-}
 
 // TestRateLimiterWithNilRedis tests that rate limiter fails open when Redis is nil
 func TestRateLimiterWithNilRedis(t *testing.T) {
@@ -99,9 +40,6 @@ func TestRateLimiterWithNilRedis(t *testing.T) {
 
 // TestRateLimiterMinuteLimit tests the per-minute rate limit
 func TestRateLimiterMinuteLimit(t *testing.T) {
-	redisClient, cleanup := setupTestRedis(t)
-	defer cleanup()
-
 	gin.SetMode(gin.TestMode)
 
 	// Create middleware with 5 requests per minute limit
@@ -141,9 +79,6 @@ func TestRateLimiterMinuteLimit(t *testing.T) {
 
 // TestRateLimiterHourLimit tests the per-hour rate limit
 func TestRateLimiterHourLimit(t *testing.T) {
-	redisClient, cleanup := setupTestRedis(t)
-	defer cleanup()
-
 	gin.SetMode(gin.TestMode)
 
 	// Create middleware with high minute limit but low hour limit
@@ -183,8 +118,9 @@ func TestRateLimiterHourLimit(t *testing.T) {
 
 // TestRateLimiterDifferentIPs tests that different IPs are tracked separately
 func TestRateLimiterDifferentIPs(t *testing.T) {
-	redisClient, cleanup := setupTestRedis(t)
-	defer cleanup()
+	// Clean up Redis state from previous tests
+	ctx := context.Background()
+	_ = redisClient.FlushDB(ctx).Err()
 
 	gin.SetMode(gin.TestMode)
 
@@ -234,8 +170,8 @@ func TestRateLimiterDifferentIPs(t *testing.T) {
 
 // TestRateLimiterRedisKeys tests that Redis keys are created correctly
 func TestRateLimiterRedisKeys(t *testing.T) {
-	redisClient, cleanup := setupTestRedis(t)
-	defer cleanup()
+	// Clean up Redis state from previous tests
+	_ = redisClient.FlushDB(context.Background()).Err()
 
 	gin.SetMode(gin.TestMode)
 
@@ -317,8 +253,8 @@ func TestRateLimiterRedisKeys(t *testing.T) {
 
 // TestRateLimiterCounterIncrement tests that counters increment correctly
 func TestRateLimiterCounterIncrement(t *testing.T) {
-	redisClient, cleanup := setupTestRedis(t)
-	defer cleanup()
+	// Clean up Redis state from previous tests
+	_ = redisClient.FlushDB(context.Background()).Err()
 
 	gin.SetMode(gin.TestMode)
 
@@ -363,8 +299,9 @@ func TestRateLimiterCounterIncrement(t *testing.T) {
 
 // TestRateLimiterConcurrency tests that rate limiter works correctly with concurrent requests
 func TestRateLimiterConcurrency(t *testing.T) {
-	redisClient, cleanup := setupTestRedis(t)
-	defer cleanup()
+	// Clean up Redis state from previous tests
+	ctx := context.Background()
+	_ = redisClient.FlushDB(ctx).Err()
 
 	gin.SetMode(gin.TestMode)
 
@@ -418,8 +355,9 @@ func TestRateLimiterConcurrency(t *testing.T) {
 
 // TestRateLimiterMultipleEndpoints tests rate limiting across different endpoints
 func TestRateLimiterMultipleEndpoints(t *testing.T) {
-	redisClient, cleanup := setupTestRedis(t)
-	defer cleanup()
+	// Clean up Redis state from previous tests
+	ctx := context.Background()
+	_ = redisClient.FlushDB(ctx).Err()
 
 	gin.SetMode(gin.TestMode)
 
@@ -485,8 +423,9 @@ func TestRateLimiterMultipleEndpoints(t *testing.T) {
 
 // TestRateLimiterErrorMessage tests that appropriate error messages are returned
 func TestRateLimiterErrorMessage(t *testing.T) {
-	redisClient, cleanup := setupTestRedis(t)
-	defer cleanup()
+	// Clean up Redis state from previous tests
+	ctx := context.Background()
+	_ = redisClient.FlushDB(ctx).Err()
 
 	gin.SetMode(gin.TestMode)
 
@@ -526,10 +465,7 @@ func TestRateLimiterErrorMessage(t *testing.T) {
 
 // TestRateLimiterRedisConnection tests behavior when Redis connection is available
 func TestRateLimiterRedisConnection(t *testing.T) {
-	redisClient, cleanup := setupTestRedis(t)
-	defer cleanup()
-
-	// Verify Redis is connected
+	// Verify Redis is connected using global redisClient
 	ctx := context.Background()
 	pong, err := redisClient.Ping(ctx).Result()
 	if err != nil {
@@ -543,9 +479,6 @@ func TestRateLimiterRedisConnection(t *testing.T) {
 
 // Benchmark for rate limiter performance
 func BenchmarkRateLimiter(b *testing.B) {
-	redisClient, cleanup := setupTestRedis(&testing.T{})
-	defer cleanup()
-
 	gin.SetMode(gin.TestMode)
 
 	middleware := middlewares.RateLimiterWithLimits(redisClient, 1000000, 1000000)

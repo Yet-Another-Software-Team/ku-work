@@ -18,16 +18,6 @@ type RefreshToken struct {
 	RevokedAt     *time.Time `gorm:"index"` // NULL = active, set = revoked (for reuse detection)
 }
 
-// RevokedJWT represents a blacklisted JWT token (for logout/session termination)
-// OWASP requirement: Maintain a list of terminated tokens to prevent reuse after logout
-type RevokedJWT struct {
-	ID        uint      `gorm:"primarykey"`
-	JTI       string    `gorm:"type:varchar(36);uniqueIndex;not null"` // JWT ID (unique identifier)
-	UserID    string    `gorm:"type:uuid;index;not null"`              // User who owned the token
-	ExpiresAt time.Time `gorm:"index;not null"`                        // Original token expiration (for cleanup)
-	RevokedAt time.Time `gorm:"not null"`                              // When the token was revoked
-}
-
 // JWT Payload (NOT DATABASE INSTANCE)
 type UserClaims struct {
 	UserID               string `json:"user_id"`
