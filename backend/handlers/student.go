@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"bytes"
+	"html/template"
 	"mime/multipart"
 	"net/http"
-	"text/template"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -324,6 +324,7 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 			Status string
 			Reason string
 		}
+
 		var context Context
 		context.OAuth.UserID = studentID
 		context.Status = string(student.ApprovalStatus)
@@ -337,7 +338,7 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 		}
 		_ = h.emailService.SendTo(
 			context.OAuth.Email,
-			"[KU-WORK] Your student account has been reviewed",
+			"[KU-Work] Your student account has been reviewed",
 			tpl.String(),
 		)
 	})()

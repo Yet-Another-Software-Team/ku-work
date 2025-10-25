@@ -70,7 +70,7 @@ func (current *AIService) AutoApproveJob(job *model.Job) {
 	if err := current.jobApprovalStatusUpdateEmailTemplate.Execute(&tpl, context); err != nil {
 		return
 	}
-	_ = current.emailService.provider.SendTo(
+	_ = current.emailService.SendTo(
 		context.Company.Email,
 		fmt.Sprintf("[KU-WORK] Your \"%s\" job has been automatically reviewed", job.Name),
 		tpl.String(),
@@ -124,7 +124,7 @@ func (current *AIService) AutoApproveStudent(student *model.Student) {
 	if err := current.studentApprovalStatusUpdateEmailTemplate.Execute(&tpl, context); err != nil {
 		return
 	}
-	_ = current.emailService.provider.SendTo(
+	_ = current.emailService.SendTo(
 		context.OAuth.Email,
 		"[KU-WORK] Your student account has been automatically reviewed",
 		tpl.String(),

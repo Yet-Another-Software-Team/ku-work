@@ -1,19 +1,31 @@
-Dear {{.OAuth.FirstName}} {{.OAuth.LastName}},
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <p>Dear <strong>{{.OAuth.FirstName}} {{.OAuth.LastName}}</strong>,</p>
 
-This email is to provide you with an update on your application for the {{.Job.Position}} with {{.CompanyName}} ({{.Job.Name}})
+    <p>This email is to provide you with an update on your application for the <strong>{{.Job.Position}}</strong> (<strong>{{.Job.Name}}</strong>) with <strong>{{.CompanyName}}</strong></p>
 
-Status: {{.Status}}
-{{if eq .Status "rejected"}}
-The hiring team has completed their review. After careful consideration, they have decided not to move forward with your application at this time.
-{{else}}
-Congratulation! The hiring team has reviewed your application and would like to move forward.
-The employer, {{.CompanyName}}, will contact you directly with information on the next steps.
-{{end}}
-Please note that KU-Work is the platform provider and is not involved in the hiring decision. For specific questions regarding your application, you must contact {{.CompanyName}} directly.
+    <h2 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">Status: {{.Status}}</h2>
 
-We wish you the best of luck in your job search.
+    {{if eq .Status "rejected"}}
+    <p>The hiring team has completed their review. After careful consideration, they have decided not to move forward with your application at this time.</p>
+    {{else}}
+    <p style="background-color: #d4edda; border-left: 4px solid #28a745; padding: 15px; margin: 15px 0;"><strong>Congratulation!</strong> The hiring team has reviewed your application and would like to move forward.<br>
+    The employer, <strong>{{.CompanyName}}</strong>, will contact you directly with information on the next steps.</p>
+    {{end}}
 
-Best regards,
-The KU-Work Team
+    <p style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 15px 0;">Please note that KU-Work is the platform provider and is not involved in the hiring decision. For specific questions regarding your application, you must contact <strong>{{.CompanyName}}</strong> directly.</p>
 
-Please note: This is a system-generated email. Replies to this address are not monitored.
+    <p>We wish you the best of luck in your job search.</p>
+
+    <p style="margin-top: 30px;">Best regards,<br>
+    <strong>The KU-Work Team</strong></p>
+
+    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+    <p style="font-size: 12px; color: #777;"><em>Please note: This is a system-generated email. Replies to this address are not monitored.</em></p>
+</body>
+</html>

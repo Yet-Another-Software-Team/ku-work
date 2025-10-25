@@ -57,10 +57,36 @@ func NewGmailEmailProvider() (*GmailEmailProvider, error) {
 	}, nil
 }
 
-func (cur *GmailEmailProvider) SendTo(target string, subject string, content string) error {
+func (cur *GmailEmailProvider) SendTo(ctx context.Context, target string, subject string, content string) error {
 	message := gmail.Message{
-		Raw: base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("To: %s\r\nSubject: %s\nMIME-version: 1.0;\nContent-Type: text/plain; charset=\"UTF-8\";\n\n\n%s", target, subject, content))),
+		Raw: base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("To: %s\r\nSubject: %s\r\nMIME-version: 1.0;\r\nContent-Type: text/html; charset=\"UTF-8\";\r\n\r\n%s", target, subject, content))),
 	}
-	_, err := cur.gmailService.Users.Messages.Send("me", &message).Do()
-	return err
+
+	// Use a channel to handle the email sending with timeout
+	errChan := make(chan error, 1)
+
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				select {
+				case errChan <- fmt.Errorf("panic in email sending: %v", r):
+				default:
+					// Context was already cancelled, don't block
+				}
+			}
+		}()
+		_, err := cur.gmailService.Users.Messages.Send("me", &message).Context(ctx).Do()
+		select {
+		case errChan <- err:
+		default:
+			// Context was already cancelled, don't block
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("email sending timeout: %w", ctx.Err())
+	case err := <-errChan:
+		return err
+	}
 }

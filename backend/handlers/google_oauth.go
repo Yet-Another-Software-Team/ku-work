@@ -183,7 +183,8 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 	}
 
 	maxAge := int(time.Hour * 24 * 30 / time.Second)
-	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", true, true)
+	ctx.SetSameSite(helper.GetCookieSameSite())
+	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", helper.GetCookieSecure(), true)
 
 	username := oauthDetail.FirstName + " " + oauthDetail.LastName
 	role := helper.Viewer

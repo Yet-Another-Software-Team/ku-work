@@ -46,7 +46,7 @@ func TestJob(t *testing.T) {
 	"maxsalary": 2
 }`, jobName)
 		req, _ := http.NewRequest("POST", "/jobs", strings.NewReader(payload))
-		jwtHandler := handlers.NewJWTHandlers(db)
+		jwtHandler := handlers.NewJWTHandlers(db, redisClient)
 		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
 		if err != nil {
 			t.Error(err)
@@ -122,7 +122,7 @@ func TestJob(t *testing.T) {
 	"description": "test software"
 }`
 		req, _ := http.NewRequest("PATCH", fmt.Sprintf("/jobs/%d", job.ID), strings.NewReader(payload))
-		jwtHandler := handlers.NewJWTHandlers(db)
+		jwtHandler := handlers.NewJWTHandlers(db, redisClient)
 		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
 		if err != nil {
 			t.Error(err)
@@ -227,7 +227,7 @@ func TestJob(t *testing.T) {
 		}
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/jobs?keyword=nice", strings.NewReader(""))
-		jwtHandler := handlers.NewJWTHandlers(db)
+		jwtHandler := handlers.NewJWTHandlers(db, redisClient)
 		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
 		if err != nil {
 			t.Error(err)
@@ -307,7 +307,7 @@ func TestJob(t *testing.T) {
 		w := httptest.NewRecorder()
 		payload := `{"approve": true}`
 		req, _ := http.NewRequest("POST", fmt.Sprintf("/jobs/%d/approval", job.ID), strings.NewReader(payload))
-		jwtHandler := handlers.NewJWTHandlers(db)
+		jwtHandler := handlers.NewJWTHandlers(db, redisClient)
 		jwtToken, _, err := jwtHandler.GenerateTokens(adminUser.Admin.UserID)
 		if err != nil {
 			t.Error(err)
@@ -440,7 +440,7 @@ func TestJob(t *testing.T) {
 			return
 		}
 		req, _ := http.NewRequest("POST", fmt.Sprintf("/jobs/%d/apply", job.ID), &b)
-		jwtHandler := handlers.NewJWTHandlers(db)
+		jwtHandler := handlers.NewJWTHandlers(db, redisClient)
 		jwtToken, _, err := jwtHandler.GenerateTokens(user.ID)
 		if err != nil {
 			t.Error(err)
@@ -511,7 +511,7 @@ func TestJob(t *testing.T) {
 		}
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/jobs?companyId=self", strings.NewReader(""))
-		jwtHandler := handlers.NewJWTHandlers(db)
+		jwtHandler := handlers.NewJWTHandlers(db, redisClient)
 		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
 		if err != nil {
 			t.Error(err)
@@ -601,7 +601,7 @@ func TestJob(t *testing.T) {
 		w := httptest.NewRecorder()
 		payload := `{"rejected": true}`
 		req, _ := http.NewRequest("DELETE", fmt.Sprintf("/jobs/%d/applications", job.ID), strings.NewReader(payload))
-		jwtHandler := handlers.NewJWTHandlers(db)
+		jwtHandler := handlers.NewJWTHandlers(db, redisClient)
 		jwtToken, _, err := jwtHandler.GenerateTokens(companyUser.Company.UserID)
 		if err != nil {
 			t.Error(err)
@@ -698,7 +698,7 @@ func TestJob(t *testing.T) {
 			w := httptest.NewRecorder()
 			payload := fmt.Sprintf(`{"status": "%s"}`, string(status))
 			req, _ := http.NewRequest("PATCH", fmt.Sprintf("/jobs/%d/applications/%s/status", job.ID, studentUser.User.ID), strings.NewReader(payload))
-			jwtHandler := handlers.NewJWTHandlers(db)
+			jwtHandler := handlers.NewJWTHandlers(db, redisClient)
 			jwtToken, _, err := jwtHandler.GenerateTokens(companyUser.Company.UserID)
 			if err != nil {
 				t.Error(err)

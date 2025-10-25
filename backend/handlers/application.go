@@ -3,13 +3,13 @@ package handlers
 import (
 	"bytes"
 	"fmt"
+	"html/template"
 	"ku-work/backend/model"
 	"ku-work/backend/services"
 	"math"
 	"mime/multipart"
 	"net/http"
 	"strconv"
-	"text/template"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -21,10 +21,15 @@ type ApplicationHandlers struct {
 	FileHandlers                            *FileHandlers
 	emailService                            *services.EmailService
 	jobApplicationStatusUpdateEmailTemplate *template.Template
+	newApplicantEmailTemplate               *template.Template
 }
 
 func NewApplicationHandlers(db *gorm.DB, emailService *services.EmailService) (*ApplicationHandlers, error) {
 	jobApplicationStatusUpdateEmailTemplate, err := template.New("job_application_status_update.tmpl").ParseFiles("email_templates/job_application_status_update.tmpl")
+	if err != nil {
+		return nil, err
+	}
+	newApplicantEmailTemplate, err := template.New("job_new_applicant.tmpl").ParseFiles("email_templates/job_new_applicant.tmpl")
 	if err != nil {
 		return nil, err
 	}
@@ -33,6 +38,7 @@ func NewApplicationHandlers(db *gorm.DB, emailService *services.EmailService) (*
 		FileHandlers:                            NewFileHandlers(db),
 		emailService:                            emailService,
 		jobApplicationStatusUpdateEmailTemplate: jobApplicationStatusUpdateEmailTemplate,
+		newApplicantEmailTemplate:               newApplicantEmailTemplate,
 	}, nil
 }
 
@@ -194,6 +200,58 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 	}
 	success = true
 	ctx.JSON(http.StatusOK, gin.H{"message": "ok"})
+
+	// Send Email to company about new applicant.
+	// Only if Company opted for email on new application on this job post.
+	if !job.NotifyOnApplication {
+		return // Return early if notification is not required
+	}
+
+	go (func() {
+		type Context struct {
+			CompanyUser model.User
+			Job         model.Job
+			Applicant   model.GoogleOAuthDetails
+			Application struct {
+				Date time.Time
+			}
+		}
+		var context Context
+		// Convert to Bangkok timezone (GMT+7)
+		bangkokLocation, _ := time.LoadLocation("Asia/Bangkok")
+		context.Application.Date = jobApplication.CreatedAt.In(bangkokLocation)
+		context.Job = job
+
+		// Get company user details
+		if err := h.DB.Where("id = ?", job.CompanyID).First(&context.CompanyUser).Error; err != nil {
+			return
+		}
+
+		// Get company email from Company Detail
+		var company model.Company
+		if err := h.DB.Where("user_id = ?", job.CompanyID).First(&company).Error; err != nil {
+			return
+		}
+
+		// Get applicant details (student who applied)
+		context.Applicant.UserID = student.UserID
+		if err := h.DB.Select("first_name", "last_name").Where("user_id = ?", student.UserID).First(&context.Applicant).Error; err != nil {
+			return
+		}
+
+		// Execute email template
+		var tpl bytes.Buffer
+		if err := h.newApplicantEmailTemplate.Execute(&tpl, context); err != nil {
+			return
+		}
+
+		// Send email to company
+		_ = h.emailService.SendTo(
+			company.Email,
+			fmt.Sprintf("[KU-Work] New Application for %s - %s", job.Name, job.Position),
+			tpl.String(),
+		)
+	})()
 }
 
 // @Summary Get applications for a specific job
@@ -744,7 +802,7 @@ func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context
 		}
 		_ = h.emailService.SendTo(
 			context.OAuth.Email,
-			fmt.Sprintf("[KU-WORK] Your Application Status for %s", job.Name),
+			fmt.Sprintf("[KU-Work] Your Application Status for %s - %s", job.Name, job.Position),
 			tpl.String(),
 		)
 	})()

@@ -35,22 +35,23 @@ const (
 )
 
 type Job struct {
-	ID              uint              `gorm:"primaryKey" json:"id"`
-	CreatedAt       time.Time         `json:"createdAt"`
-	Name            string            `json:"name"`
-	CompanyID       string            `gorm:"type:uuid" json:"companyId"`
-	Company         Company           `gorm:"foreignKey:CompanyID;constraint:OnDelete:CASCADE;" json:"company"`
-	Position        string            `json:"position"`
-	Duration        string            `json:"duration"`
-	Description     string            `json:"description"`
-	Location        string            `json:"location"`
-	JobType         JobType           `json:"jobType"`
-	Experience      ExperienceType    `json:"experienceType"`
-	MinSalary       uint              `json:"minSalary"`
-	MaxSalary       uint              `json:"maxSalary"`
-	ApprovalStatus  JobApprovalStatus `json:"approvalStatus"`
-	IsOpen          bool              `json:"open"`
-	JobApplications []JobApplication  `gorm:"foreignkey:JobID;constraint:OnDelete:CASCADE;" json:"-"`
+	ID                  uint              `gorm:"primaryKey" json:"id"`
+	CreatedAt           time.Time         `json:"createdAt"`
+	Name                string            `json:"name"`
+	CompanyID           string            `gorm:"type:uuid" json:"companyId"`
+	Company             Company           `gorm:"foreignKey:CompanyID;constraint:OnDelete:CASCADE;" json:"company"`
+	Position            string            `json:"position"`
+	Duration            string            `json:"duration"`
+	Description         string            `json:"description"`
+	Location            string            `json:"location"`
+	JobType             JobType           `json:"jobType"`
+	Experience          ExperienceType    `json:"experienceType"`
+	MinSalary           uint              `json:"minSalary"`
+	MaxSalary           uint              `json:"maxSalary"`
+	ApprovalStatus      JobApprovalStatus `json:"approvalStatus"`
+	IsOpen              bool              `json:"open"`
+	NotifyOnApplication bool              `json:"notifyOnApplication default:true"`
+	JobApplications     []JobApplication  `gorm:"foreignkey:JobID;constraint:OnDelete:CASCADE;" json:"-"`
 }
 
 type JobApplicationStatus string
