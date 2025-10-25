@@ -4,7 +4,7 @@
             <!-- Job Title -->
             <div class="grid grid-cols-12 gap-4 items-center w-full">
                 <label
-                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
+                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 dark:text-primary-500 font-semibold"
                 >
                     Job Title
                 </label>
@@ -17,7 +17,7 @@
             <!-- Job Location -->
             <div class="grid grid-cols-12 gap-4 items-center w-full">
                 <label
-                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
+                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 dark:text-primary-500 font-semibold"
                 >
                     Job Location
                 </label>
@@ -35,7 +35,7 @@
             <!-- Job Type -->
             <div class="grid grid-cols-12 gap-4 items-center w-full">
                 <label
-                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
+                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 dark:text-primary-500 font-semibold"
                 >
                     Job Type
                 </label>
@@ -53,7 +53,7 @@
             <!-- Required Experience -->
             <div class="grid grid-cols-12 gap-4 items-center w-full">
                 <label
-                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
+                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 dark:text-primary-500 font-semibold"
                 >
                     Required Experience
                 </label>
@@ -89,7 +89,7 @@
             <!-- Salary -->
             <div class="grid grid-cols-12 gap-4 items-center w-full">
                 <label
-                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
+                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 dark:text-primary-500 font-semibold"
                 >
                     Salary
                 </label>
@@ -123,7 +123,7 @@
             <!-- Job Description -->
             <div class="grid grid-cols-12 gap-4 items-start w-full">
                 <label
-                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 font-semibold"
+                    class="col-span-12 md:col-span-4 text-left md:text-right text-primary-800 dark:text-primary-500 font-semibold"
                 >
                     Job Description
                 </label>
