@@ -91,6 +91,7 @@
                     :pending="job.pending"
                     :approval-status="job.approvalStatus"
                     @update:open="(value: boolean) => updateJobOpen(job.id, value)"
+                    @update:notifyOnApplication="(value: boolean) => updateJobNotify(job.id, value)"
                     @close="fetchJobs"
                 />
             </div>
@@ -471,6 +472,28 @@ onMounted(async () => {
         isLoading.value = false;
     }
 });
+
+const updateJobNotify = (id: number, value: boolean) => {
+    const job = data.value.find((job) => job.id === id);
+    if (!job) return;
+    const oldValue = job.notifyOnApplication;
+    job.notifyOnApplication = value;
+    api.patch(
+        `/jobs/${job.id}`,
+        {
+            notifyOnApplication: value,
+        },
+        {
+            withCredentials: true,
+        }
+    )
+        .then((x) => {
+            if (x.status !== 200) return Promise.reject(x);
+        })
+        .catch((_) => {
+            job.notifyOnApplication = oldValue;
+        });
+};
 
 const updateJobOpen = (id: number, value: boolean) => {
     const job = data.value.find((job) => job.id === id);

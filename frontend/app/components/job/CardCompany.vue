@@ -19,6 +19,7 @@
                 </div>
                 <div class="flex items-center ml-auto">
                     <UButton
+                        v-if="data.approvalStatus === 'accepted'"
                         variant="ghost"
                         color="neutral"
                         class="cursor-pointer"
@@ -110,15 +111,29 @@ import type { JobPost } from "~/data/mockData";
 
 const emit = defineEmits<{
     (e: "update:open", value: boolean): void;
+    (e: "update:notifyOnApplication", value: boolean): void;
     (e: "close"): void;
 }>();
 
 const openJobEditForm = ref(false);
-const emailNotifyOn = ref(false);
 
 const props = defineProps<{
     data: JobPost;
 }>();
+
+function getNotifyFlag(d: any): boolean {
+    // Accept both camelCase and snake_case from API just in case
+    const v = d?.notifyOnApplication ?? d?.notify_on_application;
+    return typeof v === "boolean" ? v : Boolean(v);
+}
+
+const emailNotifyOn = ref(getNotifyFlag(props.data));
+watch(
+    () => props.data,
+    (val) => (emailNotifyOn.value = getNotifyFlag(val))
+);
+
+const { add: addToast } = useToast();
 
 function selectJob() {
     console.log("Job ID:", props.data.id);
@@ -132,9 +147,16 @@ function handleCloseEditForm() {
     emit("close");
 }
 
-// Toggle new applicant email notifications
 function toggleEmailNotification() {
-    emailNotifyOn.value = !emailNotifyOn.value;
-    console.log("New applicant email notifications:", emailNotifyOn.value ? "enabled" : "disabled");
+    const next = !emailNotifyOn.value;
+    emailNotifyOn.value = next; // instant UI feedback
+    emit("update:notifyOnApplication", next);
+    addToast({
+        title: next ? "Notifications enabled" : "Notifications disabled",
+        description: next
+            ? "You will receive emails for new applicants."
+            : "You will not receive emails for new applicants.",
+        color: "success",
+    });
 }
 </script>
