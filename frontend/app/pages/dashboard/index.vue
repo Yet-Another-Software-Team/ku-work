@@ -91,7 +91,9 @@
                     :pending="job.pending"
                     :approval-status="job.approvalStatus"
                     @update:open="(value: boolean) => updateJobOpen(job.id, value)"
-                    @update:notifyOnApplication="(value: boolean) => updateJobNotify(job.id, value)"
+                    @update:notify-on-application="
+                        (value: boolean) => updateJobNotify(job.id, value)
+                    "
                     @close="fetchJobs"
                 />
             </div>
