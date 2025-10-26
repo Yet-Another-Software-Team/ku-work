@@ -110,9 +110,9 @@
 import type { JobPost } from "~/data/mockData";
 
 const emit = defineEmits<{
-    (e: "update:open", value: boolean): void;
-    (e: "update:notifyOnApplication", value: boolean): void;
-    (e: "close"): void;
+    "update:open": [value: boolean];
+    "update:notifyOnApplication": [value: boolean];
+    close: [];
 }>();
 
 const openJobEditForm = ref(false);
@@ -121,10 +121,11 @@ const props = defineProps<{
     data: JobPost;
 }>();
 
-function getNotifyFlag(d: any): boolean {
+function getNotifyFlag(d: unknown): boolean {
     // Accept both camelCase and snake_case from API just in case
-    const v = d?.notifyOnApplication ?? d?.notify_on_application;
-    return typeof v === "boolean" ? v : Boolean(v);
+    const o = (d as Record<string, unknown>) ?? {};
+    const vRaw = (o["notifyOnApplication"] ?? o["notify_on_application"]) as unknown;
+    return typeof vRaw === "boolean" ? vRaw : Boolean(vRaw);
 }
 
 const emailNotifyOn = ref(getNotifyFlag(props.data));
