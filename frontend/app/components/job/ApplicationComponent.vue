@@ -59,8 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { mockUserData } from "~/data/mockData";
-import type { JobApplication, Profile } from "~/data/mockData";
+import type { JobApplication, Profile } from "~/data/datatypes";
 
 const props = defineProps<{
     applicationData: JobApplication;
@@ -70,7 +69,7 @@ const props = defineProps<{
 
 const api = useApi();
 const config = useRuntimeConfig();
-const profile = ref<Profile>(mockUserData);
+const profile = ref<Profile>();
 const avatar = ref("");
 
 onMounted(async () => {

@@ -113,7 +113,7 @@
 </template>
 
 <script setup lang="ts">
-import type { JobPost } from "~/data/mockData";
+import type { JobPost } from "~/data/datatypes";
 import { formatSalary, formatJobType, formatExperience } from "~/utils/formatter";
 
 const runtimeConfig = useRuntimeConfig();

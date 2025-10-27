@@ -84,7 +84,7 @@
 
 <script setup lang="ts">
 import type { DropdownMenuItem } from "@nuxt/ui";
-import type { JobPost } from "~/data/mockData";
+import type { JobPost } from "~/data/datatypes";
 
 const emit = defineEmits<{
     (e: "update:open", value: boolean): void;

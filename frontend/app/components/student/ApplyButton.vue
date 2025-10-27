@@ -5,7 +5,7 @@
         :ui="{ content: 'w-[380px]', body: 'p-6', title: 'text-xl font-bold' }"
     >
         <!-- Button Trigger -->
-        <UButton class="w-full justify-center my-5 p-2 text-xl" label="Apply" />
+        <UButton class="w-full justify-center my-5 p-2 text-xl" label="Apply" :disabled="applied" />
 
         <template #body>
             <!-- Progress -->
@@ -154,6 +154,7 @@ const api = useApi();
 
 interface Props {
     jobId: number;
+    applied: boolean | undefined;
 }
 
 const props = defineProps<Props>();

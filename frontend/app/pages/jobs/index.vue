@@ -110,7 +110,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import type { JobPost } from "~/data/mockData";
+import type { JobPost } from "~/data/datatypes";
 import type { CheckboxGroupValue } from "@nuxt/ui";
 import { useMediaQuery, useInfiniteScroll, watchDebounced } from "@vueuse/core";
 

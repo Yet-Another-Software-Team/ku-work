@@ -191,7 +191,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch } from "vue";
-import type { EditJobPost, JobPost } from "~/data/mockData";
+import type { EditJobPost, JobPost } from "~/data/datatypes";
 import * as z from "zod";
 
 const props = defineProps<{

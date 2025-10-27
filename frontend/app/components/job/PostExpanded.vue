@@ -87,12 +87,17 @@
                 {{ data.description }}
             </p>
         </div>
-        <StudentApplyButton v-if="!isViewer" :job-id="data.id" label="Apply" />
+        <StudentApplyButton
+            v-if="!isViewer"
+            :job-id="data.id"
+            :applied="data.applied"
+            label="Apply"
+        />
     </div>
 </template>
 
 <script setup lang="ts">
-import type { JobPost } from "~/data/mockData";
+import type { JobPost } from "~/data/datatypes";
 import { formatSalary, formatJobType, formatExperience } from "~/utils/formatter";
 
 const runtimeConfig = useRuntimeConfig();
