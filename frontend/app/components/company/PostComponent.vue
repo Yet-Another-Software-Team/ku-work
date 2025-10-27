@@ -9,13 +9,13 @@
                         v-if="logo"
                         :src="logo"
                         alt="Company Logo"
-                        class="rounded-full size-[6em]"
+                        class="rounded-full size-[6em] object-cover"
                     />
                     <img
                         v-else
                         src="/images/background.png"
                         alt="Company Logo"
-                        class="rounded-full size-[6em]"
+                        class="rounded-full size-[6em] object-cover"
                     />
                 </span>
                 <span class="px-10 space-y-1">
