@@ -3,8 +3,8 @@
         <!-- Header -->
         <h1 class="text-5xl text-primary-800 dark:text-primary font-bold mb-6">Profile</h1>
         <!-- Banner -->
-        <div class="bg-gray-300 h-32 rounded-t-lg relative overflow-hidden">
-            <img :src="profile.banner" alt="Banner" />
+        <div class="bg-gray-300 h-[10rem] rounded-t-lg relative overflow-hidden">
+            <img :src="profile.banner" alt="Banner" class="object-cover size-full" />
         </div>
 
         <!-- Top Section -->

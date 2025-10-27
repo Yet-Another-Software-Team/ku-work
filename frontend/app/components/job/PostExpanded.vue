@@ -81,18 +81,18 @@
                 <span class="text-primary-700 font-semibold">Duration: </span>
                 {{ data.duration }}
             </p>
+            <StudentApplyButton
+                v-if="!isViewer"
+                :job-id="data.id"
+                :applied="data.applied"
+                label="Apply"
+            />
             <p>
                 <span class="text-primary-700 font-semibold">Description:</span>
                 <br />
                 {{ data.description }}
             </p>
         </div>
-        <StudentApplyButton
-            v-if="!isViewer"
-            :job-id="data.id"
-            :applied="data.applied"
-            label="Apply"
-        />
     </div>
 </template>
 
