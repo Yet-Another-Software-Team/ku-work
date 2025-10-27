@@ -86,6 +86,7 @@
                 :job-id="data.id"
                 :applied="data.applied"
                 label="Apply"
+                @update:applied="(value) => emit('update:applied', value)"
             />
             <p>
                 <span class="text-primary-700 font-semibold">Description:</span>
@@ -102,6 +103,8 @@ import { formatSalary, formatJobType, formatExperience } from "~/utils/formatter
 
 const runtimeConfig = useRuntimeConfig();
 const timeAgo = useTimeAgo();
+
+const emit = defineEmits<{ (e: "update:applied", value: boolean): void }>();
 
 defineProps<{
     data: JobPost;

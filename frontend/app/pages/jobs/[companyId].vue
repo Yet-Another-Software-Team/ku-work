@@ -147,7 +147,7 @@
                             <JobPostComponent
                                 :is-selected="selectedIndex === index"
                                 :data="job"
-                                @click="selectedIndex = index"
+                                @click="setSelectedIndex(index)"
                             />
                         </section>
                     </section>
@@ -165,17 +165,39 @@
         </section>
 
         <!-- Expanded Job Post -->
-        <section v-if="selectedIndex !== null && selectedIndex < companyJobs.length" class="flex">
-            <USeparator orientation="vertical" class="w-fit mx-5" color="neutral" size="lg" />
-            <section>
-                <JobPostExpanded
-                    v-if="companyJobs.length > 0"
-                    :is-viewer="userRole === 'viewer'"
-                    :is-selected="true"
-                    :data="companyJobs[selectedIndex]!"
+        <Transition name="expand-slide-right" appear>
+            <section
+                v-if="selectedIndex !== null && selectedIndex < companyJobs.length"
+                class="flex"
+            >
+                <!-- Normal Expand job (bigger than tablet) -->
+                <USeparator
+                    orientation="vertical"
+                    class="w-fit mx-5 hidden tablet:block"
+                    color="neutral"
+                    size="lg"
                 />
+                <section aria-label="job expand normal">
+                    <JobPostExpanded
+                        v-if="companyJobs.length > 0"
+                        class="hidden tablet:block ease-in-out duration-100"
+                        :is-viewer="userRole === 'viewer'"
+                        :is-selected="true"
+                        :data="companyJobs[selectedIndex]!"
+                        @update:applied="() => updateApplied(true)"
+                    />
+                    <JobPostDrawer
+                        v-if="companyJobs.length > 0 && !isTablet"
+                        class="block tablet:hidden"
+                        :is-viewer="userRole === 'viewer'"
+                        :is-selected="true"
+                        :data="companyJobs[selectedIndex]!"
+                        @close="setSelectedIndex(null)"
+                        @update:applied="() => updateApplied(true)"
+                    />
+                </section>
             </section>
-        </section>
+        </Transition>
     </div>
 </template>
 
@@ -192,6 +214,16 @@ const errorMessage = ref("");
 const companyExists = ref(true);
 const companyJobs = ref<JobPost[]>([]);
 const selectedIndex = ref<number | null>(null);
+const isTablet = ref(false);
+
+/**
+ * Setter for selected index; use this where template/events need to change selection.
+ */
+const setSelectedIndex = (idx: number | null) => {
+    selectedIndex.value = idx;
+};
+
+let mq: MediaQueryList | null = null;
 
 const api = useApi();
 const { add: addToast } = useToast();
@@ -297,6 +329,31 @@ const retryFetch = async () => {
 onMounted(async () => {
     if (import.meta.client) {
         userRole.value = localStorage.getItem("role") || "viewer";
+
+        // Setup media query listener for responsive drawer/expanded view
+        mq = window.matchMedia("(min-width: 768px)");
+        const onChange = () => {
+            isTablet.value = mq ? mq.matches : false;
+        };
+        // Initialize and subscribe
+        onChange();
+        if (mq.addEventListener) {
+            mq.addEventListener("change", onChange);
+        } else {
+            // For older browsers
+            mq.addListener(onChange);
+        }
+
+        // Ensure we remove listener when component unmounts
+        onBeforeUnmount(() => {
+            if (!mq) return;
+            if (mq.removeEventListener) {
+                mq.removeEventListener("change", onChange);
+            } else {
+                mq.removeListener(onChange);
+            }
+            mq = null;
+        });
     }
 
     await checkCompanyExists();
@@ -310,4 +367,21 @@ watch(companyId, async (newId, oldId) => {
         await checkCompanyExists();
     }
 });
+
+const updateApplied = (value: boolean) => {
+    // Ensure a selection exists (0 is a valid index)
+    if (selectedIndex.value === null) {
+        return;
+    }
+
+    const idx = selectedIndex.value;
+    const job = companyJobs.value[idx];
+    if (!job) {
+        return;
+    }
+
+    (job as JobPost).applied = value;
+
+    companyJobs.value = companyJobs.value.slice();
+};
 </script>
