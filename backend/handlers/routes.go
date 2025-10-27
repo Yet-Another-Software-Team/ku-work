@@ -42,29 +42,35 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 
 	// Protected Authentication Routes
 	authProtected := auth.Group("", middlewares.AuthMiddleware(jwtHandlers.JWTSecret, redisClient))
-	authProtected.POST("/student/register", studentHandlers.RegisterHandler)
 	authProtected.POST("/refresh", middlewares.RateLimiterWithLimits(redisClient, 5, 20), jwtHandlers.RefreshTokenHandler)
 	authProtected.POST("/logout", jwtHandlers.LogoutHandler)
+	// Only active account can register
+	authProtectedActive := authProtected.Group("", middlewares.AccountActiveMiddleware(db))
+	authProtectedActive.POST("/student/register", studentHandlers.RegisterHandler)
 
 	// User Routes
 	protectedRouter := router.Group("", middlewares.AuthMiddleware(jwtHandlers.JWTSecret, redisClient))
-	protectedRouter.PATCH("/me", userHandlers.EditProfileHandler)
-	protectedRouter.GET("/me", userHandlers.GetProfileHandler)
-	protectedRouter.POST("/me/deactivate", userHandlers.DeactivateAccount)
+	// Keep reactivation available even for deactivated accounts
 	protectedRouter.POST("/me/reactivate", userHandlers.ReactivateAccount)
+
+	// Routes that require the account to be active
+	protectedActive := protectedRouter.Group("", middlewares.AccountActiveMiddleware(db))
+	protectedActive.PATCH("/me", userHandlers.EditProfileHandler)
+	protectedActive.GET("/me", userHandlers.GetProfileHandler)
+	protectedActive.POST("/me/deactivate", userHandlers.DeactivateAccount)
 
 	// File Routes
 	router.GET("/files/:fileID", fileHandlers.ServeFileHandler)
 
 	// Company Routs
-	company := protectedRouter.Group("/company")
+	company := protectedActive.Group("/company")
 	company.GET("/:id", companyHandlers.GetCompanyProfileHandler)
 
 	companyAdmin := company.Group("", middlewares.AdminPermissionMiddleware(db))
 	companyAdmin.GET("", companyHandlers.GetCompanyListHandler)
 
 	// Job Routes
-	job := protectedRouter.Group("/jobs")
+	job := protectedActive.Group("/jobs")
 	job.GET("", jobHandlers.FetchJobsHandler)
 	job.POST("", jobHandlers.CreateJobHandler)
 	job.GET("/:id/applications", applicationHandlers.GetJobApplicationsHandler)
@@ -79,18 +85,18 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	jobAdmin.POST("/:id/approval", jobHandlers.JobApprovalHandler)
 
 	// Application Routes
-	application := protectedRouter.Group("/applications")
+	application := protectedActive.Group("/applications")
 	application.GET("", applicationHandlers.GetAllJobApplicationsHandler)
 
 	// Student Routes
-	student := protectedRouter.Group("/students")
+	student := protectedActive.Group("/students")
 	student.GET("", studentHandlers.GetProfileHandler)
 
 	studentAdmin := student.Group("", middlewares.AdminPermissionMiddleware(db))
 	studentAdmin.POST("/:id/approval", studentHandlers.ApproveHandler)
 
 	// Admin Routes
-	admin := protectedRouter.Group("/admin", middlewares.AdminPermissionMiddleware(db))
+	admin := protectedActive.Group("/admin", middlewares.AdminPermissionMiddleware(db))
 	admin.GET("/audits", adminHandlers.FetchAuditLog)
 	return nil
 }
