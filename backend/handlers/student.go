@@ -12,6 +12,7 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
+	"ku-work/backend/helper"
 	"ku-work/backend/model"
 	"ku-work/backend/services"
 )
@@ -36,6 +37,40 @@ func NewStudentHandler(db *gorm.DB, fileHandlers *FileHandlers, aiService *servi
 		emailService:                             emailService,
 		studentApprovalStatusUpdateEmailTemplate: studentApprovalStatusUpdateEmailTemplate,
 	}, nil
+}
+
+// StudentInfo is the package-level response type used for student profile responses.
+// It embeds model.Student and augments with display name and email from oauth details.
+type StudentInfo struct {
+	model.Student
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Email     string `json:"email"`
+	FullName  string `json:"fullName"`
+}
+
+// anonymizeStudent clears personally-identifying information from a StudentInfo response.
+// It intentionally preserves non-identifying fields like timestamps but removes names,
+// emails, contact, files and other PII.
+func anonymizeStudent(s *StudentInfo) {
+	// Clear personal details
+	s.FirstName = ""
+	s.LastName = ""
+	s.Email = ""
+
+	// Clear profile fields
+	s.Phone = ""
+	s.PhotoID = ""
+	s.AboutMe = ""
+	s.GitHub = ""
+	s.LinkedIn = ""
+	s.StudentID = ""
+	s.StudentStatusFileID = ""
+	s.Photo = model.File{}
+	s.StudentStatusFile = model.File{}
+
+	// Replace full name for display
+	s.FullName = "Deactivated Account"
 }
 
 // @Summary Register as a student
@@ -382,13 +417,6 @@ func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 	query = query.Select("students.*, google_o_auth_details.first_name as first_name, google_o_auth_details.last_name as last_name, CONCAT(google_o_auth_details.first_name, ' ', google_o_auth_details.last_name) as fullname, google_o_auth_details.email as email")
 	query = query.Joins("INNER JOIN google_o_auth_details on google_o_auth_details.user_id = students.user_id")
 
-	type StudentInfo struct {
-		model.Student
-		FirstName string `json:"firstName"`
-		LastName  string `json:"lastName"`
-		Email     string `json:"email"`
-	}
-
 	// If user ID is provided, use the userId from request
 	if input.UserID != "" {
 		userId = input.UserID
@@ -421,6 +449,18 @@ func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
 			}
+
+			// Anonymize deactivated accounts before returning list
+			for i := range students {
+				uid := students[i].UserID
+				if uid == "" {
+					continue
+				}
+				if helper.IsDeactivated(h.DB, uid) {
+					anonymizeStudent(&students[i])
+				}
+			}
+
 			ctx.JSON(http.StatusOK, students)
 			return
 		}
@@ -431,6 +471,11 @@ func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 	if err := query.Where("students.user_id = ?", userId).Take(&studentInfo).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	// If the target account is deactivated, anonymize the profile
+	if helper.IsDeactivated(h.DB, userId) {
+		anonymizeStudent(&studentInfo)
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{

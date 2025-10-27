@@ -252,8 +252,8 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 
 	// Filter Job post by keyword
 	if input.Keyword != "" {
-		keywords := strings.Fields(input.Keyword) // Split by whitespace
-		for _, keyword := range keywords {
+		keywords := strings.FieldsSeq(input.Keyword) // Split by whitespace
+		for keyword := range keywords {
 			keywordPattern := fmt.Sprintf("%%%s%%", keyword)
 			searchGroup := h.DB.Where("name ILIKE ?", keywordPattern).
 				Or("description ILIKE ?", keywordPattern).

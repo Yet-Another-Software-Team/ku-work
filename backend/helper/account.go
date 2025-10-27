@@ -1,8 +1,11 @@
 package helper
 
 import (
+	"ku-work/backend/model"
 	"os"
 	"strconv"
+
+	"gorm.io/gorm"
 )
 
 // GetGracePeriodDays returns the grace period in days from environment variable
@@ -19,4 +22,15 @@ func GetGracePeriodDays() int {
 	}
 
 	return days
+}
+
+func IsDeactivated(db *gorm.DB, userId string) bool {
+	user := model.User{
+		ID: userId,
+	}
+	err := db.First(&user).Error
+	if err != nil {
+		return false
+	}
+	return user.DeletedAt.Valid
 }

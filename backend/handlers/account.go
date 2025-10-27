@@ -125,21 +125,11 @@ func (h *UserHandlers) ReactivateAccount(ctx *gin.Context) {
 		}
 	}
 
-	// Check if company exists and re-enable their job posts
+	// Check if company exists and re-activate their account
 	var company model.Company
 	if err := h.DB.Unscoped().Where("user_id = ?", userID).First(&company).Error; err == nil {
 		if company.DeletedAt.Valid {
 			h.DB.Model(&company).Unscoped().Update("deleted_at", nil)
-		}
-		// Re-enable job posts for reactivated company
-		// Note: We set them back to open, but companies may want to review them
-		result := h.DB.Model(&model.Job{}).
-			Where("company_id = ? AND is_open = ?", userID, false).
-			Update("is_open", true)
-		if result.Error != nil {
-			log.Printf("Warning: Failed to re-enable job posts for company %s: %v", userID, result.Error)
-		} else if result.RowsAffected > 0 {
-			log.Printf("Re-enabled %d job posts for company: %s", result.RowsAffected, userID)
 		}
 	}
 
@@ -154,22 +144,4 @@ func (h *UserHandlers) ReactivateAccount(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Account reactivated successfully",
 	})
-}
-
-// @Summary Request account deletion
-// @Description Marks the account for anonymization. Account will be deactivated immediately and all personal data will be anonymized after the grace period (PDPA compliant). Anonymized data is retained for analytics and compliance purposes but cannot be linked back to the individual.
-// @Tags Users
-// @Security BearerAuth
-// @Produce json
-// @Success 200 {object} object{message=string,grace_period_days=int,deletion_date=string} "Account marked for anonymization"
-// @Failure 401 {object} object{error=string} "Unauthorized"
-// @Failure 404 {object} object{error=string} "User not found"
-// @Failure 500 {object} object{error=string} "Internal server error"
-// @Router /me/delete [delete]
-func (h *UserHandlers) RequestAccountDeletion(ctx *gin.Context) {
-	// This is essentially the same as deactivation
-	// The scheduler will handle anonymization (not deletion) after grace period
-	// This complies with Thailand's PDPA - personal data is anonymized while
-	// retaining records for legitimate business purposes (analytics, compliance)
-	h.DeactivateAccount(ctx)
 }
