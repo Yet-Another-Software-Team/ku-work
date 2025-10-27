@@ -481,7 +481,7 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 		return
 	}
 	jobId := uint(jobId64)
-	
+
 	email := ctx.Param("email")
 
 	// Query for the specific job application with full student details

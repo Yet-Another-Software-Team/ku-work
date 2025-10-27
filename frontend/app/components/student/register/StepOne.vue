@@ -16,7 +16,7 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="flex flex-col space-y-1">
-                        <label class="text-primary-800 font-semibold">Date of Birth</label>
+                        <label class="text-primary-800 font-semibold">Date of Birth *</label>
                         <UInput
                             :model-value="dateOfBirth"
                             placeholder="Optional: MM/DD/YYYY"
@@ -196,16 +196,13 @@ const errors = reactive({
 });
 
 const schema = z.object({
-    dateOfBirth: z
-        .string()
-        .optional()
-        .refine((date) => {
-            if (!date) return true;
-            const birthDate = new Date(date);
-            const today = new Date();
-            const age = today.getFullYear() - birthDate.getFullYear();
-            return age >= 16 && age <= 80;
-        }, "Age must be between 16 and 80 years"),
+    dateOfBirth: z.string().refine((date) => {
+        if (!date) return true;
+        const birthDate = new Date(date);
+        const today = new Date();
+        const age = today.getFullYear() - birthDate.getFullYear();
+        return age >= 16 && age <= 80;
+    }, "Age must be between 16 and 80 years"),
     phone: z
         .string()
         .regex(/^\+(?:[1-9]\d{0,2}) \d{4,14}$/, "Please enter a valid phone number")
@@ -273,14 +270,10 @@ const validateField = (fieldName, value) => {
 };
 
 const isValid = computed(() => {
-    const hasRequiredValues = props.avatar;
+    const hasRequiredValues = props.avatar && props.dateOfBirth;
     const hasNoErrors = !Object.values(errors).some((error) => error);
     return hasRequiredValues && hasNoErrors;
 });
-const updateFullName = (value) => {
-    emit("update:fullName", value);
-    validateField("fullName", value);
-};
 
 const updateDateOfBirth = (value) => {
     emit("update:dateOfBirth", value);

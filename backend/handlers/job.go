@@ -95,7 +95,7 @@ type JobResponse struct {
 	MaxSalary      uint      `json:"maxSalary"`
 	ApprovalStatus string    `json:"approvalStatus"`
 	IsOpen         bool      `json:"open"`
-	Applied		   bool		 `json:"applied"`
+	Applied        bool      `json:"applied"`
 }
 
 // JobWithStatsResponse extends JobResponse with application statistics for company users.
@@ -350,7 +350,7 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
-	
+
 	for i := range jobs {
 		var count int64
 		if err := h.DB.Model(&model.JobApplication{}).
@@ -362,7 +362,7 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 			jobs[i].Applied = false
 		}
 	}
-	
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"jobs":  jobs,
 		"total": totalCount,
@@ -618,7 +618,6 @@ func (h *JobHandlers) GetJobDetailHandler(ctx *gin.Context) {
 	}
 	job.Applied = applied
 
-	
 	ctx.JSON(http.StatusOK, job)
 }
 

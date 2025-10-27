@@ -110,7 +110,7 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 	// Bind request body to input struct
 	type StudentRegistrationInput struct {
 		Phone             string                `form:"phone" binding:"max=20"`
-		BirthDate         string                `form:"birthDate" binding:"max=27"`
+		BirthDate         string                `form:"birthDate" binding:"required,max=27"`
 		AboutMe           string                `form:"aboutMe" binding:"max=16384"`
 		GitHub            string                `form:"github" binding:"max=256"`
 		LinkedIn          string                `form:"linkedIn" binding:"max=256"`
@@ -128,12 +128,10 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 	}
 	// Parse Birth Date to RFC3339 format
 	var parsedBirthDate time.Time
-	if input.BirthDate != "" {
-		parsedBirthDate, err = time.Parse(time.RFC3339, input.BirthDate)
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
+	parsedBirthDate, err = time.Parse(time.RFC3339, input.BirthDate)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
 	tx := h.DB.Begin()

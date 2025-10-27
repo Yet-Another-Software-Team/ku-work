@@ -210,18 +210,18 @@ func CleanImageMetadata(filePath string) error {
 // @Router /files/{fileID} [get]
 func (h *FileHandlers) ServeFileHandler(ctx *gin.Context) {
 	fileID := ctx.Param("fileID")
-	
+
 	// Ensure that file id not contain invalid characters
 	if strings.Contains(fileID, "/") || strings.Contains(fileID, `\`) || strings.Contains(fileID, "..") {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file identifier"})
 		return
 	}
-	
+
 	// Check file deactivation from DB
 	fileDBO := &model.File{
 		ID: fileID,
 	}
-	
+
 	if err := h.DB.First(fileDBO).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
@@ -230,7 +230,7 @@ func (h *FileHandlers) ServeFileHandler(ctx *gin.Context) {
 		}
 		return
 	}
-	
+
 	if helper.IsDeactivated(h.DB, fileDBO.UserID) {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "File is deactivated"})
 		return
