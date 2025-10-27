@@ -590,7 +590,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Invalidates the user's session by deleting their refresh token from the database and clearing the refresh token cookie.",
+                "description": "Invalidates the user's session by revoking both the JWT token (blacklist) and refresh token. Complies with OWASP session termination requirements.",
                 "produces": [
                     "application/json"
                 ],
@@ -1466,7 +1466,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/jobs/{id}/applications/{studentUserId}": {
+        "/jobs/{id}/applications/{email}": {
             "get": {
                 "security": [
                     {
@@ -1492,7 +1492,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Student Email",
-                        "name": "studentUserId",
+                        "name": "email",
                         "in": "query",
                         "required": true
                     }
@@ -1549,7 +1549,9 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
+            }
+        },
+        "/jobs/{id}/applications/{studentUserId}": {
             "patch": {
                 "security": [
                     {
@@ -2059,6 +2061,240 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/me/deactivate": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Soft deletes the user account. The account can be reactivated within the grace period (default 30 days, configurable via ACCOUNT_DELETION_GRACE_PERIOD_DAYS env variable). After the grace period expires, all personal data is automatically anonymized (not deleted) to comply with Thailand's PDPA while retaining data for analytics and compliance.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Deactivate account",
+                "responses": {
+                    "200": {
+                        "description": "Account deactivated successfully",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "deletion_date": {
+                                    "type": "string"
+                                },
+                                "grace_period_days": {
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Account already deactivated",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/me/delete": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marks the account for anonymization. Account will be deactivated immediately and all personal data will be anonymized after the grace period (PDPA compliant). Anonymized data is retained for analytics and compliance purposes but cannot be linked back to the individual.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Request account deletion",
+                "responses": {
+                    "200": {
+                        "description": "Account marked for anonymization",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "deletion_date": {
+                                    "type": "string"
+                                },
+                                "grace_period_days": {
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/me/reactivate": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Reactivates a deactivated account if within the grace period. Once the grace period expires and data is anonymized, reactivation is not possible. Requires valid authentication token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Reactivate account",
+                "responses": {
+                    "200": {
+                        "description": "Account reactivated successfully",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Account is not deactivated",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Grace period expired, account already anonymized",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
                         "schema": {
                             "type": "object",
                             "properties": {

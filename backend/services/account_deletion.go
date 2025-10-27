@@ -70,6 +70,76 @@ func AnonymizeExpiredAccounts(db *gorm.DB, gracePeriodDay int) error {
 	return nil
 }
 
+// DisableCompanyJobPosts disables all job posts for a deactivated company
+func DisableCompanyJobPosts(db *gorm.DB, companyUserID string) error {
+	log.Printf("Disabling job posts for company: %s", companyUserID)
+
+	// Update all jobs for this company to set is_open = false
+	result := db.Model(&model.Job{}).
+		Where("company_id = ? AND is_open = ?", companyUserID, true).
+		Update("is_open", false)
+
+	if result.Error != nil {
+		log.Printf("Error disabling job posts for company %s: %v", companyUserID, result.Error)
+		return fmt.Errorf("failed to disable job posts: %w", result.Error)
+	}
+
+	log.Printf("Disabled %d job posts for company: %s", result.RowsAffected, companyUserID)
+	return nil
+}
+
+// AnonymizeJobApplicationsForStudent anonymizes and deletes files from all job applications for a student
+func AnonymizeJobApplicationsForStudent(tx *gorm.DB, studentUserID string) error {
+	log.Printf("Anonymizing job applications for student: %s", studentUserID)
+
+	// Find all job applications for this student
+	var applications []model.JobApplication
+	if err := tx.Unscoped().
+		Preload("Files").
+		Where("user_id = ?", studentUserID).
+		Find(&applications).Error; err != nil {
+		return fmt.Errorf("failed to find job applications: %w", err)
+	}
+
+	if len(applications) == 0 {
+		log.Printf("No job applications found for student: %s", studentUserID)
+		return nil
+	}
+
+	log.Printf("Found %d job applications to anonymize for student: %s", len(applications), studentUserID)
+
+	anonymousID := generateAnonymousID(studentUserID)
+
+	for _, app := range applications {
+		// Delete all files associated with this application
+		for _, file := range app.Files {
+			// Delete the physical file
+			if err := file.AfterDelete(tx); err != nil {
+				log.Printf("Warning: Failed to delete file %s: %v", file.ID, err)
+			}
+			// Delete the file record from database
+			if err := tx.Unscoped().Delete(&file).Error; err != nil {
+				log.Printf("Warning: Failed to delete file record %s: %v", file.ID, err)
+			}
+		}
+
+		// Anonymize application contact information
+		updates := map[string]any{
+			"contact_phone": "",
+			"contact_email": fmt.Sprintf("%s@anonymized.local", anonymousID),
+		}
+
+		if err := tx.Unscoped().Model(&model.JobApplication{}).
+			Where("job_id = ? AND user_id = ?", app.JobID, studentUserID).
+			Updates(updates).Error; err != nil {
+			log.Printf("Warning: Failed to anonymize application for job %d: %v", app.JobID, err)
+		}
+	}
+
+	log.Printf("Successfully anonymized %d job applications for student: %s", len(applications), studentUserID)
+	return nil
+}
+
 // AnonymizeAccount anonymizes a user account and all associated personal data
 // This complies with Thailand's PDPA while retaining data for analytics
 func AnonymizeAccount(db *gorm.DB, userID string) error {
@@ -92,18 +162,30 @@ func AnonymizeAccount(db *gorm.DB, userID string) error {
 		}
 		log.Printf("Anonymized user record for: %s", userID)
 
-		// Anonymize Student record if exists
+		// Check if user is a student
 		var student model.Student
-		if err := tx.Unscoped().Where("user_id = ?", userID).First(&student).Error; err == nil {
+		isStudent := tx.Unscoped().Where("user_id = ?", userID).First(&student).Error == nil
+
+		// Check if user is a company
+		var company model.Company
+		isCompany := tx.Unscoped().Where("user_id = ?", userID).First(&company).Error == nil
+
+		// Anonymize Student record if exists
+		if isStudent {
 			if err := AnonymizeStudentData(tx, &student); err != nil {
 				return fmt.Errorf("failed to anonymize student data: %w", err)
 			}
 			log.Printf("Anonymized student record for user: %s", userID)
+
+			// Anonymize job applications if student
+			if err := AnonymizeJobApplicationsForStudent(tx, userID); err != nil {
+				return fmt.Errorf("failed to anonymize job applications: %w", err)
+			}
+			log.Printf("Anonymized job applications for student: %s", userID)
 		}
 
 		// Anonymize Company record if exists
-		var company model.Company
-		if err := tx.Unscoped().Where("user_id = ?", userID).First(&company).Error; err == nil {
+		if isCompany {
 			if err := AnonymizeCompanyData(tx, &company); err != nil {
 				return fmt.Errorf("failed to anonymize company data: %w", err)
 			}

@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"ku-work/backend/model"
+	"ku-work/backend/services"
+	"log"
 	"net/http"
 	"time"
 
@@ -38,6 +40,16 @@ func (h *UserHandlers) DeactivateAccount(ctx *gin.Context) {
 	if user.DeletedAt.Valid {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Account is already deactivated"})
 		return
+	}
+
+	// Check if user is a company and disable their job posts
+	var company model.Company
+	if err := h.DB.Where("user_id = ?", userID).First(&company).Error; err == nil {
+		// User is a company - disable all their job posts
+		if err := services.DisableCompanyJobPosts(h.DB, userID); err != nil {
+			log.Printf("Warning: Failed to disable job posts for company %s: %v", userID, err)
+			// Don't fail the deactivation, just log the warning
+		}
 	}
 
 	// Soft Delete User (this will trigger BeforeDelete hooks)
@@ -113,11 +125,21 @@ func (h *UserHandlers) ReactivateAccount(ctx *gin.Context) {
 		}
 	}
 
-	// Check if company exists
+	// Check if company exists and re-enable their job posts
 	var company model.Company
 	if err := h.DB.Unscoped().Where("user_id = ?", userID).First(&company).Error; err == nil {
 		if company.DeletedAt.Valid {
 			h.DB.Model(&company).Unscoped().Update("deleted_at", nil)
+		}
+		// Re-enable job posts for reactivated company
+		// Note: We set them back to open, but companies may want to review them
+		result := h.DB.Model(&model.Job{}).
+			Where("company_id = ? AND is_open = ?", userID, false).
+			Update("is_open", true)
+		if result.Error != nil {
+			log.Printf("Warning: Failed to re-enable job posts for company %s: %v", userID, result.Error)
+		} else if result.RowsAffected > 0 {
+			log.Printf("Re-enabled %d job posts for company: %s", result.RowsAffected, userID)
 		}
 	}
 

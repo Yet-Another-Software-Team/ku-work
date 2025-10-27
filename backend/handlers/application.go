@@ -333,16 +333,17 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 
 	// Build base query joining with users table to fetch applicant username
 	// Filter by the job ID from the URL parameter
+	// Exclude deactivated/anonymized students (those with deleted_at set or username starting with ANON-)
 	query := h.DB.Model(&model.JobApplication{}).
+		Joins("INNER JOIN users ON users.id = job_applications.user_id").
 		Joins("INNER JOIN google_o_auth_details ON google_o_auth_details.user_id = job_applications.user_id").
 		Joins("INNER JOIN students ON students.user_id = job_applications.user_id").
 		Select("job_applications.*",
-			"CONCAT(google_o_auth_details.first_name, ' ', google_o_auth_details.last_name) as username",
+			"CASE WHEN users.deleted_at IS NOT NULL THEN 'Deactivated User' ELSE CONCAT(google_o_auth_details.first_name, ' ', google_o_auth_details.last_name) END as username",
 			"students.major as major",
 			"students.student_id as student_id",
 			"job_applications.status as status").
 		Where("job_applications.job_id = ?", jobId)
-
 	// Filter by status if provided (for tabs: pending, accepted, rejected)
 	if input.Status != nil && *input.Status != "" {
 		query = query.Where("job_applications.status = ?", *input.Status)
@@ -465,13 +466,13 @@ func (h *ApplicationHandlers) ClearJobApplicationsHandler(ctx *gin.Context) {
 // @Security BearerAuth
 // @Produce json
 // @Param id path uint true "Job ID"
-// @Param studentUserId query string true "Student Email"
+// @Param email query string true "Student Email"
 // @Success 200 {object} handlers.FullApplicantDetail "Detailed job application"
 // @Failure 400 {object} object{error=string} "Bad Request: Invalid job ID"
 // @Failure 401 {object} object{error=string} "Unauthorized"
 // @Failure 404 {object} object{error=string} "Not Found: Job application not found"
 // @Failure 500 {object} object{error=string} "Internal Server Error"
-// @Router /jobs/{id}/applications/{studentUserId} [get]
+// @Router /jobs/{id}/applications/{email} [get]
 func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 	// Extract job ID from URL parameter
 	jobIdStr := ctx.Param("id")
@@ -481,18 +482,11 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 		return
 	}
 	jobId := uint(jobId64)
-
-	// Extract email from query
-	type QueryParams struct {
-		Email string `json:"email" form:"email" binding:"required,max=128"`
-	}
-	var queries QueryParams
-	if err := ctx.ShouldBind(&queries); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
+	
+	email := ctx.Param("email")
 
 	// Query for the specific job application with full student details
+	// Exclude deactivated/anonymized students
 	var jobApplication FullApplicantDetail
 
 	// Fetch the main application data, without preloading Files.
@@ -507,11 +501,13 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 			students.birth_date as birth_date, students.about_me as about_me,
 			students.git_hub as github, students.linked_in as linked_in,
 			students.student_id as student_id, students.major as major`).
-		Where("job_applications.job_id = ? AND google_o_auth_details.email = ?", jobId, queries.Email)
+		Where("job_applications.job_id = ? AND google_o_auth_details.email = ?", jobId, email).
+		Where("users.deleted_at IS NULL").
+		Where("users.username NOT LIKE 'ANON-%'")
 
 	if err := query.First(&jobApplication).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "job application not found"})
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "job application not found or student account deactivated"})
 		} else {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
@@ -565,10 +561,12 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 	}
 
 	// Build base query joining with job and company tables to fetch all necessary details
+	// Exclude applications from deactivated/anonymized students
 	query := h.DB.Model(&model.JobApplication{}).
 		Joins("INNER JOIN jobs ON jobs.id = job_applications.job_id").
 		Joins("INNER JOIN companies ON companies.user_id = jobs.company_id").
 		Joins("INNER JOIN users ON users.id = companies.user_id").
+		Joins("INNER JOIN users AS student_users ON student_users.id = job_applications.user_id").
 		Select("job_applications.*",
 			"jobs.position as job_position",
 			"jobs.name as job_name",

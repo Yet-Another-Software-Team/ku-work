@@ -53,8 +53,8 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	protectedRouter.POST("/me/deactivate", userHandlers.DeactivateAccount)
 	protectedRouter.POST("/me/reactivate", userHandlers.ReactivateAccount)
 
-	// File Routes (Only Authed)
-	protectedRouter.GET("/files/:fileID", fileHandlers.ServeFileHandler)
+	// File Routes
+	router.GET("/files/:fileID", fileHandlers.ServeFileHandler)
 
 	// Company Routs
 	company := protectedRouter.Group("/company")
@@ -69,7 +69,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	job.POST("", jobHandlers.CreateJobHandler)
 	job.GET("/:id/applications", applicationHandlers.GetJobApplicationsHandler)
 	job.DELETE("/:id/applications", applicationHandlers.ClearJobApplicationsHandler)
-	job.GET("/:id/application", applicationHandlers.GetJobApplicationHandler)
+	job.GET("/:id/applications/:email", applicationHandlers.GetJobApplicationHandler)
 	job.PATCH("/:id/applications/:studentUserId/status", applicationHandlers.UpdateJobApplicationStatusHandler)
 	job.GET("/:id", jobHandlers.GetJobDetailHandler)
 	job.POST("/:id/apply", applicationHandlers.CreateJobApplicationHandler)
