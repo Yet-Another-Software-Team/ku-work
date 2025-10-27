@@ -48,8 +48,8 @@ type CreateJobInput struct {
 	Location            string `json:"location" binding:"required,max=128"`
 	JobType             string `json:"jobType" binding:"required,oneof='fulltime' 'parttime' 'contract' 'casual' 'internship'"`
 	Experience          string `json:"experience" binding:"required,oneof='newgrad' 'junior' 'senior' 'manager' 'internship'"`
-	MinSalary           *uint   `json:"minSalary" binding:"required"`
-	MaxSalary           *uint   `json:"maxSalary" binding:"required"`
+	MinSalary           *uint  `json:"minSalary" binding:"required"`
+	MaxSalary           *uint  `json:"maxSalary" binding:"required"`
 	Open                bool   `json:"open"`
 	NotifyOnApplication *bool  `json:"notifyOnApplication"`
 }
@@ -136,6 +136,10 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 	}
 
 	// Validate input data
+	if input.MinSalary == nil || input.MaxSalary == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "minSalary and maxSalary are required"})
+		return
+	}
 	if *input.MaxSalary < *input.MinSalary {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "minSalary must be lower than or equal to maxSalary"})
 		return
