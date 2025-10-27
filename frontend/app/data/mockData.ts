@@ -113,6 +113,7 @@ interface JobPost {
     maxSalary: number;
     approvalStatus: "pending" | "accepted" | "rejected";
     open: boolean;
+    notifyOnApplication?: boolean;
     accepted?: number;
     rejected?: number;
     pending?: number;
