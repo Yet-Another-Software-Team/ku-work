@@ -18,11 +18,13 @@ import (
 // UserHandlers struct for handling user-related operations
 type UserHandlers struct {
 	DB *gorm.DB
+	gracePeriod int
 }
 
-func NewUserHandlers(db *gorm.DB) *UserHandlers {
+func NewUserHandlers(db *gorm.DB, gracePeriod int) *UserHandlers {
 	return &UserHandlers{
 		DB: db,
+		gracePeriod: gracePeriod,
 	}
 }
 

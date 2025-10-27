@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"ku-work/backend/helper"
 	"ku-work/backend/middlewares"
 	"ku-work/backend/services"
 
@@ -29,7 +30,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 		return err
 	}
 	companyHandlers := NewCompanyHandlers(db)
-	userHandlers := NewUserHandlers(db)
+	userHandlers := NewUserHandlers(db, helper.GetGracePeriodDays())
 	adminHandlers := NewAdminHandlers(db)
 
 	// Authentication Routes
@@ -49,6 +50,8 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	protectedRouter := router.Group("", middlewares.AuthMiddlewareWithRedis(jwtHandlers.JWTSecret, redisClient))
 	protectedRouter.PATCH("/me", userHandlers.EditProfileHandler)
 	protectedRouter.GET("/me", userHandlers.GetProfileHandler)
+	protectedRouter.POST("/me/deactivate", userHandlers.DeactivateAccount)
+	protectedRouter.POST("/me/reactivate", userHandlers.ReactivateAccount)
 
 	// File Routes (Only Authed)
 	protectedRouter.GET("/files/:fileID", fileHandlers.ServeFileHandler)

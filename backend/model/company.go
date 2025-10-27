@@ -7,21 +7,23 @@ import (
 )
 
 type Company struct {
-	UserID    string    `gorm:"type:uuid;primarykey" json:"id"`
-	User      User      `gorm:"foreignKey:UserID" json:"User"`
-	CreatedAt time.Time `json:"createdAt"`
-	Email     string    `json:"email"`
-	Website   string    `json:"website"`
-	Phone     string    `json:"phone"`
-	PhotoID   string    `gorm:"type:uuid" json:"photoId"`
-	Photo     File      `gorm:"foreignKey:PhotoID" json:"-"`
-	BannerID  string    `gorm:"type:uuid" json:"bannerId"`
-	Banner    File      `gorm:"foreignKey:BannerID" json:"-"`
-	AboutUs   string    `json:"about"`
-	Address   string    `json:"address"`
-	City      string    `json:"city"`
-	Country   string    `json:"country"`
-	Jobs      []Job     `gorm:"foreignkey:CompanyID;constraint:OnDelete:CASCADE;" json:"-"`
+	UserID    string         `gorm:"type:uuid;primarykey" json:"id"`
+	User      User           `gorm:"foreignKey:UserID" json:"User"`
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	Email     string         `json:"email"`
+	Website   string         `json:"website"`
+	Phone     string         `json:"phone"`
+	PhotoID   string         `gorm:"type:uuid" json:"photoId"`
+	Photo     File           `gorm:"foreignKey:PhotoID" json:"-"`
+	BannerID  string         `gorm:"type:uuid" json:"bannerId"`
+	Banner    File           `gorm:"foreignKey:BannerID" json:"-"`
+	AboutUs   string         `json:"about"`
+	Address   string         `json:"address"`
+	City      string         `json:"city"`
+	Country   string         `json:"country"`
+	Jobs      []Job          `gorm:"foreignkey:CompanyID;constraint:OnDelete:CASCADE;" json:"-"`
 }
 
 func (company *Company) BeforeDelete(tx *gorm.DB) (err error) {
