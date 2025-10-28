@@ -80,7 +80,7 @@ func TestStudent(t *testing.T) {
 			return
 		}
 		req, _ := http.NewRequest("POST", "/auth/student/register", &b)
-		jwtHandler := handlers.NewJWTHandlers(db)
+		jwtHandler := handlers.NewJWTHandlers(db, redisClient)
 		jwtToken, _, err := jwtHandler.GenerateTokens(user.ID)
 		if err != nil {
 			t.Error(err)
@@ -147,7 +147,7 @@ func TestStudent(t *testing.T) {
 		}
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/students", strings.NewReader(""))
-		jwtHandler := handlers.NewJWTHandlers(db)
+		jwtHandler := handlers.NewJWTHandlers(db, redisClient)
 		jwtToken, _, err := jwtHandler.GenerateTokens(student.User.ID)
 		if err != nil {
 			t.Error(err)
@@ -212,7 +212,7 @@ func TestStudent(t *testing.T) {
 		})()
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/students", strings.NewReader(""))
-		jwtHandler := handlers.NewJWTHandlers(db)
+		jwtHandler := handlers.NewJWTHandlers(db, redisClient)
 		jwtToken, _, err := jwtHandler.GenerateTokens(admin.User.ID)
 		if err != nil {
 			t.Error(err)
@@ -263,7 +263,7 @@ func TestStudent(t *testing.T) {
 		w := httptest.NewRecorder()
 		payload := `{"approve": true}`
 		req, _ := http.NewRequest("POST", fmt.Sprintf("/students/%s/approval", student.Student.UserID), strings.NewReader(payload))
-		jwtHandler := handlers.NewJWTHandlers(db)
+		jwtHandler := handlers.NewJWTHandlers(db, redisClient)
 		jwtToken, _, err := jwtHandler.GenerateTokens(student.User.ID)
 		if err != nil {
 			t.Error(err)

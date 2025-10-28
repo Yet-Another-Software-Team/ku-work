@@ -19,7 +19,7 @@
                 </div>
                 <button
                     type="button"
-                    class="absolute -right-1 bottom-0 translate-y-1 inline-flex items-center justify-center w-9 h-9 rounded-full bg-primary-500 text-white shadow hover:bg- primary-600 ring-4 ring-white/60"
+                    class="absolute -right-1 bottom-0 translate-y-1 inline-flex items-center justify-center w-9 h-9 rounded-full bg-primary-500 text-white shadow hover:bg-primary-600 ring-4 ring-white/60"
                     aria-label="Change avatar"
                     @click="triggerAvatarPicker"
                 >
@@ -28,7 +28,7 @@
                 <input
                     ref="avatarInput"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/jpg,image/png"
                     class="hidden"
                     @change="onAvatarSelected"
                 />
@@ -37,20 +37,16 @@
 
         <form class="grid grid-cols-1 md:grid-cols-2 gap-4" @submit.prevent="handleSubmit">
             <div class="md:col-span-2">
-                <label class="block text-primary-800 dark:text-primary font-semibold mb-1"
-                    >Name</label
-                >
+                <label class="block text-primary-800 dark:text-primary font-semibold mb-1">Name</label>
                 <div
-                    class="rounded-lg border border- primary-700/50 bg-gray-100 px-4 py-2 text-gray-900 dark:border- primary-700/40 dark:bg-[#013B49] dark:text-white"
+                    class="rounded-lg border border-primary-700/50 bg-gray-100 px-4 py-2 text-gray-900 dark:border-primary-700/40 dark:bg-[#013B49] dark:text-white"
                 >
                     {{ `${profile.firstName} ${profile.lastName}` }}
                 </div>
             </div>
 
             <div class="col-span-1">
-                <label for="dob" class="block text-primary-800 dark:text-primary font-semibold mb-1"
-                    >Date of Birth</label
-                >
+                <label for="dob" class="block text-primary-800 dark:text-primary font-semibold mb-1">Date of Birth</label>
                 <UInput
                     id="dob"
                     v-model="form.dob"
@@ -63,11 +59,7 @@
             </div>
 
             <div class="col-span-1">
-                <label
-                    for="phone"
-                    class="block text-primary-800 dark:text-primary font-semibold mb-1"
-                    >Phone</label
-                >
+                <label for="phone" class="block text-primary-800 dark:text-primary font-semibold mb-1">Phone</label>
                 <UInput
                     id="phone"
                     v-model="form.phone"
@@ -78,11 +70,7 @@
             </div>
 
             <div class="col-span-1">
-                <label
-                    for="github"
-                    class="block text-primary-800 dark:text-primary font-semibold mb-1"
-                    >GitHub</label
-                >
+                <label for="github" class="block text-primary-800 dark:text-primary font-semibold mb-1">GitHub</label>
                 <UInput
                     id="github"
                     v-model="form.github"
@@ -93,11 +81,7 @@
             </div>
 
             <div class="col-span-1">
-                <label
-                    for="linkedin"
-                    class="block text-primary-800 dark:text-primary font-semibold mb-1"
-                    >LinkedIn</label
-                >
+                <label for="linkedin" class="block text-primary-800 dark:text-primary font-semibold mb-1">LinkedIn</label>
                 <UInput
                     id="linkedin"
                     v-model="form.linkedin"
@@ -110,11 +94,7 @@
             </div>
 
             <div class="md:col-span-2">
-                <label
-                    for="aboutMe"
-                    class="block text-primary-800 dark:text-primary font-semibold mb-1"
-                    >About me</label
-                >
+                <label for="aboutMe" class="block text-primary-800 dark:text-primary font-semibold mb-1">About me</label>
                 <div class="rounded-lg bg-white dark:bg-[#013B49]">
                     <UTextarea
                         id="aboutMe"
@@ -146,7 +126,6 @@
             :dismissible="false"
             :ui="{
                 title: 'text-xl font-semibold text-primary-800 dark:text-primary',
-                container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
                 overlay: 'fixed inset-0 bg-black/50',
             }"
         >
@@ -155,9 +134,7 @@
             </template>
             <template #footer>
                 <div class="flex justify-end gap-2">
-                    <UButton variant="outline" color="neutral" @click="showDiscardConfirm = false"
-                        >Cancel</UButton
-                    >
+                    <UButton variant="outline" color="neutral" @click="showDiscardConfirm = false">Cancel</UButton>
                     <UButton color="primary" @click="confirmDiscard">Discard</UButton>
                 </div>
             </template>
@@ -209,6 +186,7 @@ const props = defineProps<{
         approvalStatus?: string;
     };
 }>();
+
 const emit = defineEmits<{
     (e: "close"): void;
     (e: "saved", payload: SavedPayload): void;
@@ -305,13 +283,23 @@ function triggerAvatarPicker() {
 function onAvatarSelected(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
+    // Restrict GIFs (not supported)
+    const isGif = file.type === "image/gif" || file.name.toLowerCase().endsWith(".gif");
+    if (isGif) {
+        addToast({
+            title: "Unsupported image",
+            description: "GIF images are not supported",
+            color: "warning",
+        });
+        (event.target as HTMLInputElement).value = "";
+        return;
+    }
+    avatarFile.value = file;
     // Do not preview new picture when profile is rejected
     if (props.profile?.approvalStatus === "rejected") {
-        avatarFile.value = file;
         return;
     }
     updateAvatarPreview(URL.createObjectURL(file));
-    avatarFile.value = file;
 }
 
 function updateAvatarPreview(source: string) {

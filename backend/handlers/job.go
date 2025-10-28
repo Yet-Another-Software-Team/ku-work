@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"fmt"
+	"html/template"
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
 	"ku-work/backend/services"
@@ -10,7 +11,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -41,30 +41,32 @@ func NewJobHandlers(db *gorm.DB, aiService *services.AIService, emailService *se
 
 // CreateJobInput defines the request body for creating a new job.
 type CreateJobInput struct {
-	Name        string `json:"name" binding:"required,max=128"`
-	Position    string `json:"position" binding:"required,max=128"`
-	Duration    string `json:"duration" binding:"required,max=128"`
-	Description string `json:"description" binding:"required,max=16384"`
-	Location    string `json:"location" binding:"required,max=128"`
-	JobType     string `json:"jobType" binding:"required,oneof='fulltime' 'parttime' 'contract' 'casual' 'internship'"`
-	Experience  string `json:"experience" binding:"required,oneof='newgrad' 'junior' 'senior' 'manager' 'internship'"`
-	MinSalary   uint   `json:"minSalary"`
-	MaxSalary   uint   `json:"maxSalary"`
-	Open        bool   `json:"open"`
+	Name                string `json:"name" binding:"required,max=128"`
+	Position            string `json:"position" binding:"required,max=128"`
+	Duration            string `json:"duration" binding:"required,max=128"`
+	Description         string `json:"description" binding:"required,max=16384"`
+	Location            string `json:"location" binding:"required,max=128"`
+	JobType             string `json:"jobType" binding:"required,oneof='fulltime' 'parttime' 'contract' 'casual' 'internship'"`
+	Experience          string `json:"experience" binding:"required,oneof='newgrad' 'junior' 'senior' 'manager' 'internship'"`
+	MinSalary           uint   `json:"minSalary" binding:"required"`
+	MaxSalary           uint   `json:"maxSalary" binding:"required"`
+	Open                bool   `json:"open"`
+	NotifyOnApplication *bool  `json:"notifyOnApplication"`
 }
 
 // EditJobInput defines the request body for editing an existing job.
 type EditJobInput struct {
-	Name        *string `json:"name" binding:"omitempty,max=128"`
-	Position    *string `json:"position" binding:"omitempty,max=128"`
-	Duration    *string `json:"duration" binding:"omitempty,max=128"`
-	Description *string `json:"description" binding:"omitempty,max=16384"`
-	Location    *string `json:"location" binding:"omitempty,max=128"`
-	JobType     *string `json:"jobType" binding:"omitempty,oneof='fulltime' 'parttime' 'contract' 'casual' 'internship'"`
-	Experience  *string `json:"experience" binding:"omitempty,oneof='newgrad' 'junior' 'senior' 'manager' 'internship'"`
-	MinSalary   *uint   `json:"minSalary" binding:"omitempty"`
-	MaxSalary   *uint   `json:"maxSalary" binding:"omitempty"`
-	Open        *bool   `json:"open" binding:"omitempty"`
+	Name                *string `json:"name" binding:"omitempty,max=128"`
+	Position            *string `json:"position" binding:"omitempty,max=128"`
+	Duration            *string `json:"duration" binding:"omitempty,max=128"`
+	Description         *string `json:"description" binding:"omitempty,max=16384"`
+	Location            *string `json:"location" binding:"omitempty,max=128"`
+	JobType             *string `json:"jobType" binding:"omitempty,oneof='fulltime' 'parttime' 'contract' 'casual' 'internship'"`
+	Experience          *string `json:"experience" binding:"omitempty,oneof='newgrad' 'junior' 'senior' 'manager' 'internship'"`
+	MinSalary           *uint   `json:"minSalary" binding:"omitempty"`
+	MaxSalary           *uint   `json:"maxSalary" binding:"omitempty"`
+	Open                *bool   `json:"open" binding:"omitempty"`
+	NotifyOnApplication *bool   `json:"notifyOnApplication" binding:"omitempty"`
 }
 
 // ApproveJobInput defines the request body for approving a job.
@@ -75,24 +77,25 @@ type ApproveJobInput struct {
 
 // JobResponse defines the structure for a single job listing in API responses.
 type JobResponse struct {
-	ID             uint      `json:"id"`
-	CreatedAt      time.Time `json:"createdAt"`
-	UpdatedAt      time.Time `json:"updatedAt"`
-	Name           string    `json:"name"`
-	CompanyID      string    `json:"companyId"`
-	PhotoID        string    `json:"photoId"`
-	BannerID       string    `json:"bannerId"`
-	CompanyName    string    `json:"companyName"`
-	Position       string    `json:"position"`
-	Duration       string    `json:"duration"`
-	Description    string    `json:"description"`
-	Location       string    `json:"location"`
-	JobType        string    `json:"jobType"`
-	Experience     string    `json:"experience"`
-	MinSalary      uint      `json:"minSalary"`
-	MaxSalary      uint      `json:"maxSalary"`
-	ApprovalStatus string    `json:"approvalStatus"`
-	IsOpen         bool      `json:"open"`
+	ID                  uint      `json:"id"`
+	CreatedAt           time.Time `json:"createdAt"`
+	UpdatedAt           time.Time `json:"updatedAt"`
+	Name                string    `json:"name"`
+	CompanyID           string    `json:"companyId"`
+	PhotoID             string    `json:"photoId"`
+	BannerID            string    `json:"bannerId"`
+	CompanyName         string    `json:"companyName"`
+	Position            string    `json:"position"`
+	Duration            string    `json:"duration"`
+	Description         string    `json:"description"`
+	Location            string    `json:"location"`
+	JobType             string    `json:"jobType"`
+	Experience          string    `json:"experience"`
+	MinSalary           uint      `json:"minSalary"`
+	MaxSalary           uint      `json:"maxSalary"`
+	ApprovalStatus      string    `json:"approvalStatus"`
+	IsOpen              bool      `json:"open"`
+	NotifyOnApplication bool      `json:"notifyOnApplication"`
 }
 
 // JobWithStatsResponse extends JobResponse with application statistics for company users.
@@ -145,19 +148,26 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
+
+	if input.NotifyOnApplication == nil {
+		defaultNotify := true
+		input.NotifyOnApplication = &defaultNotify
+	}
+
 	job := model.Job{
-		Name:           input.Name,
-		CompanyID:      company.UserID,
-		Position:       input.Position,
-		Duration:       input.Duration,
-		Description:    input.Description,
-		Location:       input.Location,
-		JobType:        model.JobType(input.JobType),
-		Experience:     model.ExperienceType(input.Experience),
-		MinSalary:      input.MinSalary,
-		MaxSalary:      input.MaxSalary,
-		ApprovalStatus: model.JobApprovalPending,
-		IsOpen:         input.Open,
+		Name:                input.Name,
+		CompanyID:           company.UserID,
+		Position:            input.Position,
+		Duration:            input.Duration,
+		Description:         input.Description,
+		Location:            input.Location,
+		JobType:             model.JobType(input.JobType),
+		Experience:          model.ExperienceType(input.Experience),
+		MinSalary:           input.MinSalary,
+		MaxSalary:           input.MaxSalary,
+		ApprovalStatus:      model.JobApprovalPending,
+		IsOpen:              input.Open,
+		NotifyOnApplication: *input.NotifyOnApplication,
 	}
 
 	// Create Job into database
@@ -212,7 +222,7 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 		Open           *bool    `json:"open" form:"open"`
 		CompanyID      string   `json:"companyId" form:"companyId" binding:"max=64"`
 		JobID          *uint    `json:"id" form:"id" binding:"omitempty,max=64"`
-		ApprovalStatus string   `json:"approvalStatus" form:"approvalStatus" binding:"max=64"`
+		ApprovalStatus *string  `json:"approvalStatus" form:"approvalStatus" binding:"omitempty,oneof=pending accepted rejected"`
 	}
 
 	// Set default values for some fields and bind the input
@@ -263,14 +273,17 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 	// Company should only see their own jobs
 	if role == helper.Company {
 		query = query.Where("company_id = ?", userId)
-		if input.Open != nil {
-			query = query.Where("is_open = ?", *input.Open)
-		}
+
 	} else {
 		// Non-company users can filter by company ID if provided
 		if input.CompanyID != "" {
 			query = query.Where("company_id = ?", input.CompanyID)
 		}
+	}
+
+	if (role == helper.Company || role == helper.Admin) && input.Open != nil {
+		query = query.Where("is_open = ?", *input.Open)
+	} else if role == helper.Viewer || role == helper.Student || role == helper.Unknown {
 		query = query.Where("is_open = ?", true)
 	}
 
@@ -292,8 +305,8 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 	// Only Admin and Company can see unapproved jobs
 	if role == helper.Admin || role == helper.Company {
 		// If is admin, or company then consider approval status
-		if input.ApprovalStatus != "" {
-			query = query.Where(&model.Job{ApprovalStatus: model.JobApprovalStatus(input.ApprovalStatus)})
+		if input.ApprovalStatus != nil && *input.ApprovalStatus != "" {
+			query = query.Where("approval_status = ?", *input.ApprovalStatus)
 		}
 	} else {
 		// Non-admin and non-company users can only see approved jobs
@@ -438,6 +451,9 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "minSalary cannot exceed maxSalary"})
 		return
 	}
+	if input.NotifyOnApplication != nil {
+		job.NotifyOnApplication = *input.NotifyOnApplication
+	}
 
 	result = h.DB.Save(&job)
 	if result.Error != nil {
@@ -541,7 +557,7 @@ func (h *JobHandlers) JobApprovalHandler(ctx *gin.Context) {
 		}
 		_ = h.emailService.SendTo(
 			context.Company.Email,
-			fmt.Sprintf("[KU-WORK] Your \"%s\" job has been reviewed", job.Name),
+			fmt.Sprintf("[KU-Work] Your \"%s - %s\" job has been reviewed", job.Name, job.Position),
 			tpl.String(),
 		)
 	})()

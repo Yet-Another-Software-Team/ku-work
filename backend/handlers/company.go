@@ -82,7 +82,7 @@ func (h *CompanyHandlers) GetCompanyListHandler(ctx *gin.Context) {
 	}
 	var companies []CompanyResponse
 	if err := h.DB.Model(&model.Company{}).
-		Select("companies.id, companies.created_at, companies.updated_at, companies.user_id, companies.email, companies.phone, companies.photo_id, companies.banner_id, companies.address, companies.city, companies.country, companies.website, companies.about_us, users.username as name").
+		Select("companies.created_at, companies.updated_at, companies.user_id, companies.email, companies.phone, companies.photo_id, companies.banner_id, companies.address, companies.city, companies.country, companies.website, companies.about_us, users.username as name").
 		Joins("INNER JOIN users on users.id = companies.user_id").
 		Find(&companies).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

@@ -1,43 +1,116 @@
 package handlers
 
 import (
+	"context"
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/base64"
+	"fmt"
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
+	"ku-work/backend/services"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
+	"golang.org/x/crypto/argon2"
 	"gorm.io/gorm"
 )
 
 type JWTHandlers struct {
-	DB        *gorm.DB
-	JWTSecret []byte
+	DB                *gorm.DB
+	RedisClient       *redis.Client
+	RevocationService *services.JWTRevocationService
+	JWTSecret         []byte
 }
 
-func NewJWTHandlers(db *gorm.DB) *JWTHandlers {
+func NewJWTHandlers(db *gorm.DB, redisClient *redis.Client) *JWTHandlers {
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 
 	if len(jwtSecret) == 0 {
 		log.Fatal("JWT_SECRET environment variable is not set")
 	}
-	return &JWTHandlers{
-		DB:        db,
-		JWTSecret: jwtSecret,
+	if len(jwtSecret) < 32 {
+		log.Fatal("JWT_SECRET must be at least 32 bytes long for security")
 	}
+
+	if redisClient == nil {
+		log.Fatal("Redis client is required for JWT revocation")
+	}
+
+	revocationService := services.NewJWTRevocationService(redisClient)
+
+	return &JWTHandlers{
+		DB:                db,
+		RedisClient:       redisClient,
+		RevocationService: revocationService,
+		JWTSecret:         jwtSecret,
+	}
+}
+
+// hashToken hashes a refresh token using Argon2id before storage
+// Uses OWASP recommended parameters for password hashing
+func hashToken(token string) (string, error) {
+	// Generate a random 16-byte salt
+	salt := make([]byte, 16)
+	if _, err := rand.Read(salt); err != nil {
+		return "", err
+	}
+
+	// Argon2id parameters (OWASP recommended)
+	// Memory: 64 MB, Iterations: 3, Parallelism: 2, Key length: 32 bytes
+	hash := argon2.IDKey([]byte(token), salt, 3, 64*1024, 1, 32)
+
+	// Encode salt and hash together for storage
+	// Format: base64(salt) + "$" + base64(hash)
+	encoded := base64.RawStdEncoding.EncodeToString(salt) + "$" + base64.RawStdEncoding.EncodeToString(hash)
+	return encoded, nil
+}
+
+// verifyToken verifies a token against a stored Argon2id hash
+func verifyToken(token, storedHash string) (bool, error) {
+	// Parse the stored hash to extract salt
+	parts := strings.Split(storedHash, "$")
+	if len(parts) != 2 {
+		return false, fmt.Errorf("invalid hash format")
+	}
+
+	salt, err := base64.RawStdEncoding.DecodeString(parts[0])
+	if err != nil {
+		return false, err
+	}
+
+	hash, err := base64.RawStdEncoding.DecodeString(parts[1])
+	if err != nil {
+		return false, err
+	}
+
+	// Hash the provided token with the same salt
+	computedHash := argon2.IDKey([]byte(token), salt, 3, 64*1024, 1, 32)
+
+	// Constant-time comparison using crypto/subtle
+	match := subtle.ConstantTimeCompare(hash, computedHash) == 1
+
+	return match, nil
 }
 
 // Generate JWT and Refresh Tokens
 func (h *JWTHandlers) GenerateTokens(userID string) (string, string, error) {
-	// JWT Token
+	// Generate unique JTI (JWT ID) for blacklist tracking
+	jti := uuid.New().String()
+
+	// JWT Token with JTI for blacklist support (OWASP requirement)
 	jwtClaims := &model.UserClaims{
 		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        jti,                                                  // Unique identifier for this JWT
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)), // JWT expires in 15 minutes.
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -48,24 +121,84 @@ func (h *JWTHandlers) GenerateTokens(userID string) (string, string, error) {
 		return "", "", err
 	}
 
-	// Refresh Token
-	refreshTokenBytes := make([]byte, 32)
-	_, rand_err := rand.Read(refreshTokenBytes)
-	if rand_err != nil {
+	// Generate token selector (non-sensitive, for fast lookup)
+	selectorBytes := make([]byte, 16)
+	_, err = rand.Read(selectorBytes)
+	if err != nil {
 		return "", "", err
 	}
-	refreshTokenString := base64.URLEncoding.EncodeToString(refreshTokenBytes)
+	selector := base64.URLEncoding.EncodeToString(selectorBytes)
 
-	// Create or update the refresh token in the database.
-	refreshTokenDB := model.RefreshToken{
-		UserID:    userID,
-		Token:     refreshTokenString,
-		ExpiresAt: time.Now().Add(time.Hour * 24 * 30), // Refresh token expires in 30 days.
+	// Generate refresh token validator (sensitive part)
+	validatorBytes := make([]byte, 32)
+	_, err = rand.Read(validatorBytes)
+	if err != nil {
+		return "", "", err
+	}
+	validator := base64.URLEncoding.EncodeToString(validatorBytes)
+
+	// Hash the validator before storing
+	hashedValidator, err := hashToken(validator)
+	if err != nil {
+		return "", "", err
 	}
 
-	h.DB.Create(&refreshTokenDB)
+	// Get session limit from environment variable (default: 10)
+	maxSessions := 10
+	if maxSessionsStr := os.Getenv("MAX_SESSIONS_PER_USER"); maxSessionsStr != "" {
+		if parsed, err := strconv.Atoi(maxSessionsStr); err == nil && parsed > 0 {
+			maxSessions = parsed
+		}
+	}
 
-	return signedJwtToken, refreshTokenString, nil
+	// Limit concurrent sessions per user
+	// Count active tokens for this user
+	var activeTokenCount int64
+	h.DB.Model(&model.RefreshToken{}).
+		Where("user_id = ? AND revoked_at IS NULL AND expires_at > ?", userID, time.Now()).
+		Count(&activeTokenCount)
+
+	// If at or over limit, revoke the oldest tokens
+	if activeTokenCount >= int64(maxSessions) {
+		// Find the oldest active tokens to revoke
+		var oldestTokens []model.RefreshToken
+		tokensToRevoke := int(activeTokenCount) - (maxSessions - 1) // Keep (max-1), revoke excess to make room for the new one
+		h.DB.Where("user_id = ? AND revoked_at IS NULL", userID).
+			Order("created_at ASC").
+			Limit(tokensToRevoke).
+			Find(&oldestTokens)
+
+		// Revoke the oldest tokens
+		if len(oldestTokens) > 0 {
+			now := time.Now()
+			tokenIDs := make([]uint, len(oldestTokens))
+			for i, token := range oldestTokens {
+				tokenIDs[i] = token.ID
+			}
+			h.DB.Model(&model.RefreshToken{}).
+				Where("id IN ?", tokenIDs).
+				Update("revoked_at", now)
+			log.Printf("INFO: Revoked %d oldest tokens for user %s (session limit: %d)", len(oldestTokens), userID, maxSessions)
+		}
+	}
+
+	// Create the new refresh token in the database
+	refreshTokenDB := model.RefreshToken{
+		UserID:        userID,
+		TokenSelector: selector,
+		Token:         hashedValidator,
+		ExpiresAt:     time.Now().Add(time.Hour * 24 * 30), // Refresh token expires in 30 days.
+		RevokedAt:     nil,                                 // Active token
+	}
+
+	if err := h.DB.Create(&refreshTokenDB).Error; err != nil {
+		return "", "", err
+	}
+
+	// Return combined token: selector:validator
+	combinedToken := selector + ":" + validator
+
+	return signedJwtToken, combinedToken, nil
 }
 
 // @Summary Refresh JWT token
@@ -78,32 +211,80 @@ func (h *JWTHandlers) GenerateTokens(userID string) (string, string, error) {
 // @Failure 500 {object} object{error=string} "Internal Server Error: Failed to generate new tokens"
 // @Router /auth/refresh [post]
 func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
+	clientIP := ctx.ClientIP()
+
 	refreshToken, err := ctx.Cookie("refresh_token")
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Missing refresh token cookie"})
+		log.Printf("SECURITY: Missing refresh token from IP: %s", clientIP)
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
 		return
 	}
+
+	// Split token into selector and validator
+	parts := strings.SplitN(refreshToken, ":", 2)
+	if len(parts) != 2 {
+		log.Printf("SECURITY: Invalid refresh token format from IP: %s", clientIP)
+		ctx.SetSameSite(helper.GetCookieSameSite())
+		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
+		return
+	}
+
+	selector := parts[0]
+	validator := parts[1]
 
 	var refreshTokenDB model.RefreshToken
-	if err := h.DB.Where("token = ?", refreshToken).First(&refreshTokenDB).Error; err != nil {
-		ctx.SetCookie("refresh_token", "", -1, "/", "", true, true)
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid refresh token"})
+	if err := h.DB.Where("token_selector = ?", selector).First(&refreshTokenDB).Error; err != nil {
+		log.Printf("SECURITY: Invalid refresh token from IP: %s", clientIP)
+		ctx.SetSameSite(helper.GetCookieSameSite())
+		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
 		return
 	}
 
+	// Verify the validator against stored hash
+	match, err := verifyToken(validator, refreshTokenDB.Token)
+	if err != nil || !match {
+		log.Printf("SECURITY: Invalid refresh token from IP: %s", clientIP)
+		ctx.SetSameSite(helper.GetCookieSameSite())
+		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
+		return
+	}
+
+	// Check if token was revoked (reuse detection)
+	if refreshTokenDB.RevokedAt != nil {
+		log.Printf("SECURITY ALERT: Revoked token reuse detected! User: %s, IP: %s - Revoking all tokens",
+			refreshTokenDB.UserID, clientIP)
+
+		// Token reuse detected - revoke ALL tokens for this user
+		now := time.Now()
+		h.DB.Model(&model.RefreshToken{}).
+			Where("user_id = ?", refreshTokenDB.UserID).
+			Update("revoked_at", now)
+
+		ctx.SetSameSite(helper.GetCookieSameSite())
+		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
+		return
+	}
+
+	// Check if token is expired
 	if refreshTokenDB.ExpiresAt.Before(time.Now()) {
-		h.DB.Unscoped().Delete(&refreshTokenDB)
-		ctx.SetCookie("refresh_token", "", -1, "/", "", true, true)
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Refresh token expired"})
+		log.Printf("SECURITY: Expired refresh token from IP: %s, User: %s", clientIP, refreshTokenDB.UserID)
+		now := time.Now()
+		h.DB.Model(&refreshTokenDB).Update("revoked_at", now)
+		ctx.SetSameSite(helper.GetCookieSameSite())
+		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
 		return
 	}
 
-	// Clear user's expired token
-	h.DB.Unscoped().Where("user_id = ? AND expires_at < ?", refreshTokenDB.UserID, time.Now()).Delete(&model.RefreshToken{})
-
-	h.DB.Unscoped().Delete(&refreshTokenDB)
+	// Token is valid - generate new tokens
 	jwtToken, newRefreshToken, err := h.GenerateTokens(refreshTokenDB.UserID)
 	if err != nil {
+		log.Printf("ERROR: Failed to generate new tokens for user: %s, IP: %s - %v",
+			refreshTokenDB.UserID, clientIP, err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate new tokens"})
 		return
 	}
@@ -111,7 +292,10 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	role := helper.GetRole(refreshTokenDB.UserID, h.DB)
 	username := helper.GetUsername(refreshTokenDB.UserID, role, h.DB)
 
-	ctx.SetCookie("refresh_token", newRefreshToken, int(time.Hour*24*30/time.Second), "/", "", true, true)
+	ctx.SetSameSite(helper.GetCookieSameSite())
+	ctx.SetCookie("refresh_token", newRefreshToken, int(time.Hour*24*30/time.Second), "/", "", helper.GetCookieSecure(), true)
+
+	log.Printf("INFO: Token refreshed successfully for user: %s, IP: %s", refreshTokenDB.UserID, clientIP)
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"token":    jwtToken,
@@ -122,25 +306,73 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 }
 
 // @Summary Logout user
-// @Description Invalidates the user's session by deleting their refresh token from the database and clearing the refresh token cookie.
+// @Description Invalidates the user's session by revoking both the JWT token (blacklist) and refresh token. Complies with OWASP session termination requirements.
 // @Tags Authentication
 // @Security BearerAuth
 // @Produce json
 // @Success 200 {object} object{message=string} "Logged out successfully"
 // @Router /auth/logout [post]
 func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
+	clientIP := ctx.ClientIP()
+	userID, _ := ctx.Get("userID")
+
+	// OWASP Requirement: Blacklist the JWT token to prevent further use
+	// Extract JWT from Authorization header
+	authHeader := ctx.GetHeader("Authorization")
+	if authHeader != "" {
+		parts := strings.Split(authHeader, " ")
+		if len(parts) == 2 && parts[0] == "Bearer" {
+			tokenString := parts[1]
+
+			// Parse the token to extract JTI and expiration
+			token, err := jwt.ParseWithClaims(tokenString, &model.UserClaims{}, func(token *jwt.Token) (interface{}, error) {
+				return h.JWTSecret, nil
+			})
+
+			if err == nil && token.Valid {
+				if claims, ok := token.Claims.(*model.UserClaims); ok {
+					// Add JWT to Redis blacklist with automatic TTL expiration
+					err := h.RevocationService.RevokeJWT(context.Background(), claims.ID, claims.UserID, claims.ExpiresAt.Time)
+					if err != nil {
+						log.Printf("ERROR: Failed to blacklist JWT in Redis for user %s: %v", claims.UserID, err)
+					} else {
+						log.Printf("INFO: JWT blacklisted in Redis for user: %s, JTI: %s, IP: %s", claims.UserID, claims.ID, clientIP)
+					}
+				}
+			}
+		}
+	}
+
+	// Revoke the refresh token
 	refreshToken, err := ctx.Cookie("refresh_token")
-	if err != nil {
-		ctx.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
-		return
+	if err == nil && refreshToken != "" {
+		// Split token into selector and validator
+		parts := strings.SplitN(refreshToken, ":", 2)
+		if len(parts) == 2 {
+			selector := parts[0]
+			validator := parts[1]
+
+			// Fast O(1) lookup using selector
+			var tokenDB model.RefreshToken
+			if err := h.DB.Where("token_selector = ? AND revoked_at IS NULL", selector).First(&tokenDB).Error; err == nil {
+				// Verify the validator
+				match, err := verifyToken(validator, tokenDB.Token)
+				if err == nil && match {
+					now := time.Now()
+					h.DB.Model(&tokenDB).Update("revoked_at", now)
+					log.Printf("INFO: Refresh token revoked for user: %s, IP: %s", tokenDB.UserID, clientIP)
+				}
+			}
+		}
 	}
 
-	var refreshTokenDB model.RefreshToken
-	if err := h.DB.Where("token = ?", refreshToken).First(&refreshTokenDB).Error; err == nil {
-		h.DB.Unscoped().Delete(&refreshTokenDB)
-	}
+	// Always clear the cookie, even if token revocation failed
+	ctx.SetSameSite(helper.GetCookieSameSite())
+	ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
 
-	ctx.SetCookie("refresh_token", "", -1, "/", "", true, true)
+	if userID != nil {
+		log.Printf("INFO: User logged out successfully: %s, IP: %s", userID, clientIP)
+	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }

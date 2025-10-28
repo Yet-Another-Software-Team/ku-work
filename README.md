@@ -45,7 +45,13 @@ A full-stack web application with Go backend and Nuxt.js frontend, featuring use
    CORS_ALLOW_CREDENTIALS=false
    
    # JWT Configuration
-   JWT_SECRET=your_jwt_secret_here
+   JWT_SECRET=CHANGE_ME_GENERATE_RANDOM_SECRET_AT_LEAST_32_BYTES_LONG
+   
+   # Session Configuration
+   MAX_SESSIONS_PER_USER=10
+   
+   # Cookie Configuration
+   COOKIE_SECURE=true
    
    # Google OAuth Configuration
    GOOGLE_CLIENT_ID=your_google_client_id_here
@@ -59,6 +65,12 @@ A full-stack web application with Go backend and Nuxt.js frontend, featuring use
 
    # Email Configuration
    EMAIL_PROVIDER=dummy
+   EMAIL_TIMEOUT_SECONDS=30
+   
+   # Email Retry Configuration
+   EMAIL_RETRY_MAX_ATTEMPTS=3
+   EMAIL_RETRY_INTERVAL_MINUTES=5
+   EMAIL_RETRY_MAX_AGE_HOURS=24
    ```
 
 #### Run Docker Compose
@@ -66,6 +78,10 @@ A full-stack web application with Go backend and Nuxt.js frontend, featuring use
 docker compose up
 ```
 
+
+### Email Configuration
+
+For detailed information about configuring email providers, timeouts, and troubleshooting, see the [Email Configuration Guide](./backend/docs/EMAIL_CONFIGURATION.md).
 
 ### Alternatives
 You can also run frontend and backend service seprately by following the specific service guide

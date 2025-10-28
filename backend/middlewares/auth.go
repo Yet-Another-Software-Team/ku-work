@@ -1,16 +1,29 @@
 package middlewares
 
 import (
+	"context"
+	"log"
 	"net/http"
 	"strings"
 
 	"ku-work/backend/model"
+	"ku-work/backend/services"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/redis/go-redis/v9"
 )
 
-func AuthMiddleware(jwtSecret []byte) gin.HandlerFunc {
+// AuthMiddlewareWithRedis creates an authentication middleware with Redis-based JWT revocation checking
+// This is the OWASP-compliant version that checks for revoked tokens using Redis (faster than DB)
+// IMPORTANT: Redis client MUST not be nil. This middleware will fail if Redis is unavailable.
+func AuthMiddlewareWithRedis(jwtSecret []byte, redisClient *redis.Client) gin.HandlerFunc {
+	if redisClient == nil {
+		log.Fatal("FATAL: Redis client is nil. JWT revocation requires Redis to be available.")
+	}
+
+	revocationService := services.NewJWTRevocationService(redisClient)
+
 	return func(ctx *gin.Context) {
 		// Get the token from the Authorization header
 		authHeader := ctx.GetHeader("Authorization")
@@ -45,6 +58,26 @@ func AuthMiddleware(jwtSecret []byte) gin.HandlerFunc {
 
 		// Check if the token is valid
 		if claims, ok := token.Claims.(*model.UserClaims); ok && token.Valid {
+			// OWASP Requirement: Check if JWT is blacklisted (revoked after logout)
+			// This prevents use of tokens after session termination
+			// Using Redis for O(1) lookup performance
+			isRevoked, err := revocationService.IsJWTRevoked(context.Background(), claims.ID)
+			if err != nil {
+				log.Printf("ERROR: Failed to check JWT revocation status for user %s: %v. Denying request.", claims.UserID, err)
+				// Fail closed: deny request if Redis check fails
+				// This ensures security is maintained even during Redis issues
+				ctx.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{"error": "Authentication service temporarily unavailable"})
+				return
+			}
+
+			if isRevoked {
+				// Token found in blacklist - it was revoked
+				log.Printf("SECURITY: Blocked revoked JWT usage. User: %s, JTI: %s, IP: %s",
+					claims.UserID, claims.ID, ctx.ClientIP())
+				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token has been revoked"})
+				return
+			}
+
 			ctx.Set("userID", claims.UserID)
 			ctx.Next()
 		} else {

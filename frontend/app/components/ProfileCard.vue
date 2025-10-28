@@ -97,7 +97,6 @@
         <UModal
             v-model:open="isEditModalOpen"
             :ui="{
-                container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
                 overlay: 'fixed inset-0 bg-black/50',
                 content: 'w-full max-w-2xl',
             }"
@@ -114,13 +113,22 @@
 </template>
 
 <script setup lang="ts">
-import type { mockUserData } from "~/data/mockData";
 import EditProfileCard from "./EditProfileCard.vue";
 const toast = useToast();
 
 const isEditModalOpen = ref(false);
 
-type StudentProfileUpdate = typeof mockUserData.profile & { _avatarFile?: File | null };
+interface StudentProfile {
+    name?: string;
+    birthDate?: string;
+    phone?: string;
+    github?: string;
+    linkedIn?: string;
+    aboutMe?: string;
+    photo?: string;
+}
+
+type StudentProfileUpdate = StudentProfile & { _avatarFile?: File | null };
 
 const handleProfileSaved = async (updated: StudentProfileUpdate) => {
     const { _avatarFile, ...newProfile } = updated;
@@ -128,9 +136,9 @@ const handleProfileSaved = async (updated: StudentProfileUpdate) => {
     const formData = new FormData();
     if (profile.value.phone !== updated.phone) formData.append("phone", updated.phone!);
     if (profile.value.birthDate !== updated.birthDate)
-        formData.append("birthDate", updated.birthDate!);
+        formData.append("birthDate", updated.birthDate! + "T00:00:00.000Z");
     if (profile.value.aboutMe !== updated.aboutMe) formData.append("aboutMe", updated.aboutMe!);
-    if (profile.value.github !== updated.github) formData.append("github", updated.github);
+    if (profile.value.github !== updated.github) formData.append("github", updated.github!);
     if (profile.value.linkedIn !== updated.linkedIn) formData.append("linkedIn", updated.linkedIn!);
     if (_avatarFile) formData.append("photo", _avatarFile!);
     formData.append("studentStatus", profile.value.status);

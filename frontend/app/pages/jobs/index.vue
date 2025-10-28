@@ -28,11 +28,20 @@
             </section>
             <!-- Job Post -->
             <section ref="jobListElement">
+                <!-- Initial Loading -->
+                <div v-if="isInitialLoad" class="flex justify-center py-12">
+                    <div class="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                        <Icon name="svg-spinners:ring-resize" class="w-8 h-8" />
+                        <span class="text-lg">Loading jobs...</span>
+                    </div>
+                </div>
+
+                <!-- Job Posts -->
                 <div v-for="(job, index) in jobs" :key="job.id">
                     <JobPostComponent
                         :is-selected="selectedIndex === index"
                         :data="job"
-                        @click="selectedIndex = index"
+                        @click="setSelectedIndex(index)"
                     />
                 </div>
 
@@ -65,28 +74,37 @@
                         Try adjusting your search filters
                     </p>
                 </div>
-
-                <!-- Initial Loading -->
-                <div v-if="isInitialLoad" class="flex justify-center py-12">
-                    <div class="flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                        <Icon name="svg-spinners:ring-resize" class="w-8 h-8" />
-                        <span class="text-lg">Loading jobs...</span>
-                    </div>
-                </div>
             </section>
         </section>
         <!-- Expanded Job Post -->
-        <section v-if="selectedIndex !== null && selectedIndex < jobs.length" class="flex">
-            <USeparator orientation="vertical" class="w-fit mx-5" color="neutral" size="lg" />
-            <section>
-                <JobPostExpanded
-                    v-if="jobs.length > 0"
-                    :is-viewer="userRole === 'viewer'"
-                    :is-selected="true"
-                    :data="jobs[selectedIndex]!"
+        <Transition name="expand-slide-right" appear>
+            <section v-if="selectedIndex !== null && selectedIndex < jobs.length" class="flex">
+                <!-- Normal Expand job (bigger than tablet) -->
+                <USeparator
+                    orientation="vertical"
+                    class="w-fit mx-5 hidden tablet:block"
+                    color="neutral"
+                    size="lg"
                 />
+                <section aria-label="job expand normal">
+                    <JobPostExpanded
+                        v-if="jobs.length > 0"
+                        class="hidden tablet:block ease-in-out duration-100"
+                        :is-viewer="userRole === 'viewer'"
+                        :is-selected="true"
+                        :data="jobs[selectedIndex]!"
+                    />
+                    <JobPostDrawer
+                        v-if="jobs.length > 0 && !isTablet"
+                        class="block tablet:hidden"
+                        :is-viewer="userRole === 'viewer'"
+                        :is-selected="true"
+                        :data="jobs[selectedIndex]!"
+                        @close="setSelectedIndex(null)"
+                    />
+                </section>
             </section>
-        </section>
+        </Transition>
     </div>
 </template>
 
@@ -94,7 +112,7 @@
 import { ref } from "vue";
 import type { JobPost } from "~/data/mockData";
 import type { CheckboxGroupValue } from "@nuxt/ui";
-import { useInfiniteScroll, watchDebounced } from "@vueuse/core";
+import { useMediaQuery, useInfiniteScroll, watchDebounced } from "@vueuse/core";
 
 definePageMeta({
     layout: "viewer",
@@ -106,6 +124,8 @@ const selectedIndex = ref<number | null>(null);
 const userRole = ref<string>("viewer");
 const isLoadingMore = ref(false);
 const isInitialLoad = ref(true);
+// Media Query
+const isTablet = useMediaQuery("(min-width: 770px)");
 
 // Search and Location
 const search = ref("");
@@ -219,6 +239,15 @@ const fetchJobs = async (offset?: number) => {
     }
 };
 
+function setSelectedIndex(index: number | null) {
+    if (selectedIndex.value === index) {
+        // Deselect if the same index is clicked
+        selectedIndex.value = null;
+    } else {
+        selectedIndex.value = index;
+    }
+}
+
 // Get user role from localStorage
 onMounted(() => {
     if (import.meta.client) {
@@ -228,3 +257,32 @@ onMounted(() => {
 
 await fetchJobs();
 </script>
+
+<style scoped>
+/* Slide in from the right (more pronounced) when the expanded panel first appears */
+.expand-slide-right-enter-active,
+.expand-slide-right-leave-active {
+    transition-property: opacity, transform;
+    transition-duration: 100ms;
+    transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.expand-slide-right-enter-from,
+.expand-slide-right-appear-from {
+    opacity: 0;
+    transform: translateX(32px) scale(0.98);
+}
+.expand-slide-right-enter-to,
+.expand-slide-right-appear-to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+}
+/* Leave (slide out to the right) */
+.expand-slide-right-leave-from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+}
+.expand-slide-right-leave-to {
+    opacity: 0;
+    transform: translateX(32px) scale(0.98);
+}
+</style>
