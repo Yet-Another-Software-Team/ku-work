@@ -39,6 +39,22 @@ API_BASE_URL=http://localhost:8000
 GOOGLE_CLIENT_ID=your_google_client_id_here
 ```
 
+### 3. E2E Tests
+#### 3.1 Playwright codegen
+```
+bunx playwright codegen http://localhost:3000
+```
+#### 3.2 Run playwright
+3.2.1 Run e2e test with normal playwright (config headless at [`playwright.config.ts`](./playwright.config.ts))
+```
+bun test:e2e
+```
+
+3.2.2 Run e2e test with playwright ui
+```
+bun test:e2e:ui
+```
+
 ## Development
 
 ### Start Development Server
@@ -61,6 +77,8 @@ The application will be available at `http://localhost:3000`
 | `bun lint:fix`     | Fix project file formatting with eslint |
 | `bun format`       | Check project file format with prettier |
 | `bun format:fix`   | Fix project file format with prettier   |
+| `bun test:e2e`     | Run e2e test using playwright           |
+| `bun test:e2e:ui`  | Run e2e test using playwright ui        |
 
 ## Production Deployment
 
