@@ -179,6 +179,7 @@ interface StudentProfile {
     linkedIn?: string;
     aboutMe?: string;
     photo?: string;
+    approvalStatus?: string;
 }
 
 interface FormState {
@@ -205,6 +206,7 @@ const props = defineProps<{
         firstName: string;
         lastName: string;
         email: string;
+        approvalStatus?: string;
     };
 }>();
 const emit = defineEmits<{
@@ -303,6 +305,11 @@ function triggerAvatarPicker() {
 function onAvatarSelected(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
+    // Do not preview new picture when profile is rejected
+    if (props.profile?.approvalStatus === "rejected") {
+        avatarFile.value = file;
+        return;
+    }
     updateAvatarPreview(URL.createObjectURL(file));
     avatarFile.value = file;
 }
