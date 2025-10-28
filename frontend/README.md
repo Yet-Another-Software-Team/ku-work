@@ -42,7 +42,7 @@ GOOGLE_CLIENT_ID=your_google_client_id_here
 ### 3. E2E Tests
 #### 3.1 Playwright codegen
 ```
-bunx playwright codegen http://localhost:3000
+bunx playwright codegen your_frontend_base_url
 ```
 #### 3.2 Run playwright
 3.2.1 Run e2e test with normal playwright (config headless at [`playwright.config.ts`](./playwright.config.ts))
