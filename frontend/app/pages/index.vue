@@ -10,7 +10,7 @@
                         class="h-[4em] lg:h-[5em] w-full object-contain"
                         alt="KU Work"
                     />
-                    <h2 class="text-3xl font-semibold text-shadow-lg mt-3">
+                    <h2 id="quote" class="text-3xl font-semibold text-shadow-lg mt-3">
                         Great job awaits for you
                     </h2>
                 </div>
