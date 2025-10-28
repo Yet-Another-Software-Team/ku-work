@@ -96,6 +96,7 @@ type JobResponse struct {
 	ApprovalStatus string    `json:"approvalStatus"`
 	IsOpen         bool      `json:"open"`
 	Applied        bool      `json:"applied"`
+	NotifyOnApplication bool      `json:"notifyOnApplication"`
 }
 
 // JobWithStatsResponse extends JobResponse with application statistics for company users.
