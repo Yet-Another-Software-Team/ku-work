@@ -19,7 +19,7 @@
                         <label class="text-primary-800 font-semibold">Date of Birth *</label>
                         <UInput
                             :model-value="dateOfBirth"
-                            placeholder="Optional: MM/DD/YYYY"
+                            placeholder="MM/DD/YYYY"
                             icon="i-heroicons-calendar"
                             size="xl"
                             type="date"
