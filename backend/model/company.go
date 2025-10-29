@@ -25,6 +25,7 @@ type Company struct {
 	Jobs      []Job     `gorm:"foreignkey:CompanyID;constraint:OnDelete:CASCADE;" json:"-"`
 }
 
+// BeforeDelete is a GORM hook that deletes associated files from storage.
 func (company *Company) BeforeDelete(tx *gorm.DB) (err error) {
 	newCompany := Company{
 		UserID: company.UserID,
@@ -32,8 +33,7 @@ func (company *Company) BeforeDelete(tx *gorm.DB) (err error) {
 	if err := tx.Preload("Photo").Preload("Banner").First(&newCompany).Error; err != nil {
 		return err
 	}
-	// Use the registered storage deletion hook to remove underlying stored objects.
-	// CallStorageDeleteHook is a no-op when no hook/provider is registered.
+
 	if newCompany.Photo.ID != "" {
 		if err := CallStorageDeleteHook(context.Background(), newCompany.Photo.ID); err != nil {
 			return err

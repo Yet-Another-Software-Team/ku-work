@@ -35,9 +35,5 @@ type File struct {
 	Category  FileCategory `gorm:"not null" json:"category"`
 }
 
-// Note: file-level storage operations are handled via storage-provider hooks.
-// The FileType enum/consts exist for callers that need to represent or detect
-// an on-disk/content file type. The File struct intentionally does not force
-// storage-specific behavior; actual deletion of stored objects is done by
-// higher-level model hooks (Company, Student, JobApplication) via the
-// registered storage deletion hook.
+// Note: The actual deletion of stored files is handled by hooks in the
+// higher-level models (e.g., Company, Student, JobApplication) that use this struct.

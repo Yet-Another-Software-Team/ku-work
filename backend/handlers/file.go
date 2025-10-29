@@ -29,20 +29,16 @@ func NewFileHandlers(db *gorm.DB) *FileHandlers {
 	}
 }
 
-// fileService is the package-level FileService used by handlers to perform
-// file operations. It should be set during application wiring (for example
-// in SetupRoutes) so handlers call through the service rather than using
-// provider internals directly.
+// fileService is the package-level FileService used by handlers.
+// It must be set during application initialization.
 var fileService *services.FileService
 
-// SetFileService sets the FileService instance that handlers will use.
-// Call this during application initialization.
+// SetFileService sets the FileService instance for the handlers.
 func SetFileService(s *services.FileService) {
 	fileService = s
 }
 
-// SaveFile delegates saving to the registered storage provider.
-// It performs only minimal category validation before handing off to the provider.
+// SaveFile saves a file using the configured storage provider.
 func SaveFile(ctx *gin.Context, db *gorm.DB, userId string, file *multipart.FileHeader, fileCategory model.FileCategory) (*model.File, error) {
 	// Validate file category
 	isValidCategory := fileCategory == model.FileCategoryImage || fileCategory == model.FileCategoryDocument
@@ -50,14 +46,11 @@ func SaveFile(ctx *gin.Context, db *gorm.DB, userId string, file *multipart.File
 		return nil, fmt.Errorf("invalid file category: %s", fileCategory)
 	}
 
-	// Use the configured FileService to save files. The service owns the provider
-	// and the DB reference; handlers call into the service rather than provider
-	// packages directly.
 	if fileService == nil {
 		return nil, fmt.Errorf("file service not configured")
 	}
 
-	// Delegate saving to service which will use its provider and DB.
+	// Delegate saving to the file service.
 	return fileService.SaveFile(ctx, userId, file, fileCategory)
 }
 
@@ -72,11 +65,10 @@ func SaveFile(ctx *gin.Context, db *gorm.DB, userId string, file *multipart.File
 // @Failure 500 {object} object{error=string} "Internal Server Error"
 // @Router /files/{fileID} [get]
 func (h *FileHandlers) ServeFileHandler(ctx *gin.Context) {
-	// Serve via the configured FileService so we keep provider usage behind the service layer.
 	if fileService == nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "file service not configured"})
 		return
 	}
-	// The service will forward the request to the provider and handle DB usage as needed.
+	// Delegate serving to the file service.
 	fileService.ServeFile(ctx)
 }

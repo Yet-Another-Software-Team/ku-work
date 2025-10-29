@@ -73,6 +73,7 @@ type JobApplication struct {
 	Files        []File               `gorm:"many2many:job_application_has_file;constraint:OnDelete:CASCADE;" json:"files"`
 }
 
+// BeforeDelete is a GORM hook that deletes associated files from storage.
 func (jobApplication *JobApplication) BeforeDelete(tx *gorm.DB) (err error) {
 	newJobApplication := JobApplication{
 		JobID:  jobApplication.JobID,
@@ -81,9 +82,7 @@ func (jobApplication *JobApplication) BeforeDelete(tx *gorm.DB) (err error) {
 	if err := tx.Preload("Files").First(&newJobApplication).Error; err != nil {
 		return err
 	}
-	// Use the registered storage deletion hook to remove stored files.
-	// CallStorageDeleteHook is idempotent and will return nil if the object is already absent
-	// or if no deletion hook/provider is registered.
+
 	for _, file := range newJobApplication.Files {
 		if file.ID == "" {
 			continue

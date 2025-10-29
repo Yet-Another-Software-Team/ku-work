@@ -18,11 +18,9 @@ type FileService struct {
 	db       *gorm.DB
 }
 
-// NewFileService constructs a FileService by reading configuration from environment
-// and will panic on failure. Supported providers:
-// - local (default): uses LOCAL_FILES_DIR (defaults to ./files)
-// - gcs: requires GCS_BUCKET and optional GCS_CREDENTIALS_PATH
-// Control provider selection with FILE_PROVIDER env var (values: "local" or "gcs").
+// NewFileService constructs a FileService by reading configuration from the environment.
+// It supports 'local' and 'gcs' providers, configured via the FILE_PROVIDER environment variable.
+// This function will panic if the configuration is invalid.
 func NewFileService(db *gorm.DB) *FileService {
 	providerType := strings.ToLower(strings.TrimSpace(os.Getenv("FILE_PROVIDER")))
 	if providerType == "" || providerType == "local" {

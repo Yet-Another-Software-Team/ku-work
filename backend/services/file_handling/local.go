@@ -18,11 +18,11 @@ import (
 
 // LocalProvider stores files on the local filesystem.
 type LocalProvider struct {
-	// BaseDir is the directory where files are stored. Defaults to "./files" when empty.
+	// BaseDir is the directory where files are stored.
 	BaseDir string
 }
 
-// NewLocalProvider constructs a LocalProvider. If baseDir is empty it defaults to "./files".
+// NewLocalProvider constructs a LocalProvider.
 func NewLocalProvider(baseDir string) *LocalProvider {
 	if strings.TrimSpace(baseDir) == "" {
 		baseDir = "./files"
@@ -30,7 +30,7 @@ func NewLocalProvider(baseDir string) *LocalProvider {
 	return &LocalProvider{BaseDir: baseDir}
 }
 
-// SaveFile implements FileHandlingProvider for local filesystem storage.
+// SaveFile saves a file to the local filesystem.
 func (p *LocalProvider) SaveFile(ctx *gin.Context, db *gorm.DB, userId string, file *multipart.FileHeader, fileCategory model.FileCategory) (*model.File, error) {
 	// Open uploaded file
 	src, err := file.Open()
@@ -53,7 +53,7 @@ func (p *LocalProvider) SaveFile(ctx *gin.Context, db *gorm.DB, userId string, f
 		return nil, fmt.Errorf("file validation failed")
 	}
 
-	// Create DB record first so we have an ID for the stored object
+	// Create DB record first to use its ID as the filename.
 	fileRecord := &model.File{
 		UserID:   userId,
 		Category: fileCategory,
@@ -64,7 +64,7 @@ func (p *LocalProvider) SaveFile(ctx *gin.Context, db *gorm.DB, userId string, f
 
 	// Ensure base directory exists
 	if err := os.MkdirAll(p.BaseDir, 0o755); err != nil {
-		_ = db.Delete(fileRecord).Error
+		_ = db.Delete(fileRecord).Error // Rollback DB record
 		return nil, fmt.Errorf("failed to create storage directory: %w", err)
 	}
 
@@ -78,26 +78,25 @@ func (p *LocalProvider) SaveFile(ctx *gin.Context, db *gorm.DB, userId string, f
 
 	targetPath := filepath.Join(p.BaseDir, fileRecord.ID)
 	if err := os.WriteFile(targetPath, toWrite, 0o644); err != nil {
-		_ = db.Delete(fileRecord)
+		_ = db.Delete(fileRecord) // Rollback DB record
 		return nil, fmt.Errorf("failed to write file to disk: %w", err)
 	}
 
 	return fileRecord, nil
 }
 
-// ServeFile implements FileHandlingProvider for local filesystem storage.
+// ServeFile serves a file from the local filesystem.
 func (p *LocalProvider) ServeFile(ctx *gin.Context, db *gorm.DB) {
 	fileID := ctx.Param("fileID")
-	// basic sanitization to avoid path traversal
+	// Basic sanitization to avoid path traversal
 	if strings.Contains(fileID, "/") || strings.Contains(fileID, `\`) || strings.Contains(fileID, "..") {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file identifier"})
 		return
 	}
 
-	baseDir := p.BaseDir
-	filePath := filepath.Join(baseDir, fileID)
+	filePath := filepath.Join(p.BaseDir, fileID)
 
-	absBaseDir, err := filepath.Abs(baseDir)
+	absBaseDir, err := filepath.Abs(p.BaseDir)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
@@ -107,54 +106,24 @@ func (p *LocalProvider) ServeFile(ctx *gin.Context, db *gorm.DB) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file path"})
 		return
 	}
-	// Ensure that absFilePath is inside absBaseDir
+	// Prevent path traversal
 	if !strings.HasPrefix(absFilePath, absBaseDir+string(os.PathSeparator)) && absFilePath != absBaseDir {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "File path traversal detected"})
 		return
 	}
 
-	f, err := os.Open(absFilePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
-		} else {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open file"})
-		}
-		return
-	}
-	defer func() { _ = f.Close() }()
-
-	// Probe content type
-	buffer := make([]byte, 512)
-	n, rErr := f.Read(buffer)
-	if rErr != nil && rErr != io.EOF {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read file"})
-		return
-	}
-	contentType := http.DetectContentType(buffer[:n])
-	ctx.Header("Content-Type", contentType)
-
-	// Use Gin's File convenience (it will re-open and serve the file)
 	ctx.File(absFilePath)
 }
 
-// DeleteFile removes the file from local disk. It is idempotent: attempting to delete a
-// non-existent file is not an error. The method uses the provided context for potential
-// future cancellation/timeouts (currently there is no blocking IO that benefits from ctx).
+// DeleteFile removes a file from the local filesystem. It is idempotent.
 func (p *LocalProvider) DeleteFile(ctx context.Context, fileID string) error {
-	// Basic validation to avoid path traversal-like identifiers
+	// Basic validation to avoid path traversal
 	if strings.Contains(fileID, "/") || strings.Contains(fileID, `\`) || strings.Contains(fileID, "..") {
 		return fmt.Errorf("invalid file identifier")
 	}
 
-	// Construct path and attempt removal
 	path := filepath.Join(p.BaseDir, fileID)
-	err := os.Remove(path)
-	if err != nil {
-		// Treat not-exist as success (idempotent)
-		if os.IsNotExist(err) {
-			return nil
-		}
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove local file: %w", err)
 	}
 	return nil

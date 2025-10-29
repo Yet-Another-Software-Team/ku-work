@@ -18,10 +18,7 @@ type FileHandlingProvider interface {
 	DeleteFile(ctx context.Context, fileID string) error
 }
 
-// We maintain a small global registry so the application can register exactly one
-// FileHandlingProvider at startup and other packages may obtain it without importing
-// concrete implementation types. This simplifies wiring in handlers/models that need
-// to coordinate file deletions when related DB records are removed.
+// registry is a package-level variable that holds the registered FileHandlingProvider.
 var (
 	registryMu sync.RWMutex
 	registry   FileHandlingProvider
@@ -52,21 +49,6 @@ func MustGetProvider() FileHandlingProvider {
 		panic(err)
 	}
 	return p
-}
-
-// DeleteStoredFile deletes a file from the storage backend.
-func DeleteStoredFile(ctx context.Context, fileID string) error {
-	p, err := GetProvider()
-	if err != nil {
-		return err
-	}
-	return p.DeleteFile(ctx, fileID)
-}
-
-// DeleteStoredFileWithDB deletes a file from the storage backend and the database.
-func DeleteStoredFileWithDB(ctx context.Context, db *gorm.DB, fileID string) error {
-	_ = db // currently unused
-	return DeleteStoredFile(ctx, fileID)
 }
 
 // ProviderExists checks if a FileHandlingProvider is registered.
