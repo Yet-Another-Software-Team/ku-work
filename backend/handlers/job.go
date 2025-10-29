@@ -476,8 +476,8 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 		needReapproval = true
 		job.MaxSalary = *input.MaxSalary
 	}
+	// Check for invalid salary range
 	if job.MinSalary > job.MaxSalary {
-		needReapproval = true
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "minSalary cannot exceed maxSalary"})
 		return
 	}
