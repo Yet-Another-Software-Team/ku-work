@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"ku-work/backend/middlewares"
 	"ku-work/backend/services"
 
@@ -9,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, emailService *services.EmailService, aiService *services.AIService) error {
+func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, emailService *services.EmailService, aiService *services.AIService, fileService *services.FileService) error {
 	// Initialize handlers
 	jwtHandlers := NewJWTHandlers(db, redisClient)
 	fileHandlers := NewFileHandlers(db)
@@ -32,6 +33,16 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	userHandlers := NewUserHandlers(db)
 	adminHandlers := NewAdminHandlers(db)
 
+	if fileService == nil {
+		return fmt.Errorf("fileService must be provided")
+	}
+	// Register the FileService with package-level handlers so handler functions
+	// such as SaveFile and ServeFileHandler can use the configured service.
+	SetFileService(fileService)
+
+	// File Routes
+	router.GET("/files/:fileID", fileHandlers.ServeFileHandler)
+	
 	// Authentication Routes
 	auth := router.Group("/auth")
 	auth.POST("/admin/login", middlewares.RateLimiterWithLimits(redisClient, 5, 20), localAuthHandlers.AdminLoginHandler)
@@ -50,8 +61,6 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	protectedRouter.PATCH("/me", userHandlers.EditProfileHandler)
 	protectedRouter.GET("/me", userHandlers.GetProfileHandler)
 
-	// File Routes (Only Authed)
-	protectedRouter.GET("/files/:fileID", fileHandlers.ServeFileHandler)
 
 	// Company Routs
 	company := protectedRouter.Group("/company")

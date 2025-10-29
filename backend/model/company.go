@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"time"
 
 	"gorm.io/gorm"
@@ -31,11 +32,17 @@ func (company *Company) BeforeDelete(tx *gorm.DB) (err error) {
 	if err := tx.Preload("Photo").Preload("Banner").First(&newCompany).Error; err != nil {
 		return err
 	}
-	if err := newCompany.Photo.AfterDelete(tx); err != nil {
-		return err
+	// Use the registered storage deletion hook to remove underlying stored objects.
+	// CallStorageDeleteHook is a no-op when no hook/provider is registered.
+	if newCompany.Photo.ID != "" {
+		if err := CallStorageDeleteHook(context.Background(), newCompany.Photo.ID); err != nil {
+			return err
+		}
 	}
-	if err := newCompany.Banner.AfterDelete(tx); err != nil {
-		return err
+	if newCompany.Banner.ID != "" {
+		if err := CallStorageDeleteHook(context.Background(), newCompany.Banner.ID); err != nil {
+			return err
+		}
 	}
 	return nil
 }

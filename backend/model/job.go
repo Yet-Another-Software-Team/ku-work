@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"time"
 
 	"gorm.io/gorm"
@@ -80,8 +81,14 @@ func (jobApplication *JobApplication) BeforeDelete(tx *gorm.DB) (err error) {
 	if err := tx.Preload("Files").First(&newJobApplication).Error; err != nil {
 		return err
 	}
+	// Use the registered storage deletion hook to remove stored files.
+	// CallStorageDeleteHook is idempotent and will return nil if the object is already absent
+	// or if no deletion hook/provider is registered.
 	for _, file := range newJobApplication.Files {
-		if err := file.AfterDelete(tx); err != nil {
+		if file.ID == "" {
+			continue
+		}
+		if err := CallStorageDeleteHook(context.Background(), file.ID); err != nil {
 			return err
 		}
 	}

@@ -7,6 +7,7 @@ A RESTful API built with Go, Gin framework, PostgreSQL, Redis, and GORM for user
 - Go 1.23.3 or higher
 - PostgreSQL 13+ (or Docker for containerized setup)
 - Redis 7+ (or Docker for containerized setup)
+- Optional: Google Cloud project (if using GCS provider)
 
 ## Installation
 
@@ -34,13 +35,13 @@ A RESTful API built with Go, Gin framework, PostgreSQL, Redis, and GORM for user
    - Option B: Install PostgreSQL locally and create a database
    ```sql
     CREATE DATABASE ku_work_db;
-    ```
+   ```
     replace `ku_work_db` with your desired database name
 
 
 ## Configuration
 
-Copy `sample.env` to `.env` and configure the following variables:
+Copy `sample.env` to `.env` and configure the following variables. The repository includes `backend/sample.env` with defaults and additional storage provider variables (`FILE_PROVIDER`, `LOCAL_FILES_DIR`, `GCS_*`) to select how files are stored.
 
 ### Database Configuration
 - `DB_HOST`: Database host (default: localhost)
@@ -92,36 +93,18 @@ Redis is used for rate limiting and session management.
 - `GOOGLE_CLIENT_ID`: Client ID for Google OAuth
 - `GOOGLE_CLIENT_SECRET`: Client secret for Google OAuth
 
+### File storage provider
+The backend offers a pluggable file storage provider. Configure the provider using the `FILE_PROVIDER` environment variable in `backend/.env`:
+
+- `FILE_PROVIDER`: "local" (default) or "gcs"
+- When using local storage:
+  - `LOCAL_FILES_DIR` — directory where files are written (default `./files`)
+- When using GCS:
+  - `GCS_BUCKET` — the Google Cloud Storage Bucket name (i.e., my-bucket)
+  - `GCS_CREDENTIALS_PATH` — path to Google cloud service-account JSON credentials on your machine.
+
 ### Swagger Configuration
 - `SWAGGER_HOST`: Swagger host (default: localhost:8000)
-
-## Security Features
-
-### OWASP-Compliant Logout & Session Termination
-
-This application implements OWASP ASVS 3.3.1 requirements for session termination:
-
-**JWT Blacklist Implementation**:
-- When a user logs out, their JWT is immediately added to a blacklist (revoked tokens table)
-- All subsequent requests with that JWT are rejected with 401 Unauthorized
-- Prevents token reuse after logout, even if the token hasn't expired
-- Each JWT has a unique JTI (JWT ID) for precise tracking
-
-**Dual Token System**:
-- **Access Token (JWT)**: Short-lived (15 minutes), stored in client memory
-- **Refresh Token**: Long-lived (30 days), stored as HTTP-only cookie with Argon2id hashing
-
-**Automatic Cleanup**:
-- Expired JWTs are automatically removed from blacklist (runs hourly)
-- Expired refresh tokens are cleaned up after 7-day grace period
-- Prevents unbounded database growth
-
-**Rate Limiting**:
-- Redis-based rate limiting on authentication endpoints
-- Protects against brute force attacks
-- Configurable per-minute and per-hour limits
-
-For detailed documentation, see [`docs/JWT_BLACKLIST.md`](./docs/JWT_BLACKLIST.md)
 
 ### AI Configuration
 - `APPROVAL_AI`: Choose what AI to use (dummy, ollama, ...)
