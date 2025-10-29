@@ -434,8 +434,8 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 		return
 	}
 
-	needReapproval := false;
-	
+	needReapproval := false
+
 	// Update job post with new data
 	if input.Name != nil {
 		needReapproval = true
@@ -488,7 +488,7 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 	if needReapproval {
 		job.ApprovalStatus = model.JobApprovalPending
 	}
-	
+
 	result = h.DB.Save(&job)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
