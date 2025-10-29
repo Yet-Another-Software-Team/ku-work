@@ -54,20 +54,6 @@ interface CompanyProfile {
     };
 }
 
-interface Company {
-    id: string;
-    createdAt: string;
-    email: string;
-    phone: string;
-    photoId: string;
-    bannerId: string;
-    about: string;
-    site: string;
-    address: string;
-    city: string;
-    country: string;
-}
-
 interface CreateJobPost {
     name: string;
     position: string;

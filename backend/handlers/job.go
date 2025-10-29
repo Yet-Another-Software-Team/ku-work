@@ -77,25 +77,25 @@ type ApproveJobInput struct {
 
 // JobResponse defines the structure for a single job listing in API responses.
 type JobResponse struct {
-	ID             uint      `json:"id"`
-	CreatedAt      time.Time `json:"createdAt"`
-	UpdatedAt      time.Time `json:"updatedAt"`
-	Name           string    `json:"name"`
-	CompanyID      string    `json:"companyId"`
-	PhotoID        string    `json:"photoId"`
-	BannerID       string    `json:"bannerId"`
-	CompanyName    string    `json:"companyName"`
-	Position       string    `json:"position"`
-	Duration       string    `json:"duration"`
-	Description    string    `json:"description"`
-	Location       string    `json:"location"`
-	JobType        string    `json:"jobType"`
-	Experience     string    `json:"experience"`
-	MinSalary      uint      `json:"minSalary"`
-	MaxSalary      uint      `json:"maxSalary"`
-	ApprovalStatus string    `json:"approvalStatus"`
-	IsOpen         bool      `json:"open"`
-	Applied        bool      `json:"applied"`
+	ID                  uint      `json:"id"`
+	CreatedAt           time.Time `json:"createdAt"`
+	UpdatedAt           time.Time `json:"updatedAt"`
+	Name                string    `json:"name"`
+	CompanyID           string    `json:"companyId"`
+	PhotoID             string    `json:"photoId"`
+	BannerID            string    `json:"bannerId"`
+	CompanyName         string    `json:"companyName"`
+	Position            string    `json:"position"`
+	Duration            string    `json:"duration"`
+	Description         string    `json:"description"`
+	Location            string    `json:"location"`
+	JobType             string    `json:"jobType"`
+	Experience          string    `json:"experience"`
+	MinSalary           uint      `json:"minSalary"`
+	MaxSalary           uint      `json:"maxSalary"`
+	ApprovalStatus      string    `json:"approvalStatus"`
+	IsOpen              bool      `json:"open"`
+	Applied             bool      `json:"applied"`
 	NotifyOnApplication bool      `json:"notifyOnApplication"`
 }
 
