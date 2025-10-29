@@ -96,7 +96,8 @@ func TestAccountReactivation(t *testing.T) {
 
 		assert.Equal(t, http.StatusBadRequest, w.Code, "Should reject")
 		var response map[string]any
-		json.Unmarshal(w.Body.Bytes(), &response)
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err, "Should parse response")
 		assert.Equal(t, "Account is not deactivated", response["error"])
 	})
 }

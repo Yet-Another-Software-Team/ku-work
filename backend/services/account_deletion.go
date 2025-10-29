@@ -230,14 +230,24 @@ func AnonymizeStudentData(tx *gorm.DB, student *model.Student) error {
 	if student.PhotoID != "" {
 		var photo model.File
 		if err := tx.Where("id = ?", student.PhotoID).First(&photo).Error; err == nil {
-			photo.AfterDelete(tx) // This should handle file deletion
+			if err := photo.AfterDelete(tx); err != nil {
+				log.Printf("Warning: Failed to delete file %s: %v", photo.ID, err)
+			}
+			if err := tx.Unscoped().Delete(&photo).Error; err != nil {
+				log.Printf("Warning: Failed to delete file record %s: %v", photo.ID, err)
+			}
 		}
 	}
 
 	if student.StudentStatusFileID != "" {
 		var statusFile model.File
 		if err := tx.Where("id = ?", student.StudentStatusFileID).First(&statusFile).Error; err == nil {
-			statusFile.AfterDelete(tx)
+			if err := statusFile.AfterDelete(tx); err != nil {
+				log.Printf("Warning: Failed to delete status file %s: %v", statusFile.ID, err)
+			}
+			if err := tx.Unscoped().Delete(&statusFile).Error; err != nil {
+				log.Printf("Warning: Failed to delete status file record %s: %v", statusFile.ID, err)
+			}
 		}
 	}
 
@@ -268,14 +278,24 @@ func AnonymizeCompanyData(tx *gorm.DB, company *model.Company) error {
 	if company.PhotoID != "" {
 		var photo model.File
 		if err := tx.Where("id = ?", company.PhotoID).First(&photo).Error; err == nil {
-			photo.AfterDelete(tx)
+			if err := photo.AfterDelete(tx); err != nil {
+				log.Printf("Warning: Failed to delete file %s: %v", photo.ID, err)
+			}
+			if err := tx.Unscoped().Delete(&photo).Error; err != nil {
+				log.Printf("Warning: Failed to delete file record %s: %v", photo.ID, err)
+			}
 		}
 	}
 
 	if company.BannerID != "" {
 		var banner model.File
 		if err := tx.Where("id = ?", company.BannerID).First(&banner).Error; err == nil {
-			banner.AfterDelete(tx)
+			if err := banner.AfterDelete(tx); err != nil {
+				log.Printf("Warning: Failed to delete banner file %s: %v", banner.ID, err)
+			}
+			if err := tx.Unscoped().Delete(&banner).Error; err != nil {
+				log.Printf("Warning: Failed to delete banner file record %s: %v", banner.ID, err)
+			}
 		}
 	}
 
