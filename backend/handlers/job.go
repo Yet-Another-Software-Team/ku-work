@@ -430,38 +430,50 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 		return
 	}
 
+	needReapproval := false;
+	
 	// Update job post with new data
 	if input.Name != nil {
+		needReapproval = true
 		job.Name = *input.Name
 	}
 	if input.Position != nil {
+		needReapproval = true
 		job.Position = *input.Position
 	}
 	if input.Duration != nil {
+		needReapproval = true
 		job.Duration = *input.Duration
 	}
 	if input.Description != nil {
+		needReapproval = true
 		job.Description = *input.Description
 	}
 	if input.Location != nil {
+		needReapproval = true
 		job.Location = *input.Location
 	}
 	if input.JobType != nil {
+		needReapproval = true
 		job.JobType = model.JobType(*input.JobType)
 	}
 	if input.Open != nil {
 		job.IsOpen = *input.Open
 	}
 	if input.Experience != nil {
+		needReapproval = true
 		job.Experience = model.ExperienceType(*input.Experience)
 	}
 	if input.MinSalary != nil {
+		needReapproval = true
 		job.MinSalary = *input.MinSalary
 	}
 	if input.MaxSalary != nil {
+		needReapproval = true
 		job.MaxSalary = *input.MaxSalary
 	}
 	if job.MinSalary > job.MaxSalary {
+		needReapproval = true
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "minSalary cannot exceed maxSalary"})
 		return
 	}
@@ -469,6 +481,10 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 		job.NotifyOnApplication = *input.NotifyOnApplication
 	}
 
+	if needReapproval {
+		job.ApprovalStatus = model.JobApprovalPending
+	}
+	
 	result = h.DB.Save(&job)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
