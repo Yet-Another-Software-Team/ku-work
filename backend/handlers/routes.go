@@ -42,7 +42,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 
 	// File Routes
 	router.GET("/files/:fileID", fileHandlers.ServeFileHandler)
-	
+
 	// Authentication Routes
 	auth := router.Group("/auth")
 	auth.POST("/admin/login", middlewares.RateLimiterWithLimits(redisClient, 5, 20), localAuthHandlers.AdminLoginHandler)
@@ -60,7 +60,6 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	protectedRouter := router.Group("", middlewares.AuthMiddlewareWithRedis(jwtHandlers.JWTSecret, redisClient))
 	protectedRouter.PATCH("/me", userHandlers.EditProfileHandler)
 	protectedRouter.GET("/me", userHandlers.GetProfileHandler)
-
 
 	// Company Routs
 	company := protectedRouter.Group("/company")

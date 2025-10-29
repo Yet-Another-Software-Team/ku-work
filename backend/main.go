@@ -87,7 +87,7 @@ func initializeServices(db *gorm.DB) (*services.EmailService, *services.AIServic
 		log.Printf("Warning: AI service initialization failed: %v", err)
 		return emailService, nil, nil
 	}
-	
+
 	fileService := services.NewFileService(db)
 	fileService.RegisterGlobal() //Register file Services to be use on model-level
 
