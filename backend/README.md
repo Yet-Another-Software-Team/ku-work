@@ -102,6 +102,9 @@ The backend offers a pluggable file storage provider. Configure the provider usi
 - When using GCS:
   - `GCS_BUCKET` — the Google Cloud Storage Bucket name (i.e., my-bucket)
   - `GCS_CREDENTIALS_PATH` — path to Google cloud service-account JSON credentials on your machine.
+  - > **Important:** When running with Docker and using the GCS provider, you must:
+  > 1. Place your `gcs-key.json` file in the `backend` directory.
+  > 2. In your `.env` file, set `GCS_CREDENTIALS_PATH` to `/app/gcs-key.json`.
 
 ### Swagger Configuration
 - `SWAGGER_HOST`: Swagger host (default: localhost:8000)

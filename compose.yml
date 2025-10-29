@@ -53,27 +53,12 @@ services:
       redis:
         condition: service_healthy
     env_file: ".env"
+    volumes:
+      - ./backend/gcs-key.json:/app/gcs-key.json
     environment:
-      LISTEN_ADDRESS: :8000
-      DB_PORT: 5432
       DB_HOST: db
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
       REDIS_HOST: redis
-      REDIS_PORT: 6379
       CORS_ALLOWED_ORIGINS: http://localhost:3000,http://frontend:3000
-      CORS_ALLOWED_METHODS: ${CORS_ALLOWED_METHODS}
-      CORS_ALLOWED_HEADERS: ${CORS_ALLOWED_HEADERS}
-      CORS_ALLOW_CREDENTIALS: ${CORS_ALLOW_CREDENTIALS}
-      CORS_MAX_AGE: ${CORS_MAX_AGE}
-      JWT_SECRET: ${JWT_SECRET}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      APPROVAL_AI: ${APPROVAL_AI}
-      APPROVAL_AI_MODEL: ${APPROVAL_AI_MODEL}
-      APPROVAL_AI_URI: ${APPROVAL_AI_URI}
-      SWAGGER_HOST: ${SWAGGER_HOST}
 
   frontend:
     build:
