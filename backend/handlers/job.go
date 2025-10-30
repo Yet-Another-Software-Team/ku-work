@@ -48,8 +48,8 @@ type CreateJobInput struct {
 	Location            string `json:"location" binding:"required,max=128"`
 	JobType             string `json:"jobType" binding:"required,oneof='fulltime' 'parttime' 'contract' 'casual' 'internship'"`
 	Experience          string `json:"experience" binding:"required,oneof='newgrad' 'junior' 'senior' 'manager' 'internship'"`
-	MinSalary           uint   `json:"minSalary" binding:"required"`
-	MaxSalary           uint   `json:"maxSalary" binding:"required"`
+	MinSalary           *uint  `json:"minSalary" binding:"required"`
+	MaxSalary           *uint  `json:"maxSalary" binding:"required"`
 	Open                bool   `json:"open"`
 	NotifyOnApplication *bool  `json:"notifyOnApplication"`
 }
@@ -77,24 +77,25 @@ type ApproveJobInput struct {
 
 // JobResponse defines the structure for a single job listing in API responses.
 type JobResponse struct {
-	ID             uint      `json:"id"`
-	CreatedAt      time.Time `json:"createdAt"`
-	UpdatedAt      time.Time `json:"updatedAt"`
-	Name           string    `json:"name"`
-	CompanyID      string    `json:"companyId"`
-	PhotoID        string    `json:"photoId"`
-	BannerID       string    `json:"bannerId"`
-	CompanyName    string    `json:"companyName"`
-	Position       string    `json:"position"`
-	Duration       string    `json:"duration"`
-	Description    string    `json:"description"`
-	Location       string    `json:"location"`
-	JobType        string    `json:"jobType"`
-	Experience     string    `json:"experience"`
-	MinSalary      uint      `json:"minSalary"`
-	MaxSalary      uint      `json:"maxSalary"`
-	ApprovalStatus string    `json:"approvalStatus"`
-	IsOpen         bool      `json:"open"`
+	ID                  uint      `json:"id"`
+	CreatedAt           time.Time `json:"createdAt"`
+	UpdatedAt           time.Time `json:"updatedAt"`
+	Name                string    `json:"name"`
+	CompanyID           string    `json:"companyId"`
+	PhotoID             string    `json:"photoId"`
+	BannerID            string    `json:"bannerId"`
+	CompanyName         string    `json:"companyName"`
+	Position            string    `json:"position"`
+	Duration            string    `json:"duration"`
+	Description         string    `json:"description"`
+	Location            string    `json:"location"`
+	JobType             string    `json:"jobType"`
+	Experience          string    `json:"experience"`
+	MinSalary           uint      `json:"minSalary"`
+	MaxSalary           uint      `json:"maxSalary"`
+	ApprovalStatus      string    `json:"approvalStatus"`
+	IsOpen              bool      `json:"open"`
+	NotifyOnApplication bool      `json:"notifyOnApplication"`
 }
 
 // JobWithStatsResponse extends JobResponse with application statistics.
@@ -126,7 +127,12 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 		return
 	}
 
-	if input.MaxSalary < input.MinSalary {
+	// Validate input data
+	if input.MinSalary == nil || input.MaxSalary == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "minSalary and maxSalary are required"})
+		return
+	}
+	if *input.MaxSalary < *input.MinSalary {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "minSalary must be lower than or equal to maxSalary"})
 		return
 	}
@@ -151,8 +157,8 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 		Location:            input.Location,
 		JobType:             model.JobType(input.JobType),
 		Experience:          model.ExperienceType(input.Experience),
-		MinSalary:           input.MinSalary,
-		MaxSalary:           input.MaxSalary,
+		MinSalary:           *input.MinSalary,
+		MaxSalary:           *input.MaxSalary,
 		ApprovalStatus:      model.JobApprovalPending,
 		IsOpen:              input.Open,
 		NotifyOnApplication: *input.NotifyOnApplication,
