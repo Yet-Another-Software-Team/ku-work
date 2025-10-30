@@ -348,24 +348,14 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 		return
 	}
 
-	// return Job posts with company info if not company
+	// return Job posts with company info if not company (include whether current user has applied)
 	var jobs []JobResponse
-	result := query.Select("jobs.*, users.username as company_name, companies.photo_id, companies.banner_id").Find(&jobs)
+	result := query.
+		Select("jobs.*, users.username as company_name, companies.photo_id, companies.banner_id, EXISTS (SELECT 1 FROM job_applications WHERE job_applications.job_id = jobs.id AND job_applications.user_id = ?) AS applied", userId).
+		Find(&jobs)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
-	}
-
-	for i := range jobs {
-		var count int64
-		if err := h.DB.Model(&model.JobApplication{}).
-			Where("job_id = ? AND user_id = ?", jobs[i].ID, userId).
-			Count(&count).Error; err == nil {
-			jobs[i].Applied = count > 0
-		} else {
-			// On error, default to false
-			jobs[i].Applied = false
-		}
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
