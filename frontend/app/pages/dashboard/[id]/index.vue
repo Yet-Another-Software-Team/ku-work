@@ -92,20 +92,31 @@
                     <template #header>
                         <p>
                             Are you sure you want to
-                            <strong>{{ confirmAction === 'accept' ? 'accept' : 'reject' }}</strong>
+                            <strong>{{ confirmAction === "accept" ? "accept" : "reject" }}</strong>
                             {{ selectedApp?.username }}?
                         </p>
                     </template>
                     <template #body>
                         <div class="flex justify-end gap-2">
-                            <UButton variant="outline" color="neutral" label="Cancel" @click="showAppConfirm = false" />
+                            <UButton
+                                variant="outline"
+                                color="neutral"
+                                label="Cancel"
+                                @click="showAppConfirm = false"
+                            />
                             <UButton
                                 :color="confirmAction === 'accept' ? 'primary' : 'error'"
                                 :label="confirmAction === 'accept' ? 'Accept' : 'Reject'"
-                                @click="() => {
-                                    if (selectedApp) acceptApplication(selectedApp, confirmAction === 'accept');
-                                    showAppConfirm = false;
-                                }"
+                                @click="
+                                    () => {
+                                        if (selectedApp)
+                                            acceptApplication(
+                                                selectedApp,
+                                                confirmAction === 'accept'
+                                            );
+                                        showAppConfirm = false;
+                                    }
+                                "
                             />
                         </div>
                     </template>
@@ -154,7 +165,7 @@ const sortOptions = ref([
 
 const selectSortOption = ref("latest");
 const showAppConfirm = ref(false);
-const confirmAction = ref<'accept' | 'reject'>('accept');
+const confirmAction = ref<"accept" | "reject">("accept");
 const selectedApp = ref<JobApplication | null>(null);
 
 const loadContents = async () => {
@@ -183,7 +194,7 @@ const loadContents = async () => {
 
 onMounted(loadContents);
 
-function openConfirm(app: JobApplication, action: 'accept' | 'reject') {
+function openConfirm(app: JobApplication, action: "accept" | "reject") {
     selectedApp.value = app;
     confirmAction.value = action;
     showAppConfirm.value = true;

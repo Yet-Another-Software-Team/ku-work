@@ -84,9 +84,17 @@
                 <div class="r-card flex items-center justify-between">
                     <!-- File Download -->
                     <span class="text-xl">Submitted File</span>
-                    <a :href="file" :download="suggestedFileName" target="_blank" class="flex items-center gap-2">
+                    <a
+                        :href="file"
+                        :download="suggestedFileName"
+                        target="_blank"
+                        class="flex items-center gap-2"
+                    >
                         <Icon name="ic:outline-file-download" class="size-[2em]" />
-                        <span class="text-sm text-primary-700 dark:text-primary truncate max-w-[12rem]">{{ suggestedFileName }}</span>
+                        <span
+                            class="text-sm text-primary-700 dark:text-primary truncate max-w-[12rem]"
+                            >{{ suggestedFileName }}</span
+                        >
                     </a>
                 </div>
             </section>
@@ -117,7 +125,9 @@
                     class="r-card"
                 >
                     <div class="flex flex-col text-xl text-left">
-                        <p class="text-gray-800 dark:text-gray-200 font-semibold whitespace-pre-wrap break-words overflow-x-hidden">
+                        <p
+                            class="text-gray-800 dark:text-gray-200 font-semibold whitespace-pre-wrap break-words overflow-x-hidden"
+                        >
                             <span class="font-normal break-words">{{ data.profile.aboutMe }}</span>
                         </p>
                     </div>

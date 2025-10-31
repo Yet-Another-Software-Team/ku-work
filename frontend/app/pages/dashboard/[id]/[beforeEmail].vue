@@ -7,7 +7,6 @@
             @status-changed="statusChanged"
         />
     </div>
-    
 </template>
 
 <script lang="ts" setup>

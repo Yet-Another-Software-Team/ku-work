@@ -47,12 +47,29 @@
                         }"
                     >
                         <template #header>
-                            <p>Are you sure you want to <strong>decline</strong> {{ data.firstName }} {{ data.lastName }}?</p>
+                            <p>
+                                Are you sure you want to <strong>decline</strong>
+                                {{ data.firstName }} {{ data.lastName }}?
+                            </p>
                         </template>
                         <template #body>
                             <div class="flex justify-end gap-2">
-                                <UButton variant="outline" color="neutral" label="Cancel" @click="showRejectModal = false" />
-                                <UButton color="error" label="Decline" @click="() => { declineRequest(); showRejectModal = false; }" />
+                                <UButton
+                                    variant="outline"
+                                    color="neutral"
+                                    label="Cancel"
+                                    @click="showRejectModal = false"
+                                />
+                                <UButton
+                                    color="error"
+                                    label="Decline"
+                                    @click="
+                                        () => {
+                                            declineRequest();
+                                            showRejectModal = false;
+                                        }
+                                    "
+                                />
                             </div>
                         </template>
                     </UModal>
@@ -74,12 +91,29 @@
                         }"
                     >
                         <template #header>
-                            <p>Are you sure you want to <strong>accept</strong> {{ data.firstName }} {{ data.lastName }}?</p>
+                            <p>
+                                Are you sure you want to <strong>accept</strong>
+                                {{ data.firstName }} {{ data.lastName }}?
+                            </p>
                         </template>
                         <template #body>
                             <div class="flex justify-end gap-2">
-                                <UButton variant="outline" color="neutral" label="Cancel" @click="showAcceptModal = false" />
-                                <UButton color="primary" label="Accept" @click="() => { acceptRequest(); showAcceptModal = false; }" />
+                                <UButton
+                                    variant="outline"
+                                    color="neutral"
+                                    label="Cancel"
+                                    @click="showAcceptModal = false"
+                                />
+                                <UButton
+                                    color="primary"
+                                    label="Accept"
+                                    @click="
+                                        () => {
+                                            acceptRequest();
+                                            showAcceptModal = false;
+                                        }
+                                    "
+                                />
                             </div>
                         </template>
                     </UModal>

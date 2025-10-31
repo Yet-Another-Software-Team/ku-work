@@ -37,7 +37,9 @@
 
         <form class="grid grid-cols-1 md:grid-cols-2 gap-4" @submit.prevent="handleSubmit">
             <div class="md:col-span-2">
-                <label class="block text-primary-800 dark:text-primary font-semibold mb-1">Name</label>
+                <label class="block text-primary-800 dark:text-primary font-semibold mb-1"
+                    >Name</label
+                >
                 <div
                     class="rounded-lg border border-primary-700/50 bg-gray-100 px-4 py-2 text-gray-900 dark:border-primary-700/40 dark:bg-[#013B49] dark:text-white"
                 >
@@ -46,7 +48,9 @@
             </div>
 
             <div class="col-span-1">
-                <label for="dob" class="block text-primary-800 dark:text-primary font-semibold mb-1">Date of Birth</label>
+                <label for="dob" class="block text-primary-800 dark:text-primary font-semibold mb-1"
+                    >Date of Birth</label
+                >
                 <UInput
                     id="dob"
                     v-model="form.dob"
@@ -59,7 +63,11 @@
             </div>
 
             <div class="col-span-1">
-                <label for="phone" class="block text-primary-800 dark:text-primary font-semibold mb-1">Phone</label>
+                <label
+                    for="phone"
+                    class="block text-primary-800 dark:text-primary font-semibold mb-1"
+                    >Phone</label
+                >
                 <UInput
                     id="phone"
                     v-model="form.phone"
@@ -70,7 +78,11 @@
             </div>
 
             <div class="col-span-1">
-                <label for="github" class="block text-primary-800 dark:text-primary font-semibold mb-1">GitHub</label>
+                <label
+                    for="github"
+                    class="block text-primary-800 dark:text-primary font-semibold mb-1"
+                    >GitHub</label
+                >
                 <UInput
                     id="github"
                     v-model="form.github"
@@ -81,7 +93,11 @@
             </div>
 
             <div class="col-span-1">
-                <label for="linkedin" class="block text-primary-800 dark:text-primary font-semibold mb-1">LinkedIn</label>
+                <label
+                    for="linkedin"
+                    class="block text-primary-800 dark:text-primary font-semibold mb-1"
+                    >LinkedIn</label
+                >
                 <UInput
                     id="linkedin"
                     v-model="form.linkedin"
@@ -94,7 +110,11 @@
             </div>
 
             <div class="md:col-span-2">
-                <label for="aboutMe" class="block text-primary-800 dark:text-primary font-semibold mb-1">About me</label>
+                <label
+                    for="aboutMe"
+                    class="block text-primary-800 dark:text-primary font-semibold mb-1"
+                    >About me</label
+                >
                 <div class="rounded-lg bg-white dark:bg-[#013B49]">
                     <UTextarea
                         id="aboutMe"
@@ -134,7 +154,9 @@
             </template>
             <template #footer>
                 <div class="flex justify-end gap-2">
-                    <UButton variant="outline" color="neutral" @click="showDiscardConfirm = false">Cancel</UButton>
+                    <UButton variant="outline" color="neutral" @click="showDiscardConfirm = false"
+                        >Cancel</UButton
+                    >
                     <UButton color="primary" @click="confirmDiscard">Discard</UButton>
                 </div>
             </template>

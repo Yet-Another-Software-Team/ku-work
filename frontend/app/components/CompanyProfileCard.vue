@@ -50,7 +50,7 @@
         <hr class="my-6 border-gray-300 dark:border-gray-600" />
 
         <!-- Bottom Section -->
-            <div class="flex flex-wrap md:flex-nowrap text-xl overflow-x-hidden">
+        <div class="flex flex-wrap md:flex-nowrap text-xl overflow-x-hidden">
             <!-- Connections -->
             <div class="w-[12rem] mr-5 mb-5">
                 <h3 class="font-semibold text-gray-800 dark:text-white mb-2">Connections</h3>
@@ -96,8 +96,10 @@
             <!-- About Me -->
             <div class="flex-1 overflow-x-hidden">
                 <h3 class="font-semibold text-gray-800 dark:text-white mb-2">About us</h3>
-                <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap break-all overflow-x-hidden max-w-full">
-                    {{ profile.about || 'None' }}
+                <p
+                    class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap break-all overflow-x-hidden max-w-full"
+                >
+                    {{ profile.about || "None" }}
                 </p>
             </div>
         </div>

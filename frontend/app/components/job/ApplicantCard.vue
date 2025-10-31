@@ -47,7 +47,10 @@
                                 </span>
                             </div>
                         </div>
-                        <hr v-if="hasSocial" class="border-gray-200 dark:border-gray-600 m-5 w-full" />
+                        <hr
+                            v-if="hasSocial"
+                            class="border-gray-200 dark:border-gray-600 m-5 w-full"
+                        />
                         <ul v-if="hasSocial">
                             <li v-if="data.linkedIn">
                                 <a
@@ -78,7 +81,11 @@
                 <div v-if="data.files && data.files.length" class="r-card">
                     <div class="flex justify-between items-center">
                         <span class="text-xl">Resume</span>
-                        <a :href="`${config.public.apiBaseUrl}/files/${data.files[0].id}`" target="_blank" aria-label="Download resume">
+                        <a
+                            :href="`${config.public.apiBaseUrl}/files/${data.files[0].id}`"
+                            target="_blank"
+                            aria-label="Download resume"
+                        >
                             <Icon
                                 name="ic:outline-file-download"
                                 class="size-[2em] hover:text-primary transition-all duration-200"
@@ -92,19 +99,30 @@
                 <div class="r-card">
                     <div class="flex flex-col text-xl text-left whitespace-normal">
                         <p class="mt-2 text-gray-800 dark:text-gray-200 font-semibold">
-                            Age: <span class="font-normal text-gray-600 dark:text-gray-300">{{ age }}</span>
+                            Age:
+                            <span class="font-normal text-gray-600 dark:text-gray-300">{{
+                                age
+                            }}</span>
                         </p>
                         <p class="text-gray-800 dark:text-gray-200 font-semibold">
-                            Phone: <span class="font-normal text-gray-600 dark:text-gray-300">{{ data.phone }}</span>
+                            Phone:
+                            <span class="font-normal text-gray-600 dark:text-gray-300">{{
+                                data.phone
+                            }}</span>
                         </p>
                         <p class="text-gray-800 dark:text-gray-200 font-semibold">
-                            Email: <span class="font-normal text-gray-600 dark:text-gray-300">{{ data.email }}</span>
+                            Email:
+                            <span class="font-normal text-gray-600 dark:text-gray-300">{{
+                                data.email
+                            }}</span>
                         </p>
                     </div>
                 </div>
                 <div class="r-card">
                     <div class="flex flex-col text-left">
-                        <h3 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-3">About me</h3>
+                        <h3 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-3">
+                            About me
+                        </h3>
                         <p class="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
                             {{ aboutMeDisplay }}
                         </p>

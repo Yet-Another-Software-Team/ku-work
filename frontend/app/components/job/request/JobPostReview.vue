@@ -50,13 +50,32 @@
                     >
                         <UCard
                             title="Reject Post?"
-                            :ui="{ header: 'pb-2', title: 'text-xl font-semibold text-primary-800 dark:text-primary' }"
+                            :ui="{
+                                header: 'pb-2',
+                                title: 'text-xl font-semibold text-primary-800 dark:text-primary',
+                            }"
                         >
-                            <p>Are you sure you want to <strong>decline</strong> {{ job?.name }}?</p>
+                            <p>
+                                Are you sure you want to <strong>decline</strong> {{ job?.name }}?
+                            </p>
                             <template #footer>
                                 <div class="flex justify-end gap-2">
-                                    <UButton variant="outline" color="neutral" label="Cancel" @click="showRejectModal = false" />
-                                    <UButton color="error" label="Decline" @click="() => { declineJob(); showRejectModal = false; }" />
+                                    <UButton
+                                        variant="outline"
+                                        color="neutral"
+                                        label="Cancel"
+                                        @click="showRejectModal = false"
+                                    />
+                                    <UButton
+                                        color="error"
+                                        label="Decline"
+                                        @click="
+                                            () => {
+                                                declineJob();
+                                                showRejectModal = false;
+                                            }
+                                        "
+                                    />
                                 </div>
                             </template>
                         </UCard>
@@ -76,13 +95,30 @@
                     >
                         <UCard
                             title="Accept Post?"
-                            :ui="{ header: 'pb-2', title: 'text-xl font-semibold text-primary-800 dark:text-primary' }"
+                            :ui="{
+                                header: 'pb-2',
+                                title: 'text-xl font-semibold text-primary-800 dark:text-primary',
+                            }"
                         >
                             <p>Are you sure you want to <strong>accept</strong> {{ job?.name }}?</p>
                             <template #footer>
                                 <div class="flex justify-end gap-2">
-                                    <UButton variant="outline" color="neutral" label="Cancel" @click="showAcceptModal = false" />
-                                    <UButton color="primary" label="Accept" @click="() => { approveJob(); showAcceptModal = false; }" />
+                                    <UButton
+                                        variant="outline"
+                                        color="neutral"
+                                        label="Cancel"
+                                        @click="showAcceptModal = false"
+                                    />
+                                    <UButton
+                                        color="primary"
+                                        label="Accept"
+                                        @click="
+                                            () => {
+                                                approveJob();
+                                                showAcceptModal = false;
+                                            }
+                                        "
+                                    />
                                 </div>
                             </template>
                         </UCard>

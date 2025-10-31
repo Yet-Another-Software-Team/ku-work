@@ -298,18 +298,20 @@ const { add: addToast } = useToast();
 const config = useRuntimeConfig();
 
 // Shared tab class helpers (match job detail page)
-function classesFor(active: boolean, kind: 'pending'|'accepted'|'rejected'): string {
+function classesFor(active: boolean, kind: "pending" | "accepted" | "rejected"): string {
     if (active) {
-        if (kind === 'pending') return 'bg-yellow-200 flex flex-col border rounded-3xl w-1/3 text-yellow-800 hover:bg-yellow-300';
-        if (kind === 'accepted') return 'bg-green-200 flex flex-col border rounded-3xl w-1/3 text-primary-800 hover:bg-primary-300';
-        return 'bg-error-200 flex flex-col border rounded-3xl w-1/3 text-error-800 hover:bg-error-300';
+        if (kind === "pending")
+            return "bg-yellow-200 flex flex-col border rounded-3xl w-1/3 text-yellow-800 hover:bg-yellow-300";
+        if (kind === "accepted")
+            return "bg-green-200 flex flex-col border rounded-3xl w-1/3 text-primary-800 hover:bg-primary-300";
+        return "bg-error-200 flex flex-col border rounded-3xl w-1/3 text-error-800 hover:bg-error-300";
     }
-    return 'bg-gray-200 flex flex-col border rounded-3xl w-1/3 text-gray-500 hover:bg-gray-300';
+    return "bg-gray-200 flex flex-col border rounded-3xl w-1/3 text-gray-500 hover:bg-gray-300";
 }
-function companyTabClasses(tab: 'pending'|'accepted'|'rejected') {
+function companyTabClasses(tab: "pending" | "accepted" | "rejected") {
     return classesFor(companyActiveTab.value === tab, tab);
 }
-function studentTabClasses(tab: 'pending'|'accepted'|'rejected') {
+function studentTabClasses(tab: "pending" | "accepted" | "rejected") {
     return classesFor(activeTab.value === tab, tab);
 }
 
@@ -376,9 +378,13 @@ const filteredJobs = computed(() => {
     const list = [...data.value];
     switch (companySortBy.value) {
         case "latest":
-            return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            return list.sort(
+                (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
         case "oldest":
-            return list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+            return list.sort(
+                (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            );
         case "name_az":
             return list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
         case "name_za":

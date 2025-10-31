@@ -88,7 +88,9 @@
             <!-- About Me -->
             <div class="flex-1">
                 <h3 class="font-semibold text-gray-800 dark:text-white mb-2">About me</h3>
-                <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap break-words overflow-x-hidden">
+                <p
+                    class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap break-words overflow-x-hidden"
+                >
                     {{ aboutMeDisplay }}
                 </p>
             </div>
@@ -200,9 +202,7 @@ onMounted(async () => {
 const hasLinkedIn = computed(
     () => !!profile.value.linkedIn && profile.value.linkedIn.trim() !== ""
 );
-const hasGitHub = computed(
-    () => !!profile.value.github && profile.value.github.trim() !== ""
-);
+const hasGitHub = computed(() => !!profile.value.github && profile.value.github.trim() !== "");
 const hasAnyConnection = computed(() => hasLinkedIn.value || hasGitHub.value);
 
 function extractLabel(url?: string) {

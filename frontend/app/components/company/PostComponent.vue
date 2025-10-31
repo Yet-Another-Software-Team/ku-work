@@ -1,5 +1,7 @@
 <template>
-    <div class="sticky top-0 bg-white dark:bg-black overflow-y-auto overflow-x-hidden max-h-dvh rounded-xl shadow-md p-5">
+    <div
+        class="sticky top-0 bg-white dark:bg-black overflow-y-auto overflow-x-hidden max-h-dvh rounded-xl shadow-md p-5"
+    >
         <!-- First section -->
         <div class="flex mb-7 justify-between items-center">
             <!-- Top Left Side -->
