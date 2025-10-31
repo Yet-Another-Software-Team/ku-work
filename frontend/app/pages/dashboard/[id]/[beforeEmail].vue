@@ -1,5 +1,5 @@
 <template>
-    <div class="mt-5">
+    <div class="mt-5 container mx-auto max-w-7xl px-4">
         <ApplicantCard
             v-if="applicantData"
             :data="applicantData"
@@ -7,6 +7,7 @@
             @status-changed="statusChanged"
         />
     </div>
+    
 </template>
 
 <script lang="ts" setup>

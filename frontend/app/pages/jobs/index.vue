@@ -1,6 +1,6 @@
 <template>
     <div class="flex">
-        <section class="w-full">
+        <section class="w-full h-dvh overflow-y-auto pr-2">
             <!-- Title -->
             <section class="sticky top-0 z-20 bg-[#F7F8F4] dark:bg-neutral-900 pt-5 pb-2">
                 <h1

@@ -2,7 +2,7 @@
     <div class="rounded-lg">
         <NuxtLink :to="`/dashboard/${route.params.id}`">
             <h1
-                class="flex items-center text-5xl text-primary-800 dark:text-primary font-bold mb-6 gap-2 cursor-pointer"
+                class="flex items-center text-2xl text-primary-800 dark:text-primary font-bold mb-6 gap-2 cursor-pointer"
             >
                 <Icon name="iconoir:nav-arrow-left" class="items-center" />
                 <span>Back</span>
@@ -28,7 +28,7 @@
                                 class="size-full text-gray-400"
                             />
                         </div>
-                        <div class="text-xl mt-5">
+                        <div class="text-xl mt-5 text-center">
                             <h2 class="text-2xl font-semibold text-gray-900 dark:text-[#FDFDFD]">
                                 {{ data.username }}
                             </h2>
@@ -47,8 +47,8 @@
                                 </span>
                             </div>
                         </div>
-                        <hr class="border-gray-500 dark:border-gray-600 m-5 w-full" />
-                        <ul>
+                        <hr v-if="hasSocial" class="border-gray-200 dark:border-gray-600 m-5 w-full" />
+                        <ul v-if="hasSocial">
                             <li v-if="data.linkedIn">
                                 <a
                                     :href="data.linkedIn"
@@ -75,14 +75,10 @@
                         </ul>
                     </div>
                 </div>
-                <div class="r-card">
-                    <div
-                        v-for="(file, index) in data.files"
-                        :key="file.id"
-                        class="flex justify-between items-center mb-2"
-                    >
-                        <span class="text-xl">File {{ index + 1 }}</span>
-                        <a :href="`${config.public.apiBaseUrl}/files/${file.id}`" target="_blank">
+                <div v-if="data.files && data.files.length" class="r-card">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xl">Resume</span>
+                        <a :href="`${config.public.apiBaseUrl}/files/${data.files[0].id}`" target="_blank" aria-label="Download resume">
                             <Icon
                                 name="ic:outline-file-download"
                                 class="size-[2em] hover:text-primary transition-all duration-200"
@@ -96,20 +92,21 @@
                 <div class="r-card">
                     <div class="flex flex-col text-xl text-left whitespace-normal">
                         <p class="mt-2 text-gray-800 dark:text-gray-200 font-semibold">
-                            Age: <span class="font-normal">{{ age }}</span>
+                            Age: <span class="font-normal text-gray-600 dark:text-gray-300">{{ age }}</span>
                         </p>
                         <p class="text-gray-800 dark:text-gray-200 font-semibold">
-                            Phone: <span class="font-normal">{{ data.phone }}</span>
+                            Phone: <span class="font-normal text-gray-600 dark:text-gray-300">{{ data.phone }}</span>
                         </p>
                         <p class="text-gray-800 dark:text-gray-200 font-semibold">
-                            Email: <span class="font-normal">{{ data.email }}</span>
+                            Email: <span class="font-normal text-gray-600 dark:text-gray-300">{{ data.email }}</span>
                         </p>
                     </div>
                 </div>
                 <div class="r-card">
-                    <div class="flex flex-col text-xl text-left">
-                        <p class="text-gray-800 dark:text-gray-200 font-semibold">
-                            <span class="font-normal">{{ data.aboutMe }}</span>
+                    <div class="flex flex-col text-left">
+                        <h3 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-3">About me</h3>
+                        <p class="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+                            {{ aboutMeDisplay }}
                         </p>
                     </div>
                 </div>
@@ -117,7 +114,7 @@
                 <div class="flex gap-5">
                     <span class="c-ubutton w-full sm:w-1/2">
                         <UButton
-                            class="size-full font-bold p-1 rounded flex items-center gap-1 px-2 text-xl cursor-pointer"
+                            class="size-full font-bold p-1 rounded flex items-center gap-1 px-2 text-xl"
                             variant="outline"
                             color="error"
                             label="Reject"
@@ -136,14 +133,12 @@
                                 <div class="flex flex-col gap-2">
                                     <div class="flex justify-end gap-2">
                                         <UButton
-                                            class="cursor-pointer"
                                             variant="outline"
                                             color="neutral"
                                             label="Cancel"
                                             @click="closeModal"
                                         />
                                         <UButton
-                                            class="cursor-pointer"
                                             variant="solid"
                                             color="error"
                                             label="Reject"
@@ -161,10 +156,10 @@
                     </span>
                     <span class="c-ubutton w-full sm:w-1/2">
                         <UButton
-                            class="size-full font-bold p-1 rounded flex items-center gap-1 px-2 text-xl cursor-pointer"
+                            class="size-full font-bold p-1 rounded flex items-center gap-1 px-2 text-xl"
                             variant="outline"
-                            color="primary"
-                            label="Accept"
+                            color="success"
+                            label="Approve"
                             :icon="'iconoir:check'"
                             :disabled="loading"
                             @click="showAcceptModal = true"
@@ -172,7 +167,7 @@
                         <UModal v-model:open="showAcceptModal">
                             <template #header>
                                 <p>
-                                    Are you sure you want to <strong>accept</strong>
+                                    Are you sure you want to <strong>approve</strong>
                                     {{ data.username }}?
                                 </p>
                             </template>
@@ -180,17 +175,15 @@
                                 <div class="flex flex-col gap-2">
                                     <div class="flex justify-end gap-2">
                                         <UButton
-                                            class="cursor-pointer"
                                             variant="outline"
                                             color="neutral"
                                             label="Cancel"
                                             @click="closeModal"
                                         />
                                         <UButton
-                                            class="cursor-pointer"
                                             variant="solid"
-                                            color="primary"
-                                            label="Accept"
+                                            color="success"
+                                            label="Approve"
                                             @click="
                                                 () => {
                                                     updateStatus('accepted');
@@ -236,6 +229,8 @@ const emit = defineEmits(["status-changed"]);
 const route = useRoute();
 const config = useRuntimeConfig();
 
+const hasSocial = computed(() => !!(props.data?.linkedIn || props.data?.github));
+
 const age = computed(() => {
     if (!props.data?.birthDate) return "N/A"; // Return default value if no date
     const birth = new Date(props.data.birthDate);
@@ -261,6 +256,10 @@ const statusBadgeClass = computed(() => {
             return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
     }
 });
+const aboutMeDisplay = computed(() => {
+    const v = (props.data?.aboutMe as string) || "";
+    return v.trim() === "" ? "None" : v;
+});
 
 async function updateStatus(status: "accepted" | "rejected") {
     emit("status-changed", status);
@@ -268,26 +267,5 @@ async function updateStatus(status: "accepted" | "rejected") {
 </script>
 
 <style scoped>
-/* Styles remain the same */
-.r-card {
-    box-shadow:
-        0 4px 6px -1px rgba(0, 0, 0, 0.2),
-        0 2px 4px -2px rgba(0, 0, 0, 0.2);
-    text-align: center;
-    padding: 1.25rem;
-    border-radius: 0.5rem;
-    background-color: #fdfdfd;
-}
-
-.dark .r-card {
-    background-color: #1f2937;
-}
-
-.c-ubutton {
-    background-color: #fdfdfd;
-}
-
-.dark .c-ubutton {
-    background-color: #1f2937;
-}
+/* component-specific styles (shared styles moved to main.css) */
 </style>

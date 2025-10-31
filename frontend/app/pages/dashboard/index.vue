@@ -16,52 +16,50 @@
                 Company Dashboard
             </h1>
 
-            <!-- Tab Navigation -->
-            <div class="relative mb-8">
-                <div class="flex items-end gap-0">
-                    <button
-                        class="px-8 py-4 text-lg font-medium transition-all rounded-t-2xl border-2 border-b-0"
-                        :class="
-                            companyActiveTab === 'accepted'
-                                ? 'bg-primary-500 text-white border-primary-500 z-10'
-                                : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600'
-                        "
+            <!-- Tab Navigation (match job detail tabs) -->
+            <section class="h-[3em] overflow-hidden border-b-1 my-5">
+                <div class="flex flex-row gap-2 h-[6em] max-w-[40em] left-0 top-0">
+                    <div
+                        class="hover:cursor-pointer transition-all duration-150 text-center"
+                        :class="companyTabClasses('accepted')"
                         @click="companyActiveTab = 'accepted'"
                     >
-                        Accepted
-                    </button>
-                    <button
-                        class="px-8 py-4 text-lg font-medium transition-all rounded-t-2xl border-2 border-b-0 -ml-px"
-                        :class="
-                            companyActiveTab === 'pending'
-                                ? 'bg-warning-500 text-white border-warning-500 z-10'
-                                : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600'
-                        "
+                        <p class="font-bold px-5 py-1 text-2xl">Accepted</p>
+                    </div>
+                    <div
+                        class="hover:cursor-pointer transition-all duration-150 text-center"
+                        :class="companyTabClasses('pending')"
                         @click="companyActiveTab = 'pending'"
                     >
-                        In Progress
-                    </button>
-                    <button
-                        class="px-8 py-4 text-lg font-medium transition-all rounded-t-2xl border-2 border-b-0 -ml-px"
-                        :class="
-                            companyActiveTab === 'rejected'
-                                ? 'bg-error-500 text-white border-error-500 z-10'
-                                : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600'
-                        "
+                        <p class="font-bold px-5 py-1 text-2xl">In Progress</p>
+                    </div>
+                    <div
+                        class="hover:cursor-pointer transition-all duration-150 text-center"
+                        :class="companyTabClasses('rejected')"
                         @click="companyActiveTab = 'rejected'"
                     >
-                        Rejected
-                    </button>
+                        <p class="font-bold px-5 py-1 text-2xl">Rejected</p>
+                    </div>
                 </div>
-                <div class="border-b-2 border-gray-300 dark:border-gray-600 -mt-0.5"></div>
-            </div>
+            </section>
 
             <!-- Job Count -->
             <div class="flex items-center justify-between mb-5">
                 <p class="text-lg font-semibold text-gray-700 dark:text-gray-300">
                     {{ totalJobs }} Jobs
                 </p>
+                <div class="flex items-center gap-2">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Sort by:</span>
+                    <USelectMenu
+                        v-model="companySortBy"
+                        :options="companySortOptions"
+                        value-attribute="value"
+                        option-attribute="label"
+                        class="w-40"
+                    />
+                </div>
             </div>
+            <hr class="w-full my-5" />
 
             <div class="flex flex-wrap gap-10">
                 <div v-if="filteredJobs.length === 0" class="w-full text-center py-10">
@@ -133,45 +131,32 @@
                 Student Dashboard
             </h1>
 
-            <!-- Tab Navigation -->
-            <div class="relative mb-8">
-                <div class="flex items-end gap-0">
-                    <button
-                        class="px-8 py-4 text-lg font-medium transition-all rounded-t-2xl border-2 border-b-0"
-                        :class="
-                            activeTab === 'accepted'
-                                ? 'bg-primary-500 text-white border-primary-500 z-10'
-                                : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600'
-                        "
+            <!-- Tab Navigation (match job detail tabs) -->
+            <section class="h-[3em] overflow-hidden border-b-1 my-5">
+                <div class="flex flex-row gap-2 h-[6em] max-w-[40em] left-0 top-0">
+                    <div
+                        class="hover:cursor-pointer transition-all duration-150 text-center"
+                        :class="studentTabClasses('accepted')"
                         @click="activeTab = 'accepted'"
                     >
-                        Accepted
-                    </button>
-                    <button
-                        class="px-8 py-4 text-lg font-medium transition-all rounded-t-2xl border-2 border-b-0 -ml-px"
-                        :class="
-                            activeTab === 'pending'
-                                ? 'bg-warning-500 text-white border-warning-500 z-10'
-                                : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600'
-                        "
+                        <p class="font-bold px-5 py-1 text-2xl">Accepted</p>
+                    </div>
+                    <div
+                        class="hover:cursor-pointer transition-all duration-150 text-center"
+                        :class="studentTabClasses('pending')"
                         @click="activeTab = 'pending'"
                     >
-                        In Progress
-                    </button>
-                    <button
-                        class="px-8 py-4 text-lg font-medium transition-all rounded-t-2xl border-2 border-b-0 -ml-px"
-                        :class="
-                            activeTab === 'rejected'
-                                ? 'bg-error-500 text-white border-error-500 z-10'
-                                : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600'
-                        "
+                        <p class="font-bold px-5 py-1 text-2xl">In Progress</p>
+                    </div>
+                    <div
+                        class="hover:cursor-pointer transition-all duration-150 text-center"
+                        :class="studentTabClasses('rejected')"
                         @click="activeTab = 'rejected'"
                     >
-                        Rejected
-                    </button>
+                        <p class="font-bold px-5 py-1 text-2xl">Rejected</p>
+                    </div>
                 </div>
-                <div class="border-b-2 border-gray-300 dark:border-gray-600 -mt-0.5"></div>
-            </div>
+            </section>
 
             <!-- Application Count and Sort -->
             <div class="flex items-center justify-between mb-5">
@@ -189,6 +174,7 @@
                     />
                 </div>
             </div>
+            <hr class="w-full my-5" />
 
             <!-- Applications List -->
             <div v-if="filteredApplications.length === 0" class="text-center py-10">
@@ -299,9 +285,33 @@ const sortOptions = [
     { label: "Date (Oldest)", value: "date-asc" },
 ];
 
+const companySortOptions = [
+    { label: "Latest", value: "latest" },
+    { label: "Oldest", value: "oldest" },
+    { label: "Name A-Z", value: "name_az" },
+    { label: "Name Z-A", value: "name_za" },
+];
+const companySortBy = ref("latest");
+
 const api = useApi();
 const { add: addToast } = useToast();
 const config = useRuntimeConfig();
+
+// Shared tab class helpers (match job detail page)
+function classesFor(active: boolean, kind: 'pending'|'accepted'|'rejected'): string {
+    if (active) {
+        if (kind === 'pending') return 'bg-yellow-200 flex flex-col border rounded-3xl w-1/3 text-yellow-800 hover:bg-yellow-300';
+        if (kind === 'accepted') return 'bg-green-200 flex flex-col border rounded-3xl w-1/3 text-primary-800 hover:bg-primary-300';
+        return 'bg-error-200 flex flex-col border rounded-3xl w-1/3 text-error-800 hover:bg-error-300';
+    }
+    return 'bg-gray-200 flex flex-col border rounded-3xl w-1/3 text-gray-500 hover:bg-gray-300';
+}
+function companyTabClasses(tab: 'pending'|'accepted'|'rejected') {
+    return classesFor(companyActiveTab.value === tab, tab);
+}
+function studentTabClasses(tab: 'pending'|'accepted'|'rejected') {
+    return classesFor(activeTab.value === tab, tab);
+}
 
 const fetchJobs = async () => {
     // Only fetch jobs for companies
@@ -363,7 +373,19 @@ const filteredApplications = computed(() => {
 
 // No need to filter since backend already filters by approval status
 const filteredJobs = computed(() => {
-    return data.value;
+    const list = [...data.value];
+    switch (companySortBy.value) {
+        case "latest":
+            return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        case "oldest":
+            return list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        case "name_az":
+            return list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+        case "name_za":
+            return list.sort((a, b) => (b.name || "").localeCompare(a.name || ""));
+        default:
+            return list;
+    }
 });
 
 // Watch sortBy changes and refetch data

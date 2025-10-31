@@ -3,7 +3,7 @@
         <!-- Header -->
         <a href="/admin/dashboard">
             <h1
-                class="flex items-center text-5xl text-primary-800 dark:text-primary font-bold mb-6 gap-2 cursor-pointer"
+                class="flex items-center text-2xl text-primary-800 dark:text-primary font-bold mt-6 mb-4 gap-1 cursor-pointer"
             >
                 <Icon name="iconoir:nav-arrow-left" class="items-center" />
                 <span>Back</span>
@@ -38,7 +38,7 @@
                         <h1 class="text-xl font-bold">{{ job.name }}</h1>
                         <span>
                             <NuxtLink :to="`/jobs/company?id=${job.companyId}`">
-                                <h2 class="text-primary-700 text-md font-semibold">
+                                <h2 class="text-primary-700 text-base font-semibold">
                                     {{ job.companyName }}
                                 </h2>
                             </NuxtLink>
@@ -115,8 +115,27 @@
                             label="Decline"
                             :icon="'iconoir:xmark'"
                             :loading="actionLoading === 'decline'"
-                            @click.stop="declineRequest"
+                            @click.stop="showRejectModal = true"
                         />
+                        <UModal
+                            v-model:open="showRejectModal"
+                            :dismissible="false"
+                            :ui="{ overlay: 'fixed inset-0 bg-black/50' }"
+                        >
+                            <UCard
+                                title="Reject Post?"
+                                :ui="{ header: 'pb-2', title: 'text-xl font-semibold text-primary-800 dark:text-primary' }"
+                            >
+                                <p>Are you sure you want to <strong>decline</strong> {{ job?.name }}?</p>
+                                <template #footer>
+                                    <div class="flex justify-end gap-2">
+                                        <UButton variant="outline" color="neutral" label="Cancel" @click="showRejectModal = false" />
+                                        <UButton color="error" label="Decline" @click="() => { declineRequest(); showRejectModal = false; }" />
+                                    </div>
+                                </template>
+                            </UCard>
+                        </UModal>
+
                         <UButton
                             class="size-full font-bold p-1 rounded flex items-center gap-1 px-2 text-xl"
                             variant="outline"
@@ -124,8 +143,26 @@
                             label="Accept"
                             :icon="'iconoir:check'"
                             :loading="actionLoading === 'accept'"
-                            @click.stop="acceptRequest"
+                            @click.stop="showAcceptModal = true"
                         />
+                        <UModal
+                            v-model:open="showAcceptModal"
+                            :dismissible="false"
+                            :ui="{ overlay: 'fixed inset-0 bg-black/50' }"
+                        >
+                            <UCard
+                                title="Accept Post?"
+                                :ui="{ header: 'pb-2', title: 'text-xl font-semibold text-primary-800 dark:text-primary' }"
+                            >
+                                <p>Are you sure you want to <strong>accept</strong> {{ job?.name }}?</p>
+                                <template #footer>
+                                    <div class="flex justify-end gap-2">
+                                        <UButton variant="outline" color="neutral" label="Cancel" @click="showAcceptModal = false" />
+                                        <UButton color="primary" label="Accept" @click="() => { acceptRequest(); showAcceptModal = false; }" />
+                                    </div>
+                                </template>
+                            </UCard>
+                        </UModal>
                     </div>
                 </div>
             </div>
@@ -142,7 +179,11 @@ const config = useRuntimeConfig();
 const toast = useToast();
 
 const isLoading = ref(true);
-const actionLoading = ref<"accept" | "decline" | null>(null);
+
+
+const showAcceptModal = ref(false);
+const showRejectModal = ref(false);
+
 const job = ref<JobPost | null>(null);
 const photo = ref<string>("");
 

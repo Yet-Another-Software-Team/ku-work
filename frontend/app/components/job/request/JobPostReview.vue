@@ -2,7 +2,7 @@
     <div :id="'Job-' + requestId" class="flex justify-center items-center w-[28em] h-full">
         <!-- card container is clickable -->
         <div
-            class="flex items-stretch w-full h-[7em] m-2 shadow-md/20 bg-[#fdfdfd] dark:bg-[#1f2937] rounded-md cursor-pointer"
+            class="flex items-stretch w-full h-[7em] m-2 shadow-md bg-[#fdfdfd] dark:bg-[#1f2937] rounded-md cursor-pointer"
             @click="() => navigateToJob(requestId)"
         >
             <!-- logo / image -->
@@ -11,13 +11,13 @@
                     v-if="logoSrc"
                     :src="logoSrc"
                     alt="Company Logo"
-                    class="w-17 h-17 object-cover rounded-md justify-center items-center m-2"
+                    class="w-16 h-16 object-cover rounded-md justify-center items-center m-2"
                 />
                 <img
                     v-else
                     src="/images/company.png"
                     alt="Company Logo"
-                    class="w-17 h-17 object-cover rounded-md m-2"
+                    class="w-16 h-16 object-cover rounded-md m-2"
                 />
             </div>
 
@@ -41,16 +41,52 @@
                         color="error"
                         label="Decline"
                         :icon="'iconoir:xmark'"
-                        @click.stop="declineJob"
+                        @click.stop="showRejectModal = true"
                     />
+                    <UModal
+                        v-model:open="showRejectModal"
+                        :dismissible="false"
+                        :ui="{ overlay: 'fixed inset-0 bg-black/50' }"
+                    >
+                        <UCard
+                            title="Reject Post?"
+                            :ui="{ header: 'pb-2', title: 'text-xl font-semibold text-primary-800 dark:text-primary' }"
+                        >
+                            <p>Are you sure you want to <strong>decline</strong> {{ job?.name }}?</p>
+                            <template #footer>
+                                <div class="flex justify-end gap-2">
+                                    <UButton variant="outline" color="neutral" label="Cancel" @click="showRejectModal = false" />
+                                    <UButton color="error" label="Decline" @click="() => { declineJob(); showRejectModal = false; }" />
+                                </div>
+                            </template>
+                        </UCard>
+                    </UModal>
                     <UButton
                         class="font-bold p-1 rounded flex items-center gap-1 w-fit px-2"
                         variant="outline"
                         color="primary"
                         label="Accept"
                         :icon="'iconoir:check'"
-                        @click.stop="approveJob"
+                        @click.stop="showAcceptModal = true"
                     />
+                    <UModal
+                        v-model:open="showAcceptModal"
+                        :dismissible="false"
+                        :ui="{ overlay: 'fixed inset-0 bg-black/50' }"
+                    >
+                        <UCard
+                            title="Accept Post?"
+                            :ui="{ header: 'pb-2', title: 'text-xl font-semibold text-primary-800 dark:text-primary' }"
+                        >
+                            <p>Are you sure you want to <strong>accept</strong> {{ job?.name }}?</p>
+                            <template #footer>
+                                <div class="flex justify-end gap-2">
+                                    <UButton variant="outline" color="neutral" label="Cancel" @click="showAcceptModal = false" />
+                                    <UButton color="primary" label="Accept" @click="() => { approveJob(); showAcceptModal = false; }" />
+                                </div>
+                            </template>
+                        </UCard>
+                    </UModal>
                 </div>
             </div>
         </div>
@@ -73,6 +109,9 @@ const job = ref<JobPost>(props.data!);
 const api = useApi();
 
 const toast = useToast();
+// Modal visibility state
+const showAcceptModal = ref(false);
+const showRejectModal = ref(false);
 const logoSrc = computed<string>(() =>
     job.value?.photoId ? `${useRuntimeConfig().public.apiBaseUrl}/files/${job.value.photoId}` : ""
 );

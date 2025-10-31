@@ -2,7 +2,7 @@
     <div
         class="rounded-lg my-2 transition-transform duration-200"
         :class="
-            showFilters ? 'border-1 border-primary p-2 bg-[#fdfdfd] dark:bg-[#013B49]' : 'border-0'
+            showFilters ? 'border border-primary p-2 bg-[#fdfdfd] dark:bg-[#013B49]' : 'border-0'
         "
     >
         <!-- If filters are expanded -->

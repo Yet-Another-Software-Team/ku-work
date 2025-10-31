@@ -118,9 +118,9 @@ onMounted(fetchStudents);
 
 function setTailwindClasses(activeCondition: boolean) {
     if (isCompany.value == activeCondition) {
-        return "bg-primary-200 flex flex-col border-1 rounded-3xl w-1/2 text-primary-800 hover:bg-primary-300";
+        return "bg-primary-200 flex flex-col border rounded-3xl w-1/2 text-primary-800 hover:bg-primary-300";
     } else {
-        return "bg-gray-200 flex flex-col border-1 rounded-3xl w-1/2 text-gray-500 hover:bg-gray-300";
+        return "bg-gray-200 flex flex-col border rounded-3xl w-1/2 text-gray-500 hover:bg-gray-300";
     }
 }
 

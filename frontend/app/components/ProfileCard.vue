@@ -86,10 +86,10 @@
             </div>
 
             <!-- About Me -->
-            <div v-if="profile.aboutMe && profile.aboutMe.trim() !== ''" class="flex-1">
+            <div class="flex-1">
                 <h3 class="font-semibold text-gray-800 dark:text-white mb-2">About me</h3>
                 <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap break-words overflow-x-hidden">
-                    {{ profile.aboutMe }}
+                    {{ aboutMeDisplay }}
                 </p>
             </div>
         </div>
@@ -235,5 +235,11 @@ const age = computed(() => {
         years--;
     }
     return years;
+});
+
+// About me fallback
+const aboutMeDisplay = computed(() => {
+    const v = profile.value.aboutMe || "";
+    return v.trim() === "" ? "None" : v;
 });
 </script>

@@ -125,9 +125,9 @@
 
                 <!-- Decision Button -->
                 <div class="flex gap-5">
-                    <span class="c-ubutton w-full sm:w-1/2">
+                    <span class="c-ubutton w-fit">
                         <UButton
-                            class="size-full font-bold p-1 rounded flex items-center gap-1 px-2 text-xl"
+                            class="font-bold p-1 rounded flex items-center gap-1 w-fit px-2"
                             variant="outline"
                             color="error"
                             label="Decline"
@@ -135,9 +135,9 @@
                             @click.stop="declineRequest"
                         />
                     </span>
-                    <span class="c-ubutton w-full sm:w-1/2">
+                    <span class="c-ubutton w-fit">
                         <UButton
-                            class="size-full font-bold p-1 rounded flex items-center gap-1 px-2 text-xl"
+                            class="font-bold p-1 rounded flex items-center gap-1 w-fit px-2"
                             variant="outline"
                             color="primary"
                             label="Accept"
