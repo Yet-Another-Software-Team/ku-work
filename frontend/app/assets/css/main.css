@@ -4,3 +4,13 @@
 @theme {
     --breakpoint-tablet: 770px;
 }
+
+/* Reusable card styling used across pages */
+.r-card {
+    @apply bg-white dark:bg-neutral-800 rounded-xl p-6 shadow-md border border-neutral-200/70 dark:border-neutral-700/60;
+}
+
+/* Optional helper for button containers to make sizing consistent */
+.c-ubutton {
+    @apply inline-flex;
+}

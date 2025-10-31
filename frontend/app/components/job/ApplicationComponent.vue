@@ -1,6 +1,6 @@
 <template>
     <div
-        class="flex items-center shadow-md rounded-xl px-4 py-1 h-[10em] w-[25em] border border-gray-300 dark:border-gray-700 hover:shadow-lg transition-all gap-5"
+        class="flex bg-white dark:bg-[#1f2937] items-center shadow-md rounded-xl px-4 py-1 h-[10em] w-[25em] border border-gray-300 dark:border-gray-700 hover:shadow-lg transition-all gap-5"
     >
         <!-- Left Section -->
         <div class="flex">
