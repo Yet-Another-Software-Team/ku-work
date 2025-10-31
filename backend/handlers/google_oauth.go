@@ -20,18 +20,31 @@ import (
 	"gorm.io/gorm"
 )
 
+// OauthHandlers is a thin HTTP layer that delegates work to an internal service.
 type OauthHandlers struct {
+	service *oauthService
+}
+
+type oauthService struct {
 	DB                *gorm.DB
-	OauthStateString  string
 	GoogleOauthConfig *oauth2.Config
 	JWTHandlers       *JWTHandlers
+	HTTPClient        *http.Client
+}
+
+func newOauthService(db *gorm.DB, jwtHandlers *JWTHandlers, cfg *oauth2.Config) *oauthService {
+	return &oauthService{
+		DB:                db,
+		GoogleOauthConfig: cfg,
+		JWTHandlers:       jwtHandlers,
+		HTTPClient:        &http.Client{Timeout: 10 * time.Second},
+	}
 }
 
 func NewOAuthHandlers(db *gorm.DB, jwtHandlers *JWTHandlers) *OauthHandlers {
 	b := make([]byte, 16)
-	_, rand_err := rand.Read(b)
-	if rand_err != nil {
-		log.Fatalf("Failed to generate random oauth state %v", rand_err)
+	if _, err := rand.Read(b); err != nil {
+		log.Fatalf("failed to generate random oauth state: %v", err)
 	}
 	oauthStateString := base64.URLEncoding.EncodeToString(b)
 
@@ -47,11 +60,10 @@ func NewOAuthHandlers(db *gorm.DB, jwtHandlers *JWTHandlers) *OauthHandlers {
 		log.Fatal("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables are not set")
 	}
 
+	_ = oauthStateString // kept in case future use is needed
+
 	return &OauthHandlers{
-		DB:                db,
-		OauthStateString:  oauthStateString,
-		GoogleOauthConfig: googleOauthConfig,
-		JWTHandlers:       jwtHandlers,
+		service: newOauthService(db, jwtHandlers, googleOauthConfig),
 	}
 }
 
@@ -59,126 +71,125 @@ type oauthToken struct {
 	Code string `json:"code"`
 }
 
-// @Summary Handle Google OAuth login
-// @Description Handles the server-side flow for Google OAuth2. It receives an authorization code from the client, exchanges it for a token with Google, fetches the user's profile information, and then either creates a new user account or logs in an existing user. On success, it returns a JWT token and sets a refresh token cookie.
-// @Tags Authentication
-// @Accept json
-// @Produce json
-// @Param code body oauthToken true "Google Authorization Code"
-// @Success 200 {object} object{token=string, username=string, role=string, userId=string, isRegistered=bool} "Login successful"
-// @Success 201 {object} object{token=string, username=string, role=string, userId=string, isRegistered=bool} "User registration successful"
-// @Failure 400 {object} object{error=string} "Bad Request: Authorization code is required"
-// @Failure 401 {object} object{error=string} "Unauthorized: Invalid access token"
-// @Failure 500 {object} object{error=string} "Internal Server Error"
-// @Router /auth/google/login [post]
-func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
-	// Validate request
-	var req oauthToken
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Authorization code is required"})
-		return
-	}
+type userInfo struct {
+	ID         string `json:"id"`
+	Email      string `json:"email"`
+	Name       string `json:"name"`
+	GivenName  string `json:"given_name"`
+	FamilyName string `json:"family_name"`
+}
 
-	// Exchange authorization code for access token
-	exchange_ctx := context.Background()
-	token, err := h.GoogleOauthConfig.Exchange(exchange_ctx, req.Code)
+// ExchangeCode exchanges an authorization code for an access token.
+func (s *oauthService) ExchangeCode(ctx context.Context, code string) (*oauth2.Token, error) {
+	return s.GoogleOauthConfig.Exchange(ctx, code)
+}
+
+// FetchUserInfo retrieves user info from Google using an access token.
+func (s *oauthService) FetchUserInfo(token *oauth2.Token) (userInfo, int, error) {
+	var ui userInfo
+
+	req, err := http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo", nil)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		return ui, http.StatusInternalServerError, err
 	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
 
-	// Create HTTP client with timeout
-	client := &http.Client{Timeout: 10 * time.Second}
-
-	// Create API request to exchange access token for user info
-	api_req, err := http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo", nil)
+	res, err := s.HTTPClient.Do(req)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		return ui, http.StatusInternalServerError, err
 	}
-	api_req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
+	defer res.Body.Close()
 
-	api_res, err := client.Do(api_req)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+	if res.StatusCode != http.StatusOK {
+		return ui, http.StatusUnauthorized, fmt.Errorf("access token invalid or expired")
 	}
 
-	// Close API body
-	defer func() {
-		if err := api_res.Body.Close(); err != nil {
-			fmt.Println("Error closing response body:", err)
-		}
-	}()
-
-	// Check if API request was successful
-	if api_res.StatusCode != http.StatusOK {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Access Token is invalid, expired or insufficient"})
-		return
+	if err := json.NewDecoder(res.Body).Decode(&ui); err != nil {
+		return ui, http.StatusInternalServerError, err
 	}
+	return ui, http.StatusOK, nil
+}
 
-	// Parse user info from API response
-	type UserInfo struct {
-		ID         string `json:"id"`
-		Email      string `json:"email"`
-		Name       string `json:"name"`
-		GivenName  string `json:"given_name"`
-		FamilyName string `json:"family_name"`
-	}
-
-	var userInfo UserInfo
-	if err := json.NewDecoder(api_res.Body).Decode(&userInfo); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Check if this user already exists on the DB via their external ID.
-	var userCount int64
-	h.DB.Model(&model.GoogleOAuthDetails{}).Where("external_id = ?", userInfo.ID).Count(&userCount)
-
+// EnsureUser creates or updates local user records based on external user info.
+func (s *oauthService) EnsureUser(ui userInfo) (model.User, model.GoogleOAuthDetails, int, error) {
 	var oauthDetail model.GoogleOAuthDetails
+	var status = http.StatusOK
 
-	// User is not exist, registerings
-	status := http.StatusOK
+	var count int64
+	if err := s.DB.Model(&model.GoogleOAuthDetails{}).Where("external_id = ?", ui.ID).Count(&count).Error; err != nil {
+		return model.User{}, oauthDetail, http.StatusInternalServerError, err
+	}
 
-	if userCount == 0 {
+	if count == 0 {
 		var newUser model.User
-		h.DB.FirstOrCreate(&newUser, model.User{
-			Username: userInfo.Email,
+		if err := s.DB.FirstOrCreate(&newUser, model.User{
+			Username: ui.Email,
 			UserType: "oauth",
-		})
+		}).Error; err != nil {
+			return model.User{}, oauthDetail, http.StatusInternalServerError, err
+		}
 
 		oauthDetail = model.GoogleOAuthDetails{
 			UserID:     newUser.ID,
-			ExternalID: userInfo.ID,
-			FirstName:  userInfo.GivenName,
-			LastName:   userInfo.FamilyName,
-			Email:      userInfo.Email,
+			ExternalID: ui.ID,
+			FirstName:  ui.GivenName,
+			LastName:   ui.FamilyName,
+			Email:      ui.Email,
 		}
-		h.DB.Create(&oauthDetail)
+		if err := s.DB.Create(&oauthDetail).Error; err != nil {
+			return model.User{}, oauthDetail, http.StatusInternalServerError, err
+		}
 		status = http.StatusCreated
+	} else {
+		// load existing and update fields
+		if err := s.DB.Model(&model.GoogleOAuthDetails{}).Where("external_id = ?", ui.ID).First(&oauthDetail).Error; err != nil {
+			return model.User{}, oauthDetail, http.StatusInternalServerError, err
+		}
+		oauthDetail.FirstName = ui.GivenName
+		oauthDetail.LastName = ui.FamilyName
+		oauthDetail.Email = ui.Email
+		if err := s.DB.Save(&oauthDetail).Error; err != nil {
+			return model.User{}, oauthDetail, http.StatusInternalServerError, err
+		}
 	}
 
-	// Update user details if necessary, to keep them up-to-date
-	if oauthDetail.UserID != "" {
-		h.DB.Model(&oauthDetail).Updates(model.GoogleOAuthDetails{
-			FirstName: userInfo.GivenName,
-			LastName:  userInfo.FamilyName,
-			Email:     userInfo.Email,
-		})
-	}
-
-	// Get updated oauthDetail
-	h.DB.Model(&model.GoogleOAuthDetails{}).Where("external_id = ?", userInfo.ID).First(&oauthDetail)
-
-	// getUser model and return JWT Token to frontend.
 	var user model.User
-	h.DB.Model(&user).Where("id = ?", oauthDetail.UserID).First(&user)
+	if err := s.DB.Model(&user).Where("id = ?", oauthDetail.UserID).First(&user).Error; err != nil {
+		return model.User{}, oauthDetail, http.StatusInternalServerError, err
+	}
 
-	//Return JWT Token to context
-	jwtToken, refreshToken, err := h.JWTHandlers.HandleToken(user)
+	return user, oauthDetail, status, nil
+}
+
+// GoogleOauthHandler handles the HTTP request; it keeps the handler small and delegates the work.
+func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
+	var req oauthToken
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "authorization code is required"})
+		return
+	}
+
+	token, err := h.service.ExchangeCode(context.Background(), req.Code)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate JWT token"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ui, code, err := h.service.FetchUserInfo(token)
+	if err != nil {
+		ctx.JSON(code, gin.H{"error": err.Error()})
+		return
+	}
+
+	user, oauthDetail, status, err := h.service.EnsureUser(ui)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	jwtToken, refreshToken, err := h.service.JWTHandlers.HandleToken(user)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate jwt token"})
 		return
 	}
 
@@ -189,16 +200,18 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 	username := oauthDetail.FirstName + " " + oauthDetail.LastName
 	role := helper.Viewer
 	isRegistered := false
+
 	if status == http.StatusOK {
-		// Check if user is a valid and approved student
 		var count int64
-		h.DB.Model(&model.Student{}).Where("user_id = ?", user.ID).Count(&count)
-		isRegistered = count > 0
-		if count > 0 {
-			var student model.Student
-			h.DB.Model(&student).Where("user_id = ?", user.ID).First(&student)
-			if student.ApprovalStatus == model.StudentApprovalAccepted {
-				role = helper.Student
+		if err := h.service.DB.Model(&model.Student{}).Where("user_id = ?", user.ID).Count(&count).Error; err == nil {
+			isRegistered = count > 0
+			if count > 0 {
+				var student model.Student
+				if err := h.service.DB.Model(&student).Where("user_id = ?", user.ID).First(&student).Error; err == nil {
+					if student.ApprovalStatus == model.StudentApprovalAccepted {
+						role = helper.Student
+					}
+				}
 			}
 		}
 	}
@@ -208,6 +221,6 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 		"username":     username,
 		"role":         role,
 		"userId":       user.ID,
-		"isRegistered": isRegistered, // To tell frontend whether user is registered or not
+		"isRegistered": isRegistered,
 	})
 }
