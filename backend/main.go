@@ -6,6 +6,7 @@ import (
 	"ku-work/backend/handlers"
 	"ku-work/backend/helper"
 	"ku-work/backend/middlewares"
+	gormrepo "ku-work/backend/repository/gorm"
 	"ku-work/backend/services"
 	"log"
 	"net/http"
@@ -52,7 +53,7 @@ func main() {
 	}
 
 	redisClient := initializeRedis()
-	emailService, aiService := initializeServices(db)
+	emailService, aiService, jobService := initializeServices(db)
 
 	// Setup background tasks
 	ctx, cancel := context.WithCancel(context.Background())
@@ -62,7 +63,7 @@ func main() {
 	scheduler.Start()
 
 	// Setup HTTP server
-	router := setupRouter(db, redisClient, emailService, aiService)
+	router := setupRouter(db, redisClient, emailService, aiService, jobService)
 	srv := startServer(router)
 
 	// Graceful shutdown
@@ -87,20 +88,28 @@ func initializeRedis() *redis.Client {
 }
 
 // initializeServices initializes email and AI services with proper error handling
-func initializeServices(db *gorm.DB) (*services.EmailService, *services.AIService) {
+func initializeServices(db *gorm.DB) (*services.EmailService, *services.AIService, *services.JobService) {
+	// Initialize email provider (optional)
 	emailService, err := services.NewEmailService(db)
 	if err != nil {
 		log.Printf("Warning: Email service initialization failed: %v", err)
-		return nil, nil
+		// return nils to indicate email/AI/job may not be available
+		return nil, nil, nil
 	}
 
-	aiService, err := services.NewAIService(db, emailService)
+	// Create a single JobService instance (shared)
+	jobRepo := gormrepo.NewGormJobRepository(db)
+	jobService := services.NewJobService(jobRepo)
+
+	// Initialize AI service and inject the JobService so AI reuses the same service path
+	aiService, err := services.NewAIService(db, emailService, jobService)
 	if err != nil {
 		log.Printf("Warning: AI service initialization failed: %v", err)
-		return emailService, nil
+		// return email and jobService even if AI failed to initialize
+		return emailService, nil, jobService
 	}
 
-	return emailService, aiService
+	return emailService, aiService, jobService
 }
 
 // setupScheduler configures and returns the background task scheduler
@@ -141,7 +150,7 @@ func getEmailRetryInterval() time.Duration {
 }
 
 // setupRouter configures the Gin router with middleware and routes
-func setupRouter(db *gorm.DB, redisClient *redis.Client, emailService *services.EmailService, aiService *services.AIService) *gin.Engine {
+func setupRouter(db *gorm.DB, redisClient *redis.Client, emailService *services.EmailService, aiService *services.AIService, jobService *services.JobService) *gin.Engine {
 	router := gin.Default()
 
 	// CORS middleware
@@ -149,7 +158,7 @@ func setupRouter(db *gorm.DB, redisClient *redis.Client, emailService *services.
 	router.Use(cors.New(corsConfig))
 
 	// Application routes
-	if err := handlers.SetupRoutes(router, db, redisClient, emailService, aiService); err != nil {
+	if err := handlers.SetupRoutes(router, db, redisClient, emailService, aiService, jobService); err != nil {
 		log.Fatal("Failed to setup routes:", err)
 	}
 

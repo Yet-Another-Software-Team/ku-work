@@ -1,41 +1,30 @@
 package handlers
 
 import (
-	"bytes"
-	"fmt"
-	"html/template"
-	"ku-work/backend/helper"
-	"ku-work/backend/model"
-	"ku-work/backend/services"
 	"math"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
+
+	"ku-work/backend/model"
+	"ku-work/backend/services"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 type JobHandlers struct {
-	DB                                   *gorm.DB
-	FileHandlers                         *FileHandlers
-	aiService                            *services.AIService
-	emailService                         *services.EmailService
-	jobApprovalStatusUpdateEmailTemplate *template.Template
+	FileHandlers *FileHandlers
+	aiService    *services.AIService
+	emailService *services.EmailService
+	JobService   *services.JobService
 }
 
-func NewJobHandlers(db *gorm.DB, aiService *services.AIService, emailService *services.EmailService) (*JobHandlers, error) {
-	jobApprovalStatusUpdateEmailTemplate, err := template.New("job_approval_status_update.tmpl").ParseFiles("email_templates/job_approval_status_update.tmpl")
-	if err != nil {
-		return nil, err
-	}
+func NewJobHandlers(db *gorm.DB, aiService *services.AIService, jobService *services.JobService) (*JobHandlers, error) {
 	return &JobHandlers{
-		DB:                                   db,
-		FileHandlers:                         NewFileHandlers(db),
-		aiService:                            aiService,
-		emailService:                         emailService,
-		jobApprovalStatusUpdateEmailTemplate: jobApprovalStatusUpdateEmailTemplate,
+		FileHandlers: NewFileHandlers(db),
+		aiService:    aiService,
+		JobService:   jobService,
 	}, nil
 }
 
@@ -145,11 +134,9 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "minSalary must be lower than or equal to maxSalary"})
 		return
 	}
-	company := model.Company{
-		UserID: userid,
-	}
-	if result := h.DB.First(&company); result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+	company, err := h.JobService.FindCompanyByUserID(ctx.Request.Context(), userid)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -174,9 +161,9 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 		NotifyOnApplication: *input.NotifyOnApplication,
 	}
 
-	// Create Job into database
-	if result := h.DB.Create(&job); result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+	// Create Job into database via JobService
+	if err := h.JobService.CreateJob(ctx.Request.Context(), &job); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -185,8 +172,10 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 		"id": job.ID,
 	})
 
-	// Tell AI to approve it for me
-	go h.aiService.AutoApproveJob(&job)
+	// Tell AI to approve it for me (if AI service is available)
+	if h.aiService != nil {
+		go h.aiService.AutoApproveJob(&job)
+	}
 }
 
 // @Summary Fetch job listings
@@ -242,120 +231,39 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 		return
 	}
 
-	role := helper.GetRole(userId, h.DB)
-
-	query := h.DB.Model(&model.Job{}).
-		Joins("INNER JOIN users ON users.id = jobs.company_id").
-		Joins("INNER JOIN companies ON companies.user_id = jobs.company_id")
-
-	// Optional id limit
-	if input.JobID != nil {
-		query = query.Where(&model.Job{
-			ID: *input.JobID,
-		})
-	}
-
-	// Filter Job post by keyword
-	if input.Keyword != "" {
-		keywords := strings.Fields(input.Keyword) // Split by whitespace
-		for _, keyword := range keywords {
-			keywordPattern := fmt.Sprintf("%%%s%%", keyword)
-			searchGroup := h.DB.Where("name ILIKE ?", keywordPattern).
-				Or("description ILIKE ?", keywordPattern).
-				Or("position ILIKE ?", keywordPattern).
-				Or("duration ILIKE ?", keywordPattern).
-				Or("users.username ILIKE ?", keywordPattern)
-
-			query = query.Where(searchGroup)
-		}
-	}
-
-	// Filter Job post by salary range
-	query = query.Where("min_salary >= ?", input.MinSalary)
-	query = query.Where("max_salary <= ?", input.MaxSalary)
-
-	// Company should only see their own jobs
-	if role == helper.Company {
-		query = query.Where("company_id = ?", userId)
-
-	} else {
-		// Non-company users can filter by company ID if provided
-		if input.CompanyID != "" {
-			query = query.Where("company_id = ?", input.CompanyID)
-		}
-	}
-
-	if (role == helper.Company || role == helper.Admin) && input.Open != nil {
-		query = query.Where("is_open = ?", *input.Open)
-	} else if role == helper.Viewer || role == helper.Student || role == helper.Unknown {
-		query = query.Where("is_open = ?", true)
-	}
-
-	// Filter Job post by location
-	if len(input.Location) != 0 {
-		query = query.Where("location ILIKE ?", input.Location)
-	}
-
-	// Filter Job post by job type
-	if len(input.JobType) != 0 {
-		query = query.Where("job_type IN ?", input.JobType)
-	}
-
-	// Filter Job post by experience
-	if len(input.Experience) != 0 {
-		query = query.Where("experience IN ?", input.Experience)
-	}
-
-	// Only Admin and Company can see unapproved jobs
-	if role == helper.Admin || role == helper.Company {
-		// If is admin, or company then consider approval status
-		if input.ApprovalStatus != nil && *input.ApprovalStatus != "" {
-			query = query.Where("approval_status = ?", *input.ApprovalStatus)
-		}
-	} else {
-		// Non-admin and non-company users can only see approved jobs
-		query = query.Where(&model.Job{ApprovalStatus: model.JobApprovalAccepted})
-	}
-
-	// Get total count before applying pagination
-	var totalCount int64
-	if err := query.Count(&totalCount).Error; err != nil {
+	// Resolve role via JobService so handlers do not access DB directly.
+	role, err := h.JobService.ResolveRole(ctx.Request.Context(), userId)
+	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Offset and Limit
-	query = query.Offset(int(input.Offset)).Limit(int(input.Limit))
+	// Build params for JobService
+	params := services.FetchJobsParams{
+		Limit:          input.Limit,
+		Offset:         input.Offset,
+		Location:       input.Location,
+		Keyword:        input.Keyword,
+		JobType:        input.JobType,
+		Experience:     input.Experience,
+		MinSalary:      input.MinSalary,
+		MaxSalary:      input.MaxSalary,
+		Open:           input.Open,
+		CompanyID:      input.CompanyID,
+		JobID:          input.JobID,
+		ApprovalStatus: input.ApprovalStatus,
+		Role:           role,
+		UserID:         userId,
+	}
 
-	// return Job posts with application statistics
-	if role == helper.Company {
-		var jobsWithStats []JobWithStatsResponse
-		result := query.
-			Select("jobs.*, users.username as company_name, companies.photo_id, companies.banner_id, COUNT(CASE WHEN job_applications.status = 'pending' THEN 1 END) AS pending, COUNT(CASE WHEN job_applications.status = 'accepted' THEN 1 END) AS accepted, COUNT(CASE WHEN job_applications.status = 'rejected' THEN 1 END) AS rejected").
-			Joins("LEFT JOIN job_applications ON job_applications.job_id = jobs.id").
-			Group("jobs.id, users.username, companies.photo_id, companies.banner_id").
-			Find(&jobsWithStats)
-
-		if result.Error != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
-			return
-		}
-		ctx.JSON(http.StatusOK, gin.H{
-			"jobs":  jobsWithStats,
-			"total": totalCount,
-		})
+	jobsResult, totalCount, err := h.JobService.FetchJobs(ctx.Request.Context(), &params)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// return Job posts with company info if not company
-	var jobs []JobResponse
-	result := query.Select("jobs.*, users.username as company_name, companies.photo_id, companies.banner_id").Find(&jobs)
-	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
-		return
-	}
 	ctx.JSON(http.StatusOK, gin.H{
-		"jobs":  jobs,
+		"jobs":  jobsResult,
 		"total": totalCount,
 	})
 }
@@ -394,17 +302,14 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 	}
 	jobId := uint(jobId64)
 
-	// Get job post from database
-	job := &model.Job{
-		ID: jobId,
-	}
-	result := h.DB.First(&job)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
+	// Get job post from database via JobService
+	job, err := h.JobService.FindJobByID(ctx.Request.Context(), jobId)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "job not found"})
 			return
 		}
-		ctx.JSON(http.StatusNotFound, gin.H{"error": result.Error.Error()})
+		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -459,9 +364,8 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 		job.NotifyOnApplication = *input.NotifyOnApplication
 	}
 
-	result = h.DB.Save(&job)
-	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+	if err := h.JobService.UpdateJob(ctx.Request.Context(), job); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"message": "job updated successfully"})
@@ -488,83 +392,45 @@ func (h *JobHandlers) JobApprovalHandler(ctx *gin.Context) {
 		return
 	}
 
-	// Get job ID from URL parameter
-	jobID := ctx.Param("id")
+	// Get job ID from URL parameter and validate it
+	jobIDStr := ctx.Param("id")
+	jobId64, err := strconv.ParseUint(jobIDStr, 10, 64)
+	if err != nil || jobId64 == 0 || jobId64 > math.MaxUint32 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid job id"})
+		return
+	}
+	jobID := uint(jobId64)
 
-	job := model.Job{}
-	result := h.DB.First(&job, "id = ?", jobID)
-	if result.Error != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"error": "Job not found"})
+	// Fetch job via JobService (handlers should not access DB directly)
+	job, err := h.JobService.FindJobByID(ctx.Request.Context(), jobID)
+	if err != nil {
+		// Prefer to return NotFound for missing records; otherwise surface internal error
+		if err == gorm.ErrRecordNotFound {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "Job not found"})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	tx := h.DB.Begin()
-	result = tx.Take(&job)
-	if result.Error != nil {
-		tx.Rollback()
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+	// Use JobService to perform approval/rejection and create audit
+	if err := h.JobService.ApproveOrRejectJob(ctx.Request.Context(), job.ID, input.Approve, ctx.MustGet("userID").(string), input.Reason); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Update in-memory job for sending email context
 	if input.Approve {
 		job.ApprovalStatus = model.JobApprovalAccepted
 	} else {
 		job.ApprovalStatus = model.JobApprovalRejected
 	}
-	if err := tx.Save(&job).Error; err != nil {
-		tx.Rollback()
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	if err := tx.Create(&model.Audit{
-		ActorID:    ctx.MustGet("userID").(string),
-		Action:     string(job.ApprovalStatus),
-		Reason:     input.Reason,
-		ObjectName: "Job",
-		ObjectID:   strconv.FormatUint(uint64(job.ID), 10),
-	}).Error; err != nil {
-		tx.Rollback()
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	if err := tx.Commit().Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "ok",
 	})
 
-	// Send mail
-	go (func() {
-		type Context struct {
-			Company model.Company
-			User    model.User
-			Job     model.Job
-			Status  string
-			Reason  string
-		}
-		var context Context
-		context.Company.UserID = job.CompanyID
-		if err := h.DB.Select("email").Take(&context.Company).Error; err != nil {
-			return
-		}
-		context.User.ID = job.CompanyID
-		if err := h.DB.Select("username").Take(&context.User).Error; err != nil {
-			return
-		}
-		context.Job = job
-		context.Status = string(job.ApprovalStatus)
-		context.Reason = input.Reason
-		var tpl bytes.Buffer
-		if err := h.jobApprovalStatusUpdateEmailTemplate.Execute(&tpl, context); err != nil {
-			return
-		}
-		_ = h.emailService.SendTo(
-			context.Company.Email,
-			fmt.Sprintf("[KU-Work] Your \"%s - %s\" job has been reviewed", job.Name, job.Position),
-			tpl.String(),
-		)
-	})()
+	// Notification email is handled by JobService.ApproveOrRejectJob when JobService is configured with an EmailService/template.
 }
 
 // @Summary Get job details
@@ -586,17 +452,13 @@ func (h *JobHandlers) GetJobDetailHandler(ctx *gin.Context) {
 	}
 	jobId := uint(jobId64)
 
-	var job JobResponse
-	if err := h.DB.Model(&model.Job{}).
-		Select("jobs.*, users.username as company_name, companies.photo_id, companies.banner_id").
-		Joins("INNER JOIN users ON users.id = jobs.company_id").
-		Joins("INNER JOIN companies ON companies.user_id = jobs.company_id").
-		First(&job, jobId).Error; err != nil {
+	jobDetail, err := h.JobService.GetJobDetail(ctx.Request.Context(), jobId)
+	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, job)
+	ctx.JSON(http.StatusOK, jobDetail)
 }
 
 // Accept or reject job applications
@@ -617,26 +479,8 @@ func (h *JobHandlers) AcceptJobApplication(ctx *gin.Context) {
 		return
 	}
 
-	// Get Job application
-	jobApplication := model.JobApplication{}
-	if err := h.DB.Model(&jobApplication).
-		Joins("INNER JOIN jobs ON jobs.id = job_applications.job_id").
-		Where("jobs.company_id = ?", userId).
-		Where("job_applications.id = ?", input.ID).
-		Take(&jobApplication).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Set new status
-	if input.Accept {
-		jobApplication.Status = model.JobApplicationAccepted
-	} else {
-		jobApplication.Status = model.JobApplicationRejected
-	}
-
-	// Save
-	if err := h.DB.Save(&jobApplication).Error; err != nil {
+	// Use JobService to update application status
+	if err := h.JobService.AcceptOrRejectJobApplication(ctx.Request.Context(), userId, input.ID, input.Accept); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

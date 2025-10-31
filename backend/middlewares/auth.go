@@ -14,15 +14,13 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// AuthMiddlewareWithRedis creates an authentication middleware with Redis-based JWT revocation checking
-// This is the OWASP-compliant version that checks for revoked tokens using Redis (faster than DB)
-// IMPORTANT: Redis client MUST not be nil. This middleware will fail if Redis is unavailable.
-func AuthMiddlewareWithRedis(jwtSecret []byte, redisClient *redis.Client) gin.HandlerFunc {
-	if redisClient == nil {
-		log.Fatal("FATAL: Redis client is nil. JWT revocation requires Redis to be available.")
+// AuthMiddleware creates an authentication middleware that uses an injected JWTRevocationService
+// to check for revoked tokens. This allows the caller to provide the revocation implementation
+// (Redis-based or another implementation) and makes the middleware easier to test.
+func AuthMiddleware(jwtSecret []byte, revocationService *services.JWTRevocationService) gin.HandlerFunc {
+	if revocationService == nil {
+		log.Fatal("FATAL: JWT revocation service is nil. Authentication requires a revocation service to be provided.")
 	}
-
-	revocationService := services.NewJWTRevocationService(redisClient)
 
 	return func(ctx *gin.Context) {
 		// Get the token from the Authorization header
@@ -60,12 +58,10 @@ func AuthMiddlewareWithRedis(jwtSecret []byte, redisClient *redis.Client) gin.Ha
 		if claims, ok := token.Claims.(*model.UserClaims); ok && token.Valid {
 			// OWASP Requirement: Check if JWT is blacklisted (revoked after logout)
 			// This prevents use of tokens after session termination
-			// Using Redis for O(1) lookup performance
 			isRevoked, err := revocationService.IsJWTRevoked(context.Background(), claims.ID)
 			if err != nil {
 				log.Printf("ERROR: Failed to check JWT revocation status for user %s: %v. Denying request.", claims.UserID, err)
-				// Fail closed: deny request if Redis check fails
-				// This ensures security is maintained even during Redis issues
+				// Fail closed: deny request if revocation check fails
 				ctx.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{"error": "Authentication service temporarily unavailable"})
 				return
 			}
@@ -85,4 +81,20 @@ func AuthMiddlewareWithRedis(jwtSecret []byte, redisClient *redis.Client) gin.Ha
 			return
 		}
 	}
+}
+
+// AuthMiddlewareWithRedis is a small compatibility helper that constructs a Redis-backed
+// JWTRevocationService and delegates to AuthMiddleware. Existing call sites using the
+// older signature can keep working; prefer calling AuthMiddleware with an explicit
+// revocation service where possible.
+func AuthMiddlewareWithRedis(jwtSecret []byte, redisClient *redis.Client) gin.HandlerFunc {
+	// Validate the provided client and construct the revocation service.
+	if redisClient == nil {
+		log.Fatal("FATAL: Redis client is nil. JWT revocation requires Redis to be available.")
+	}
+
+	revocationService := services.NewJWTRevocationService(redisClient)
+
+	// Delegate to the injected-service-based middleware so we keep a single auth flow.
+	return AuthMiddleware(jwtSecret, revocationService)
 }

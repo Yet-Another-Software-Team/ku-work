@@ -2,14 +2,15 @@ package services
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
+	"html/template"
 	"ku-work/backend/model"
 	"ku-work/backend/services/ai"
 	"os"
 	"strconv"
 	"strings"
-	"text/template"
 
 	"gorm.io/gorm"
 )
@@ -20,6 +21,7 @@ type AIService struct {
 	emailService                             *EmailService
 	jobApprovalStatusUpdateEmailTemplate     *template.Template
 	studentApprovalStatusUpdateEmailTemplate *template.Template
+	JobService                               *JobService
 }
 
 func (current *AIService) AutoApproveJob(job *model.Job) {
@@ -27,6 +29,18 @@ func (current *AIService) AutoApproveJob(job *model.Job) {
 	if approvalStatus == model.JobApprovalPending {
 		return
 	}
+	approve := approvalStatus == model.JobApprovalAccepted
+	reasonsString := "- " + strings.Join(reasons, "\n- ")
+
+	// Prefer the JobService path if available. JobService will handle persistence, audit and notification.
+	if current.JobService != nil {
+		if err := current.JobService.ApproveOrRejectJob(context.Background(), job.ID, approve, "ai", reasonsString); err == nil {
+			return
+		}
+		// If the service call fails, fall back to legacy behavior below.
+	}
+
+	// Legacy behavior (fallback): directly update DB, create audit and send email.
 	tx := current.DB.Begin()
 	if err := current.DB.Model(&model.Job{
 		ID: job.ID,
@@ -34,7 +48,7 @@ func (current *AIService) AutoApproveJob(job *model.Job) {
 		tx.Rollback()
 		return
 	}
-	reasonsString := "- " + strings.Join(reasons, "\n- ")
+	reasonsString = "- " + strings.Join(reasons, "\n- ")
 	if err := tx.Create(&model.Audit{
 		ActorID:    "ai",
 		Action:     string(approvalStatus),
@@ -131,7 +145,7 @@ func (current *AIService) AutoApproveStudent(student *model.Student) {
 	)
 }
 
-func NewAIService(DB *gorm.DB, emailService *EmailService) (*AIService, error) {
+func NewAIService(DB *gorm.DB, emailService *EmailService, jobService *JobService) (*AIService, error) {
 	approvalAIName, hasApprovalAI := os.LookupEnv("APPROVAL_AI")
 	if !hasApprovalAI {
 		return nil, errors.New("approval ai not specified")
@@ -149,7 +163,11 @@ func NewAIService(DB *gorm.DB, emailService *EmailService) (*AIService, error) {
 		jobApprovalStatusUpdateEmailTemplate:     jobApprovalStatusUpdateEmailTemplate,
 		studentApprovalStatusUpdateEmailTemplate: studentApprovalStatusUpdateEmailTemplate,
 		emailService:                             emailService,
+		JobService:                               jobService,
 	}
+
+	// The JobService is supplied by the caller (DI). Do not construct a new JobService here.
+
 	switch approvalAIName {
 	case "ollama":
 		approvalAI, err := ai.NewOllamaApprovalAI()

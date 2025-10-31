@@ -9,17 +9,24 @@ import (
 	"gorm.io/gorm"
 )
 
-func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, emailService *services.EmailService, aiService *services.AIService) error {
+func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, emailService *services.EmailService, aiService *services.AIService, jobService *services.JobService) error {
 	// Initialize handlers
 	jwtHandlers := NewJWTHandlers(db, redisClient)
 	fileHandlers := NewFileHandlers(db)
 	localAuthHandlers := NewLocalAuthHandlers(db, jwtHandlers)
 	googleAuthHandlers := NewOAuthHandlers(db, jwtHandlers)
 
-	jobHandlers, err := NewJobHandlers(db, aiService, emailService)
+	// Use the provided (DI) JobService instance and pass it into handlers and AI.
+	if aiService != nil && jobService != nil {
+		// Inject the shared JobService into AI so AI uses the same approval path.
+		aiService.JobService = jobService
+	}
+
+	jobHandlers, err := NewJobHandlers(db, aiService, jobService)
 	if err != nil {
 		return err
 	}
+
 	applicationHandlers, err := NewApplicationHandlers(db, emailService)
 	if err != nil {
 		return err
