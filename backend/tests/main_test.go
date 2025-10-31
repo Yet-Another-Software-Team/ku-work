@@ -6,6 +6,7 @@ import (
 	"ku-work/backend/database"
 	"ku-work/backend/handlers"
 	"ku-work/backend/model"
+	gormrepo "ku-work/backend/repository/gorm"
 	"ku-work/backend/services"
 	"os"
 	"path/filepath"
@@ -161,13 +162,17 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	aiService, err := services.NewAIService(db, emailService)
+	// Create a JobService used across the application and tests.
+	jobRepo := gormrepo.NewGormJobRepository(db)
+	jobService := services.NewJobService(jobRepo)
+
+	aiService, err := services.NewAIService(db, emailService, jobService)
 	if err != nil {
 		panic(err)
 	}
 
 	router = gin.Default()
-	if err := handlers.SetupRoutes(router, db, redisClient, emailService, aiService); err != nil {
+	if err := handlers.SetupRoutes(router, db, redisClient, emailService, aiService, jobService); err != nil {
 		panic(err)
 	}
 
