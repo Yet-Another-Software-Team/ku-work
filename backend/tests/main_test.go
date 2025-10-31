@@ -210,6 +210,20 @@ func CreateUser(config UserCreationInfo) (*UserCreationResult, error) {
 	var result UserCreationResult
 	if err := db.Transaction(func(tx *gorm.DB) error {
 		result.User.Username = config.Username
+
+		// Ensure the UserType is set according to the requested role so
+		// authentication handlers (which filter by user_type) work in tests.
+		if config.IsAdmin {
+			result.User.UserType = "admin"
+		} else if config.IsCompany {
+			result.User.UserType = "company"
+		} else if config.IsStudent {
+			result.User.UserType = "student"
+		} else {
+			// default/general user
+			result.User.UserType = "user"
+		}
+
 		if result := tx.Create(&result.User); result.Error != nil {
 			return result.Error
 		}

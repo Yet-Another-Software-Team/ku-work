@@ -10,6 +10,7 @@ type Company struct {
 	UserID    string    `gorm:"type:uuid;primarykey" json:"id"`
 	User      User      `gorm:"foreignKey:UserID" json:"User"`
 	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 	Email     string    `json:"email"`
 	Website   string    `json:"website"`
 	Phone     string    `json:"phone"`
