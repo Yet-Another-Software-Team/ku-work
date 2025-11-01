@@ -70,8 +70,6 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	protectedActive.GET("/me", userHandlers.GetProfileHandler)
 	protectedActive.POST("/me/deactivate", userHandlers.DeactivateAccount)
 
-
-
 	// Company Routs
 	company := protectedActive.Group("/company")
 	company.GET("/:id", companyHandlers.GetCompanyProfileHandler)
