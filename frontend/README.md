@@ -44,13 +44,14 @@ GOOGLE_CLIENT_ID=your_google_client_id_here
 ```
 bunx playwright codegen your_frontend_base_url
 ```
+
 #### 3.2 Run playwright
-3.2.1 Run e2e test with normal playwright (config headless at [`playwright.config.ts`](./playwright.config.ts))
+3.3.1 Run e2e test with normal playwright (config headless at [`playwright.config.ts`](./playwright.config.ts))
 ```
 bun test:e2e
 ```
 
-3.2.2 Run e2e test with playwright ui
+3.3.2 Run e2e test with playwright ui
 ```
 bun test:e2e:ui
 ```
