@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import type { JobPost } from "~/data/mockData";
+import type { JobPost } from "~/data/datatypes";
 
 const props = defineProps<{
     requestId: string;

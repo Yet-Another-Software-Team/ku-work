@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"ku-work/backend/helper"
 	"ku-work/backend/services"
 	"net/http"
 
@@ -16,6 +17,20 @@ func NewCompanyHandlers(db *gorm.DB) *CompanyHandlers {
 	return &CompanyHandlers{
 		Service: services.NewCompanyService(db),
 	}
+}
+
+// anonymizeCompany zeros or replaces personally-identifying fields for deactivated accounts.
+func anonymizeCompany(c *services.CompanyResponse) {
+	c.Email = ""
+	c.Phone = ""
+	c.PhotoID = ""
+	c.BannerID = ""
+	c.Address = ""
+	c.City = ""
+	c.Country = ""
+	c.Website = ""
+	c.AboutUs = ""
+	c.Name = "Deactivated Account"
 }
 
 // @Summary Get a company's profile
@@ -34,6 +49,12 @@ func (h *CompanyHandlers) GetCompanyProfileHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// anonymize if deactivated
+	if helper.IsDeactivated(h.Service.DB, id) {
+		anonymizeCompany(&company)
+	}
+
 	ctx.JSON(http.StatusOK, company)
 }
 
@@ -58,5 +79,13 @@ func (h *CompanyHandlers) GetCompanyListHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Anonymize deactivated accounts before returning
+	for i := range companies {
+		if helper.IsDeactivated(h.Service.DB, companies[i].UserID) {
+			anonymizeCompany(&companies[i])
+		}
+	}
+
 	ctx.JSON(http.StatusOK, companies)
 }

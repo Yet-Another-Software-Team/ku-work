@@ -171,8 +171,22 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
+	// Ensure files directory exists for file provider used in tests
+	_ = os.MkdirAll("./files", 0o755)
+
+	// Construct FileService using NewFileService which reads configuration from environment.
+	// For tests we force the local provider so the test environment is deterministic.
+	_ = os.Setenv("FILE_PROVIDER", "local")
+	_ = os.Setenv("LOCAL_FILES_DIR", "./files")
+	// Ensure local files directory exists for provider
+	_ = os.MkdirAll("./files", 0o755)
+	fileService := services.NewFileService(db)
+	// Register the global provider and model deletion hook through the service so model
+	// hooks that call CallStorageDeleteHook will operate correctly during tests.
+	fileService.RegisterGlobal()
+
 	router = gin.Default()
-	if err := handlers.SetupRoutes(router, db, redisClient, emailService, aiService, jobService); err != nil {
+	if err := handlers.SetupRoutes(router, db, redisClient, emailService, aiService, jobService, fileService); err != nil {
 		panic(err)
 	}
 
@@ -262,7 +276,6 @@ func CreateUser(config UserCreationInfo) (*UserCreationResult, error) {
 	if config.IsCompany {
 		companyPhoto := model.File{
 			UserID:   result.User.ID,
-			FileType: model.FileTypePNG,
 			Category: model.FileCategoryDocument,
 		}
 		if err := db.Create(&companyPhoto).Error; err != nil {
@@ -275,7 +288,6 @@ func CreateUser(config UserCreationInfo) (*UserCreationResult, error) {
 		})()
 		companyBanner := model.File{
 			UserID:   result.User.ID,
-			FileType: model.FileTypePNG,
 			Category: model.FileCategoryDocument,
 		}
 		if err := db.Create(&companyBanner).Error; err != nil {
@@ -302,7 +314,7 @@ func CreateUser(config UserCreationInfo) (*UserCreationResult, error) {
 		result.Company = &company
 	}
 	if config.IsStudent {
-		photoFile := model.File{UserID: result.User.ID, FileType: model.FileTypeJPEG, Category: model.FileCategoryImage}
+		photoFile := model.File{UserID: result.User.ID, Category: model.FileCategoryImage}
 		if err := db.Create(&photoFile).Error; err != nil {
 			return nil, err
 		}
@@ -311,7 +323,7 @@ func CreateUser(config UserCreationInfo) (*UserCreationResult, error) {
 				_ = db.Delete(&photoFile)
 			}
 		})()
-		statusFile := model.File{UserID: result.User.ID, FileType: model.FileTypePDF, Category: model.FileCategoryImage}
+		statusFile := model.File{UserID: result.User.ID, Category: model.FileCategoryImage}
 		if err := db.Create(&statusFile).Error; err != nil {
 			return nil, err
 		}

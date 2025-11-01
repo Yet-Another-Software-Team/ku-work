@@ -84,10 +84,11 @@ type JobResponse struct {
 	MaxSalary           uint      `json:"maxSalary"`
 	ApprovalStatus      string    `json:"approvalStatus"`
 	IsOpen              bool      `json:"open"`
+	Applied             bool      `json:"applied"`
 	NotifyOnApplication bool      `json:"notifyOnApplication"`
 }
 
-// JobWithStatsResponse extends JobResponse with application statistics for company users.
+// JobWithStatsResponse extends JobResponse with application statistics.
 type JobWithStatsResponse struct {
 	JobResponse
 	Pending  int64 `json:"pending"`
@@ -95,32 +96,12 @@ type JobWithStatsResponse struct {
 	Rejected int64 `json:"rejected"`
 }
 
-// @Summary Create a new job listing
-// @Description Allows an authenticated company to create a new job posting. The job will be pending approval by an admin.
-// @Tags Jobs
-// @Security BearerAuth
-// @Accept json
-// @Produce json
-// @Param job body handlers.CreateJobInput true "Job creation data"
-// @Success 200 {object} object{id=uint} "Successfully created job listing"
-// @Failure 400 {object} object{error=string} "Bad Request"
-// @Failure 401 {object} object{error=string} "Unauthorized"
-// @Failure 500 {object} object{error=string} "Internal Server Error"
-// @Router /jobs [post]
+// CreateJobHandler handles job creation using the service layer.
 func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
-	// Get user ID from context (auth middleware)
-	probUserId, hasUserId := ctx.Get("userID")
-
-	// Return error if user ID is not found
-	if !hasUserId {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
-	}
-	userid := probUserId.(string)
+	userid := ctx.MustGet("userID").(string)
 
 	input := CreateJobInput{}
-	err := ctx.Bind(&input)
-	if err != nil {
+	if err := ctx.Bind(&input); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -134,9 +115,15 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "minSalary must be lower than or equal to maxSalary"})
 		return
 	}
+
+	// Resolve company via service abstraction
 	company, err := h.JobService.FindCompanyByUserID(ctx.Request.Context(), userid)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if company == nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "company record not found"})
 		return
 	}
 
@@ -161,48 +148,24 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 		NotifyOnApplication: *input.NotifyOnApplication,
 	}
 
-	// Create Job into database via JobService
+	// Persist via service
 	if err := h.JobService.CreateJob(ctx.Request.Context(), &job); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// return job ID on success
-	ctx.JSON(http.StatusOK, gin.H{
-		"id": job.ID,
-	})
-
-	// Tell AI to approve it for me (if AI service is available)
+	// Trigger AI auto-approval if configured (best-effort)
 	if h.aiService != nil {
 		go h.aiService.AutoApproveJob(&job)
 	}
+
+	ctx.JSON(http.StatusOK, gin.H{"id": job.ID})
 }
 
-// @Summary Fetch job listings
-// @Description Retrieves a list of job postings with extensive filtering options. Behavior changes based on user role. Companies see their own jobs with application stats. Admins can see all jobs. Others see only open, approved jobs.
-// @Tags Jobs
-// @Security BearerAuth
-// @Produce json
-// @Param limit query uint false "Pagination limit" default(32)
-// @Param offset query uint false "Pagination offset"
-// @Param location query string false "Filter by location"
-// @Param keyword query string false "Search keyword for name and description"
-// @Param jobType query []string false "Filter by job type(s)"
-// @Param experience query []string false "Filter by experience level(s)"
-// @Param minSalary query uint false "Minimum salary filter"
-// @Param maxSalary query uint false "Maximum salary filter"
-// @Param open query bool false "Filter by open status (company only)"
-// @Param companyId query string false "Filter by company ID"
-// @Param id query uint false "Filter by specific job ID"
-// @Param approvalStatus query string false "Filter by approval status (admin/company only)"
-// @Success 200 {object} object{jobs=[]JobWithStatsResponse} "List of jobs for a company user (includes stats)"
-// @Success 200 {object} object{jobs=[]JobResponse} "List of jobs for a non-company user"
-// @Failure 400 {object} object{error=string} "Bad Request"
-// @Failure 500 {object} object{error=string} "Internal Server Error"
-// @Router /jobs [get]
+// FetchJobsHandler delegates job listing retrieval to the JobService.
 func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 	userId := ctx.MustGet("userID").(string)
-	// List of query parameters for filtering jobs
+
 	type FetchJobsInput struct {
 		Limit          uint     `json:"limit" form:"limit" binding:"max=128"`
 		Offset         uint     `json:"offset" form:"offset"`
@@ -218,27 +181,25 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 		ApprovalStatus *string  `json:"approvalStatus" form:"approvalStatus" binding:"omitempty,oneof=pending accepted rejected"`
 	}
 
-	// Set default values for some fields and bind the input
 	input := FetchJobsInput{
 		MinSalary: 0,
 		MaxSalary: ^uint(0) >> 1,
 		Limit:     32,
 		Offset:    0,
 	}
-	err := ctx.ShouldBind(&input)
-	if err != nil {
+	if err := ctx.ShouldBind(&input); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Resolve role via JobService so handlers do not access DB directly.
+	// Resolve role using service-level resolver so handlers don't access DB directly.
 	role, err := h.JobService.ResolveRole(ctx.Request.Context(), userId)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Build params for JobService
+	// Build params for service
 	params := services.FetchJobsParams{
 		Limit:          input.Limit,
 		Offset:         input.Offset,
@@ -268,32 +229,10 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 	})
 }
 
-// @Summary Edit a job listing
-// @Description Allows a company to edit one of their own job postings. Supports partial updates.
-// @Tags Jobs
-// @Security BearerAuth
-// @Accept json
-// @Produce json
-// @Param id path uint true "Job ID"
-// @Param job body handlers.EditJobInput true "Job update data"
-// @Success 200 {object} object{message=string} "Job updated successfully"
-// @Failure 400 {object} object{error=string} "Bad Request"
-// @Failure 401 {object} object{error=string} "Unauthorized"
-// @Failure 403 {object} object{error=string} "Forbidden"
-// @Failure 404 {object} object{error=string} "Not Found"
-// @Failure 500 {object} object{error=string} "Internal Server Error"
-// @Router /jobs/{id} [patch]
+// EditJobHandler updates a job via the service.
 func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
-	// Get user id from context (auth middleware)
-	probUserId, hasUserId := ctx.Get("userID")
-	// Denied access if user id is not found
-	if !hasUserId {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
-	}
-	userid := probUserId.(string)
+	userid := ctx.MustGet("userID").(string)
 
-	// Convert job id to uint
 	jobIdStr := ctx.Param("id")
 	jobId64, err := strconv.ParseUint(jobIdStr, 10, 64)
 	if err != nil || jobId64 <= 0 || jobId64 > math.MaxUint32 {
@@ -302,14 +241,18 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 	}
 	jobId := uint(jobId64)
 
-	// Get job post from database via JobService
+	// Retrieve job through service
 	job, err := h.JobService.FindJobByID(ctx.Request.Context(), jobId)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "job not found"})
 			return
 		}
-		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if job == nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "job not found"})
 		return
 	}
 
@@ -319,49 +262,64 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 		return
 	}
 
-	// Denied access if user is not the owner of job post
 	if job.CompanyID != userid {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
 		return
 	}
 
+	needReapproval := false
+
 	// Update job post with new data
 	if input.Name != nil {
+		needReapproval = true
 		job.Name = *input.Name
 	}
 	if input.Position != nil {
+		needReapproval = true
 		job.Position = *input.Position
 	}
 	if input.Duration != nil {
+		needReapproval = true
 		job.Duration = *input.Duration
 	}
 	if input.Description != nil {
+		needReapproval = true
 		job.Description = *input.Description
 	}
 	if input.Location != nil {
+		needReapproval = true
 		job.Location = *input.Location
 	}
 	if input.JobType != nil {
+		needReapproval = true
 		job.JobType = model.JobType(*input.JobType)
 	}
 	if input.Open != nil {
 		job.IsOpen = *input.Open
 	}
 	if input.Experience != nil {
+		needReapproval = true
 		job.Experience = model.ExperienceType(*input.Experience)
 	}
 	if input.MinSalary != nil {
+		needReapproval = true
 		job.MinSalary = *input.MinSalary
 	}
 	if input.MaxSalary != nil {
+		needReapproval = true
 		job.MaxSalary = *input.MaxSalary
 	}
+	// Check for invalid salary range
 	if job.MinSalary > job.MaxSalary {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "minSalary cannot exceed maxSalary"})
 		return
 	}
 	if input.NotifyOnApplication != nil {
 		job.NotifyOnApplication = *input.NotifyOnApplication
+	}
+
+	if needReapproval {
+		job.ApprovalStatus = model.JobApprovalPending
 	}
 
 	if err := h.JobService.UpdateJob(ctx.Request.Context(), job); err != nil {
@@ -371,28 +329,16 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "job updated successfully"})
 }
 
-// @Summary Approve or reject a job listing (Admin only)
-// @Description Allows an admin to approve or reject a job posting submitted by a company.
-// @Tags Jobs
-// @Security BearerAuth
-// @Accept json
-// @Produce json
-// @Param id path uint true "Job ID"
-// @Param approval body handlers.ApproveJobInput true "Approval action"
-// @Success 200 {object} object{message=string} "ok"
-// @Failure 400 {object} object{error=string} "Bad Request"
-// @Failure 404 {object} object{error=string} "Not Found"
-// @Failure 500 {object} object{error=string} "Internal Server Error"
-// @Router /jobs/{id}/approval [post]
+// JobApprovalHandler approves or rejects a job by delegating to JobService.
+// JobService handles audit creation and email notifications if configured.
 func (h *JobHandlers) JobApprovalHandler(ctx *gin.Context) {
 	input := ApproveJobInput{}
-	err := ctx.Bind(&input)
-	if err != nil {
+	if err := ctx.Bind(&input); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Get job ID from URL parameter and validate it
+	// Parse job ID
 	jobIDStr := ctx.Param("id")
 	jobId64, err := strconv.ParseUint(jobIDStr, 10, 64)
 	if err != nil || jobId64 == 0 || jobId64 > math.MaxUint32 {
@@ -401,48 +347,16 @@ func (h *JobHandlers) JobApprovalHandler(ctx *gin.Context) {
 	}
 	jobID := uint(jobId64)
 
-	// Fetch job via JobService (handlers should not access DB directly)
-	job, err := h.JobService.FindJobByID(ctx.Request.Context(), jobID)
-	if err != nil {
-		// Prefer to return NotFound for missing records; otherwise surface internal error
-		if err == gorm.ErrRecordNotFound {
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "Job not found"})
-			return
-		}
+	actorID := ctx.MustGet("userID").(string)
+	if err := h.JobService.ApproveOrRejectJob(ctx.Request.Context(), jobID, input.Approve, actorID, input.Reason); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Use JobService to perform approval/rejection and create audit
-	if err := h.JobService.ApproveOrRejectJob(ctx.Request.Context(), job.ID, input.Approve, ctx.MustGet("userID").(string), input.Reason); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Update in-memory job for sending email context
-	if input.Approve {
-		job.ApprovalStatus = model.JobApprovalAccepted
-	} else {
-		job.ApprovalStatus = model.JobApprovalRejected
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"message": "ok",
-	})
-
-	// Notification email is handled by JobService.ApproveOrRejectJob when JobService is configured with an EmailService/template.
+	ctx.JSON(http.StatusOK, gin.H{"message": "ok"})
 }
 
-// @Summary Get job details
-// @Description Retrieves the detailed information for a single job posting by its ID.
-// @Tags Jobs
-// @Security BearerAuth
-// @Produce json
-// @Param id path uint true "Job ID"
-// @Success 200 {object} handlers.JobResponse "Job details retrieved successfully"
-// @Failure 400 {object} object{error=string} "Bad Request: Invalid job ID"
-// @Failure 500 {object} object{error=string} "Internal Server Error"
-// @Router /jobs/{id} [get]
+// GetJobDetailHandler returns detailed job information via the service.
 func (h *JobHandlers) GetJobDetailHandler(ctx *gin.Context) {
 	jobIdStr := ctx.Param("id")
 	jobId64, err := strconv.ParseInt(jobIdStr, 10, 64)
@@ -458,33 +372,29 @@ func (h *JobHandlers) GetJobDetailHandler(ctx *gin.Context) {
 		return
 	}
 
+	// Note: 'Applied' status is omitted here to keep handlers strictly using service APIs.
 	ctx.JSON(http.StatusOK, jobDetail)
 }
 
-// Accept or reject job applications
+// AcceptJobApplication delegates application acceptance/rejection to the JobService.
 func (h *JobHandlers) AcceptJobApplication(ctx *gin.Context) {
-	// Get user ID from context (auth middleware)
 	userId := ctx.MustGet("userID").(string)
 
-	// Bind input data to struct
 	type AcceptJobApplicationInput struct {
 		ID     uint `json:"id" form:"id"`
 		Accept bool `json:"accept" form:"accept"`
 	}
 
 	input := AcceptJobApplicationInput{}
-	err := ctx.Bind(&input)
-	if err != nil {
+	if err := ctx.Bind(&input); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Use JobService to update application status
 	if err := h.JobService.AcceptOrRejectJobApplication(ctx.Request.Context(), userId, input.ID, input.Accept); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Return ok message
 	ctx.JSON(http.StatusOK, gin.H{"message": "ok"})
 }

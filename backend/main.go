@@ -40,12 +40,6 @@ import (
 func main() {
 	_ = godotenv.Load()
 
-	// Initialize infrastructure
-	if err := initializeFilesDirectory(); err != nil {
-		log.Printf("Failed to create files directory: %v", err)
-		return
-	}
-
 	db, err := database.LoadDB()
 	if err != nil {
 		log.Printf("Database initialization failed: %v", err)
@@ -53,7 +47,7 @@ func main() {
 	}
 
 	redisClient := initializeRedis()
-	emailService, aiService, jobService := initializeServices(db)
+	emailService, aiService, jobService, fileService := initializeServices(db)
 
 	// Setup background tasks
 	ctx, cancel := context.WithCancel(context.Background())
@@ -63,17 +57,12 @@ func main() {
 	scheduler.Start()
 
 	// Setup HTTP server
-	router := setupRouter(db, redisClient, emailService, aiService, jobService)
+	router := setupRouter(db, redisClient, emailService, aiService, jobService, fileService)
 	srv := startServer(router)
 
 	// Graceful shutdown
 	waitForShutdownSignal()
 	performGracefulShutdown(srv, cancel, scheduler, redisClient)
-}
-
-// initializeFilesDirectory creates the files directory if it doesn't exist
-func initializeFilesDirectory() error {
-	return os.MkdirAll("./files", 0755)
 }
 
 // initializeRedis initializes Redis client with fail-open behavior
@@ -87,14 +76,14 @@ func initializeRedis() *redis.Client {
 	return redisClient
 }
 
-// initializeServices initializes email and AI services with proper error handling
-func initializeServices(db *gorm.DB) (*services.EmailService, *services.AIService, *services.JobService) {
+// initializeServices initializes email, AI, Job and File services with proper error handling
+func initializeServices(db *gorm.DB) (*services.EmailService, *services.AIService, *services.JobService, *services.FileService) {
 	// Initialize email provider (optional)
 	emailService, err := services.NewEmailService(db)
 	if err != nil {
 		log.Printf("Warning: Email service initialization failed: %v", err)
-		// return nils to indicate email/AI/job may not be available
-		return nil, nil, nil
+		// return nils to indicate services may not be available
+		return nil, nil, nil, nil
 	}
 
 	// Create a single JobService instance (shared)
@@ -105,11 +94,15 @@ func initializeServices(db *gorm.DB) (*services.EmailService, *services.AIServic
 	aiService, err := services.NewAIService(db, emailService, jobService)
 	if err != nil {
 		log.Printf("Warning: AI service initialization failed: %v", err)
-		// return email and jobService even if AI failed to initialize
-		return emailService, nil, jobService
+		// AI failed; still return email and jobService so core flows work
+		return emailService, nil, jobService, nil
 	}
 
-	return emailService, aiService, jobService
+	// Initialize file service used for file handling
+	fileService := services.NewFileService(db)
+	fileService.RegisterGlobal() // Register file services for model-level use
+
+	return emailService, aiService, jobService, fileService
 }
 
 // setupScheduler configures and returns the background task scheduler
@@ -128,6 +121,13 @@ func setupScheduler(ctx context.Context, db *gorm.DB, emailService *services.Ema
 			return emailService.RetryFailedEmails()
 		})
 	}
+
+	// Account anonymization task - runs daily to anonymize accounts past grace period
+	accountDeletionInterval := getAccountDeletionInterval()
+	gracePeriod := helper.GetGracePeriodDays()
+	scheduler.AddTask("account-deletion", accountDeletionInterval, func() error {
+		return services.AnonymizeExpiredAccounts(db, gracePeriod)
+	})
 
 	return scheduler
 }
@@ -149,8 +149,25 @@ func getEmailRetryInterval() time.Duration {
 	return time.Duration(minutes) * time.Minute
 }
 
+// getAccountDeletionInterval reads the account anonymization check interval from environment or returns default
+func getAccountDeletionInterval() time.Duration {
+	defaultInterval := 24 * time.Hour // Check once per day by default (PDPA compliant anonymization)
+
+	intervalStr, hasInterval := os.LookupEnv("ACCOUNT_DELETION_CHECK_INTERVAL_HOURS")
+	if !hasInterval {
+		return defaultInterval
+	}
+
+	hours, err := strconv.Atoi(intervalStr)
+	if err != nil || hours <= 0 {
+		return defaultInterval
+	}
+
+	return time.Duration(hours) * time.Hour
+}
+
 // setupRouter configures the Gin router with middleware and routes
-func setupRouter(db *gorm.DB, redisClient *redis.Client, emailService *services.EmailService, aiService *services.AIService, jobService *services.JobService) *gin.Engine {
+func setupRouter(db *gorm.DB, redisClient *redis.Client, emailService *services.EmailService, aiService *services.AIService, jobService *services.JobService, fileService *services.FileService) *gin.Engine {
 	router := gin.Default()
 
 	// CORS middleware
@@ -158,7 +175,7 @@ func setupRouter(db *gorm.DB, redisClient *redis.Client, emailService *services.
 	router.Use(cors.New(corsConfig))
 
 	// Application routes
-	if err := handlers.SetupRoutes(router, db, redisClient, emailService, aiService, jobService); err != nil {
+	if err := handlers.SetupRoutes(router, db, redisClient, emailService, aiService, jobService, fileService); err != nil {
 		log.Fatal("Failed to setup routes:", err)
 	}
 

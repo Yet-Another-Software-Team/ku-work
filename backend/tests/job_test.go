@@ -194,12 +194,12 @@ func TestJob(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		photoFile := model.File{UserID: company.UserID, FileType: model.FileTypeJPEG, Category: model.FileCategoryImage}
+		photoFile := model.File{UserID: company.UserID, Category: model.FileCategoryImage}
 		if err := db.Create(&photoFile).Error; err != nil {
 			t.Error(err)
 			return
 		}
-		statusFile := model.File{UserID: company.UserID, FileType: model.FileTypePDF, Category: model.FileCategoryImage}
+		statusFile := model.File{UserID: company.UserID, Category: model.FileCategoryImage}
 		if err := db.Create(&statusFile).Error; err != nil {
 			t.Error(err)
 			return
@@ -372,12 +372,12 @@ func TestJob(t *testing.T) {
 			_ = db.Delete(&user)
 		})()
 		// Create dummy files for photo and status photo
-		photoFile := model.File{UserID: user.ID, FileType: model.FileTypeJPEG, Category: model.FileCategoryImage}
+		photoFile := model.File{UserID: user.ID, Category: model.FileCategoryImage}
 		if err := db.Create(&photoFile).Error; err != nil {
 			t.Error(err)
 			return
 		}
-		statusFile := model.File{UserID: user.ID, FileType: model.FileTypePDF, Category: model.FileCategoryImage}
+		statusFile := model.File{UserID: user.ID, Category: model.FileCategoryImage}
 		if err := db.Create(&statusFile).Error; err != nil {
 			t.Error(err)
 			return
@@ -423,7 +423,8 @@ func TestJob(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		if _, err := io.WriteString(fiw, "[cv content]"); err != nil {
+		// Minimal valid PDF content (small, harmless test PDF)
+		if _, err := io.WriteString(fiw, "%PDF-1.1\n%âãÏÓ\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R >>\nendobj\n4 0 obj\n<< /Length 44 >>\nstream\nBT /F1 24 Tf 72 120 Td (CV) Tj ET\nendstream\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF"); err != nil {
 			t.Error(err)
 			return
 		}
@@ -431,7 +432,8 @@ func TestJob(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		if _, err := io.WriteString(fiw, "[cv2 content]"); err != nil {
+		// Second CV uses the same minimal PDF payload
+		if _, err := io.WriteString(fiw, "%PDF-1.1\n%âãÏÓ\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R >>\nendobj\n4 0 obj\n<< /Length 44 >>\nstream\nBT /F1 24 Tf 72 120 Td (CV2) Tj ET\nendstream\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF"); err != nil {
 			t.Error(err)
 			return
 		}
