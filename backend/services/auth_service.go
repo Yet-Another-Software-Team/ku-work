@@ -7,6 +7,8 @@ import (
 	"mime/multipart"
 	"net/url"
 
+	repo "ku-work/backend/repository"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -28,13 +30,14 @@ type AuthService struct {
 	DB            *gorm.DB
 	TokenProvider TokenProvider
 	SaveFile      SaveFileFunc
+	UserRepo      repo.UserRepository
 }
 
 // NewAuthService constructs an AuthService with injected dependencies.
 // The saveFile parameter allows services to call into file-saving logic without
 // depending on the handlers package.
-func NewAuthService(db *gorm.DB, provider TokenProvider, saveFile SaveFileFunc) *AuthService {
-	return &AuthService{DB: db, TokenProvider: provider, SaveFile: saveFile}
+func NewAuthService(db *gorm.DB, provider TokenProvider, saveFile SaveFileFunc, userRepo repo.UserRepository) *AuthService {
+	return &AuthService{DB: db, TokenProvider: provider, SaveFile: saveFile, UserRepo: userRepo}
 }
 
 // RegisterCompany performs
@@ -56,14 +59,12 @@ func (s *AuthService) RegisterCompany(ctx *gin.Context, input RegisterCompanyInp
 	var zeroUser model.User
 	var zeroCompany model.Company
 
-	// check existence
-	var count int64
-	if err := s.DB.Model(&model.User{}).
-		Where("username = ? AND user_type = ?", input.Username, "company").
-		Count(&count).Error; err != nil {
+	// check existence via repository
+	exists, err := s.UserRepo.ExistsByUsernameAndType(s.DB, input.Username, "company")
+	if err != nil {
 		return zeroUser, zeroCompany, "", "", err
 	}
-	if count > 0 {
+	if exists {
 		return zeroUser, zeroCompany, "", "", ErrUsernameExists
 	}
 
@@ -87,7 +88,7 @@ func (s *AuthService) RegisterCompany(ctx *gin.Context, input RegisterCompanyInp
 		PasswordHash: hashedPassword,
 	}
 
-	if err := tx.Create(&newUser).Error; err != nil {
+	if err := s.UserRepo.CreateUser(tx, &newUser); err != nil {
 		return zeroUser, zeroCompany, "", "", err
 	}
 
@@ -140,22 +141,22 @@ func (s *AuthService) RegisterCompany(ctx *gin.Context, input RegisterCompanyInp
 // CompanyLogin validates credentials for a company and returns tokens on success.
 func (s *AuthService) CompanyLogin(username, password string) (model.User, string, string, error) {
 	var user model.User
-	if err := s.DB.Model(&model.User{}).
-		Where("username = ? AND user_type = ?", username, "company").
-		First(&user).Error; err != nil {
+	userPtr, err := s.UserRepo.FindUserByUsernameAndType(s.DB, username, "company")
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return model.User{}, "", "", ErrInvalidCredentials
 		}
 		return model.User{}, "", "", err
 	}
+	user = *userPtr
 
 	match, err := helper.VerifyPassword(password, user.PasswordHash)
 	if err != nil || !match {
 		return model.User{}, "", "", ErrInvalidCredentials
 	}
 
-	var companyCount int64
-	if err := s.DB.Model(&model.Company{}).Where("user_id = ?", user.ID).Count(&companyCount).Error; err != nil {
+	companyCount, err := s.UserRepo.CountCompanyByUserID(s.DB, user.ID)
+	if err != nil {
 		return model.User{}, "", "", err
 	}
 	if companyCount == 0 {
@@ -173,22 +174,22 @@ func (s *AuthService) CompanyLogin(username, password string) (model.User, strin
 // AdminLogin validates admin credentials and returns tokens on success.
 func (s *AuthService) AdminLogin(username, password string) (model.User, string, string, error) {
 	var user model.User
-	if err := s.DB.Model(&model.User{}).
-		Where("username = ? AND user_type = ?", username, "admin").
-		First(&user).Error; err != nil {
+	userPtr, err := s.UserRepo.FindUserByUsernameAndType(s.DB, username, "admin")
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return model.User{}, "", "", ErrInvalidCredentials
 		}
 		return model.User{}, "", "", err
 	}
+	user = *userPtr
 
 	match, err := helper.VerifyPassword(password, user.PasswordHash)
 	if err != nil || !match {
 		return model.User{}, "", "", ErrInvalidCredentials
 	}
 
-	var adminCount int64
-	if err := s.DB.Model(&model.Admin{}).Where("user_id = ?", user.ID).Count(&adminCount).Error; err != nil {
+	adminCount, err := s.UserRepo.CountAdminByUserID(s.DB, user.ID)
+	if err != nil {
 		return model.User{}, "", "", err
 	}
 	if adminCount == 0 {
@@ -220,51 +221,60 @@ func (s *AuthService) HandleGoogleOAuth(userInfo struct {
 	isRegistered = false
 	statusCode = 200
 
-	var userCount int64
-	if err = s.DB.Model(&model.GoogleOAuthDetails{}).Where("external_id = ?", userInfo.ID).Count(&userCount).Error; err != nil {
-		return
-	}
-
+	// Try to fetch existing OAuth details via repository
 	var oauthDetail model.GoogleOAuthDetails
-	if userCount == 0 {
-		var newUser model.User
-		if err = s.DB.FirstOrCreate(&newUser, model.User{
-			Username: userInfo.Email,
-			UserType: "oauth",
-		}).Error; err != nil {
-			return
-		}
+	det, err := s.UserRepo.GetGoogleOAuthDetailsByExternalID(s.DB, userInfo.ID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// create user if not exists and attach oauth details
+			var newUser model.User
+			if err = s.UserRepo.FirstOrCreateUser(s.DB, &newUser, model.User{
+				Username: userInfo.Email,
+				UserType: "oauth",
+			}); err != nil {
+				return
+			}
 
-		oauthDetail = model.GoogleOAuthDetails{
-			UserID:     newUser.ID,
-			ExternalID: userInfo.ID,
-			FirstName:  userInfo.GivenName,
-			LastName:   userInfo.FamilyName,
-			Email:      userInfo.Email,
-		}
-		if err = s.DB.Create(&oauthDetail).Error; err != nil {
+			oauthDetail = model.GoogleOAuthDetails{
+				UserID:     newUser.ID,
+				ExternalID: userInfo.ID,
+				FirstName:  userInfo.GivenName,
+				LastName:   userInfo.FamilyName,
+				Email:      userInfo.Email,
+			}
+			if err = s.UserRepo.CreateGoogleOAuthDetails(s.DB, &oauthDetail); err != nil {
+				return
+			}
+			statusCode = 201
+		} else {
 			return
 		}
-		statusCode = 201
+	} else {
+		oauthDetail = *det
 	}
 
 	// update details
 	if oauthDetail.UserID != "" {
-		_ = s.DB.Model(&oauthDetail).Updates(model.GoogleOAuthDetails{
+		_ = s.UserRepo.UpdateGoogleOAuthDetails(s.DB, &model.GoogleOAuthDetails{
+			UserID:    oauthDetail.UserID,
 			FirstName: userInfo.GivenName,
 			LastName:  userInfo.FamilyName,
 			Email:     userInfo.Email,
-		}).Error
+		})
 	}
 
-	if err = s.DB.Model(&model.GoogleOAuthDetails{}).Where("external_id = ?", userInfo.ID).First(&oauthDetail).Error; err != nil {
+	det2, err := s.UserRepo.GetGoogleOAuthDetailsByExternalID(s.DB, userInfo.ID)
+	if err != nil {
 		return
 	}
+	oauthDetail = *det2
 
 	var user model.User
-	if err = s.DB.Model(&user).Where("id = ?", oauthDetail.UserID).First(&user).Error; err != nil {
+	userPtr2, err := s.UserRepo.FindUserByID(s.DB, oauthDetail.UserID)
+	if err != nil {
 		return
 	}
+	user = *userPtr2
 
 	jwtToken, refreshToken, err = s.TokenProvider.HandleToken(user)
 	if err != nil {

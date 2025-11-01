@@ -59,10 +59,5 @@ type JobRepository interface {
 	GetJobDetail(ctx context.Context, jobID uint) (*JobDetail, error)
 	FindCompanyByUserID(ctx context.Context, userID string) (*model.Company, error)
 	AcceptOrRejectJobApplication(ctx context.Context, userId string, appID uint, accept bool) error
-
-	// GetRole returns the Role for the given user id. This allows higher layers to
-	// resolve user role via the repository abstraction instead of directly querying DB.
-	// Implementations should return a helper.Role and nil error on success; return
-	// helper.Unknown with nil error if no role found or a concrete error on failure.
 	GetRole(ctx context.Context, userID string) (helper.Role, error)
 }

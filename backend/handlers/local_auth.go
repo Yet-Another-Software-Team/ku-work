@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"ku-work/backend/helper"
+	gormrepo "ku-work/backend/repository/gorm"
 	"ku-work/backend/services"
 
 	"github.com/gin-gonic/gin"
@@ -20,12 +21,13 @@ type LocalAuthHandlers struct {
 }
 
 func NewLocalAuthHandlers(db *gorm.DB, jwtHandlers *JWTHandlers) *LocalAuthHandlers {
+	userRepo := gormrepo.NewGormUserRepository(db)
 	return &LocalAuthHandlers{
 		DB:          db,
 		JWTHandlers: jwtHandlers,
 		// Inject the handler-level SaveFile function into the service to avoid import cycles.
 		// handlers.SaveFile matches the services.SaveFileFunc signature.
-		Service: services.NewAuthService(db, jwtHandlers, SaveFile),
+		Service: services.NewAuthService(db, jwtHandlers, SaveFile, userRepo),
 	}
 }
 

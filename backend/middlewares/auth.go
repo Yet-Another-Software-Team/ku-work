@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"ku-work/backend/model"
+	redisrepo "ku-work/backend/repository/redis"
 	"ku-work/backend/services"
 
 	"github.com/gin-gonic/gin"
@@ -93,7 +94,8 @@ func AuthMiddlewareWithRedis(jwtSecret []byte, redisClient *redis.Client) gin.Ha
 		log.Fatal("FATAL: Redis client is nil. JWT revocation requires Redis to be available.")
 	}
 
-	revocationService := services.NewJWTRevocationService(redisClient)
+	refreshTokenRepo := redisrepo.NewRedisRevocationRepository(redisClient)
+	revocationService := services.NewJWTRevocationService(refreshTokenRepo)
 
 	// Delegate to the injected-service-based middleware so we keep a single auth flow.
 	return AuthMiddleware(jwtSecret, revocationService)

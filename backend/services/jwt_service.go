@@ -15,30 +15,32 @@ import (
 
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
+	repo "ku-work/backend/repository"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/argon2"
 	"gorm.io/gorm"
 )
 
 // JWTService encapsulates JWT and refresh-token related operations.
 //
-// This service is intended to hold the core token generation, hashing and
-// refresh-token persistence logic so that HTTP handlers can delegate to it
-// without carrying all cryptographic/storage details.
+// Note: this service no longer performs raw GORM or Redis operations itself.
+// Instead it depends on repository interfaces for refresh-token persistence and
+// JWT revocation storage. The `DB` field remains for passing into UserRepo
+// calls which expect a *gorm.DB (transaction support).
 type JWTService struct {
-	DB                *gorm.DB
-	RedisClient       *redis.Client
-	RevocationService *JWTRevocationService
-	JWTSecret         []byte
+	DB               *gorm.DB
+	RefreshTokenRepo repo.RefreshTokenRepository
+	RevocationRepo   repo.JWTRevocationRepository
+	JWTSecret        []byte
+	UserRepo         repo.UserRepository
 }
 
 // NewJWTService constructs a new JWTService wired with Redis/GORM dependencies.
 // It reads JWT_SECRET from the environment (and requires it to be at least 32 bytes).
-func NewJWTService(db *gorm.DB, redisClient *redis.Client) *JWTService {
+func NewJWTService(db *gorm.DB, refreshRepo repo.RefreshTokenRepository, revocationRepo repo.JWTRevocationRepository, userRepo repo.UserRepository) *JWTService {
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 
 	if len(jwtSecret) == 0 {
@@ -48,17 +50,19 @@ func NewJWTService(db *gorm.DB, redisClient *redis.Client) *JWTService {
 		log.Fatal("JWT_SECRET must be at least 32 bytes long for security")
 	}
 
-	if redisClient == nil {
-		log.Fatal("Redis client is required for JWT revocation")
+	if revocationRepo == nil {
+		log.Fatal("revocation repository is required for JWT revocation")
+	}
+	if refreshRepo == nil {
+		log.Fatal("refresh token repository is required")
 	}
 
-	revocationService := NewJWTRevocationService(redisClient)
-
 	return &JWTService{
-		DB:                db,
-		RedisClient:       redisClient,
-		RevocationService: revocationService,
-		JWTSecret:         jwtSecret,
+		DB:               db,
+		RefreshTokenRepo: refreshRepo,
+		RevocationRepo:   revocationRepo,
+		JWTSecret:        jwtSecret,
+		UserRepo:         userRepo,
 	}
 }
 
@@ -101,10 +105,6 @@ func verifyToken(token, storedHash string) (bool, error) {
 }
 
 // GenerateTokens creates a signed JWT access token and a secure refresh token.
-//
-// The refresh token returned to the client is in the form "selector:validator".
-// The validator is hashed before storage; the selector is stored in plaintext
-// to allow O(1) lookup.
 func (s *JWTService) GenerateTokens(userID string) (string, string, error) {
 	// Generate unique JTI (JWT ID)
 	jti := uuid.New().String()
@@ -151,36 +151,29 @@ func (s *JWTService) GenerateTokens(userID string) (string, string, error) {
 		}
 	}
 
-	// Count active tokens for this user
-	var activeTokenCount int64
-	if err := s.DB.Model(&model.RefreshToken{}).
-		Where("user_id = ? AND revoked_at IS NULL AND expires_at > ?", userID, time.Now()).
-		Count(&activeTokenCount).Error; err != nil {
+	// Count active tokens for this user via repository
+	activeTokenCount, err := s.RefreshTokenRepo.CountActiveByUser(context.Background(), userID, time.Now())
+	if err != nil {
 		return "", "", err
 	}
 
-	// If at or over limit, revoke oldest tokens to make room
+	// If at or over limit, revoke oldest tokens to make room using repository methods
 	if activeTokenCount >= int64(maxSessions) {
 		tokensToRevoke := int(activeTokenCount) - (maxSessions - 1)
 		if tokensToRevoke > 0 {
-			var oldest []model.RefreshToken
-			if err := s.DB.Where("user_id = ? AND revoked_at IS NULL", userID).
-				Order("created_at ASC").
-				Limit(tokensToRevoke).
-				Find(&oldest).Error; err == nil && len(oldest) > 0 {
+			oldest, err := s.RefreshTokenRepo.FindOldestActiveByUserLimit(context.Background(), userID, tokensToRevoke)
+			if err == nil && len(oldest) > 0 {
 				now := time.Now()
 				ids := make([]uint, 0, len(oldest))
 				for _, t := range oldest {
 					ids = append(ids, t.ID)
 				}
-				_ = s.DB.Model(&model.RefreshToken{}).
-					Where("id IN ?", ids).
-					Update("revoked_at", now).Error
+				_ = s.RefreshTokenRepo.RevokeByIDs(context.Background(), ids, now)
 			}
 		}
 	}
 
-	// Create refresh token DB record
+	// Create refresh token record via repository
 	rt := model.RefreshToken{
 		UserID:        userID,
 		TokenSelector: selector,
@@ -189,7 +182,7 @@ func (s *JWTService) GenerateTokens(userID string) (string, string, error) {
 		RevokedAt:     nil,
 	}
 
-	if err := s.DB.Create(&rt).Error; err != nil {
+	if err := s.RefreshTokenRepo.Create(context.Background(), &rt); err != nil {
 		return "", "", err
 	}
 
@@ -212,9 +205,12 @@ func (s *JWTService) VerifyRefreshToken(combined string) (*model.RefreshToken, e
 	selector := parts[0]
 	validator := parts[1]
 
-	var stored model.RefreshToken
-	if err := s.DB.Where("token_selector = ?", selector).First(&stored).Error; err != nil {
+	stored, err := s.RefreshTokenRepo.FindBySelector(context.Background(), selector)
+	if err != nil {
 		return nil, err
+	}
+	if stored == nil {
+		return nil, fmt.Errorf("refresh token not found")
 	}
 
 	match, err := verifyToken(validator, stored.Token)
@@ -224,35 +220,29 @@ func (s *JWTService) VerifyRefreshToken(combined string) (*model.RefreshToken, e
 	if !match {
 		return nil, fmt.Errorf("refresh token validation failed")
 	}
-	return &stored, nil
+	return stored, nil
 }
 
 // RevokeRefreshTokenBySelector revokes a refresh token record identified by selector.
 func (s *JWTService) RevokeRefreshTokenBySelector(selector string) error {
-	var t model.RefreshToken
-	if err := s.DB.Where("token_selector = ? AND revoked_at IS NULL", selector).First(&t).Error; err != nil {
-		return err
-	}
 	now := time.Now()
-	return s.DB.Model(&t).Update("revoked_at", now).Error
+	return s.RefreshTokenRepo.RevokeBySelector(context.Background(), selector, now)
 }
 
 // RevokeAllRefreshTokensForUser revokes all active refresh tokens for a user.
 func (s *JWTService) RevokeAllRefreshTokensForUser(userID string) error {
 	now := time.Now()
-	return s.DB.Model(&model.RefreshToken{}).
-		Where("user_id = ?", userID).
-		Update("revoked_at", now).Error
+	return s.RefreshTokenRepo.RevokeAllForUser(context.Background(), userID, now)
 }
 
-// IsJWTRevoked is a thin wrapper around the RevocationService.
+// IsJWTRevoked is a thin wrapper around the revocation repository.
 func (s *JWTService) IsJWTRevoked(ctx context.Context, jti string) (bool, error) {
-	return s.RevocationService.IsJWTRevoked(ctx, jti)
+	return s.RevocationRepo.IsJWTRevoked(ctx, jti)
 }
 
-// RevokeJWT delegates to the RevocationService to blacklist a JTI until its expiry.
+// RevokeJWT delegates to the revocation repository to blacklist a JTI until its expiry.
 func (s *JWTService) RevokeJWT(ctx context.Context, jti, userID string, expiresAt time.Time) error {
-	return s.RevocationService.RevokeJWT(ctx, jti, userID, expiresAt)
+	return s.RevocationRepo.RevokeJWT(ctx, jti, userID, expiresAt)
 }
 
 // RefreshTokenHandler is the HTTP handler that renews access tokens using a refresh token cookie.
@@ -281,9 +271,7 @@ func (s *JWTService) RefreshTokenHandler(ctx *gin.Context) {
 	if rt.RevokedAt != nil {
 		log.Printf("SECURITY ALERT: Revoked token reuse detected! User: %s, IP: %s - Revoking all tokens", rt.UserID, clientIP)
 		now := time.Now()
-		_ = s.DB.Model(&model.RefreshToken{}).
-			Where("user_id = ?", rt.UserID).
-			Update("revoked_at", now).Error
+		_ = s.RefreshTokenRepo.RevokeAllForUser(context.Background(), rt.UserID, now)
 		ctx.SetSameSite(helper.GetCookieSameSite())
 		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
@@ -294,7 +282,7 @@ func (s *JWTService) RefreshTokenHandler(ctx *gin.Context) {
 	if rt.ExpiresAt.Before(time.Now()) {
 		log.Printf("SECURITY: Expired refresh token from IP: %s, User: %s", clientIP, rt.UserID)
 		now := time.Now()
-		_ = s.DB.Model(&rt).Update("revoked_at", now).Error
+		_ = s.RefreshTokenRepo.UpdateRevokedAt(context.Background(), rt.ID, now)
 		ctx.SetSameSite(helper.GetCookieSameSite())
 		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
@@ -309,8 +297,24 @@ func (s *JWTService) RefreshTokenHandler(ctx *gin.Context) {
 		return
 	}
 
-	role := helper.GetRole(rt.UserID, s.DB)
-	username := helper.GetUsername(rt.UserID, role, s.DB)
+	// Resolve role using UserRepository (prefer explicit counts to avoid leaking DB access into helper).
+	var role helper.Role = helper.Unknown
+	if cnt, err := s.UserRepo.CountAdminByUserID(s.DB, rt.UserID); err == nil && cnt > 0 {
+		role = helper.Admin
+	} else if cnt, err := s.UserRepo.CountCompanyByUserID(s.DB, rt.UserID); err == nil && cnt > 0 {
+		role = helper.Company
+	} else {
+		// Fallback: unknown (other role checks like Student/Viewer may be implemented in repo later)
+		role = helper.Unknown
+	}
+
+	// Resolve username via UserRepository when role is admin/company; otherwise fallback to unknown.
+	username := "unknown"
+	if role == helper.Company || role == helper.Admin {
+		if u, err := s.UserRepo.FindUserByID(s.DB, rt.UserID); err == nil && u != nil {
+			username = u.Username
+		}
+	}
 
 	ctx.SetSameSite(helper.GetCookieSameSite())
 	ctx.SetCookie("refresh_token", newRefreshToken, int(time.Hour*24*30/time.Second), "/", "", helper.GetCookieSecure(), true)
@@ -360,13 +364,13 @@ func (s *JWTService) LogoutHandler(ctx *gin.Context) {
 			selector := parts[0]
 			validator := parts[1]
 
-			var tokenDB model.RefreshToken
-			if err := s.DB.Where("token_selector = ? AND revoked_at IS NULL", selector).First(&tokenDB).Error; err == nil {
+			tokenDB, err := s.RefreshTokenRepo.FindBySelector(context.Background(), selector)
+			if err == nil && tokenDB != nil {
 				// verify validator against stored hash
 				match, verr := verifyToken(validator, tokenDB.Token)
 				if verr == nil && match {
 					now := time.Now()
-					_ = s.DB.Model(&tokenDB).Update("revoked_at", now).Error
+					_ = s.RefreshTokenRepo.UpdateRevokedAt(context.Background(), tokenDB.ID, now)
 					log.Printf("INFO: Refresh token revoked for user: %s, IP: %s", tokenDB.UserID, clientIP)
 				}
 			}
