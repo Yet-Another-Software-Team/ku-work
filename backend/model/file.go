@@ -1,11 +1,7 @@
 package model
 
 import (
-	"os"
-	"path/filepath"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type FileType string
@@ -36,13 +32,8 @@ type File struct {
 	CreatedAt time.Time    `json:"createdAt"`
 	UpdatedAt time.Time    `json:"updatedAt"`
 	UserID    string       `gorm:"type:uuid;not null" json:"userId"`
-	FileType  FileType     `gorm:"not null" json:"fileType"`
 	Category  FileCategory `gorm:"not null" json:"category"`
 }
 
-func (file *File) AfterDelete(tx *gorm.DB) (err error) {
-	if file.ID == "" {
-		return nil
-	}
-	return os.Remove(filepath.Join("./files", file.ID))
-}
+// Note: The actual deletion of stored files is handled by hooks in the
+// higher-level models (e.g., Company, Student, JobApplication) that use this struct.

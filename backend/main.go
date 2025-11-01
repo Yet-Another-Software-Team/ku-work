@@ -39,12 +39,6 @@ import (
 func main() {
 	_ = godotenv.Load()
 
-	// Initialize infrastructure
-	if err := initializeFilesDirectory(); err != nil {
-		log.Printf("Failed to create files directory: %v", err)
-		return
-	}
-
 	db, err := database.LoadDB()
 	if err != nil {
 		log.Printf("Database initialization failed: %v", err)
@@ -52,7 +46,7 @@ func main() {
 	}
 
 	redisClient := initializeRedis()
-	emailService, aiService := initializeServices(db)
+	emailService, aiService, fileService := initializeServices(db)
 
 	// Setup background tasks
 	ctx, cancel := context.WithCancel(context.Background())
@@ -61,18 +55,12 @@ func main() {
 	scheduler := setupScheduler(ctx, db, emailService)
 	scheduler.Start()
 
-	// Setup HTTP server
-	router := setupRouter(db, redisClient, emailService, aiService)
+	router := setupRouter(db, redisClient, emailService, aiService, fileService)
 	srv := startServer(router)
 
 	// Graceful shutdown
 	waitForShutdownSignal()
 	performGracefulShutdown(srv, cancel, scheduler, redisClient)
-}
-
-// initializeFilesDirectory creates the files directory if it doesn't exist
-func initializeFilesDirectory() error {
-	return os.MkdirAll("./files", 0755)
 }
 
 // initializeRedis initializes Redis client with fail-open behavior
@@ -86,21 +74,24 @@ func initializeRedis() *redis.Client {
 	return redisClient
 }
 
-// initializeServices initializes email and AI services with proper error handling
-func initializeServices(db *gorm.DB) (*services.EmailService, *services.AIService) {
+// initializeServices initializes email, AI, and File services with proper error handling
+func initializeServices(db *gorm.DB) (*services.EmailService, *services.AIService, *services.FileService) {
 	emailService, err := services.NewEmailService(db)
 	if err != nil {
 		log.Printf("Warning: Email service initialization failed: %v", err)
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	aiService, err := services.NewAIService(db, emailService)
 	if err != nil {
 		log.Printf("Warning: AI service initialization failed: %v", err)
-		return emailService, nil
+		return emailService, nil, nil
 	}
 
-	return emailService, aiService
+	fileService := services.NewFileService(db)
+	fileService.RegisterGlobal() //Register file Services to be use on model-level
+
+	return emailService, aiService, fileService
 }
 
 // setupScheduler configures and returns the background task scheduler
@@ -165,7 +156,7 @@ func getAccountDeletionInterval() time.Duration {
 }
 
 // setupRouter configures the Gin router with middleware and routes
-func setupRouter(db *gorm.DB, redisClient *redis.Client, emailService *services.EmailService, aiService *services.AIService) *gin.Engine {
+func setupRouter(db *gorm.DB, redisClient *redis.Client, emailService *services.EmailService, aiService *services.AIService, fileService *services.FileService) *gin.Engine {
 	router := gin.Default()
 
 	// CORS middleware
@@ -173,7 +164,7 @@ func setupRouter(db *gorm.DB, redisClient *redis.Client, emailService *services.
 	router.Use(cors.New(corsConfig))
 
 	// Application routes
-	if err := handlers.SetupRoutes(router, db, redisClient, emailService, aiService); err != nil {
+	if err := handlers.SetupRoutes(router, db, redisClient, emailService, aiService, fileService); err != nil {
 		log.Fatal("Failed to setup routes:", err)
 	}
 

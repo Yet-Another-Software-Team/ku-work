@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"time"
 
 	"gorm.io/datatypes"
@@ -44,16 +45,23 @@ func (student *Student) BeforeDelete(tx *gorm.DB) (err error) {
 	if err := tx.Preload("Photo").Preload("StudentStatusFile").Preload("JobApplications").First(&newStudent).Error; err != nil {
 		return err
 	}
+	// Ensure any JobApplication-associated files are cleaned up via their hooks/logic.
 	for _, application := range newStudent.JobApplications {
 		if err := application.BeforeDelete(tx); err != nil {
 			return err
 		}
 	}
-	if err := newStudent.Photo.AfterDelete(tx); err != nil {
-		return err
+	// Delete associated stored objects (photo and student status file) via the registered hook.
+	// CallStorageDeleteHook is a no-op when no hook/provider is registered.
+	if newStudent.Photo.ID != "" {
+		if err := CallStorageDeleteHook(context.Background(), newStudent.Photo.ID); err != nil {
+			return err
+		}
 	}
-	if err := newStudent.StudentStatusFile.AfterDelete(tx); err != nil {
-		return err
+	if newStudent.StudentStatusFile.ID != "" {
+		if err := CallStorageDeleteHook(context.Background(), newStudent.StudentStatusFile.ID); err != nil {
+			return err
+		}
 	}
 	return nil
 }
