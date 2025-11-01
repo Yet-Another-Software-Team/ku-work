@@ -113,8 +113,8 @@ func AnonymizeJobApplicationsForStudent(tx *gorm.DB, studentUserID string) error
 	for _, app := range applications {
 		// Delete all files associated with this application
 		for _, file := range app.Files {
-			// Delete the physical file
-			if err := file.AfterDelete(tx); err != nil {
+			// Delete the physical file using the registered storage delete hook
+			if err := model.CallStorageDeleteHook(tx.Statement.Context, file.ID); err != nil {
 				log.Printf("Warning: Failed to delete file %s: %v", file.ID, err)
 			}
 			// Delete the file record from database
@@ -230,7 +230,7 @@ func AnonymizeStudentData(tx *gorm.DB, student *model.Student) error {
 	if student.PhotoID != "" {
 		var photo model.File
 		if err := tx.Where("id = ?", student.PhotoID).First(&photo).Error; err == nil {
-			if err := photo.AfterDelete(tx); err != nil {
+			if err := model.CallStorageDeleteHook(tx.Statement.Context, photo.ID); err != nil {
 				log.Printf("Warning: Failed to delete file %s: %v", photo.ID, err)
 			}
 			if err := tx.Unscoped().Delete(&photo).Error; err != nil {
@@ -242,7 +242,7 @@ func AnonymizeStudentData(tx *gorm.DB, student *model.Student) error {
 	if student.StudentStatusFileID != "" {
 		var statusFile model.File
 		if err := tx.Where("id = ?", student.StudentStatusFileID).First(&statusFile).Error; err == nil {
-			if err := statusFile.AfterDelete(tx); err != nil {
+			if err := model.CallStorageDeleteHook(tx.Statement.Context, statusFile.ID); err != nil {
 				log.Printf("Warning: Failed to delete status file %s: %v", statusFile.ID, err)
 			}
 			if err := tx.Unscoped().Delete(&statusFile).Error; err != nil {
@@ -278,7 +278,7 @@ func AnonymizeCompanyData(tx *gorm.DB, company *model.Company) error {
 	if company.PhotoID != "" {
 		var photo model.File
 		if err := tx.Where("id = ?", company.PhotoID).First(&photo).Error; err == nil {
-			if err := photo.AfterDelete(tx); err != nil {
+			if err := model.CallStorageDeleteHook(tx.Statement.Context, photo.ID); err != nil {
 				log.Printf("Warning: Failed to delete file %s: %v", photo.ID, err)
 			}
 			if err := tx.Unscoped().Delete(&photo).Error; err != nil {
@@ -290,7 +290,7 @@ func AnonymizeCompanyData(tx *gorm.DB, company *model.Company) error {
 	if company.BannerID != "" {
 		var banner model.File
 		if err := tx.Where("id = ?", company.BannerID).First(&banner).Error; err == nil {
-			if err := banner.AfterDelete(tx); err != nil {
+			if err := model.CallStorageDeleteHook(tx.Statement.Context, banner.ID); err != nil {
 				log.Printf("Warning: Failed to delete banner file %s: %v", banner.ID, err)
 			}
 			if err := tx.Unscoped().Delete(&banner).Error; err != nil {

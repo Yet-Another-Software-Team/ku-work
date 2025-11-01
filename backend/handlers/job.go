@@ -430,9 +430,8 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 		job.ApprovalStatus = model.JobApprovalPending
 	}
 
-	result = h.DB.Save(&job)
-	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+	if err := h.DB.Save(&job).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"message": "job updated successfully"})

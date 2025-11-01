@@ -70,8 +70,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	protectedActive.GET("/me", userHandlers.GetProfileHandler)
 	protectedActive.POST("/me/deactivate", userHandlers.DeactivateAccount)
 
-	// File Routes
-	router.GET("/files/:fileID", fileHandlers.ServeFileHandler)
+
 
 	// Company Routs
 	company := protectedActive.Group("/company")
