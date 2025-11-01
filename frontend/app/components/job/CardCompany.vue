@@ -107,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import type { JobPost } from "~/data/mockData";
+import type { JobPost } from "~/data/datatypes";
 
 const emit = defineEmits<{
     "update:open": [value: boolean];

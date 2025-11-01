@@ -95,25 +95,25 @@
                         <span class="text-primary-700 font-semibold">Duration: </span>
                         {{ data.duration }}
                     </p>
+                    <StudentApplyButton
+                        v-if="!isViewer"
+                        :job-id="data.id"
+                        label="Apply"
+                        class="mt-4 w-full"
+                        @update:applied="(value) => emit('update:applied', value)"
+                    />
                     <p>
                         <span class="text-primary-700 font-semibold">Description:</span><br />
                         <span class="whitespace-pre-wrap break-words">{{ data.description }}</span>
                     </p>
                 </div>
-
-                <StudentApplyButton
-                    v-if="!isViewer"
-                    :job-id="data.id"
-                    label="Apply"
-                    class="mt-4 w-full"
-                />
             </div>
         </template>
     </UDrawer>
 </template>
 
 <script setup lang="ts">
-import type { JobPost } from "~/data/mockData";
+import type { JobPost } from "~/data/datatypes";
 import { formatSalary, formatJobType, formatExperience } from "~/utils/formatter";
 
 const runtimeConfig = useRuntimeConfig();
@@ -127,5 +127,6 @@ defineProps<{
 
 const emit = defineEmits<{
     (e: "close"): void;
+    (e: "update:applied", value: boolean): void;
 }>();
 </script>

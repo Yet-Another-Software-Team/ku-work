@@ -95,6 +95,7 @@ type JobResponse struct {
 	MaxSalary           uint      `json:"maxSalary"`
 	ApprovalStatus      string    `json:"approvalStatus"`
 	IsOpen              bool      `json:"open"`
+	Applied             bool      `json:"applied"`
 	NotifyOnApplication bool      `json:"notifyOnApplication"`
 }
 
@@ -257,8 +258,8 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 
 	// Filter Job post by keyword
 	if input.Keyword != "" {
-		keywords := strings.Fields(input.Keyword) // Split by whitespace
-		for _, keyword := range keywords {
+		keywords := strings.FieldsSeq(input.Keyword) // Split by whitespace
+		for keyword := range keywords {
 			keywordPattern := fmt.Sprintf("%%%s%%", keyword)
 			searchGroup := h.DB.Where("name ILIKE ?", keywordPattern).
 				Or("description ILIKE ?", keywordPattern).
@@ -347,13 +348,16 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 		return
 	}
 
-	// return Job posts with company info if not company
+	// return Job posts with company info if not company (include whether current user has applied)
 	var jobs []JobResponse
-	result := query.Select("jobs.*, users.username as company_name, companies.photo_id, companies.banner_id").Find(&jobs)
+	result := query.
+		Select("jobs.*, users.username as company_name, companies.photo_id, companies.banner_id, EXISTS (SELECT 1 FROM job_applications WHERE job_applications.job_id = jobs.id AND job_applications.user_id = ?) AS applied", userId).
+		Find(&jobs)
 	if result.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"jobs":  jobs,
 		"total": totalCount,
@@ -420,43 +424,59 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 		return
 	}
 
+	needReapproval := false
+
 	// Update job post with new data
 	if input.Name != nil {
+		needReapproval = true
 		job.Name = *input.Name
 	}
 	if input.Position != nil {
+		needReapproval = true
 		job.Position = *input.Position
 	}
 	if input.Duration != nil {
+		needReapproval = true
 		job.Duration = *input.Duration
 	}
 	if input.Description != nil {
+		needReapproval = true
 		job.Description = *input.Description
 	}
 	if input.Location != nil {
+		needReapproval = true
 		job.Location = *input.Location
 	}
 	if input.JobType != nil {
+		needReapproval = true
 		job.JobType = model.JobType(*input.JobType)
 	}
 	if input.Open != nil {
 		job.IsOpen = *input.Open
 	}
 	if input.Experience != nil {
+		needReapproval = true
 		job.Experience = model.ExperienceType(*input.Experience)
 	}
 	if input.MinSalary != nil {
+		needReapproval = true
 		job.MinSalary = *input.MinSalary
 	}
 	if input.MaxSalary != nil {
+		needReapproval = true
 		job.MaxSalary = *input.MaxSalary
 	}
+	// Check for invalid salary range
 	if job.MinSalary > job.MaxSalary {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "minSalary cannot exceed maxSalary"})
 		return
 	}
 	if input.NotifyOnApplication != nil {
 		job.NotifyOnApplication = *input.NotifyOnApplication
+	}
+
+	if needReapproval {
+		job.ApprovalStatus = model.JobApprovalPending
 	}
 
 	result = h.DB.Save(&job)
@@ -595,6 +615,19 @@ func (h *JobHandlers) GetJobDetailHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	applied := false
+	if uidVal, ok := ctx.Get("userID"); ok {
+		if uidStr, ok2 := uidVal.(string); ok2 && uidStr != "" {
+			var count int64
+			if err := h.DB.Model(&model.JobApplication{}).
+				Where("job_id = ? AND user_id = ?", jobId, uidStr).
+				Count(&count).Error; err == nil {
+				applied = count > 0
+			}
+		}
+	}
+	job.Applied = applied
 
 	ctx.JSON(http.StatusOK, job)
 }

@@ -53,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ProfileInformation } from "~/data/mockData";
+import type { ProfileInformation } from "~/data/datatypes";
 
 const props = defineProps<{
     requestId: string;

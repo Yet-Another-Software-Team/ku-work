@@ -120,6 +120,13 @@ func setupScheduler(ctx context.Context, db *gorm.DB, emailService *services.Ema
 		})
 	}
 
+	// Account anonymization task - runs daily to anonymize accounts past grace period
+	accountDeletionInterval := getAccountDeletionInterval()
+	gracePeriod := helper.GetGracePeriodDays()
+	scheduler.AddTask("account-deletion", accountDeletionInterval, func() error {
+		return services.AnonymizeExpiredAccounts(db, gracePeriod)
+	})
+
 	return scheduler
 }
 
@@ -138,6 +145,23 @@ func getEmailRetryInterval() time.Duration {
 	}
 
 	return time.Duration(minutes) * time.Minute
+}
+
+// getAccountDeletionInterval reads the account anonymization check interval from environment or returns default
+func getAccountDeletionInterval() time.Duration {
+	defaultInterval := 24 * time.Hour // Check once per day by default (PDPA compliant anonymization)
+
+	intervalStr, hasInterval := os.LookupEnv("ACCOUNT_DELETION_CHECK_INTERVAL_HOURS")
+	if !hasInterval {
+		return defaultInterval
+	}
+
+	hours, err := strconv.Atoi(intervalStr)
+	if err != nil || hours <= 0 {
+		return defaultInterval
+	}
+
+	return time.Duration(hours) * time.Hour
 }
 
 // setupRouter configures the Gin router with middleware and routes

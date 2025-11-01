@@ -20,9 +20,11 @@ type Student struct {
 	User                User                  `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE;" json:"-"`
 	ApprovalStatus      StudentApprovalStatus `json:"approvalStatus"`
 	CreatedAt           time.Time             `json:"createdAt"`
+	UpdatedAt           time.Time             `json:"updatedAt"`
+	DeletedAt           gorm.DeletedAt        `gorm:"index" json:"-"`
 	Phone               string                `json:"phone"`
 	PhotoID             string                `gorm:"type:uuid" json:"photoId"`
-	Photo               File                  `gorm:"foreignKey:PhotoID;constraint:OnDelete:CASCADE;" json:"photo,omitempty"`
+	Photo               File                  `gorm:"foreignKey:PhotoID;constraint:OnDelete:CASCADE;" json:"photo"`
 	BirthDate           datatypes.Date        `json:"birthDate"`
 	AboutMe             string                `json:"aboutMe"`
 	GitHub              string                `json:"github"`
@@ -31,7 +33,7 @@ type Student struct {
 	Major               string                `json:"major"`
 	StudentStatus       string                `json:"status"`
 	StudentStatusFileID string                `gorm:"type:uuid" json:"statusFileId"`
-	StudentStatusFile   File                  `gorm:"foreignKey:StudentStatusFileID;constraint:OnDelete:CASCADE;" json:"statusFile,omitempty"`
+	StudentStatusFile   File                  `gorm:"foreignKey:StudentStatusFileID;constraint:OnDelete:CASCADE;" json:"statusFile"`
 	JobApplications     []JobApplication      `gorm:"foreignkey:UserID;constraint:OnDelete:CASCADE;" json:"-"`
 }
 

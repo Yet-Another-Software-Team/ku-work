@@ -212,14 +212,13 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { Profile } from "~/data/mockData";
-import { mockUserData } from "~/data/mockData";
+import type { Profile } from "~/data/datatypes";
 
 const props = defineProps<{
     requestId: string;
 }>();
 
-const data = ref<Profile>(mockUserData);
+const data = ref<Profile>();
 const toast = useToast();
 
 const api = useApi();

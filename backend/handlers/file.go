@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/chai2010/webp"
 
+	"ku-work/backend/helper"
 	"ku-work/backend/model"
 	"log"
 	"mime/multipart"
@@ -208,9 +210,29 @@ func CleanImageMetadata(filePath string) error {
 // @Router /files/{fileID} [get]
 func (h *FileHandlers) ServeFileHandler(ctx *gin.Context) {
 	fileID := ctx.Param("fileID")
+
 	// Ensure that file id not contain invalid characters
 	if strings.Contains(fileID, "/") || strings.Contains(fileID, `\`) || strings.Contains(fileID, "..") {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file identifier"})
+		return
+	}
+
+	// Check file deactivation from DB
+	fileDBO := &model.File{
+		ID: fileID,
+	}
+
+	if err := h.DB.First(fileDBO).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+		} else {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		}
+		return
+	}
+
+	if helper.IsDeactivated(h.DB, fileDBO.UserID) {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "File is deactivated"})
 		return
 	}
 
