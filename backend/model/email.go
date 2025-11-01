@@ -11,14 +11,14 @@ const (
 )
 
 type MailLog struct {
-	ID               uint   `gorm:"primary_key"`
-	To               string `gorm:"not null"`
-	Subject          string `gorm:"not null"`
-	Body             string `gorm:"not null"`
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	Status           MailLogStatus `gorm:"not null"`
-	ErrorCode        string
-	ErrorDescription string
-	RetryCount       int `gorm:"default:0"` // Number of retry attempts made
+	ID               uint          `gorm:"primary_key" json:"id"`
+	To               string        `gorm:"not null" json:"to"`
+	Subject          string        `gorm:"not null" json:"subject"`
+	Body             string        `gorm:"not null" json:"body"`
+	CreatedAt        time.Time     `json:"createdAt"`
+	UpdatedAt        time.Time     `json:"updatedAt"`
+	Status           MailLogStatus `gorm:"not null" json:"status"`
+	ErrorCode        string        `json:"errorCode,omitempty"`
+	ErrorDescription string        `json:"errorDesc,omitempty"`
+	RetryCount       int           `gorm:"default:0" json:"retryCount"` // Number of retry attempts made
 }
