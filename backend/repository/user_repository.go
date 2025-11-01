@@ -8,27 +8,31 @@ import (
 
 // UserRepository defines database operations related to users and user-related entities.
 type UserRepository interface {
-	// ExistsByUsernameAndType checks whether a user exists for the given username and type.
-	ExistsByUsernameAndType(db *gorm.DB, username, userType string) (bool, error)
+	// WithTx returns a repository instance bound to the provided transaction DB.
+	// Use this when you need to run multiple repository operations within a single transaction.
+	WithTx(tx *gorm.DB) UserRepository
 
-	// CreateUser persists a new user using the provided DB (tx or regular DB).
-	CreateUser(db *gorm.DB, user *model.User) error
+	// ExistsByUsernameAndType checks whether a user exists for the given username and type.
+	ExistsByUsernameAndType(username, userType string) (bool, error)
+
+	// CreateUser persists a new user.
+	CreateUser(user *model.User) error
 
 	// FindUserByUsernameAndType returns a user by username and type.
-	FindUserByUsernameAndType(db *gorm.DB, username, userType string) (*model.User, error)
+	FindUserByUsernameAndType(username, userType string) (*model.User, error)
 
 	// FirstOrCreateUser attempts to find a user matching cond; if none exists it creates out.
-	FirstOrCreateUser(db *gorm.DB, out *model.User, cond model.User) error
+	FirstOrCreateUser(out *model.User, cond model.User) error
 
 	// FindUserByID returns a user by its ID.
-	FindUserByID(db *gorm.DB, id string) (*model.User, error)
+	FindUserByID(id string) (*model.User, error)
 
 	// Google OAuth related operations
-	CreateGoogleOAuthDetails(db *gorm.DB, details *model.GoogleOAuthDetails) error
-	UpdateGoogleOAuthDetails(db *gorm.DB, details *model.GoogleOAuthDetails) error
-	GetGoogleOAuthDetailsByExternalID(db *gorm.DB, externalID string) (*model.GoogleOAuthDetails, error)
+	CreateGoogleOAuthDetails(details *model.GoogleOAuthDetails) error
+	UpdateGoogleOAuthDetails(details *model.GoogleOAuthDetails) error
+	GetGoogleOAuthDetailsByExternalID(externalID string) (*model.GoogleOAuthDetails, error)
 
 	// Convenience counters used by auth flows
-	CountCompanyByUserID(db *gorm.DB, userID string) (int64, error)
-	CountAdminByUserID(db *gorm.DB, userID string) (int64, error)
+	CountCompanyByUserID(userID string) (int64, error)
+	CountAdminByUserID(userID string) (int64, error)
 }

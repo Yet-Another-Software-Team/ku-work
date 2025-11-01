@@ -21,17 +21,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/argon2"
-	"gorm.io/gorm"
 )
 
 // JWTService encapsulates JWT and refresh-token related operations.
-//
-// Note: this service no longer performs raw GORM or Redis operations itself.
-// Instead it depends on repository interfaces for refresh-token persistence and
-// JWT revocation storage. The `DB` field remains for passing into UserRepo
-// calls which expect a *gorm.DB (transaction support).
 type JWTService struct {
-	DB               *gorm.DB
 	RefreshTokenRepo repo.RefreshTokenRepository
 	RevocationRepo   repo.JWTRevocationRepository
 	JWTSecret        []byte
@@ -40,7 +33,7 @@ type JWTService struct {
 
 // NewJWTService constructs a new JWTService wired with Redis/GORM dependencies.
 // It reads JWT_SECRET from the environment (and requires it to be at least 32 bytes).
-func NewJWTService(db *gorm.DB, refreshRepo repo.RefreshTokenRepository, revocationRepo repo.JWTRevocationRepository, userRepo repo.UserRepository) *JWTService {
+func NewJWTService(refreshRepo repo.RefreshTokenRepository, revocationRepo repo.JWTRevocationRepository, userRepo repo.UserRepository) *JWTService {
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 
 	if len(jwtSecret) == 0 {
@@ -58,7 +51,6 @@ func NewJWTService(db *gorm.DB, refreshRepo repo.RefreshTokenRepository, revocat
 	}
 
 	return &JWTService{
-		DB:               db,
 		RefreshTokenRepo: refreshRepo,
 		RevocationRepo:   revocationRepo,
 		JWTSecret:        jwtSecret,
@@ -299,9 +291,9 @@ func (s *JWTService) RefreshTokenHandler(ctx *gin.Context) {
 
 	// Resolve role using UserRepository (prefer explicit counts to avoid leaking DB access into helper).
 	var role helper.Role = helper.Unknown
-	if cnt, err := s.UserRepo.CountAdminByUserID(s.DB, rt.UserID); err == nil && cnt > 0 {
+	if cnt, err := s.UserRepo.CountAdminByUserID(rt.UserID); err == nil && cnt > 0 {
 		role = helper.Admin
-	} else if cnt, err := s.UserRepo.CountCompanyByUserID(s.DB, rt.UserID); err == nil && cnt > 0 {
+	} else if cnt, err := s.UserRepo.CountCompanyByUserID(rt.UserID); err == nil && cnt > 0 {
 		role = helper.Company
 	} else {
 		// Fallback: unknown (other role checks like Student/Viewer may be implemented in repo later)
@@ -311,7 +303,7 @@ func (s *JWTService) RefreshTokenHandler(ctx *gin.Context) {
 	// Resolve username via UserRepository when role is admin/company; otherwise fallback to unknown.
 	username := "unknown"
 	if role == helper.Company || role == helper.Admin {
-		if u, err := s.UserRepo.FindUserByID(s.DB, rt.UserID); err == nil && u != nil {
+		if u, err := s.UserRepo.FindUserByID(rt.UserID); err == nil && u != nil {
 			username = u.Username
 		}
 	}

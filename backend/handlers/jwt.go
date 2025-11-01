@@ -22,7 +22,7 @@ func NewJWTHandlers(db *gorm.DB, redisClient *redis.Client) *JWTHandlers {
 	revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
 
 	// Wire the service with repository abstractions (no direct DB/Redis use inside the service).
-	svc := services.NewJWTService(db, refreshRepo, revocationRepo, userRepo)
+	svc := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
 	return &JWTHandlers{
 		Service: svc,
 	}
@@ -46,7 +46,6 @@ func (h *JWTHandlers) GenerateTokens(userID string) (string, string, error) {
 // @Failure 500 {object} object{error=string} "Internal Server Error: Failed to generate new tokens"
 // @Router /auth/refresh [post]
 func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
-	// Delegate full refresh logic to the service implementation
 	h.Service.RefreshTokenHandler(ctx)
 }
 
@@ -62,7 +61,7 @@ func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
 	h.Service.LogoutHandler(ctx)
 }
 
-// HandleToken delegates to the service implementation.
+
 func (h *JWTHandlers) HandleToken(user model.User) (string, string, error) {
 	return h.Service.HandleToken(user)
 }

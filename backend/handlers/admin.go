@@ -1,22 +1,31 @@
 package handlers
 
 import (
-	"ku-work/backend/model"
 	"net/http"
+
+	gormrepo "ku-work/backend/repository/gorm"
+	"ku-work/backend/services"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
+// AdminHandlers handles admin-only HTTP endpoints and depends on the service layer.
 type AdminHandlers struct {
-	DB *gorm.DB
+	svc services.AdminService
 }
 
+// NewAdminHandlers constructs AdminHandlers by wiring default repository and service
 func NewAdminHandlers(db *gorm.DB) *AdminHandlers {
-	return &AdminHandlers{
-		DB: db,
-	}
+	repo := gormrepo.NewGormAuditRepository(db)
+	svc := services.NewAdminService(repo)
+	return &AdminHandlers{svc: svc}
+}
+
+// NewAdminHandlersWithService constructs handlers with an explicit service implementation.
+// Use this for unit tests or when you already have a service instance.
+func NewAdminHandlersWithService(svc services.AdminService) *AdminHandlers {
+	return &AdminHandlers{svc: svc}
 }
 
 // @Summary Get an Audit Log (Admin only)
@@ -33,19 +42,22 @@ func (h *AdminHandlers) FetchAuditLog(ctx *gin.Context) {
 		Offset uint `json:"offset" form:"offset"`
 		Limit  uint `json:"limit" form:"limit" binding:"max=64"`
 	}
+
 	input := FetchAuditLogInput{
 		Limit: 32,
 	}
-	err := ctx.Bind(&input)
+
+	if err := ctx.Bind(&input); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	audits, err := h.svc.FetchAuditLog(input.Offset, input.Limit)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	var auditLogEntry []model.Audit
-	result := h.DB.Model(&model.Audit{}).Offset(int(input.Offset)).Limit(int(input.Limit)).Order(clause.OrderByColumn{Column: clause.Column{Name: "created_at"}, Desc: true}).Find(&auditLogEntry)
-	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
-		return
-	}
-	ctx.JSON(http.StatusOK, auditLogEntry)
+
+	// Respond with the same payload shape as before.
+	ctx.JSON(http.StatusOK, audits)
 }

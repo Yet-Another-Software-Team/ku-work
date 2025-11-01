@@ -59,8 +59,8 @@ func (s *AuthService) RegisterCompany(ctx *gin.Context, input RegisterCompanyInp
 	var zeroUser model.User
 	var zeroCompany model.Company
 
-	// check existence via repository
-	exists, err := s.UserRepo.ExistsByUsernameAndType(s.DB, input.Username, "company")
+	// check existence via repository (non-transactional check)
+	exists, err := s.UserRepo.ExistsByUsernameAndType(input.Username, "company")
 	if err != nil {
 		return zeroUser, zeroCompany, "", "", err
 	}
@@ -88,7 +88,10 @@ func (s *AuthService) RegisterCompany(ctx *gin.Context, input RegisterCompanyInp
 		PasswordHash: hashedPassword,
 	}
 
-	if err := s.UserRepo.CreateUser(tx, &newUser); err != nil {
+	// Use a repository instance bound to the transaction for all repo calls within the tx.
+	repoTx := s.UserRepo.WithTx(tx)
+
+	if err := repoTx.CreateUser(&newUser); err != nil {
 		return zeroUser, zeroCompany, "", "", err
 	}
 
@@ -141,7 +144,7 @@ func (s *AuthService) RegisterCompany(ctx *gin.Context, input RegisterCompanyInp
 // CompanyLogin validates credentials for a company and returns tokens on success.
 func (s *AuthService) CompanyLogin(username, password string) (model.User, string, string, error) {
 	var user model.User
-	userPtr, err := s.UserRepo.FindUserByUsernameAndType(s.DB, username, "company")
+	userPtr, err := s.UserRepo.FindUserByUsernameAndType(username, "company")
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return model.User{}, "", "", ErrInvalidCredentials
@@ -155,7 +158,7 @@ func (s *AuthService) CompanyLogin(username, password string) (model.User, strin
 		return model.User{}, "", "", ErrInvalidCredentials
 	}
 
-	companyCount, err := s.UserRepo.CountCompanyByUserID(s.DB, user.ID)
+	companyCount, err := s.UserRepo.CountCompanyByUserID(user.ID)
 	if err != nil {
 		return model.User{}, "", "", err
 	}
@@ -174,7 +177,7 @@ func (s *AuthService) CompanyLogin(username, password string) (model.User, strin
 // AdminLogin validates admin credentials and returns tokens on success.
 func (s *AuthService) AdminLogin(username, password string) (model.User, string, string, error) {
 	var user model.User
-	userPtr, err := s.UserRepo.FindUserByUsernameAndType(s.DB, username, "admin")
+	userPtr, err := s.UserRepo.FindUserByUsernameAndType(username, "admin")
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return model.User{}, "", "", ErrInvalidCredentials
@@ -188,7 +191,7 @@ func (s *AuthService) AdminLogin(username, password string) (model.User, string,
 		return model.User{}, "", "", ErrInvalidCredentials
 	}
 
-	adminCount, err := s.UserRepo.CountAdminByUserID(s.DB, user.ID)
+	adminCount, err := s.UserRepo.CountAdminByUserID(user.ID)
 	if err != nil {
 		return model.User{}, "", "", err
 	}
@@ -223,12 +226,12 @@ func (s *AuthService) HandleGoogleOAuth(userInfo struct {
 
 	// Try to fetch existing OAuth details via repository
 	var oauthDetail model.GoogleOAuthDetails
-	det, err := s.UserRepo.GetGoogleOAuthDetailsByExternalID(s.DB, userInfo.ID)
+	det, err := s.UserRepo.GetGoogleOAuthDetailsByExternalID(userInfo.ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// create user if not exists and attach oauth details
 			var newUser model.User
-			if err = s.UserRepo.FirstOrCreateUser(s.DB, &newUser, model.User{
+			if err = s.UserRepo.FirstOrCreateUser(&newUser, model.User{
 				Username: userInfo.Email,
 				UserType: "oauth",
 			}); err != nil {
@@ -242,7 +245,7 @@ func (s *AuthService) HandleGoogleOAuth(userInfo struct {
 				LastName:   userInfo.FamilyName,
 				Email:      userInfo.Email,
 			}
-			if err = s.UserRepo.CreateGoogleOAuthDetails(s.DB, &oauthDetail); err != nil {
+			if err = s.UserRepo.CreateGoogleOAuthDetails(&oauthDetail); err != nil {
 				return
 			}
 			statusCode = 201
@@ -255,7 +258,7 @@ func (s *AuthService) HandleGoogleOAuth(userInfo struct {
 
 	// update details
 	if oauthDetail.UserID != "" {
-		_ = s.UserRepo.UpdateGoogleOAuthDetails(s.DB, &model.GoogleOAuthDetails{
+		_ = s.UserRepo.UpdateGoogleOAuthDetails(&model.GoogleOAuthDetails{
 			UserID:    oauthDetail.UserID,
 			FirstName: userInfo.GivenName,
 			LastName:  userInfo.FamilyName,
@@ -263,14 +266,14 @@ func (s *AuthService) HandleGoogleOAuth(userInfo struct {
 		})
 	}
 
-	det2, err := s.UserRepo.GetGoogleOAuthDetailsByExternalID(s.DB, userInfo.ID)
+	det2, err := s.UserRepo.GetGoogleOAuthDetailsByExternalID(userInfo.ID)
 	if err != nil {
 		return
 	}
 	oauthDetail = *det2
 
 	var user model.User
-	userPtr2, err := s.UserRepo.FindUserByID(s.DB, oauthDetail.UserID)
+	userPtr2, err := s.UserRepo.FindUserByID(oauthDetail.UserID)
 	if err != nil {
 		return
 	}
