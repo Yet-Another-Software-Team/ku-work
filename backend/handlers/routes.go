@@ -98,5 +98,6 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	// Admin Routes
 	admin := protectedActive.Group("/admin", middlewares.AdminPermissionMiddleware(db))
 	admin.GET("/audits", adminHandlers.FetchAuditLog)
+	admin.GET("/emaillog", adminHandlers.FetchEmailLog)
 	return nil
 }

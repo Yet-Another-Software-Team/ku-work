@@ -69,6 +69,56 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/emaillog": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves a list logs related to email i.e, sending success failure, to whom.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Get log of email (Admin only)",
+                "responses": {
+                    "200": {
+                        "description": "List of all audit log entries",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.MailLog"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/applications": {
             "get": {
                 "security": [
@@ -2829,6 +2879,9 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "notifyOnApplication": {
+                    "type": "boolean"
+                },
                 "open": {
                     "type": "boolean"
                 },
@@ -2890,6 +2943,9 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "notifyOnApplication": {
+                    "type": "boolean"
                 },
                 "open": {
                     "type": "boolean"
@@ -3079,6 +3135,55 @@ const docTemplate = `{
                 "JobApplicationAccepted",
                 "JobApplicationRejected",
                 "JobApplicationPending"
+            ]
+        },
+        "model.MailLog": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "errorCode": {
+                    "type": "string"
+                },
+                "errorDesc": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "retryCount": {
+                    "description": "Number of retry attempts made",
+                    "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/model.MailLogStatus"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.MailLogStatus": {
+            "type": "string",
+            "enum": [
+                "delivered",
+                "temporary_error",
+                "permanent_error"
+            ],
+            "x-enum-varnames": [
+                "MailLogStatusDelivered",
+                "MailLogStatusTemporaryError",
+                "MailLogStatusPermanentError"
             ]
         }
     },

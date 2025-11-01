@@ -243,6 +243,8 @@ definitions:
         type: integer
       name:
         type: string
+      notifyOnApplication:
+        type: boolean
       open:
         type: boolean
       photoId:
@@ -284,6 +286,8 @@ definitions:
         type: integer
       name:
         type: string
+      notifyOnApplication:
+        type: boolean
       open:
         type: boolean
       pending:
@@ -415,6 +419,40 @@ definitions:
     - JobApplicationAccepted
     - JobApplicationRejected
     - JobApplicationPending
+  model.MailLog:
+    properties:
+      body:
+        type: string
+      createdAt:
+        type: string
+      errorCode:
+        type: string
+      errorDesc:
+        type: string
+      id:
+        type: integer
+      retryCount:
+        description: Number of retry attempts made
+        type: integer
+      status:
+        $ref: '#/definitions/model.MailLogStatus'
+      subject:
+        type: string
+      to:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  model.MailLogStatus:
+    enum:
+    - delivered
+    - temporary_error
+    - permanent_error
+    type: string
+    x-enum-varnames:
+    - MailLogStatusDelivered
+    - MailLogStatusTemporaryError
+    - MailLogStatusPermanentError
 info:
   contact: {}
   description: This is a sample API for KU-Work
@@ -454,6 +492,38 @@ paths:
       security:
       - BearerAuth: []
       summary: Get an Audit Log (Admin only)
+      tags:
+      - Admin
+  /admin/emaillog:
+    get:
+      description: Retrieves a list logs related to email i.e, sending success failure,
+        to whom.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of all audit log entries
+          schema:
+            items:
+              $ref: '#/definitions/model.MailLog'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get log of email (Admin only)
       tags:
       - Admin
   /applications:
