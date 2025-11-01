@@ -81,22 +81,30 @@
                 <span class="text-primary-700 font-semibold">Duration: </span>
                 {{ data.duration }}
             </p>
+            <StudentApplyButton
+                v-if="!isViewer"
+                :job-id="data.id"
+                :applied="data.applied"
+                label="Apply"
+                @update:applied="(value) => emit('update:applied', value)"
+            />
             <p>
                 <span class="text-primary-700 font-semibold">Description:</span>
                 <br />
                 {{ data.description }}
             </p>
         </div>
-        <StudentApplyButton v-if="!isViewer" :job-id="data.id" label="Apply" />
     </div>
 </template>
 
 <script setup lang="ts">
-import type { JobPost } from "~/data/mockData";
+import type { JobPost } from "~/data/datatypes";
 import { formatSalary, formatJobType, formatExperience } from "~/utils/formatter";
 
 const runtimeConfig = useRuntimeConfig();
 const timeAgo = useTimeAgo();
+
+const emit = defineEmits<{ (e: "update:applied", value: boolean): void }>();
 
 defineProps<{
     data: JobPost;

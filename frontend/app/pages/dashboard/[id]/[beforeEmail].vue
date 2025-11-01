@@ -44,12 +44,7 @@ const statusChanged = async (status: string) => {
 
 const fetchData = async () => {
     try {
-        const response = await api.get(
-            `/jobs/${jobId}/application?${new URLSearchParams({
-                email: `${beforeEmailParam}@ku.th`,
-            })}`
-        );
-        console.log(response.data);
+        const response = await api.get(`/jobs/${jobId}/applications/${beforeEmailParam}@ku.th`);
         applicantData.value = response.data;
     } catch (error) {
         console.error("Failed to fetch applicant data:", error);

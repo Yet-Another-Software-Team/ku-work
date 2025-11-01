@@ -2,11 +2,11 @@
     <div class="rounded-xl max-h-[90vh] overflow-y-auto">
         <div class="p-4 sm:p-5 md:p-6">
             <div class="relative">
-                <div class="relative h-28 sm:h-32 md:h-36 w-full">
+                <div class="relative h-[10rem] sm:h-32 md:h-36 w-full">
                     <img
                         :src="bannerPreview"
                         alt="Company banner"
-                        class="h-full w-full object-cover"
+                        class="h-[10rem] w-full object-cover"
                     />
                     <button
                         type="button"

@@ -129,6 +129,39 @@ The email service automatically retries emails that fail with temporary errors (
 
 If you use other provider than dummy follow the [configuration guide](./email_config.md) here.
 
+### Account Anonymization Configuration (PDPA Compliant)
+
+This application implements Thailand's Personal Data Protection Act (PDPA) compliant account anonymization:
+
+- `ACCOUNT_DELETION_GRACE_PERIOD_DAYS`: Days before deactivated accounts are anonymized (default: 30)
+- `ACCOUNT_DELETION_CHECK_INTERVAL_HOURS`: How often to check for expired accounts (default: 24)
+
+**Features**:
+- **Deactivation**: Users can deactivate their accounts (soft delete)
+- **Grace Period**: Accounts can be reactivated within the grace period (default 30 days)
+- **Automatic Anonymization**: After grace period, personal data is anonymized (NOT deleted)
+- **Data Retention**: Anonymized data is retained for analytics and compliance
+- **PDPA Compliance**: Removes all PII while maintaining historical records
+
+**What Gets Anonymized**:
+- Usernames, passwords, emails, phone numbers
+- Names, addresses, birth dates, student IDs
+- Social media links, profile photos, documents
+
+**What Gets Retained** (anonymized):
+- Account records with anonymized identifiers
+- Timestamps and statistics
+- Job postings and applications (anonymized)
+
+For detailed documentation, see:
+- **Quick Reference**: [`PDPA_QUICK_REFERENCE.md`](./PDPA_QUICK_REFERENCE.md)
+- **Full Documentation**: [`ACCOUNT_ANONYMIZATION.md`](./ACCOUNT_ANONYMIZATION.md)
+
+**API Endpoints**:
+- `POST /me/deactivate` - Deactivate account
+- `POST /me/reactivate` - Reactivate within grace period
+- `DELETE /me/delete` - Request account anonymization
+
 ## Running the Application
 
 ### Development Mode
@@ -261,6 +294,12 @@ The application runs scheduled background tasks:
    - Respects configured retry interval and max attempts
    - Marks emails as permanent failures after max attempts exceeded
    - Only retries emails within the configured maximum age window
+
+4. **Account Anonymization** (daily)
+   - Automatically anonymizes accounts past grace period
+   - Removes all personally identifiable information (PII)
+   - Retains anonymized data for analytics and compliance
+   - Runs daily by default (configurable via environment)
 
 ### Security Monitoring
 
