@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 	"html/template"
-	"ku-work/backend/helper"
 	"ku-work/backend/middlewares"
 	gormrepo "ku-work/backend/repository/gorm"
 	redisrepo "ku-work/backend/repository/redis"
@@ -89,7 +88,8 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	companyRepo := gormrepo.NewGormCompanyRepository(db)
 	companyService := services.NewCompanyServiceWithRepo(companyRepo)
 	companyHandlers := NewCompanyHandlers(companyService)
-	userHandlers := NewUserHandlers(db, helper.GetGracePeriodDays())
+	accountService := services.NewAccountService(db)
+	userHandlers := NewUserHandlers(accountService)
 	// Admin handlers with injected service
 	auditRepo := gormrepo.NewGormAuditRepository(db)
 	adminSvc := services.NewAdminService(auditRepo)

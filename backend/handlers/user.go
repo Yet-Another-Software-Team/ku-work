@@ -1,30 +1,28 @@
 package handlers
 
 import (
-	"ku-work/backend/helper"
-	"ku-work/backend/model"
 	"mime/multipart"
 	"net/http"
-	"net/mail"
-	"net/url"
 	"time"
+
+	"ku-work/backend/helper"
+
+	"ku-work/backend/services"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	"gorm.io/datatypes"
-	"gorm.io/gorm"
 )
 
 // UserHandlers struct for handling user-related operations
 type UserHandlers struct {
-	DB          *gorm.DB
 	gracePeriod int
+	UserService *services.AccountService
 }
 
-func NewUserHandlers(db *gorm.DB, gracePeriod int) *UserHandlers {
+func NewUserHandlers(svc *services.AccountService) *UserHandlers {
 	return &UserHandlers{
-		DB:          db,
-		gracePeriod: gracePeriod,
+		gracePeriod: helper.GetGracePeriodDays(),
+		UserService: svc,
 	}
 }
 
@@ -56,8 +54,8 @@ func NewUserHandlers(db *gorm.DB, gracePeriod int) *UserHandlers {
 func (h *UserHandlers) EditProfileHandler(ctx *gin.Context) {
 	// take user ID from context (auth middleware)
 	userId := ctx.MustGet("userID").(string)
-	// Find out user role
-	role := helper.GetRole(userId, h.DB)
+	// Find out user role via injected service
+	role := h.UserService.GetRole(ctx.Request.Context(), userId)
 	if role == helper.Unknown {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "Invalid User"})
 		return
@@ -96,117 +94,37 @@ func (h *UserHandlers) editCompanyProfile(ctx *gin.Context, userId string) {
 		return
 	}
 
-	// Update username
-	if input.Username != nil {
-		var usernameCount int64
-		if err := h.DB.Model(&model.User{}).Where(&model.User{
-			Username: *input.Username,
-		}).Count(&usernameCount).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		if usernameCount > 0 {
+	// Map handler input to service input
+	payload := services.CompanyEditProfileInput{
+		Phone:    input.Phone,
+		Email:    input.Email,
+		Website:  input.Website,
+		Address:  input.Address,
+		City:     input.City,
+		Country:  input.Country,
+		AboutUs:  input.AboutUs,
+		Username: input.Username,
+		Photo:    input.Photo,
+		Banner:   input.Banner,
+	}
+
+	if err := h.UserService.UpdateCompanyProfile(ctx, userId, payload); err != nil {
+		switch err {
+		case services.ErrUsernameExists:
 			ctx.JSON(http.StatusConflict, gin.H{"error": "username already exist"})
 			return
-		}
-		user := model.User{
-			ID: userId,
-		}
-		if err := h.DB.Take(&user).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		user.Username = *input.Username
-		if err := h.DB.Save(&user).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-	}
-
-	// Get current company data
-	company := model.Company{
-		UserID: userId,
-	}
-	if err := h.DB.First(&company).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Update company data if input is provided in request
-	if input.Phone != nil {
-		company.Phone = *input.Phone
-	}
-	if input.Address != nil {
-		company.Address = *input.Address
-	}
-	if input.City != nil {
-		company.City = *input.City
-	}
-	if input.Country != nil {
-		company.Country = *input.Country
-	}
-	if input.AboutUs != nil {
-		company.AboutUs = *input.AboutUs
-	}
-	if input.Email != nil {
-		if _, err := mail.ParseAddress(*input.Email); err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid email address"})
-			return
-		}
-		company.Email = *input.Email
-	}
-	if input.Website != nil {
-		if _, err := url.Parse(*input.Website); err != nil {
+		case services.ErrInvalidWebsite:
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid website URL"})
 			return
-		}
-		company.Website = *input.Website
-	}
-
-	// Handle Photo and Banner Update
-	// Remove file that are recently saved if request is not successful
-	success := false
-	defer (func() {
-		if !success && input.Photo != nil {
-			_ = h.DB.Delete(&model.File{
-				ID: company.PhotoID,
-			})
-		}
-	})()
-
-	defer (func() {
-		if !success && input.Banner != nil {
-			_ = h.DB.Delete(&model.File{
-				ID: company.BannerID,
-			})
-		}
-	})()
-
-	if input.Photo != nil {
-		photo, err := fileService.SaveFile(ctx, userId, input.Photo, model.FileCategoryImage)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		default:
+			if err.Error() == "invalid email address" {
+				ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update company profile"})
 			return
 		}
-		company.PhotoID = photo.ID
 	}
-
-	if input.Banner != nil {
-		banner, err := fileService.SaveFile(ctx, userId, input.Banner, model.FileCategoryImage)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		company.BannerID = banner.ID
-	}
-
-	// Save updated company to database.
-	if err := h.DB.Save(&company).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	success = true
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "ok",
@@ -231,52 +149,19 @@ func (h *UserHandlers) editStudentProfile(ctx *gin.Context, userId string) {
 		return
 	}
 
-	// Get current data from database.
-	student := model.Student{
-		UserID: userId,
-	}
-	if err := h.DB.First(&student).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	// Update student data according to input, maintain same data if not provided
-	if input.BirthDate != nil {
-		parsedBirthDate, err := time.Parse(time.RFC3339, *input.BirthDate)
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		student.BirthDate = datatypes.Date(parsedBirthDate)
+	// Map handler input to service input
+	payload := services.StudentEditProfileInput{
+		Phone:         input.Phone,
+		BirthDate:     input.BirthDate,
+		AboutMe:       input.AboutMe,
+		GitHub:        input.GitHub,
+		LinkedIn:      input.LinkedIn,
+		StudentStatus: input.StudentStatus,
+		Photo:         input.Photo,
 	}
 
-	if input.Phone != nil {
-		student.Phone = *input.Phone
-	}
-	if input.AboutMe != nil {
-		student.AboutMe = *input.AboutMe
-	}
-	if input.GitHub != nil {
-		student.GitHub = *input.GitHub
-	}
-	if input.LinkedIn != nil {
-		student.LinkedIn = *input.LinkedIn
-	}
-	if input.StudentStatus != "" {
-		student.StudentStatus = input.StudentStatus
-	}
-	if input.Photo != nil {
-		photo, err := fileService.SaveFile(ctx, userId, input.Photo, model.FileCategoryImage)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		student.PhotoID = photo.ID
-	}
-
-	// Save data into database
-	result := h.DB.Save(&student)
-	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+	if err := h.UserService.UpdateStudentProfile(ctx, userId, payload); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update student profile"})
 		return
 	}
 
@@ -295,11 +180,105 @@ func (h *UserHandlers) editStudentProfile(ctx *gin.Context, userId string) {
 // @Router /me [get]
 func (h *UserHandlers) GetProfileHandler(ctx *gin.Context) {
 	userId := ctx.MustGet("userID").(string)
-	role := helper.GetRole(userId, h.DB)
-	username := helper.GetUsername(userId, role, h.DB)
+	role := h.UserService.GetRole(ctx.Request.Context(), userId)
+	username := h.UserService.GetUsername(ctx.Request.Context(), userId, role)
 	ctx.JSON(http.StatusOK, gin.H{
 		"username": username,
 		"role":     role,
 		"userId":   userId,
+	})
+}
+
+// @Summary Deactivate account
+// @Description Soft deletes the user account. The account can be reactivated within the grace period (default 30 days, configurable via ACCOUNT_DELETION_GRACE_PERIOD_DAYS env variable). After the grace period expires, all personal data is automatically anonymized (not deleted) to comply with Thailand's PDPA while retaining data for analytics and compliance.
+// @Tags Users
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} object{message=string,grace_period_days=int,deletion_date=string} "Account deactivated successfully"
+// @Failure 400 {object} object{error=string} "Account already deactivated"
+// @Failure 401 {object} object{error=string} "Unauthorized"
+// @Failure 404 {object} object{error=string} "User not found"
+// @Failure 500 {object} object{error=string} "Internal server error"
+// @Router /me/deactivate [post]
+func (h *UserHandlers) DeactivateAccount(ctx *gin.Context) {
+	userID := ctx.MustGet("userID").(string)
+
+	// Use injected AccountService (DI)
+	if h.UserService == nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "account service not configured"})
+		return
+	}
+	accountService := h.UserService
+
+	deletionDate, err := accountService.DeactivateAccount(ctx.Request.Context(), userID, h.gracePeriod)
+	if err != nil {
+		switch err {
+		case services.ErrUserNotFound:
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+			return
+		case services.ErrAlreadyDeactivated:
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Account is already deactivated"})
+			return
+		default:
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to deactivate account"})
+			return
+		}
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message":           "Account deactivated successfully",
+		"grace_period_days": h.gracePeriod,
+		"deletion_date":     deletionDate.Format(time.RFC3339),
+	})
+}
+
+// @Summary Reactivate account
+// @Description Reactivates a deactivated account if within the grace period. Once the grace period expires and data is anonymized, reactivation is not possible. Requires valid authentication token.
+// @Tags Users
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} object{message=string} "Account reactivated successfully"
+// @Failure 400 {object} object{error=string} "Account is not deactivated"
+// @Failure 401 {object} object{error=string} "Unauthorized"
+// @Failure 403 {object} object{error=string} "Grace period expired, account already anonymized"
+// @Failure 404 {object} object{error=string} "User not found"
+// @Failure 500 {object} object{error=string} "Internal server error"
+// @Router /me/reactivate [post]
+func (h *UserHandlers) ReactivateAccount(ctx *gin.Context) {
+	userID := ctx.MustGet("userID").(string)
+
+	// Use injected AccountService (DI)
+	if h.UserService == nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "account service not configured"})
+		return
+	}
+	accountService := h.UserService
+
+	err := accountService.ReactivateAccount(ctx.Request.Context(), userID, h.gracePeriod)
+	if err != nil {
+		switch e := err.(type) {
+		case *services.GracePeriodExpiredError:
+			ctx.JSON(http.StatusForbidden, gin.H{
+				"error":        "Grace period has expired. Account cannot be reactivated.",
+				"deleted_at":   e.DeletedAt.Format(time.RFC3339),
+				"deadline_was": e.Deadline.Format(time.RFC3339),
+			})
+			return
+		default:
+			if err == services.ErrUserNotFound {
+				ctx.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+				return
+			}
+			if err == services.ErrNotDeactivated {
+				ctx.JSON(http.StatusBadRequest, gin.H{"error": "Account is not deactivated"})
+				return
+			}
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reactivate account"})
+			return
+		}
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Account reactivated successfully",
 	})
 }

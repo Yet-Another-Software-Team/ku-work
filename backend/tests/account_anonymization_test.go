@@ -59,8 +59,9 @@ func TestAccountReactivation(t *testing.T) {
 	revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
 	jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
 	jwtHandlers := handlers.NewJWTHandlers(jwtService)
-	gracePeriod := helper.GetGracePeriodDays()
-	userHandlers := handlers.NewUserHandlers(db, gracePeriod)
+	// grace period handled inside handler
+	accountService := services.NewAccountService(db)
+	userHandlers := handlers.NewUserHandlers(accountService)
 	router := setupAccountTestRouter(jwtHandlers, userHandlers)
 
 	token, _, err := jwtHandlers.GenerateTokens(userResult.User.ID)
@@ -131,8 +132,9 @@ func TestAccountReactivationGracePeriodExpired(t *testing.T) {
 	revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
 	jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
 	jwtHandlers := handlers.NewJWTHandlers(jwtService)
-	gracePeriod := helper.GetGracePeriodDays()
-	userHandlers := handlers.NewUserHandlers(db, gracePeriod)
+	// grace period handled inside handler
+	accountService := services.NewAccountService(db)
+	userHandlers := handlers.NewUserHandlers(accountService)
 	router := setupAccountTestRouter(jwtHandlers, userHandlers)
 
 	token, _, err := jwtHandlers.GenerateTokens(userResult.User.ID)
