@@ -61,6 +61,9 @@
                 </p>
             </div>
         </div>
+        <div v-if="currentStep === 2" class="flex justify-center">
+            <TurnstileWidget @callback="(tk) => (cfToken = tk)" />
+        </div>
         <div class="flex justify-center gap-x-2 py-4">
             <UButton
                 v-if="currentStep > 1 && currentStep < totalSteps"
@@ -121,6 +124,8 @@ const isLoading = ref(true);
 
 const stepOneRef = ref<{ isValid: boolean } | null>(null);
 const stepTwoRef = ref<{ isValid: boolean } | null>(null);
+
+const cfToken = ref<string>("");
 
 const form = reactive({
     fullName: "",
@@ -260,7 +265,11 @@ const onSubmit = async () => {
             formData.append("linkedIn", form.linkedinURL);
         }
 
-        await api.postFormData("/auth/student/register", formData);
+        await api.postFormData("/auth/student/register", formData, {
+            headers: {
+                "X-Turnstile-Token": cfToken.value,
+            },
+        });
         localStorage.setItem("isRegistered", "true"); // Set isRegistered to True.
         currentStep.value++;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -37,6 +37,7 @@ Edit `.env` with your backend API URL:
 ```env
 API_BASE_URL=http://localhost:8000
 GOOGLE_CLIENT_ID=your_google_client_id_here
+TURNSTILE_CLIENT_TOKEN=your_turnstile_client_token
 ```
 
 ## Development

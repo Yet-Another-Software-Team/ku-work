@@ -182,20 +182,23 @@ async function fetchCompanyProfile() {
     }
 }
 
-async function onSaved(updated: {
-    name?: string;
-    address?: string;
-    website?: string;
-    banner?: string;
-    photo?: string;
-    about?: string;
-    city?: string;
-    country?: string;
-    email?: string;
-    phone?: string;
-    _logoFile?: File | null;
-    _bannerFile?: File | null;
-}) {
+async function onSaved(
+    updated: {
+        name?: string;
+        address?: string;
+        website?: string;
+        banner?: string;
+        photo?: string;
+        about?: string;
+        city?: string;
+        country?: string;
+        email?: string;
+        phone?: string;
+        _logoFile?: File | null;
+        _bannerFile?: File | null;
+    },
+    cfToken: string
+) {
     openEditModal.value = false;
     const formData = new FormData();
     if (profile.value.name !== updated.name) formData.append("username", updated.name!);
@@ -213,6 +216,7 @@ async function onSaved(updated: {
         await api.patch("/me", formData, {
             headers: {
                 "Content-Type": "multipart/form-data",
+                "X-Turnstile-Token": cfToken,
             },
         });
         await fetchCompanyProfile();

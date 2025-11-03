@@ -125,6 +125,9 @@
                     />
                 </div>
             </div>
+            <div class="flex justify-center md:col-span-2">
+                <TurnstileWidget @callback="(tk) => (cfToken = tk)" />
+            </div>
 
             <div class="md:col-span-2 flex flex-wrap justify-end gap-3 pt-2 w-full">
                 <UButton
@@ -209,7 +212,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: "close"): void;
-    (e: "saved", payload: SavedPayload): SavedPayload;
+    (e: "saved", payload: SavedPayload, token: string): SavedPayload;
 }>();
 
 const form = reactive<FormState>({
@@ -254,6 +257,7 @@ const avatarInput = ref<HTMLInputElement | null>(null);
 const avatarPreview = ref<string>("");
 const avatarFile = ref<File | null>(null);
 const showDiscardConfirm = ref(false);
+const cfToken = ref("");
 
 watch(
     () => props.profile,
@@ -366,16 +370,20 @@ function handleSubmit() {
 
     addToast({ title: "Saved", description: "Profile updated successfully.", color: "success" });
 
-    emit("saved", {
-        ...props.profile,
-        birthDate: result.data.dob,
-        phone: result.data.phone ?? "",
-        github: result.data.github ?? "",
-        linkedIn: result.data.linkedin ?? "",
-        aboutMe: result.data.aboutMe ?? "",
-        photo: avatarPreview.value || props.profile.photo || "",
-        _avatarFile: avatarFile.value,
-    });
+    emit(
+        "saved",
+        {
+            ...props.profile,
+            birthDate: result.data.dob,
+            phone: result.data.phone ?? "",
+            github: result.data.github ?? "",
+            linkedIn: result.data.linkedin ?? "",
+            aboutMe: result.data.aboutMe ?? "",
+            photo: avatarPreview.value || props.profile.photo || "",
+            _avatarFile: avatarFile.value,
+        },
+        cfToken.value
+    );
 
     emit("close");
 }

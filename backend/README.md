@@ -125,6 +125,9 @@ The backend offers a pluggable file storage provider. Configure the provider usi
 - `EMAIL_RETRY_INTERVAL_MINUTES`: Minutes to wait before retrying failed emails (default: 30)
 - `EMAIL_RETRY_MAX_AGE_HOURS`: Maximum age of emails to retry in hours (default: 24)
 
+### Cloudflare Turnstile Configuration
+- `TURNSTILE_SECRET`: The secret turnstile server key
+
 The email service automatically retries emails that fail with temporary errors (e.g., network issues, rate limits, timeouts). Each retry attempt is tracked in the database (`RetryCount` field), and emails that exceed the maximum retry attempts are marked as permanent failures.
 
 If you use other provider than dummy follow the [configuration guide](./email_config.md) here.

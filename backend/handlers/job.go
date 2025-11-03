@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"io"
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
 	"ku-work/backend/services"
@@ -345,6 +346,23 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 // @Router /jobs/{id} [patch]
 func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 	userid := ctx.MustGet("userID").(string)
+	var b bytes.Buffer
+	ctx.Request.Body = io.NopCloser(io.TeeReader(ctx.Request.Body, &b))
+
+	var input EditJobInput
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	needReapproval := input.Name != nil || input.Position != nil || input.Duration != nil || input.Description != nil || input.Location != nil || input.JobType != nil || input.Experience != nil || input.MinSalary != nil || input.MaxSalary != nil
+
+	if ctx.GetBool("ShouldCF") {
+		ctx.Request.Body = io.NopCloser(bytes.NewReader(b.Bytes()))
+		ctx.Set("DoCF", needReapproval)
+		ctx.Next()
+		return
+	}
 
 	jobIdStr := ctx.Param("id")
 	jobId64, err := strconv.ParseUint(jobIdStr, 10, 64)
@@ -364,57 +382,40 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 		return
 	}
 
-	var input EditJobInput
-	if err := ctx.ShouldBindJSON(&input); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
 	if job.CompanyID != userid {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
 		return
 	}
 
-	needReapproval := false
-
 	// Update job post with new data
 	if input.Name != nil {
-		needReapproval = true
 		job.Name = *input.Name
 	}
 	if input.Position != nil {
-		needReapproval = true
 		job.Position = *input.Position
 	}
 	if input.Duration != nil {
-		needReapproval = true
 		job.Duration = *input.Duration
 	}
 	if input.Description != nil {
-		needReapproval = true
 		job.Description = *input.Description
 	}
 	if input.Location != nil {
-		needReapproval = true
 		job.Location = *input.Location
 	}
 	if input.JobType != nil {
-		needReapproval = true
 		job.JobType = model.JobType(*input.JobType)
 	}
 	if input.Open != nil {
 		job.IsOpen = *input.Open
 	}
 	if input.Experience != nil {
-		needReapproval = true
 		job.Experience = model.ExperienceType(*input.Experience)
 	}
 	if input.MinSalary != nil {
-		needReapproval = true
 		job.MinSalary = *input.MinSalary
 	}
 	if input.MaxSalary != nil {
-		needReapproval = true
 		job.MaxSalary = *input.MaxSalary
 	}
 	// Check for invalid salary range

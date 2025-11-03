@@ -107,6 +107,7 @@
                             errors.contactMail
                         }}</span>
                     </div>
+                    <TurnstileWidget @callback="(tk) => (cfToken = tk)" />
                 </div>
             </div>
 
@@ -186,6 +187,7 @@ const isSubmitting = ref(false);
 
 const contactPhone = ref("");
 const contactMail = ref("");
+const cfToken = ref("");
 
 const errors = reactive({
     contactPhone: "",
@@ -312,7 +314,12 @@ async function onNext() {
             formData.append("files", file);
         });
 
-        await api.postFormData(`/jobs/${props.jobId}/apply`, formData, { withCredentials: true });
+        await api.postFormData(`/jobs/${props.jobId}/apply`, formData, {
+            withCredentials: true,
+            headers: {
+                "X-Turnstile-Token": cfToken.value,
+            },
+        });
 
         currentStep.value = 2;
         // update local state and emit update for v-model:applied
