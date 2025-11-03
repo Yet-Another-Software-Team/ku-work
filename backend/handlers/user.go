@@ -183,7 +183,7 @@ func (h *UserHandlers) editCompanyProfile(ctx *gin.Context, userId string) {
 	})()
 
 	if input.Photo != nil {
-		photo, err := SaveFile(ctx, h.DB, userId, input.Photo, model.FileCategoryImage)
+		photo, err := fileService.SaveFile(ctx, userId, input.Photo, model.FileCategoryImage)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -192,7 +192,7 @@ func (h *UserHandlers) editCompanyProfile(ctx *gin.Context, userId string) {
 	}
 
 	if input.Banner != nil {
-		banner, err := SaveFile(ctx, h.DB, userId, input.Banner, model.FileCategoryImage)
+		banner, err := fileService.SaveFile(ctx, userId, input.Banner, model.FileCategoryImage)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -265,7 +265,7 @@ func (h *UserHandlers) editStudentProfile(ctx *gin.Context, userId string) {
 		student.StudentStatus = input.StudentStatus
 	}
 	if input.Photo != nil {
-		photo, err := SaveFile(ctx, h.DB, userId, input.Photo, model.FileCategoryImage)
+		photo, err := fileService.SaveFile(ctx, userId, input.Photo, model.FileCategoryImage)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return

@@ -138,12 +138,12 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 	defer tx.Rollback() // Rollback transaction at function exit (If successful, commit will be executed before rollback)
 
 	// Save Files
-	photo, err := SaveFile(ctx, tx, userId, input.Photo, model.FileCategoryImage)
+	photo, err := fileService.SaveFile(ctx, userId, input.Photo, model.FileCategoryImage)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	statusDocument, err := SaveFile(ctx, tx, userId, input.StudentStatusFile, model.FileCategoryDocument)
+	statusDocument, err := fileService.SaveFile(ctx, userId, input.StudentStatusFile, model.FileCategoryDocument)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -259,7 +259,7 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 		student.StudentStatus = input.StudentStatus
 	}
 	if input.Photo != nil {
-		photo, err := SaveFile(ctx, h.DB, userId, input.Photo, model.FileCategoryImage)
+		photo, err := fileService.SaveFile(ctx, userId, input.Photo, model.FileCategoryImage)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return

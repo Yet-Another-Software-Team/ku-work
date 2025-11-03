@@ -7,6 +7,9 @@ import (
 	"io"
 	"ku-work/backend/handlers"
 	"ku-work/backend/model"
+	gormrepo "ku-work/backend/repository/gorm"
+	redisrepo "ku-work/backend/repository/redis"
+	"ku-work/backend/services"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -228,7 +231,11 @@ func TestCompany(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		jwtHandler := handlers.NewJWTHandlers(db, redisClient)
+		userRepo := gormrepo.NewGormUserRepository(db)
+		refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
+		revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
+		jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+		jwtHandler := handlers.NewJWTHandlers(jwtService)
 		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
 		if err != nil {
 			t.Error(err)
@@ -277,7 +284,11 @@ func TestCompany(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		jwtHandler := handlers.NewJWTHandlers(db, redisClient)
+		userRepo := gormrepo.NewGormUserRepository(db)
+		refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
+		revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
+		jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+		jwtHandler := handlers.NewJWTHandlers(jwtService)
 		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
 		if err != nil {
 			t.Error(err)

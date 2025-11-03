@@ -5,6 +5,9 @@ import (
 	"ku-work/backend/handlers"
 	"ku-work/backend/middlewares"
 	"ku-work/backend/model"
+	gormrepo "ku-work/backend/repository/gorm"
+	redisrepo "ku-work/backend/repository/redis"
+	"ku-work/backend/services"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -41,7 +44,11 @@ func TestJWTBlacklistOnLogout(t *testing.T) {
 	db.Unscoped().Where("1 = 1").Delete(&model.RefreshToken{})
 
 	// Create JWT handlers
-	jwtHandlers := handlers.NewJWTHandlers(db, redisClient)
+	userRepo := gormrepo.NewGormUserRepository(db)
+	refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
+	revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
+	jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+	jwtHandlers := handlers.NewJWTHandlers(jwtService)
 
 	// Setup router
 	router := setupTestRouter(redisClient, jwtHandlers)
@@ -99,7 +106,11 @@ func TestJWTBlacklistMultipleSessions(t *testing.T) {
 	// Clean up
 	db.Unscoped().Where("1 = 1").Delete(&model.RefreshToken{})
 
-	jwtHandlers := handlers.NewJWTHandlers(db, redisClient)
+	userRepo := gormrepo.NewGormUserRepository(db)
+	refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
+	revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
+	jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+	jwtHandlers := handlers.NewJWTHandlers(jwtService)
 	router := setupTestRouter(redisClient, jwtHandlers)
 
 	testUserID := uuid.New().String()
@@ -178,7 +189,11 @@ func TestJWTWithoutJTI(t *testing.T) {
 func TestMultipleLogoutAttempts(t *testing.T) {
 	db.Unscoped().Where("1 = 1").Delete(&model.RefreshToken{})
 
-	jwtHandlers := handlers.NewJWTHandlers(db, redisClient)
+	userRepo := gormrepo.NewGormUserRepository(db)
+	refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
+	revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
+	jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+	jwtHandlers := handlers.NewJWTHandlers(jwtService)
 	router := setupTestRouter(redisClient, jwtHandlers)
 
 	testUserID := uuid.New().String()

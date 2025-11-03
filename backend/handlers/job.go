@@ -20,9 +20,9 @@ type JobHandlers struct {
 	JobService   *services.JobService
 }
 
-func NewJobHandlers(db *gorm.DB, aiService *services.AIService, jobService *services.JobService) (*JobHandlers, error) {
+func NewJobHandlers(fileHandlers *FileHandlers, aiService *services.AIService, jobService *services.JobService) (*JobHandlers, error) {
 	return &JobHandlers{
-		FileHandlers: NewFileHandlers(db),
+		FileHandlers: fileHandlers,
 		aiService:    aiService,
 		JobService:   jobService,
 	}, nil

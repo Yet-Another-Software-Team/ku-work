@@ -2,29 +2,18 @@ package handlers
 
 import (
 	"ku-work/backend/model"
-	gormrepo "ku-work/backend/repository/gorm"
-	redisrepo "ku-work/backend/repository/redis"
 	"ku-work/backend/services"
 
 	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
-	"gorm.io/gorm"
 )
 
 type JWTHandlers struct {
 	Service *services.JWTService
 }
 
-func NewJWTHandlers(db *gorm.DB, redisClient *redis.Client) *JWTHandlers {
-	// Construct the service-layer repositories/adapters and expose the service through a thin handler.
-	userRepo := gormrepo.NewGormUserRepository(db)
-	refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
-	revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-
-	// Wire the service with repository abstractions (no direct DB/Redis use inside the service).
-	svc := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+func NewJWTHandlers(service *services.JWTService) *JWTHandlers {
 	return &JWTHandlers{
-		Service: svc,
+		Service: service,
 	}
 }
 
@@ -60,7 +49,6 @@ func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
 	// Delegate logout / revocation to the service
 	h.Service.LogoutHandler(ctx)
 }
-
 
 func (h *JWTHandlers) HandleToken(user model.User) (string, string, error) {
 	return h.Service.HandleToken(user)

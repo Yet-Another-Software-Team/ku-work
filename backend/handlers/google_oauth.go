@@ -2,13 +2,9 @@ package handlers
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"ku-work/backend/helper"
@@ -16,7 +12,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 	"gorm.io/gorm"
 )
 
@@ -41,29 +36,9 @@ func newOauthService(db *gorm.DB, jwtHandlers *JWTHandlers, cfg *oauth2.Config) 
 	}
 }
 
-func NewOAuthHandlers(db *gorm.DB, jwtHandlers *JWTHandlers) *OauthHandlers {
-	b := make([]byte, 16)
-	if _, err := rand.Read(b); err != nil {
-		log.Fatalf("failed to generate random oauth state: %v", err)
-	}
-	oauthStateString := base64.URLEncoding.EncodeToString(b)
-
-	googleOauthConfig := &oauth2.Config{
-		RedirectURL:  "postmessage",
-		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-		Scopes:       []string{"openid", "https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"},
-		Endpoint:     google.Endpoint,
-	}
-
-	if googleOauthConfig.ClientID == "" || googleOauthConfig.ClientSecret == "" {
-		log.Fatal("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables are not set")
-	}
-
-	_ = oauthStateString // kept in case future use is needed
-
+func NewOAuthHandlers(service *oauthService) *OauthHandlers {
 	return &OauthHandlers{
-		service: newOauthService(db, jwtHandlers, googleOauthConfig),
+		service: service,
 	}
 }
 

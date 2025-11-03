@@ -10,6 +10,9 @@ import (
 
 	"ku-work/backend/handlers"
 	"ku-work/backend/model"
+	gormrepo "ku-work/backend/repository/gorm"
+	redisrepo "ku-work/backend/repository/redis"
+	"ku-work/backend/services"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -44,7 +47,11 @@ func TestAdminEndpoints(t *testing.T) {
 	defer func() { _ = db.Unscoped().Delete(&companyRes.User) }()
 
 	// Prepare JWT tokens
-	jwtHandler := handlers.NewJWTHandlers(db, redisClient)
+	userRepo := gormrepo.NewGormUserRepository(db)
+	refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
+	revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
+	jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+	jwtHandler := handlers.NewJWTHandlers(jwtService)
 	adminToken, _, err := jwtHandler.GenerateTokens(adminRes.User.ID)
 	if err != nil {
 		t.Fatalf("failed to generate admin token: %v", err)

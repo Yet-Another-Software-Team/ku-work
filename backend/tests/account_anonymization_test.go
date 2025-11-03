@@ -6,6 +6,8 @@ import (
 	"ku-work/backend/helper"
 	"ku-work/backend/middlewares"
 	"ku-work/backend/model"
+	gormrepo "ku-work/backend/repository/gorm"
+	redisrepo "ku-work/backend/repository/redis"
 	"ku-work/backend/services"
 	"net/http"
 	"net/http/httptest"
@@ -52,7 +54,11 @@ func TestAccountReactivation(t *testing.T) {
 	}
 
 	// Setup handlers and router
-	jwtHandlers := handlers.NewJWTHandlers(db, redisClient)
+	userRepo := gormrepo.NewGormUserRepository(db)
+	refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
+	revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
+	jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+	jwtHandlers := handlers.NewJWTHandlers(jwtService)
 	gracePeriod := helper.GetGracePeriodDays()
 	userHandlers := handlers.NewUserHandlers(db, gracePeriod)
 	router := setupAccountTestRouter(jwtHandlers, userHandlers)
@@ -120,7 +126,11 @@ func TestAccountReactivationGracePeriodExpired(t *testing.T) {
 	db.Unscoped().Model(&userResult.User).Update("deleted_at", oldDeletedAt)
 
 	// Setup handlers and router
-	jwtHandlers := handlers.NewJWTHandlers(db, redisClient)
+	userRepo := gormrepo.NewGormUserRepository(db)
+	refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
+	revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
+	jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+	jwtHandlers := handlers.NewJWTHandlers(jwtService)
 	gracePeriod := helper.GetGracePeriodDays()
 	userHandlers := handlers.NewUserHandlers(db, gracePeriod)
 	router := setupAccountTestRouter(jwtHandlers, userHandlers)

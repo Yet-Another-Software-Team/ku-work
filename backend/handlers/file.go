@@ -1,22 +1,12 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
-	"ku-work/backend/model"
 	"ku-work/backend/services"
-	"mime/multipart"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-)
-
-const (
-	MAX_DOCS_SIZE    = 10 * 1024 * 1024 // 10MB
-	MAX_IMAGE_SIZE   = 5 * 1024 * 1024  // 5MB
-	MAX_IMAGE_WIDTH  = 4096             // 4096 pixels
-	MAX_IMAGE_HEIGHT = 4096             // 4096 pixels
 )
 
 type FileHandlers struct {
@@ -36,22 +26,6 @@ var fileService *services.FileService
 // SetFileService sets the FileService instance for the handlers.
 func SetFileService(s *services.FileService) {
 	fileService = s
-}
-
-// SaveFile saves a file using the configured storage provider.
-func SaveFile(ctx *gin.Context, db *gorm.DB, userId string, file *multipart.FileHeader, fileCategory model.FileCategory) (*model.File, error) {
-	// Validate file category
-	isValidCategory := fileCategory == model.FileCategoryImage || fileCategory == model.FileCategoryDocument
-	if !isValidCategory {
-		return nil, fmt.Errorf("invalid file category: %s", fileCategory)
-	}
-
-	if fileService == nil {
-		return nil, fmt.Errorf("file service not configured")
-	}
-
-	// Delegate saving to the file service.
-	return fileService.SaveFile(ctx, userId, file, fileCategory)
 }
 
 // @Summary Get a file

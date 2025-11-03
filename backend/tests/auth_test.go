@@ -12,6 +12,9 @@ import (
 	"ku-work/backend/handlers"
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
+	gormrepo "ku-work/backend/repository/gorm"
+	redisrepo "ku-work/backend/repository/redis"
+	"ku-work/backend/services"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -164,7 +167,11 @@ func TestAuth(t *testing.T) {
 			_ = db.Unscoped().Delete(&userRes.User)
 		}()
 
-		jwtHandler := handlers.NewJWTHandlers(db, redisClient)
+		userRepo := gormrepo.NewGormUserRepository(db)
+		refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
+		revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
+		jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+		jwtHandler := handlers.NewJWTHandlers(jwtService)
 		jwtToken, refreshToken, err := jwtHandler.GenerateTokens(userRes.User.ID)
 		if err != nil {
 			t.Fatalf("failed to generate tokens: %v", err)

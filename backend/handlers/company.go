@@ -7,16 +7,15 @@ import (
 	"ku-work/backend/services"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 type CompanyHandlers struct {
 	Service *services.CompanyService
 }
 
-func NewCompanyHandlers(db *gorm.DB) *CompanyHandlers {
+func NewCompanyHandlers(service *services.CompanyService) *CompanyHandlers {
 	return &CompanyHandlers{
-		Service: services.NewCompanyService(db),
+		Service: service,
 	}
 }
 

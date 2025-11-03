@@ -24,7 +24,7 @@ type ApplicationHandlers struct {
 	newApplicantEmailTemplate               *template.Template
 }
 
-func NewApplicationHandlers(db *gorm.DB, emailService *services.EmailService) (*ApplicationHandlers, error) {
+func NewApplicationHandlers(db *gorm.DB, fileHandlers *FileHandlers, emailService *services.EmailService) (*ApplicationHandlers, error) {
 	jobApplicationStatusUpdateEmailTemplate, err := template.New("job_application_status_update.tmpl").ParseFiles("email_templates/job_application_status_update.tmpl")
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func NewApplicationHandlers(db *gorm.DB, emailService *services.EmailService) (*
 	}
 	return &ApplicationHandlers{
 		DB:                                      db,
-		FileHandlers:                            NewFileHandlers(db),
+		FileHandlers:                            fileHandlers,
 		emailService:                            emailService,
 		jobApplicationStatusUpdateEmailTemplate: jobApplicationStatusUpdateEmailTemplate,
 		newApplicantEmailTemplate:               newApplicantEmailTemplate,
@@ -185,7 +185,7 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 
 	// Save all files into database and file system
 	for _, file := range input.Files {
-		fileObject, err := SaveFile(ctx, h.DB, student.UserID, file, model.FileCategoryDocument)
+		fileObject, err := fileService.SaveFile(ctx, student.UserID, file, model.FileCategoryDocument)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to save file %s: %s", file.Filename, err.Error())})
 			return

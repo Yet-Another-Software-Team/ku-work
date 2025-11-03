@@ -4,6 +4,7 @@ import (
 	"errors"
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
+	filehandling "ku-work/backend/services/file_handling"
 	"mime/multipart"
 	"net/url"
 
@@ -20,24 +21,18 @@ type TokenProvider interface {
 	HandleToken(user model.User) (string, string, error)
 }
 
-// SaveFileFunc defines the signature for saving uploaded files.
-// This is injected into AuthService to avoid importing handlers from services
-// and to break import cycles.
-type SaveFileFunc func(ctx *gin.Context, db *gorm.DB, userId string, file *multipart.FileHeader, fileCategory model.FileCategory) (*model.File, error)
-
 // AuthService holds auth-related business logic.
 type AuthService struct {
 	DB            *gorm.DB
 	TokenProvider TokenProvider
-	SaveFile      SaveFileFunc
 	UserRepo      repo.UserRepository
 }
 
 // NewAuthService constructs an AuthService with injected dependencies.
 // The saveFile parameter allows services to call into file-saving logic without
 // depending on the handlers package.
-func NewAuthService(db *gorm.DB, provider TokenProvider, saveFile SaveFileFunc, userRepo repo.UserRepository) *AuthService {
-	return &AuthService{DB: db, TokenProvider: provider, SaveFile: saveFile, UserRepo: userRepo}
+func NewAuthService(db *gorm.DB, provider TokenProvider, userRepo repo.UserRepository) *AuthService {
+	return &AuthService{DB: db, TokenProvider: provider, UserRepo: userRepo}
 }
 
 // RegisterCompany performs
@@ -95,12 +90,17 @@ func (s *AuthService) RegisterCompany(ctx *gin.Context, input RegisterCompanyInp
 		return zeroUser, zeroCompany, "", "", err
 	}
 
-	photo, err := s.SaveFile(ctx, tx, newUser.ID, input.Photo, model.FileCategoryImage)
+	provider, err := filehandling.GetProvider()
 	if err != nil {
 		return zeroUser, zeroCompany, "", "", err
 	}
 
-	banner, err := s.SaveFile(ctx, tx, newUser.ID, input.Banner, model.FileCategoryImage)
+	photo, err := provider.SaveFile(ctx, tx, newUser.ID, input.Photo, model.FileCategoryImage)
+	if err != nil {
+		return zeroUser, zeroCompany, "", "", err
+	}
+
+	banner, err := provider.SaveFile(ctx, tx, newUser.ID, input.Banner, model.FileCategoryImage)
 	if err != nil {
 		return zeroUser, zeroCompany, "", "", err
 	}

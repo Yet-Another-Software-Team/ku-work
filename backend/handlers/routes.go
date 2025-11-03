@@ -2,34 +2,83 @@ package handlers
 
 import (
 	"fmt"
+	"html/template"
 	"ku-work/backend/helper"
 	"ku-work/backend/middlewares"
+	gormrepo "ku-work/backend/repository/gorm"
+	redisrepo "ku-work/backend/repository/redis"
 	"ku-work/backend/services"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 	"gorm.io/gorm"
 )
 
 func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, emailService *services.EmailService, aiService *services.AIService, jobService *services.JobService, fileService *services.FileService) error {
-	// Initialize handlers
-	jwtHandlers := NewJWTHandlers(db, redisClient)
-	fileHandlers := NewFileHandlers(db)
-	localAuthHandlers := NewLocalAuthHandlers(db, jwtHandlers)
-	googleAuthHandlers := NewOAuthHandlers(db, jwtHandlers)
+	// Wire services (DI) and initialize handlers
 
-	// Use the provided (DI) JobService instance and pass it into handlers and AI.
-	if aiService != nil && jobService != nil {
-		// Inject the shared JobService into AI so AI uses the same approval path.
-		aiService.JobService = jobService
+	// JWT service and handlers
+	userRepo := gormrepo.NewGormUserRepository(db)
+	refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
+	revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
+	jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+	jwtHandlers := NewJWTHandlers(jwtService)
+
+	// File handlers
+	fileHandlers := NewFileHandlers(db)
+
+	// Local auth service and handlers
+	authService := services.NewAuthService(db, jwtHandlers, userRepo)
+	localAuthHandlers := NewLocalAuthHandlers(authService)
+
+	// Google OAuth handlers
+	googleOauthConfig := &oauth2.Config{
+		RedirectURL:  "postmessage",
+		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+		Scopes:       []string{"openid", "https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"},
+		Endpoint:     google.Endpoint,
+	}
+	if googleOauthConfig.ClientID == "" || googleOauthConfig.ClientSecret == "" {
+		return fmt.Errorf("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables are not set")
+	}
+	oauthSvc := newOauthService(db, jwtHandlers, googleOauthConfig)
+	googleAuthHandlers := NewOAuthHandlers(oauthSvc)
+
+	// Job service (with optional email notifications)
+	if jobService == nil {
+		jobRepo := gormrepo.NewGormJobRepository(db)
+		if emailService != nil {
+			tpl, err := template.New("job_approval_status_update.tmpl").ParseFiles("email_templates/job_approval_status_update.tmpl")
+			if err != nil {
+				return err
+			}
+			jobService = services.NewJobServiceWithEmail(jobRepo, emailService, tpl)
+		} else {
+			jobService = services.NewJobService(jobRepo)
+		}
 	}
 
-	jobHandlers, err := NewJobHandlers(db, aiService, jobService)
+	// AI service wiring
+	if aiService != nil {
+		aiService.JobService = jobService
+	} else if emailService != nil {
+		var err error
+		aiService, err = services.NewAIService(db, emailService, jobService)
+		if err != nil {
+			return err
+		}
+	}
+
+	jobHandlers, err := NewJobHandlers(fileHandlers, aiService, jobService)
 	if err != nil {
 		return err
 	}
 
-	applicationHandlers, err := NewApplicationHandlers(db, emailService)
+	applicationHandlers, err := NewApplicationHandlers(db, fileHandlers, emailService)
 	if err != nil {
 		return err
 	}
@@ -37,15 +86,20 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	if err != nil {
 		return err
 	}
-	companyHandlers := NewCompanyHandlers(db)
+	companyRepo := gormrepo.NewGormCompanyRepository(db)
+	companyService := services.NewCompanyServiceWithRepo(companyRepo)
+	companyHandlers := NewCompanyHandlers(companyService)
 	userHandlers := NewUserHandlers(db, helper.GetGracePeriodDays())
-	adminHandlers := NewAdminHandlers(db)
+	// Admin handlers with injected service
+	auditRepo := gormrepo.NewGormAuditRepository(db)
+	adminSvc := services.NewAdminService(auditRepo)
+	adminHandlers := NewAdminHandlersWithService(adminSvc)
 
 	if fileService == nil {
 		return fmt.Errorf("fileService must be provided")
 	}
-	// Register the FileService with package-level handlers so handler functions
-	// such as SaveFile and ServeFileHandler can use the configured service.
+	// Register the FileService with package-level handlers so they can use the configured service
+	// (e.g., ServeFileHandler and file upload operations).
 	SetFileService(fileService)
 
 	// File Routes
