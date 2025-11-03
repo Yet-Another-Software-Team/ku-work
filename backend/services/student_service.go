@@ -1,0 +1,306 @@
+package services
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"html/template"
+	"mime/multipart"
+	"time"
+
+	"ku-work/backend/model"
+	repo "ku-work/backend/repository"
+	filehandling "ku-work/backend/services/file_handling"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/datatypes"
+)
+
+// ErrAlreadyRegistered is returned when a user attempts to register as a student more than once.
+var ErrAlreadyRegistered = errors.New("user already registered as a student")
+
+// StudentService encapsulates business logic for student registration, profile retrieval, and approval workflows.
+// Handlers call this service; the service delegates DB access to repositories and uses other infrastructure services
+// (AI, Email, File) as collaborators.
+type StudentService struct {
+	repo             repo.StudentRepository
+	accountRepo      repo.AccountRepository
+	fileService      *FileService
+	emailService     *EmailService
+	approvalEmailTpl *template.Template
+	aiService        *AIService
+}
+
+// StudentRegistrationInput represents the payload required to register a user as a student.
+type StudentRegistrationInput struct {
+	Phone             string                `json:"phone"`
+	BirthDate         string                `json:"birthDate"` // RFC3339 format
+	AboutMe           string                `json:"aboutMe"`
+	GitHub            string                `json:"github"`
+	LinkedIn          string                `json:"linkedIn"`
+	StudentID         string                `json:"studentId"`
+	Major             string                `json:"major"`
+	StudentStatus     string                `json:"studentStatus"`
+	Photo             *multipart.FileHeader `json:"-"`
+	StudentStatusFile *multipart.FileHeader `json:"-"`
+}
+
+// NewStudentService constructs a StudentService.
+// - repo: repository for student-specific persistence.
+// - accountRepo: repository for cross-cutting account lookups (e.g., deactivation status, oauth details).
+// - fileService: used to persist uploaded files (photo, status document).
+// - emailService: optional, used to send approval notifications.
+// - approvalTpl: optional, HTML template for approval notification emails.
+// - aiService: optional, used for automatic approvals after registration.
+func NewStudentService(
+	repo repo.StudentRepository,
+	accountRepo repo.AccountRepository,
+	fileService *FileService,
+	emailService *EmailService,
+	approvalTpl *template.Template,
+	aiService *AIService,
+) *StudentService {
+	return &StudentService{
+		repo:             repo,
+		accountRepo:      accountRepo,
+		fileService:      fileService,
+		emailService:     emailService,
+		approvalEmailTpl: approvalTpl,
+		aiService:        aiService,
+	}
+}
+
+// RegisterStudent handles the student registration flow:
+// - Validates there isn't an existing student record for the user.
+// - Saves uploaded files (photo and student status document).
+// - Creates the Student model with ApprovalStatus=pending.
+// - Optionally triggers AI auto-approval in background.
+func (s *StudentService) RegisterStudent(ctx *gin.Context, userID string, input StudentRegistrationInput) error {
+	// Ensure service is configured
+	if s == nil || s.repo == nil {
+		return errors.New("student service not initialized")
+	}
+	if s.fileService == nil && input.Photo != nil {
+		// Fallback to global provider if FileService is not injected
+		if _, err := filehandling.GetProvider(); err != nil {
+			return errors.New("file service not configured")
+		}
+	}
+
+	// Check if already registered
+	exists, err := s.repo.ExistsByUserID(ctx.Request.Context(), userID)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return ErrAlreadyRegistered
+	}
+
+	// Parse birth date
+	parsedBirthDate, err := time.Parse(time.RFC3339, input.BirthDate)
+	if err != nil {
+		return err
+	}
+
+	// Save files
+	var photo *model.File
+	if input.Photo != nil {
+		if s.fileService != nil {
+			photo, err = s.fileService.SaveFile(ctx, userID, input.Photo, model.FileCategoryImage)
+		} else {
+			// Use provider directly if FileService is not injected
+			provider, pErr := filehandling.GetProvider()
+			if pErr != nil {
+				return pErr
+			}
+			photo, err = provider.SaveFile(ctx, nil, userID, input.Photo, model.FileCategoryImage)
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	var statusDocument *model.File
+	if input.StudentStatusFile != nil {
+		if s.fileService != nil {
+			statusDocument, err = s.fileService.SaveFile(ctx, userID, input.StudentStatusFile, model.FileCategoryDocument)
+		} else {
+			// Use provider directly if FileService is not injected
+			provider, pErr := filehandling.GetProvider()
+			if pErr != nil {
+				return pErr
+			}
+			statusDocument, err = provider.SaveFile(ctx, nil, userID, input.StudentStatusFile, model.FileCategoryDocument)
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	// Build student model
+	student := model.Student{
+		UserID:         userID,
+		ApprovalStatus: model.StudentApprovalPending,
+		Phone:          input.Phone,
+		BirthDate:      datatypes.Date(parsedBirthDate),
+		AboutMe:        input.AboutMe,
+		GitHub:         input.GitHub,
+		LinkedIn:       input.LinkedIn,
+		StudentID:      input.StudentID,
+		Major:          input.Major,
+		StudentStatus:  input.StudentStatus,
+	}
+	if photo != nil {
+		student.PhotoID = photo.ID
+		student.Photo = *photo
+	}
+	if statusDocument != nil {
+		student.StudentStatusFileID = statusDocument.ID
+		student.StudentStatusFile = *statusDocument
+	}
+
+	// Persist
+	if err := s.repo.CreateStudent(ctx.Request.Context(), &student); err != nil {
+		return err
+	}
+
+	// Optionally trigger AI auto-approval
+	if s.aiService != nil {
+		go s.aiService.AutoApproveStudent(&student)
+	}
+
+	return nil
+}
+
+// GetStudentProfile returns a single student's profile (student + oauth fields).
+// If the target account is deactivated, personal data is anonymized.
+func (s *StudentService) GetStudentProfile(ctx context.Context, userID string) (*repo.StudentProfile, error) {
+	if s == nil || s.repo == nil || s.accountRepo == nil {
+		return nil, errors.New("student service not initialized")
+	}
+
+	profile, err := s.repo.FindStudentProfileByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	deactivated, err := s.accountRepo.IsUserDeactivated(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if deactivated {
+		anonymizeStudentProfile(profile)
+	}
+
+	return profile, nil
+}
+
+// ListStudentProfiles returns a list of student profiles according to the given filter
+// and anonymizes profiles belonging to deactivated accounts.
+func (s *StudentService) ListStudentProfiles(ctx context.Context, filter repo.StudentListFilter) ([]repo.StudentProfile, error) {
+	if s == nil || s.repo == nil || s.accountRepo == nil {
+		return nil, errors.New("student service not initialized")
+	}
+
+	items, err := s.repo.ListStudentProfiles(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	// Anonymize deactivated accounts
+	for i := range items {
+		uid := items[i].UserID
+		if uid == "" {
+			continue
+		}
+		deactivated, derr := s.accountRepo.IsUserDeactivated(ctx, uid)
+		if derr != nil {
+			// Best-effort: skip anonymization on error
+			continue
+		}
+		if deactivated {
+			anonymizeStudentProfile(&items[i])
+		}
+	}
+
+	return items, nil
+}
+
+// ApproveOrRejectStudent updates the student's approval status and records an audit entry.
+// If email wiring is configured, it sends an approval/rejection email using the provided template.
+func (s *StudentService) ApproveOrRejectStudent(ctx context.Context, targetUserID string, approve bool, actorID, reason string) error {
+	if s == nil || s.repo == nil {
+		return errors.New("student service not initialized")
+	}
+
+	// Persist approval decision (also creates audit)
+	if err := s.repo.ApproveOrRejectStudent(ctx, targetUserID, approve, actorID, reason); err != nil {
+		return err
+	}
+
+	// Optionally send email
+	if s.emailService == nil || s.approvalEmailTpl == nil || s.accountRepo == nil {
+		return nil
+	}
+
+	// Build context for template
+	type templateContext struct {
+		OAuth  model.GoogleOAuthDetails
+		Status string
+		Reason string
+	}
+
+	oauth, err := s.accountRepo.FindGoogleOAuthByUserID(ctx, targetUserID, false)
+	if err != nil || oauth == nil {
+		// Best-effort: skip emailing if we can't resolve address
+		return nil
+	}
+
+	var status string
+	if approve {
+		status = string(model.StudentApprovalAccepted)
+	} else {
+		status = string(model.StudentApprovalRejected)
+	}
+
+	tctx := templateContext{
+		OAuth:  *oauth,
+		Status: status,
+		Reason: reason,
+	}
+
+	var buf bytes.Buffer
+	if err := s.approvalEmailTpl.Execute(&buf, tctx); err != nil {
+		return nil // best-effort
+	}
+
+	_ = s.emailService.SendTo(
+		oauth.Email,
+		"[KU-Work] Your student account has been reviewed",
+		buf.String(),
+	)
+
+	return nil
+}
+
+// anonymizeStudentProfile removes PII fields from a StudentProfile for deactivated accounts.
+func anonymizeStudentProfile(s *repo.StudentProfile) {
+	if s == nil {
+		return
+	}
+	s.FirstName = ""
+	s.LastName = ""
+	s.Email = ""
+
+	s.Phone = ""
+	s.PhotoID = ""
+	s.AboutMe = ""
+	s.GitHub = ""
+	s.LinkedIn = ""
+	s.StudentID = ""
+	s.StudentStatusFileID = ""
+	s.Photo = model.File{}
+	s.StudentStatusFile = model.File{}
+
+	s.FullName = "Deactivated Account"
+}

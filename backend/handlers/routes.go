@@ -30,7 +30,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	fileHandlers := NewFileHandlers(db)
 
 	// Local auth service and handlers
-	authService := services.NewAuthService(db, jwtHandlers, userRepo)
+	authService := services.NewAuthService(jwtHandlers, userRepo, *fileService)
 	localAuthHandlers := NewLocalAuthHandlers(authService)
 
 	// Google OAuth handlers
@@ -81,14 +81,20 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	if err != nil {
 		return err
 	}
-	studentHandlers, err := NewStudentHandler(db, fileHandlers, aiService, emailService)
+	// Student service and handlers
+	studentRepo := gormrepo.NewGormStudentRepository(db)
+	accountRepo := gormrepo.NewGormAccountRepository(db)
+	studentApprovalStatusUpdateEmailTemplate, err := template.New("student_approval_status_update.tmpl").ParseFiles("email_templates/student_approval_status_update.tmpl")
 	if err != nil {
 		return err
 	}
-	companyRepo := gormrepo.NewGormCompanyRepository(db)
-	companyService := services.NewCompanyServiceWithRepo(companyRepo)
-	companyHandlers := NewCompanyHandlers(companyService)
+	studentService := services.NewStudentService(studentRepo, accountRepo, fileService, emailService, studentApprovalStatusUpdateEmailTemplate, aiService)
 	accountService := services.NewAccountService(db)
+	studentHandlers := NewStudentHandler(studentService, accountService)
+	companyRepo := gormrepo.NewGormCompanyRepository(db)
+	companyService := services.NewCompanyService(companyRepo)
+	companyHandlers := NewCompanyHandlers(companyService)
+	accountService = services.NewAccountService(db)
 	userHandlers := NewUserHandlers(accountService)
 	// Admin handlers with injected service
 	auditRepo := gormrepo.NewGormAuditRepository(db)

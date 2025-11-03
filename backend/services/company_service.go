@@ -6,11 +6,7 @@ import (
 	"time"
 
 	"ku-work/backend/helper"
-	"ku-work/backend/model"
 	repo "ku-work/backend/repository"
-	gormrepo "ku-work/backend/repository/gorm"
-
-	"gorm.io/gorm"
 )
 
 var (
@@ -28,16 +24,8 @@ type CompanyService struct {
 	Repo repo.CompanyRepository
 }
 
-// NewCompanyService creates a CompanyService wired with a GORM-backed repository.
-// Keeping the convenience constructor signature compatible with existing wiring.
-func NewCompanyService(db *gorm.DB) *CompanyService {
-	return &CompanyService{
-		Repo: gormrepo.NewGormCompanyRepository(db),
-	}
-}
-
 // NewCompanyServiceWithRepo creates a CompanyService with an injected repository implementation.
-func NewCompanyServiceWithRepo(r repo.CompanyRepository) *CompanyService {
+func NewCompanyService(r repo.CompanyRepository) *CompanyService {
 	return &CompanyService{
 		Repo: r,
 	}
@@ -138,30 +126,4 @@ func (s *CompanyService) ListCompanies(ctx context.Context) ([]CompanyResponse, 
 		})
 	}
 	return out, nil
-}
-
-// Helper: check if student is registered and approved (used by oauth flow).
-// Returns (isRegistered, role).
-func isStudentRegisteredAndRole(db *gorm.DB, user model.User) (bool, string, error) {
-	var count int64
-	if err := db.Model(&model.Student{}).Where("user_id = ?", user.ID).Count(&count).Error; err != nil {
-		// helper.Role is a named type; convert to string when returning from this function.
-		return false, string(helper.Viewer), err
-	}
-	if count == 0 {
-		return false, string(helper.Viewer), nil
-	}
-	var student model.Student
-	if err := db.Model(&student).Where("user_id = ?", user.ID).First(&student).Error; err != nil {
-		return true, string(helper.Viewer), err
-	}
-	if student.ApprovalStatus == model.StudentApprovalAccepted {
-		return true, string(helper.Student), nil
-	}
-	return true, string(helper.Viewer), nil
-}
-
-// small helper to compute cookie max age in seconds
-func CookieMaxAge() int {
-	return int(time.Hour * 24 * 30 / time.Second)
 }

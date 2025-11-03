@@ -4,7 +4,6 @@ import (
 	"errors"
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
-	filehandling "ku-work/backend/services/file_handling"
 	"mime/multipart"
 	"net/url"
 
@@ -23,16 +22,16 @@ type TokenProvider interface {
 
 // AuthService holds auth-related business logic.
 type AuthService struct {
-	DB            *gorm.DB
 	TokenProvider TokenProvider
 	UserRepo      repo.UserRepository
+	FileService   FileService
 }
 
 // NewAuthService constructs an AuthService with injected dependencies.
 // The saveFile parameter allows services to call into file-saving logic without
 // depending on the handlers package.
-func NewAuthService(db *gorm.DB, provider TokenProvider, userRepo repo.UserRepository) *AuthService {
-	return &AuthService{DB: db, TokenProvider: provider, UserRepo: userRepo}
+func NewAuthService(provider TokenProvider, userRepo repo.UserRepository, fileService FileService) *AuthService {
+	return &AuthService{TokenProvider: provider, UserRepo: userRepo, FileService: fileService}
 }
 
 // RegisterCompany performs
@@ -68,14 +67,6 @@ func (s *AuthService) RegisterCompany(ctx *gin.Context, input RegisterCompanyInp
 		return zeroUser, zeroCompany, "", "", err
 	}
 
-	tx := s.DB.Begin()
-	if tx.Error != nil {
-		return zeroUser, zeroCompany, "", "", tx.Error
-	}
-	defer func() {
-		// rollback will be ignored if commit already happened
-		_ = tx.Rollback()
-	}()
 
 	newUser := model.User{
 		Username:     input.Username,
@@ -84,23 +75,18 @@ func (s *AuthService) RegisterCompany(ctx *gin.Context, input RegisterCompanyInp
 	}
 
 	// Use a repository instance bound to the transaction for all repo calls within the tx.
-	repoTx := s.UserRepo.WithTx(tx)
+	repoTx, err := s.UserRepo.BeginTx()
 
 	if err := repoTx.CreateUser(&newUser); err != nil {
 		return zeroUser, zeroCompany, "", "", err
 	}
 
-	provider, err := filehandling.GetProvider()
+	photo, err := s.FileService.SaveFile(ctx, newUser.ID, input.Photo, model.FileCategoryImage)
 	if err != nil {
 		return zeroUser, zeroCompany, "", "", err
 	}
 
-	photo, err := provider.SaveFile(ctx, tx, newUser.ID, input.Photo, model.FileCategoryImage)
-	if err != nil {
-		return zeroUser, zeroCompany, "", "", err
-	}
-
-	banner, err := provider.SaveFile(ctx, tx, newUser.ID, input.Banner, model.FileCategoryImage)
+	banner, err := s.FileService.SaveFile(ctx, newUser.ID, input.Banner, model.FileCategoryImage)
 	if err != nil {
 		return zeroUser, zeroCompany, "", "", err
 	}
@@ -125,11 +111,11 @@ func (s *AuthService) RegisterCompany(ctx *gin.Context, input RegisterCompanyInp
 		Website:  input.Website,
 	}
 
-	if err := tx.Create(&newCompany).Error; err != nil {
+	if err := repoTx.CreateCompany(&newCompany); err != nil {
 		return zeroUser, zeroCompany, "", "", err
 	}
 
-	if err := tx.Commit().Error; err != nil {
+	if err := repoTx.CommitTx(); err != nil {
 		return zeroUser, zeroCompany, "", "", err
 	}
 
@@ -290,7 +276,7 @@ func (s *AuthService) HandleGoogleOAuth(userInfo struct {
 	if statusCode == 200 {
 		var r string
 		var reg bool
-		reg, r, err = isStudentRegisteredAndRole(s.DB, user)
+		reg, r, err = s.UserRepo.IsStudentRegisteredAndRole(user)
 		if err != nil {
 			return
 		}

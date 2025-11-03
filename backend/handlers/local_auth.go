@@ -82,7 +82,7 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 		return
 	}
 
-	maxAge := services.CookieMaxAge()
+	maxAge := helper.CookieMaxAge()
 	ctx.SetSameSite(helper.GetCookieSameSite())
 	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", helper.GetCookieSecure(), true)
 
@@ -108,7 +108,7 @@ func (h *LocalAuthHandlers) CompanyLoginHandler(ctx *gin.Context) {
 		return
 	}
 
-	maxAge := services.CookieMaxAge()
+	maxAge := helper.CookieMaxAge()
 	ctx.SetSameSite(helper.GetCookieSameSite())
 	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", helper.GetCookieSecure(), true)
 
@@ -134,7 +134,7 @@ func (h *LocalAuthHandlers) AdminLoginHandler(ctx *gin.Context) {
 		return
 	}
 
-	maxAge := services.CookieMaxAge()
+	maxAge := helper.CookieMaxAge()
 	ctx.SetSameSite(helper.GetCookieSameSite())
 	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", helper.GetCookieSecure(), true)
 

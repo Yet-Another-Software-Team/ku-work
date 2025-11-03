@@ -2,21 +2,23 @@ package repository
 
 import (
 	"ku-work/backend/model"
-
-	"gorm.io/gorm"
 )
 
 // UserRepository defines database operations related to users and user-related entities.
 type UserRepository interface {
-	// WithTx returns a repository instance bound to the provided transaction DB.
-	// Use this when you need to run multiple repository operations within a single transaction.
-	WithTx(tx *gorm.DB) UserRepository
+	// Transaction
+	BeginTx() (UserRepository, error)
+	CommitTx() error
+	RollbackTx() error
 
 	// ExistsByUsernameAndType checks whether a user exists for the given username and type.
 	ExistsByUsernameAndType(username, userType string) (bool, error)
 
 	// CreateUser persists a new user.
 	CreateUser(user *model.User) error
+
+	// CreateCompany persists a new company.
+	CreateCompany(company *model.Company) error
 
 	// FindUserByUsernameAndType returns a user by username and type.
 	FindUserByUsernameAndType(username, userType string) (*model.User, error)
@@ -35,4 +37,7 @@ type UserRepository interface {
 	// Convenience counters used by auth flows
 	CountCompanyByUserID(userID string) (int64, error)
 	CountAdminByUserID(userID string) (int64, error)
+
+	// isStudentRegisteredAndRole checks if a student is registered and their role.
+	IsStudentRegisteredAndRole(user model.User) (bool, string, error)
 }

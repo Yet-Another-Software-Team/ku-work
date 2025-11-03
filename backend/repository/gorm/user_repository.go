@@ -1,6 +1,7 @@
 package gormrepo
 
 import (
+	"ku-work/backend/helper"
 	"ku-work/backend/model"
 	repo "ku-work/backend/repository"
 
@@ -17,11 +18,19 @@ func NewGormUserRepository(db *gorm.DB) *GormUserRepository {
 	return &GormUserRepository{db: db}
 }
 
-// WithTx returns a new repository instance bound to the provided transaction DB.
-// This allows callers to perform multiple operations within a transaction while
-// still using the repository's methods.
-func (r *GormUserRepository) WithTx(tx *gorm.DB) repo.UserRepository {
-	return &GormUserRepository{db: tx}
+// Create new GorU
+func (r *GormUserRepository) BeginTx() (repo.UserRepository, error) {
+	return NewGormUserRepository(r.db.Begin()), nil
+}
+
+// Commit current Transaction
+func (r *GormUserRepository) CommitTx() error {
+	return r.db.Commit().Error
+}
+
+// Rollback current Transaction
+func (r *GormUserRepository) RollbackTx() error {
+	return r.db.Rollback().Error
 }
 
 func (r *GormUserRepository) ExistsByUsernameAndType(username, userType string) (bool, error) {
@@ -39,6 +48,13 @@ func (r *GormUserRepository) CreateUser(user *model.User) error {
 		return gorm.ErrInvalidData
 	}
 	return r.db.Create(user).Error
+}
+
+func (r *GormUserRepository) CreateCompany(company *model.Company) error {
+	if company == nil {
+		return gorm.ErrInvalidData
+	}
+	return r.db.Create(company).Error
 }
 
 func (r *GormUserRepository) FindUserByUsernameAndType(username, userType string) (*model.User, error) {
@@ -101,4 +117,23 @@ func (r *GormUserRepository) CountAdminByUserID(userID string) (int64, error) {
 		return 0, err
 	}
 	return count, nil
+}
+
+func (r *GormUserRepository) IsStudentRegisteredAndRole(user model.User) (bool, string, error) {
+	var count int64
+	if err := r.db.Model(&model.Student{}).Where("user_id = ?", user.ID).Count(&count).Error; err != nil {
+		// helper.Role is a named type; convert to string when returning from this function.
+		return false, string(helper.Viewer), err
+	}
+	if count == 0 {
+		return false, string(helper.Viewer), nil
+	}
+	var student model.Student
+	if err := r.db.Model(&student).Where("user_id = ?", user.ID).First(&student).Error; err != nil {
+		return true, string(helper.Viewer), err
+	}
+	if student.ApprovalStatus == model.StudentApprovalAccepted {
+		return true, string(helper.Student), nil
+	}
+	return true, string(helper.Viewer), nil
 }
