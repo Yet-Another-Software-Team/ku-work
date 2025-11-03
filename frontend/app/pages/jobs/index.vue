@@ -93,6 +93,7 @@
                         :is-viewer="userRole === 'viewer'"
                         :is-selected="true"
                         :data="jobs[selectedIndex]!"
+                        @update:applied="() => updateApplied(true)"
                     />
                     <JobPostDrawer
                         v-if="jobs.length > 0 && !isTablet"
@@ -101,6 +102,7 @@
                         :is-selected="true"
                         :data="jobs[selectedIndex]!"
                         @close="setSelectedIndex(null)"
+                        @update:applied="() => updateApplied(true)"
                     />
                 </section>
             </section>
@@ -110,7 +112,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import type { JobPost } from "~/data/mockData";
+import type { JobPost } from "~/data/datatypes";
 import type { CheckboxGroupValue } from "@nuxt/ui";
 import { useMediaQuery, useInfiniteScroll, watchDebounced } from "@vueuse/core";
 
@@ -256,6 +258,23 @@ onMounted(() => {
 });
 
 await fetchJobs();
+
+const updateApplied = (value: boolean) => {
+    // Ensure a selection exists (0 is a valid index)
+    if (selectedIndex.value === null) {
+        return;
+    }
+
+    const idx = selectedIndex.value;
+    const job = jobs.value[idx];
+    if (!job) {
+        return;
+    }
+
+    (job as JobPost).applied = value;
+
+    jobs.value = jobs.value.slice();
+};
 </script>
 
 <style scoped>

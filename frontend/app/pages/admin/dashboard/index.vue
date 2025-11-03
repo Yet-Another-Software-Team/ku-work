@@ -77,7 +77,7 @@
 
 <script setup lang="ts">
 import RequestedJobPost from "~/components/job/request/JobPostReview.vue";
-import type { ProfileInformation, JobPost } from "~/data/mockData";
+import type { ProfileInformation, JobPost } from "~/data/datatypes";
 
 definePageMeta({
     layout: "admin",

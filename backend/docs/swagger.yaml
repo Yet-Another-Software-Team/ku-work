@@ -243,6 +243,8 @@ definitions:
         type: integer
       name:
         type: string
+      notifyOnApplication:
+        type: boolean
       open:
         type: boolean
       photoId:
@@ -284,6 +286,8 @@ definitions:
         type: integer
       name:
         type: string
+      notifyOnApplication:
+        type: boolean
       open:
         type: boolean
       pending:
@@ -415,6 +419,40 @@ definitions:
     - JobApplicationAccepted
     - JobApplicationRejected
     - JobApplicationPending
+  model.MailLog:
+    properties:
+      body:
+        type: string
+      createdAt:
+        type: string
+      errorCode:
+        type: string
+      errorDesc:
+        type: string
+      id:
+        type: integer
+      retryCount:
+        description: Number of retry attempts made
+        type: integer
+      status:
+        $ref: '#/definitions/model.MailLogStatus'
+      subject:
+        type: string
+      to:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  model.MailLogStatus:
+    enum:
+    - delivered
+    - temporary_error
+    - permanent_error
+    type: string
+    x-enum-varnames:
+    - MailLogStatusDelivered
+    - MailLogStatusTemporaryError
+    - MailLogStatusPermanentError
 info:
   contact: {}
   description: This is a sample API for KU-Work
@@ -454,6 +492,38 @@ paths:
       security:
       - BearerAuth: []
       summary: Get an Audit Log (Admin only)
+      tags:
+      - Admin
+  /admin/emaillog:
+    get:
+      description: Retrieves a list logs related to email i.e, sending success failure,
+        to whom.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of all audit log entries
+          schema:
+            items:
+              $ref: '#/definitions/model.MailLog'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get log of email (Admin only)
       tags:
       - Admin
   /applications:
@@ -806,8 +876,8 @@ paths:
       - Authentication
   /auth/logout:
     post:
-      description: Invalidates the user's session by deleting their refresh token
-        from the database and clearing the refresh token cookie.
+      description: Invalidates the user's session by revoking both the JWT token (blacklist)
+        and refresh token. Complies with OWASP session termination requirements.
       produces:
       - application/json
       responses:
@@ -1380,7 +1450,7 @@ paths:
       summary: Delete job applications for a job
       tags:
       - Job Applications
-  /jobs/{id}/applications/{studentUserId}:
+  /jobs/{id}/applications/{email}:
     get:
       description: Retrieves detailed information about a single job application for
         a specific student, including the applicant's full profile, contact information,
@@ -1393,7 +1463,7 @@ paths:
         type: integer
       - description: Student Email
         in: query
-        name: studentUserId
+        name: email
         required: true
         type: string
       produces:
@@ -1436,6 +1506,7 @@ paths:
       summary: Get a specific job application
       tags:
       - Job Applications
+  /jobs/{id}/applications/{studentUserId}:
     patch:
       consumes:
       - application/json
@@ -1774,6 +1845,161 @@ paths:
       security:
       - BearerAuth: []
       summary: Edit user profile
+      tags:
+      - Users
+  /me/deactivate:
+    post:
+      description: Soft deletes the user account. The account can be reactivated within
+        the grace period (default 30 days, configurable via ACCOUNT_DELETION_GRACE_PERIOD_DAYS
+        env variable). After the grace period expires, all personal data is automatically
+        anonymized (not deleted) to comply with Thailand's PDPA while retaining data
+        for analytics and compliance.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Account deactivated successfully
+          schema:
+            properties:
+              deletion_date:
+                type: string
+              grace_period_days:
+                type: integer
+              message:
+                type: string
+            type: object
+        "400":
+          description: Account already deactivated
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Deactivate account
+      tags:
+      - Users
+  /me/delete:
+    delete:
+      description: Marks the account for anonymization. Account will be deactivated
+        immediately and all personal data will be anonymized after the grace period
+        (PDPA compliant). Anonymized data is retained for analytics and compliance
+        purposes but cannot be linked back to the individual.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Account marked for anonymization
+          schema:
+            properties:
+              deletion_date:
+                type: string
+              grace_period_days:
+                type: integer
+              message:
+                type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Request account deletion
+      tags:
+      - Users
+  /me/reactivate:
+    post:
+      description: Reactivates a deactivated account if within the grace period. Once
+        the grace period expires and data is anonymized, reactivation is not possible.
+        Requires valid authentication token.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Account reactivated successfully
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Account is not deactivated
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "403":
+          description: Grace period expired, account already anonymized
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Reactivate account
       tags:
       - Users
   /students:

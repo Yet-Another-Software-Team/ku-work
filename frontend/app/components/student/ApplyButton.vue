@@ -5,7 +5,11 @@
         :ui="{ content: 'w-[380px]', body: 'p-6', title: 'text-xl font-bold' }"
     >
         <!-- Button Trigger -->
-        <UButton class="w-full justify-center my-5 p-2 text-xl" label="Apply" />
+        <UButton
+            class="w-full justify-center my-5 p-2 text-xl"
+            label="Apply"
+            :disabled="appliedLocal"
+        />
 
         <template #body>
             <!-- Progress -->
@@ -154,10 +158,21 @@ const api = useApi();
 
 interface Props {
     jobId: number;
+    applied?: boolean;
 }
 
 const props = defineProps<Props>();
+const emit = defineEmits<{ (e: "update:applied", value: boolean): void }>();
 const toast = useToast();
+
+// Local mutable applied state synced with prop for v-model support
+const appliedLocal = ref<boolean>(props.applied);
+watch(
+    () => props.applied,
+    (v) => {
+        appliedLocal.value = v;
+    }
+);
 
 const totalSteps = 2;
 const currentStep = ref(1);
@@ -300,6 +315,9 @@ async function onNext() {
         await api.postFormData(`/jobs/${props.jobId}/apply`, formData, { withCredentials: true });
 
         currentStep.value = 2;
+        // update local state and emit update for v-model:applied
+        appliedLocal.value = true;
+        emit("update:applied", true);
         toast.add({
             title: "Apply Successfully",
             description: "Your application has been submitted successfully",

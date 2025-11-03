@@ -14,10 +14,10 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// AuthMiddlewareWithRedis creates an authentication middleware with Redis-based JWT revocation checking
+// AuthMiddleware creates an authentication middleware with Redis-based JWT revocation checking
 // This is the OWASP-compliant version that checks for revoked tokens using Redis (faster than DB)
 // IMPORTANT: Redis client MUST not be nil. This middleware will fail if Redis is unavailable.
-func AuthMiddlewareWithRedis(jwtSecret []byte, redisClient *redis.Client) gin.HandlerFunc {
+func AuthMiddleware(jwtSecret []byte, redisClient *redis.Client) gin.HandlerFunc {
 	if redisClient == nil {
 		log.Fatal("FATAL: Redis client is nil. JWT revocation requires Redis to be available.")
 	}

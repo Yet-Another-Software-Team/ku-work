@@ -23,11 +23,11 @@ func setupTestRouter(redisClient *redis.Client, jwtHandlers *handlers.JWTHandler
 
 	// Setup routes similar to production
 	auth := router.Group("/auth")
-	authProtected := auth.Group("", middlewares.AuthMiddlewareWithRedis(jwtHandlers.JWTSecret, redisClient))
+	authProtected := auth.Group("", middlewares.AuthMiddleware(jwtHandlers.JWTSecret, redisClient))
 	authProtected.POST("/logout", jwtHandlers.LogoutHandler)
 
 	// Protected route to test authentication
-	router.GET("/protected", middlewares.AuthMiddlewareWithRedis(jwtHandlers.JWTSecret, redisClient), func(c *gin.Context) {
+	router.GET("/protected", middlewares.AuthMiddleware(jwtHandlers.JWTSecret, redisClient), func(c *gin.Context) {
 		userID, _ := c.Get("userID")
 		c.JSON(http.StatusOK, gin.H{"userID": userID})
 	})

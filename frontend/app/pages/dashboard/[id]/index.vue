@@ -128,7 +128,7 @@
 
 <script setup lang="ts">
 import { mockJobApplicationData } from "~/data/mockData";
-import type { JobPost, JobApplication } from "~/data/mockData";
+import type { JobPost, JobApplication } from "~/data/datatypes";
 
 definePageMeta({
     layout: "viewer",
