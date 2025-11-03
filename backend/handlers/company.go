@@ -1,9 +1,10 @@
 package handlers
 
 import (
-	"ku-work/backend/helper"
-	"ku-work/backend/services"
+	"log"
 	"net/http"
+
+	"ku-work/backend/services"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -19,20 +20,6 @@ func NewCompanyHandlers(db *gorm.DB) *CompanyHandlers {
 	}
 }
 
-// anonymizeCompany zeros or replaces personally-identifying fields for deactivated accounts.
-func anonymizeCompany(c *services.CompanyResponse) {
-	c.Email = ""
-	c.Phone = ""
-	c.PhotoID = ""
-	c.BannerID = ""
-	c.Address = ""
-	c.City = ""
-	c.Country = ""
-	c.Website = ""
-	c.AboutUs = ""
-	c.Name = "Deactivated Account"
-}
-
 // @Summary Get a company's profile
 // @Description Retrieves the profile of a specific company using their user ID.
 // @Tags Companies
@@ -44,17 +31,11 @@ func anonymizeCompany(c *services.CompanyResponse) {
 // @Router /company/{id} [get]
 func (h *CompanyHandlers) GetCompanyProfileHandler(ctx *gin.Context) {
 	id := ctx.Param("id")
-	company, err := h.Service.GetCompanyByUserID(id)
+	company, err := h.Service.GetCompanyByUserID(ctx.Request.Context(), id)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	// anonymize if deactivated
-	if helper.IsDeactivated(h.Service.DB, id) {
-		anonymizeCompany(&company)
-	}
-
 	ctx.JSON(http.StatusOK, company)
 }
 
@@ -69,22 +50,22 @@ func (h *CompanyHandlers) GetCompanyProfileHandler(ctx *gin.Context) {
 // @Router /company [get]
 func (h *CompanyHandlers) GetCompanyListHandler(ctx *gin.Context) {
 	userId := ctx.MustGet("userID").(string)
-	if !h.Service.IsAdmin(userId) {
+	// Use context-aware admin check from service (delegates to repository)
+	isAdmin, err := h.Service.IsAdminCtx(ctx.Request.Context(), userId)
+	if err != nil {
+		log.Printf("ERROR: failed to check admin permission for user %s: %v", userId, err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
+	}
+	if !isAdmin {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
 		return
 	}
 
-	companies, err := h.Service.ListCompanies()
+	companies, err := h.Service.ListCompanies(ctx.Request.Context())
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
-	}
-
-	// Anonymize deactivated accounts before returning
-	for i := range companies {
-		if helper.IsDeactivated(h.Service.DB, companies[i].UserID) {
-			anonymizeCompany(&companies[i])
-		}
 	}
 
 	ctx.JSON(http.StatusOK, companies)
