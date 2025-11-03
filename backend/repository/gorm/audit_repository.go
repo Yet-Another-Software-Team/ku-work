@@ -18,7 +18,7 @@ func NewGormAuditRepository(db *gorm.DB) repository.AuditRepository {
 }
 
 // Fetch retrieves audit records from the database ordered by newest first.
-func (r *GormAuditRepository) Fetch(offset, limit uint) ([]model.Audit, error) {
+func (r *GormAuditRepository) FetchAuditLog(offset, limit uint) ([]model.Audit, error) {
 	var audits []model.Audit
 
 	// Provide a sensible default if caller passes 0 for limit.
@@ -34,4 +34,22 @@ func (r *GormAuditRepository) Fetch(offset, limit uint) ([]model.Audit, error) {
 		Find(&audits)
 
 	return audits, result.Error
+}
+
+func (r *GormAuditRepository) FetchMailLog(offset uint, limit uint) ([]model.MailLog, error) {
+	var mailLogs []model.MailLog
+
+	// Provide a sensible default if caller passes 0 for limit.
+	if limit == 0 {
+		limit = 32
+	}
+
+	result := r.db.
+		Model(&model.MailLog{}).
+		Offset(int(offset)).
+		Limit(int(limit)).
+		Order("created_at desc").
+		Find(&mailLogs)
+
+	return mailLogs, result.Error
 }

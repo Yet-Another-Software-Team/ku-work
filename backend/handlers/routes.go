@@ -72,7 +72,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 		}
 	}
 
-	jobHandlers, err := NewJobHandlers(fileHandlers, aiService, jobService)
+	jobHandlers, err := NewJobHandlers(aiService, jobService)
 	if err != nil {
 		return err
 	}
@@ -99,7 +99,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	// Admin handlers with injected service
 	auditRepo := gormrepo.NewGormAuditRepository(db)
 	adminSvc := services.NewAdminService(auditRepo)
-	adminHandlers := NewAdminHandlersWithService(adminSvc)
+	adminHandlers := NewAdminHandlers(adminSvc)
 
 	if fileService == nil {
 		return fmt.Errorf("fileService must be provided")

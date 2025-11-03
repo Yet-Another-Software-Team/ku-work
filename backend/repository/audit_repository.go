@@ -6,5 +6,6 @@ import (
 
 // AuditRepository defines the contract for audit persistence operations.
 type AuditRepository interface {
-	Fetch(offset, limit uint) ([]model.Audit, error)
+	FetchAuditLog(offset, limit uint) ([]model.Audit, error)
+	FetchMailLog(offset, limit uint) ([]model.MailLog, error)
 }

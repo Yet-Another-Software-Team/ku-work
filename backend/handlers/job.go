@@ -14,15 +14,12 @@ import (
 )
 
 type JobHandlers struct {
-	FileHandlers *FileHandlers
 	aiService    *services.AIService
-	emailService *services.EmailService
 	JobService   *services.JobService
 }
 
-func NewJobHandlers(fileHandlers *FileHandlers, aiService *services.AIService, jobService *services.JobService) (*JobHandlers, error) {
+func NewJobHandlers(aiService *services.AIService, jobService *services.JobService) (*JobHandlers, error) {
 	return &JobHandlers{
-		FileHandlers: fileHandlers,
 		aiService:    aiService,
 		JobService:   jobService,
 	}, nil
