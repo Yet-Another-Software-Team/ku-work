@@ -88,13 +88,13 @@
                         :href="file"
                         :download="suggestedFileName"
                         target="_blank"
+                        aria-label="Download submitted file"
                         class="flex items-center gap-2"
                     >
-                        <Icon name="ic:outline-file-download" class="size-[2em]" />
-                        <span
-                            class="text-sm text-primary-700 dark:text-primary truncate max-w-[12rem]"
-                            >{{ suggestedFileName }}</span
-                        >
+                        <Icon
+                            name="ic:outline-file-download"
+                            class="size-[2em] hover:text-primary transition-colors duration-200"
+                        />
                     </a>
                 </div>
             </section>
@@ -134,26 +134,86 @@
                 </div>
 
                 <!-- Decision Button -->
-                <div class="flex gap-5">
-                    <span class="c-ubutton w-fit">
+                <div class="flex gap-5 w-full">
+                    <span class="c-ubutton w-full flex-1">
                         <UButton
-                            class="font-bold p-1 rounded flex items-center gap-1 w-fit px-2"
+                            class="font-bold p-1 rounded flex items-center gap-1 w-full flex-1 px-2"
                             variant="outline"
                             color="error"
                             label="Decline"
                             :icon="'iconoir:xmark'"
-                            @click.stop="declineRequest"
+                            @click.stop="showRejectModal = true"
                         />
+                        <UModal
+                            v-model:open="showRejectModal"
+                            :ui="{
+                                title: 'text-xl font-semibold text-primary-800 dark:text-primary',
+                                container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
+                                overlay: 'fixed inset-0 bg-black/50',
+                            }"
+                        >
+                            <template #header>
+                                <p>
+                                    Are you sure you want to <strong>decline</strong>
+                                    {{ data?.profile.name }}?
+                                </p>
+                            </template>
+                            <template #body>
+                                <div class="flex justify-end gap-2">
+                                    <UButton
+                                        variant="outline"
+                                        color="neutral"
+                                        label="Cancel"
+                                        @click="showRejectModal = false"
+                                    />
+                                    <UButton
+                                        color="error"
+                                        label="Decline"
+                                        @click="() => { declineRequest(); showRejectModal = false; }"
+                                    />
+                                </div>
+                            </template>
+                        </UModal>
                     </span>
-                    <span class="c-ubutton w-fit">
+                    <span class="c-ubutton w-full flex-1">
                         <UButton
-                            class="font-bold p-1 rounded flex items-center gap-1 w-fit px-2"
+                            class="font-bold p-1 rounded flex items-center gap-1 w-full flex-1 px-2"
                             variant="outline"
                             color="primary"
                             label="Accept"
                             :icon="'iconoir:check'"
-                            @click.stop="acceptRequest"
+                            @click.stop="showAcceptModal = true"
                         />
+                        <UModal
+                            v-model:open="showAcceptModal"
+                            :ui="{
+                                title: 'text-xl font-semibold text-primary-800 dark:text-primary',
+                                container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
+                                overlay: 'fixed inset-0 bg-black/50',
+                            }"
+                        >
+                            <template #header>
+                                <p>
+                                    Are you sure you want to <strong>accept</strong>
+                                    {{ data?.profile.name }}?
+                                </p>
+                            </template>
+                            <template #body>
+                                <div class="flex justify-end gap-2">
+                                    <UButton
+                                        variant="outline"
+                                        color="neutral"
+                                        label="Cancel"
+                                        @click="showAcceptModal = false"
+                                    />
+                                    <UButton
+                                        color="primary"
+                                        label="Accept"
+                                        @click="() => { acceptRequest(); showAcceptModal = false; }"
+                                    />
+                                </div>
+                            </template>
+                        </UModal>
                     </span>
                 </div>
             </section>
@@ -243,6 +303,8 @@ const isLoading = ref(true);
 
 const photo = ref("");
 const file = ref("");
+const showAcceptModal = ref(false);
+const showRejectModal = ref(false);
 const email = computed(() => {
     if (!data.value) return "";
     return data.value.profile.email || "No email provided";

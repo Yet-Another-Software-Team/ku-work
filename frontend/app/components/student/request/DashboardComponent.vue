@@ -29,9 +29,9 @@
                 <p class="text-xs">{{ data.major }}</p>
 
                 <!-- buttons -->
-                <div class="flex gap-2 mt-2">
+                <div class="flex gap-2 mt-2 w-full">
                     <UButton
-                        class="font-bold p-1 rounded flex items-center gap-1 w-fit px-2"
+                        class="font-bold p-1 rounded flex items-center gap-1 w-full flex-1 px-2"
                         variant="outline"
                         color="error"
                         label="Decline"
@@ -63,10 +63,13 @@
                                 <UButton
                                     color="error"
                                     label="Decline"
+                                    :loading="actionLoading === 'decline'"
                                     @click="
                                         () => {
+                                            actionLoading = 'decline';
                                             declineRequest();
                                             showRejectModal = false;
+                                            actionLoading = null;
                                         }
                                     "
                                 />
@@ -75,7 +78,7 @@
                     </UModal>
 
                     <UButton
-                        class="font-bold p-1 rounded flex items-center gap-1 w-fit px-2"
+                        class="font-bold p-1 rounded flex items-center gap-1 w-full flex-1 px-2"
                         variant="outline"
                         color="primary"
                         label="Accept"
@@ -107,10 +110,13 @@
                                 <UButton
                                     color="primary"
                                     label="Accept"
+                                    :loading="actionLoading === 'accept'"
                                     @click="
                                         () => {
+                                            actionLoading = 'accept';
                                             acceptRequest();
                                             showAcceptModal = false;
+                                            actionLoading = null;
                                         }
                                     "
                                 />
@@ -142,6 +148,7 @@ const toast = useToast();
 const photo = ref<string>("");
 const showAcceptModal = ref(false);
 const showRejectModal = ref(false);
+const actionLoading = ref<null | 'accept' | 'decline'>(null);
 
 function navigateToProfile(id: string) {
     console.log("Navigating to profile of request:", props.requestId);

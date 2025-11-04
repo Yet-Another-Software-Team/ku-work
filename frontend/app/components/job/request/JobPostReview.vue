@@ -45,40 +45,37 @@
                     />
                     <UModal
                         v-model:open="showRejectModal"
-                        :dismissible="false"
-                        :ui="{ overlay: 'fixed inset-0 bg-black/50' }"
+                        :ui="{
+                            title: 'text-xl font-semibold text-primary-800 dark:text-primary',
+                            container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
+                            overlay: 'fixed inset-0 bg-black/50',
+                        }"
                     >
-                        <UCard
-                            title="Reject Post?"
-                            :ui="{
-                                header: 'pb-2',
-                                title: 'text-xl font-semibold text-primary-800 dark:text-primary',
-                            }"
-                        >
+                        <template #header>
                             <p>
                                 Are you sure you want to <strong>decline</strong> {{ job?.name }}?
                             </p>
-                            <template #footer>
-                                <div class="flex justify-end gap-2">
-                                    <UButton
-                                        variant="outline"
-                                        color="neutral"
-                                        label="Cancel"
-                                        @click="showRejectModal = false"
-                                    />
-                                    <UButton
-                                        color="error"
-                                        label="Decline"
-                                        @click="
-                                            () => {
-                                                declineJob();
-                                                showRejectModal = false;
-                                            }
-                                        "
-                                    />
-                                </div>
-                            </template>
-                        </UCard>
+                        </template>
+                        <template #body>
+                            <div class="flex justify-end gap-2">
+                                <UButton
+                                    variant="outline"
+                                    color="neutral"
+                                    label="Cancel"
+                                    @click="showRejectModal = false"
+                                />
+                                <UButton
+                                    color="error"
+                                    label="Decline"
+                                    @click="
+                                        () => {
+                                            declineJob();
+                                            showRejectModal = false;
+                                        }
+                                    "
+                                />
+                            </div>
+                        </template>
                     </UModal>
                     <UButton
                         class="font-bold p-1 rounded flex items-center gap-1 w-fit px-2"
@@ -90,38 +87,35 @@
                     />
                     <UModal
                         v-model:open="showAcceptModal"
-                        :dismissible="false"
-                        :ui="{ overlay: 'fixed inset-0 bg-black/50' }"
+                        :ui="{
+                            title: 'text-xl font-semibold text-primary-800 dark:text-primary',
+                            container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
+                            overlay: 'fixed inset-0 bg-black/50',
+                        }"
                     >
-                        <UCard
-                            title="Accept Post?"
-                            :ui="{
-                                header: 'pb-2',
-                                title: 'text-xl font-semibold text-primary-800 dark:text-primary',
-                            }"
-                        >
+                        <template #header>
                             <p>Are you sure you want to <strong>accept</strong> {{ job?.name }}?</p>
-                            <template #footer>
-                                <div class="flex justify-end gap-2">
-                                    <UButton
-                                        variant="outline"
-                                        color="neutral"
-                                        label="Cancel"
-                                        @click="showAcceptModal = false"
-                                    />
-                                    <UButton
-                                        color="primary"
-                                        label="Accept"
-                                        @click="
-                                            () => {
-                                                approveJob();
-                                                showAcceptModal = false;
-                                            }
-                                        "
-                                    />
-                                </div>
-                            </template>
-                        </UCard>
+                        </template>
+                        <template #body>
+                            <div class="flex justify-end gap-2">
+                                <UButton
+                                    variant="outline"
+                                    color="neutral"
+                                    label="Cancel"
+                                    @click="showAcceptModal = false"
+                                />
+                                <UButton
+                                    color="primary"
+                                    label="Accept"
+                                    @click="
+                                        () => {
+                                            approveJob();
+                                            showAcceptModal = false;
+                                        }
+                                    "
+                                />
+                            </div>
+                        </template>
                     </UModal>
                 </div>
             </div>
