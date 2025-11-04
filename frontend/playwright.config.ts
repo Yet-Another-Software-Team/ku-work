@@ -3,7 +3,7 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
     testDir: "./tests/e2e",
     use: {
-        baseURL: "http://localhost:3000", // Nuxt dev server URL
+        baseURL: process.env.BASE_URL ?? "http://localhost:3000", // Nuxt dev server URL
         headless: false, // set to false to see the browser
         viewport: { width: 1280, height: 720 },
         screenshot: "only-on-failure",
