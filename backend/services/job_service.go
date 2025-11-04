@@ -15,22 +15,21 @@ import (
 
 // JobService encapsulates all database operations related to jobs.
 type JobService struct {
-	repo repo.JobRepository
-	// Optional email wiring. If set, the service will emit approval emails after state changes.
+	jobRepo repo.JobRepository
 	emailService                         *EmailService
 	jobApprovalStatusUpdateEmailTemplate *template.Template
 }
 
 // NewJobService creates a new JobService instance wired with a JobRepository.
 func NewJobService(r repo.JobRepository) *JobService {
-	return &JobService{repo: r}
+	return &JobService{jobRepo: r}
 }
 
 // NewJobServiceWithEmail creates a JobService with email wiring so the service
 // itself can send notification emails after approvals/rejections.
 func NewJobServiceWithEmail(r repo.JobRepository, emailService *EmailService, tpl *template.Template) *JobService {
 	return &JobService{
-		repo:                                 r,
+		jobRepo:                                 r,
 		emailService:                         emailService,
 		jobApprovalStatusUpdateEmailTemplate: tpl,
 	}
@@ -99,12 +98,12 @@ func (s *JobService) CreateJob(ctx context.Context, job *model.Job) error {
 	if job == nil {
 		return fmt.Errorf("job is nil")
 	}
-	return s.repo.CreateJob(ctx, job)
+	return s.jobRepo.CreateJob(ctx, job)
 }
 
 // FindJobByID retrieves a job by ID via repository.
 func (s *JobService) FindJobByID(ctx context.Context, id uint) (*model.Job, error) {
-	return s.repo.FindJobByID(ctx, id)
+	return s.jobRepo.FindJobByID(ctx, id)
 }
 
 // UpdateJob persists changes to a job via repository.
@@ -112,7 +111,7 @@ func (s *JobService) UpdateJob(ctx context.Context, job *model.Job) error {
 	if job == nil {
 		return fmt.Errorf("job is nil")
 	}
-	return s.repo.UpdateJob(ctx, job)
+	return s.jobRepo.UpdateJob(ctx, job)
 }
 
 // ApproveOrRejectJob updates job approval status and records an audit entry via repository.
@@ -120,7 +119,7 @@ func (s *JobService) UpdateJob(ctx context.Context, job *model.Job) error {
 // also attempt to notify the company that owns the job in a background goroutine.
 func (s *JobService) ApproveOrRejectJob(ctx context.Context, jobID uint, approve bool, actorID, reason string) error {
 	// delegate persistence to repository (this creates audit as well)
-	if err := s.repo.ApproveOrRejectJob(ctx, jobID, approve, actorID, reason); err != nil {
+	if err := s.jobRepo.ApproveOrRejectJob(ctx, jobID, approve, actorID, reason); err != nil {
 		return err
 	}
 
@@ -132,14 +131,14 @@ func (s *JobService) ApproveOrRejectJob(ctx context.Context, jobID uint, approve
 	// Send notification in background; don't block the caller.
 	go func() {
 		// Fetch denormalized job detail (includes company id and company name)
-		jobDetail, err := s.repo.GetJobDetail(ctx, jobID)
+		jobDetail, err := s.jobRepo.GetJobDetail(ctx, jobID)
 		if err != nil {
 			// Best-effort: bail out if we can't build email context
 			return
 		}
 
 		// Fetch company record to get email address
-		company, err := s.repo.FindCompanyByUserID(ctx, jobDetail.CompanyID)
+		company, err := s.jobRepo.FindCompanyByUserID(ctx, jobDetail.CompanyID)
 		if err != nil || company == nil || company.Email == "" {
 			return
 		}
@@ -200,7 +199,7 @@ func (s *JobService) CountJobs(ctx context.Context, params *FetchJobsParams) (in
 		Role:           params.Role,
 		UserID:         params.UserID,
 	}
-	_, total, err := s.repo.FetchJobs(ctx, &rp)
+	_, total, err := s.jobRepo.FetchJobs(ctx, &rp)
 	if err != nil {
 		return 0, err
 	}
@@ -228,7 +227,7 @@ func (s *JobService) FetchJobs(ctx context.Context, params *FetchJobsParams) (an
 	}
 
 	// Retrieve raw repository projection
-	raw, total, err := s.repo.FetchJobs(ctx, &rp)
+	raw, total, err := s.jobRepo.FetchJobs(ctx, &rp)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -260,7 +259,7 @@ func (s *JobService) FetchJobs(ctx context.Context, params *FetchJobsParams) (an
 func (s *JobService) GetJobDetail(ctx context.Context, jobID uint) (*JobResponse, error) {
 	// The repository returns a denormalized JobDetail projection.
 	// Map that projection into the service-level JobResponse.
-	mjob, err := s.repo.GetJobDetail(ctx, jobID)
+	mjob, err := s.jobRepo.GetJobDetail(ctx, jobID)
 	if err != nil {
 		return nil, err
 	}
@@ -291,7 +290,7 @@ func (s *JobService) GetJobDetail(ctx context.Context, jobID uint) (*JobResponse
 
 // FindCompanyByUserID returns the Company record for the given user id via repository.
 func (s *JobService) FindCompanyByUserID(ctx context.Context, userID string) (*model.Company, error) {
-	return s.repo.FindCompanyByUserID(ctx, userID)
+	return s.jobRepo.FindCompanyByUserID(ctx, userID)
 }
 
 // ResolveRole asks the underlying repository for the role of a given user.
@@ -301,7 +300,7 @@ func (s *JobService) ResolveRole(ctx context.Context, userID string) (helper.Rol
 	type roleResolver interface {
 		GetRole(ctx context.Context, userID string) (helper.Role, error)
 	}
-	if rr, ok := s.repo.(roleResolver); ok {
+	if rr, ok := s.jobRepo.(roleResolver); ok {
 		return rr.GetRole(ctx, userID)
 	}
 	// Otherwise return Unknown as a safe default.
@@ -310,5 +309,5 @@ func (s *JobService) ResolveRole(ctx context.Context, userID string) (helper.Rol
 
 // AcceptOrRejectJobApplication updates a job application's status ensuring the company owns the job.
 func (s *JobService) AcceptOrRejectJobApplication(ctx context.Context, userId string, appID uint, accept bool) error {
-	return s.repo.AcceptOrRejectJobApplication(ctx, userId, appID, accept)
+	return s.jobRepo.AcceptOrRejectJobApplication(ctx, userId, appID, accept)
 }

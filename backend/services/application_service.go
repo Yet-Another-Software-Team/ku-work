@@ -16,13 +16,13 @@ import (
 
 // ApplicationService handles job application flows.
 type ApplicationService struct {
-	appRepo     repo.ApplicationRepository
-	jobRepo     repo.JobRepository
-	studentRepo repo.StudentRepository
-	userRepo    repo.UserRepository
+	applicationRepo repo.ApplicationRepository
+	jobRepo         repo.JobRepository
+	studentRepo     repo.StudentRepository
+	userRepo        repo.UserRepository
 
-	fileService *FileService
-	email       *EmailService
+	fileService  *FileService
+	emailService *EmailService
 
 	// Optional email templates
 	jobApplicationStatusUpdateEmailTemplate *template.Template
@@ -41,12 +41,12 @@ func NewApplicationService(
 	newApplicantTpl *template.Template,
 ) *ApplicationService {
 	return &ApplicationService{
-		appRepo:                                 appRepo,
+		applicationRepo:                         appRepo,
 		jobRepo:                                 jobRepo,
 		studentRepo:                             studentRepo,
 		userRepo:                                userRepo,
 		fileService:                             fileSvc,
-		email:                                   emailSvc,
+		emailService:                            emailSvc,
 		jobApplicationStatusUpdateEmailTemplate: statusTpl,
 		newApplicantEmailTemplate:               newApplicantTpl,
 	}
@@ -131,12 +131,12 @@ func (s *ApplicationService) ApplyToJob(ctx context.Context, p ApplyToJobParams)
 		app.Files = append(app.Files, *f)
 	}
 
-	if err := s.appRepo.CreateApplication(ctx, &app); err != nil {
+	if err := s.applicationRepo.CreateApplication(ctx, &app); err != nil {
 		return fmt.Errorf("failed to create application: %w", err)
 	}
 
 	// Notify company if configured
-	if s.email != nil && job.NotifyOnApplication {
+	if s.emailService != nil && job.NotifyOnApplication {
 		go func(job model.Job, createdAt time.Time) {
 			// Resolve recipient (company)
 			company, err := s.jobRepo.FindCompanyByUserID(context.Background(), job.CompanyID)
@@ -172,14 +172,14 @@ func (s *ApplicationService) ApplyToJob(ctx context.Context, p ApplyToJobParams)
 
 				var buf bytes.Buffer
 				if err := s.newApplicantEmailTemplate.Execute(&buf, tctx); err == nil {
-					_ = s.email.SendTo(company.Email, subject, buf.String())
+					_ = s.emailService.SendTo(company.Email, subject, buf.String())
 					return
 				}
 				// Fall through to simple body on template error
 			}
 
 			body := fmt.Sprintf("You have a new application for \"%s - %s\".\n\nOpen KU-Work to review the applicant's details.", job.Name, job.Position)
-			_ = s.email.SendTo(company.Email, subject, body)
+			_ = s.emailService.SendTo(company.Email, subject, body)
 		}(*job, app.CreatedAt)
 	}
 
@@ -194,7 +194,7 @@ func (s *ApplicationService) GetApplicationsForJob(ctx context.Context, jobID ui
 	if jobID == 0 {
 		return nil, fmt.Errorf("job id is required")
 	}
-	return s.appRepo.GetApplicationsForJob(ctx, jobID, params)
+	return s.applicationRepo.GetApplicationsForJob(ctx, jobID, params)
 }
 
 // ClearJobApplications deletes applications matching included statuses.
@@ -205,7 +205,7 @@ func (s *ApplicationService) ClearJobApplications(ctx context.Context, jobID uin
 	if jobID == 0 {
 		return 0, fmt.Errorf("job id is required")
 	}
-	return s.appRepo.ClearJobApplications(ctx, jobID, includePending, includeRejected, includeAccepted)
+	return s.applicationRepo.ClearJobApplications(ctx, jobID, includePending, includeRejected, includeAccepted)
 }
 
 // GetApplicationByJobAndEmail returns a single application detail.
@@ -219,7 +219,7 @@ func (s *ApplicationService) GetApplicationByJobAndEmail(ctx context.Context, jo
 	if email == "" {
 		return nil, fmt.Errorf("email is required")
 	}
-	return s.appRepo.GetApplicationByJobAndEmail(ctx, jobID, email)
+	return s.applicationRepo.GetApplicationByJobAndEmail(ctx, jobID, email)
 }
 
 // GetAllApplicationsForUser returns applications visible to the user.
@@ -230,7 +230,7 @@ func (s *ApplicationService) GetAllApplicationsForUser(ctx context.Context, user
 	if userID == "" {
 		return nil, 0, fmt.Errorf("user id is required")
 	}
-	return s.appRepo.GetAllApplicationsForUser(ctx, userID, params)
+	return s.applicationRepo.GetAllApplicationsForUser(ctx, userID, params)
 }
 
 // UpdateStatusParams groups inputs for updating an application's status.
@@ -258,11 +258,11 @@ func (s *ApplicationService) UpdateJobApplicationStatus(ctx context.Context, p U
 		return fmt.Errorf("new status is required")
 	}
 
-	if err := s.appRepo.UpdateApplicationStatus(ctx, p.JobID, p.StudentUserID, p.NewStatus); err != nil {
+	if err := s.applicationRepo.UpdateApplicationStatus(ctx, p.JobID, p.StudentUserID, p.NewStatus); err != nil {
 		return err
 	}
 
-	if s.email != nil && p.NotifyApplicantEmail != "" {
+	if s.emailService != nil && p.NotifyApplicantEmail != "" {
 
 		job, err := s.jobRepo.FindJobByID(ctx, p.JobID)
 		if err != nil {
@@ -291,14 +291,14 @@ func (s *ApplicationService) UpdateJobApplicationStatus(ctx context.Context, p U
 
 			var buf bytes.Buffer
 			if err := s.jobApplicationStatusUpdateEmailTemplate.Execute(&buf, tctx); err == nil {
-				_ = s.email.SendTo(p.NotifyApplicantEmail, subject, buf.String())
+				_ = s.emailService.SendTo(p.NotifyApplicantEmail, subject, buf.String())
 				return nil
 			}
 			// Fall through to simple body on template error
 		}
 
 		body := fmt.Sprintf("Your application for \"%s - %s\" is now: %s.\n\nThank you for applying on KU-Work.", job.Name, job.Position, p.NewStatus)
-		_ = s.email.SendTo(p.NotifyApplicantEmail, subject, body)
+		_ = s.emailService.SendTo(p.NotifyApplicantEmail, subject, body)
 	}
 
 	return nil

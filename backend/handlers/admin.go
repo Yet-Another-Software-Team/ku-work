@@ -10,12 +10,12 @@ import (
 
 // AdminHandlers handles admin-only HTTP endpoints and depends on the service layer.
 type AdminHandlers struct {
-	svc services.AdminService
+	adminService services.AdminService
 }
 
 // NewAdminHandlers constructs AdminHandlers by wiring default repository and service
 func NewAdminHandlers(svc services.AdminService) *AdminHandlers {
-	return &AdminHandlers{svc: svc}
+	return &AdminHandlers{adminService: svc}
 }
 
 // @Summary Get an Audit Log (Admin only)
@@ -42,7 +42,7 @@ func (h *AdminHandlers) FetchAuditLog(ctx *gin.Context) {
 		return
 	}
 
-	audits, err := h.svc.FetchAuditLog(input.Offset, input.Limit)
+	audits, err := h.adminService.FetchAuditLog(input.Offset, input.Limit)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -76,7 +76,7 @@ func (h *AdminHandlers) FetchEmailLog(ctx *gin.Context) {
 		return
 	}
 
-	audits, err := h.svc.FetchMailLog(input.Offset, input.Limit)
+	audits, err := h.adminService.FetchMailLog(input.Offset, input.Limit)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

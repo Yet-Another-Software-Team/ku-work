@@ -25,10 +25,10 @@ import (
 
 // JWTService encapsulates JWT and refresh-token related operations.
 type JWTService struct {
-	RefreshTokenRepo repo.RefreshTokenRepository
-	RevocationRepo   repo.JWTRevocationRepository
+	refreshTokenRepo repo.RefreshTokenRepository
+	revocationRepo   repo.JWTRevocationRepository
 	JWTSecret        []byte
-	UserRepo         repo.UserRepository
+	userRepo         repo.UserRepository
 }
 
 // NewJWTService constructs a new JWTService wired with Redis/GORM dependencies.
@@ -51,10 +51,10 @@ func NewJWTService(refreshRepo repo.RefreshTokenRepository, revocationRepo repo.
 	}
 
 	return &JWTService{
-		RefreshTokenRepo: refreshRepo,
-		RevocationRepo:   revocationRepo,
+		refreshTokenRepo: refreshRepo,
+		revocationRepo:   revocationRepo,
 		JWTSecret:        jwtSecret,
-		UserRepo:         userRepo,
+		userRepo:         userRepo,
 	}
 }
 
@@ -144,7 +144,7 @@ func (s *JWTService) GenerateTokens(userID string) (string, string, error) {
 	}
 
 	// Count active tokens for this user via repository
-	activeTokenCount, err := s.RefreshTokenRepo.CountActiveByUser(context.Background(), userID, time.Now())
+	activeTokenCount, err := s.refreshTokenRepo.CountActiveByUser(context.Background(), userID, time.Now())
 	if err != nil {
 		return "", "", err
 	}
@@ -153,14 +153,14 @@ func (s *JWTService) GenerateTokens(userID string) (string, string, error) {
 	if activeTokenCount >= int64(maxSessions) {
 		tokensToRevoke := int(activeTokenCount) - (maxSessions - 1)
 		if tokensToRevoke > 0 {
-			oldest, err := s.RefreshTokenRepo.FindOldestActiveByUserLimit(context.Background(), userID, tokensToRevoke)
+			oldest, err := s.refreshTokenRepo.FindOldestActiveByUserLimit(context.Background(), userID, tokensToRevoke)
 			if err == nil && len(oldest) > 0 {
 				now := time.Now()
 				ids := make([]uint, 0, len(oldest))
 				for _, t := range oldest {
 					ids = append(ids, t.ID)
 				}
-				_ = s.RefreshTokenRepo.RevokeByIDs(context.Background(), ids, now)
+				_ = s.refreshTokenRepo.RevokeByIDs(context.Background(), ids, now)
 			}
 		}
 	}
@@ -174,7 +174,7 @@ func (s *JWTService) GenerateTokens(userID string) (string, string, error) {
 		RevokedAt:     nil,
 	}
 
-	if err := s.RefreshTokenRepo.Create(context.Background(), &rt); err != nil {
+	if err := s.refreshTokenRepo.Create(context.Background(), &rt); err != nil {
 		return "", "", err
 	}
 
@@ -197,7 +197,7 @@ func (s *JWTService) VerifyRefreshToken(combined string) (*model.RefreshToken, e
 	selector := parts[0]
 	validator := parts[1]
 
-	stored, err := s.RefreshTokenRepo.FindBySelector(context.Background(), selector)
+	stored, err := s.refreshTokenRepo.FindBySelector(context.Background(), selector)
 	if err != nil {
 		return nil, err
 	}
@@ -218,23 +218,23 @@ func (s *JWTService) VerifyRefreshToken(combined string) (*model.RefreshToken, e
 // RevokeRefreshTokenBySelector revokes a refresh token record identified by selector.
 func (s *JWTService) RevokeRefreshTokenBySelector(selector string) error {
 	now := time.Now()
-	return s.RefreshTokenRepo.RevokeBySelector(context.Background(), selector, now)
+	return s.refreshTokenRepo.RevokeBySelector(context.Background(), selector, now)
 }
 
 // RevokeAllRefreshTokensForUser revokes all active refresh tokens for a user.
 func (s *JWTService) RevokeAllRefreshTokensForUser(userID string) error {
 	now := time.Now()
-	return s.RefreshTokenRepo.RevokeAllForUser(context.Background(), userID, now)
+	return s.refreshTokenRepo.RevokeAllForUser(context.Background(), userID, now)
 }
 
 // IsJWTRevoked is a thin wrapper around the revocation repository.
 func (s *JWTService) IsJWTRevoked(ctx context.Context, jti string) (bool, error) {
-	return s.RevocationRepo.IsJWTRevoked(ctx, jti)
+	return s.revocationRepo.IsJWTRevoked(ctx, jti)
 }
 
 // RevokeJWT delegates to the revocation repository to blacklist a JTI until its expiry.
 func (s *JWTService) RevokeJWT(ctx context.Context, jti, userID string, expiresAt time.Time) error {
-	return s.RevocationRepo.RevokeJWT(ctx, jti, userID, expiresAt)
+	return s.revocationRepo.RevokeJWT(ctx, jti, userID, expiresAt)
 }
 
 // RefreshTokenHandler is the HTTP handler that renews access tokens using a refresh token cookie.
@@ -263,7 +263,7 @@ func (s *JWTService) RefreshTokenHandler(ctx *gin.Context) {
 	if rt.RevokedAt != nil {
 		log.Printf("SECURITY ALERT: Revoked token reuse detected! User: %s, IP: %s - Revoking all tokens", rt.UserID, clientIP)
 		now := time.Now()
-		_ = s.RefreshTokenRepo.RevokeAllForUser(context.Background(), rt.UserID, now)
+		_ = s.refreshTokenRepo.RevokeAllForUser(context.Background(), rt.UserID, now)
 		ctx.SetSameSite(helper.GetCookieSameSite())
 		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
@@ -274,7 +274,7 @@ func (s *JWTService) RefreshTokenHandler(ctx *gin.Context) {
 	if rt.ExpiresAt.Before(time.Now()) {
 		log.Printf("SECURITY: Expired refresh token from IP: %s, User: %s", clientIP, rt.UserID)
 		now := time.Now()
-		_ = s.RefreshTokenRepo.UpdateRevokedAt(context.Background(), rt.ID, now)
+		_ = s.refreshTokenRepo.UpdateRevokedAt(context.Background(), rt.ID, now)
 		ctx.SetSameSite(helper.GetCookieSameSite())
 		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
@@ -291,9 +291,9 @@ func (s *JWTService) RefreshTokenHandler(ctx *gin.Context) {
 
 	// Resolve role using UserRepository (prefer explicit counts to avoid leaking DB access into helper).
 	var role helper.Role = helper.Unknown
-	if cnt, err := s.UserRepo.CountAdminByUserID(rt.UserID); err == nil && cnt > 0 {
+	if cnt, err := s.userRepo.CountAdminByUserID(rt.UserID); err == nil && cnt > 0 {
 		role = helper.Admin
-	} else if cnt, err := s.UserRepo.CountCompanyByUserID(rt.UserID); err == nil && cnt > 0 {
+	} else if cnt, err := s.userRepo.CountCompanyByUserID(rt.UserID); err == nil && cnt > 0 {
 		role = helper.Company
 	} else {
 		// Fallback: unknown (other role checks like Student/Viewer may be implemented in repo later)
@@ -303,7 +303,7 @@ func (s *JWTService) RefreshTokenHandler(ctx *gin.Context) {
 	// Resolve username via UserRepository when role is admin/company; otherwise fallback to unknown.
 	username := "unknown"
 	if role == helper.Company || role == helper.Admin {
-		if u, err := s.UserRepo.FindUserByID(rt.UserID); err == nil && u != nil {
+		if u, err := s.userRepo.FindUserByID(rt.UserID); err == nil && u != nil {
 			username = u.Username
 		}
 	}
@@ -356,13 +356,13 @@ func (s *JWTService) LogoutHandler(ctx *gin.Context) {
 			selector := parts[0]
 			validator := parts[1]
 
-			tokenDB, err := s.RefreshTokenRepo.FindBySelector(context.Background(), selector)
+			tokenDB, err := s.refreshTokenRepo.FindBySelector(context.Background(), selector)
 			if err == nil && tokenDB != nil {
 				// verify validator against stored hash
 				match, verr := verifyToken(validator, tokenDB.Token)
 				if verr == nil && match {
 					now := time.Now()
-					_ = s.RefreshTokenRepo.UpdateRevokedAt(context.Background(), tokenDB.ID, now)
+					_ = s.refreshTokenRepo.UpdateRevokedAt(context.Background(), tokenDB.ID, now)
 					log.Printf("INFO: Refresh token revoked for user: %s, IP: %s", tokenDB.UserID, clientIP)
 				}
 			}

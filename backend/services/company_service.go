@@ -21,13 +21,13 @@ var (
 // Construct via NewCompanyService (convenience constructor that wires a GORM-backed repository)
 // or NewCompanyServiceWithRepo to inject a repository (preferred for testing).
 type CompanyService struct {
-	Repo repo.CompanyRepository
+	companyRepo repo.CompanyRepository
 }
 
 // NewCompanyServiceWithRepo creates a CompanyService with an injected repository implementation.
 func NewCompanyService(r repo.CompanyRepository) *CompanyService {
 	return &CompanyService{
-		Repo: r,
+		companyRepo: r,
 	}
 }
 
@@ -36,10 +36,10 @@ func NewCompanyService(r repo.CompanyRepository) *CompanyService {
 // backward-compatible signature by running the call with background context and
 // swallowing errors (returns false on error).
 func (s *CompanyService) IsAdmin(userID string) bool {
-	if s == nil || s.Repo == nil {
+	if s == nil || s.companyRepo == nil {
 		return false
 	}
-	role, err := s.Repo.GetRole(context.Background(), userID)
+	role, err := s.companyRepo.GetRole(context.Background(), userID)
 	if err != nil {
 		// On error, conservatively treat as non-admin.
 		return false
@@ -51,10 +51,10 @@ func (s *CompanyService) IsAdmin(userID string) bool {
 // if role resolution fails. Handlers/middlewares should switch to this method
 // and pass request context.
 func (s *CompanyService) IsAdminCtx(ctx context.Context, userID string) (bool, error) {
-	if s == nil || s.Repo == nil {
+	if s == nil || s.companyRepo == nil {
 		return false, nil
 	}
-	role, err := s.Repo.GetRole(ctx, userID)
+	role, err := s.companyRepo.GetRole(ctx, userID)
 	if err != nil {
 		return false, err
 	}
@@ -80,7 +80,7 @@ type CompanyResponse struct {
 // GetCompanyByUserID fetches company profile and the owner's username.
 // Accepts a context so callers (handlers/middlewares) don't need direct DB access.
 func (s *CompanyService) GetCompanyByUserID(ctx context.Context, userID string) (CompanyResponse, error) {
-	proj, err := s.Repo.GetCompanyProjectionByUserID(ctx, userID)
+	proj, err := s.companyRepo.GetCompanyProjectionByUserID(ctx, userID)
 	if err != nil {
 		return CompanyResponse{}, err
 	}
@@ -104,7 +104,7 @@ func (s *CompanyService) GetCompanyByUserID(ctx context.Context, userID string) 
 // ListCompanies returns all companies with owner username populated.
 // Accepts a context so callers receive anonymized projections from the repository without touching the DB.
 func (s *CompanyService) ListCompanies(ctx context.Context) ([]CompanyResponse, error) {
-	projs, err := s.Repo.ListCompanyProjections(ctx)
+	projs, err := s.companyRepo.ListCompanyProjections(ctx)
 	if err != nil {
 		return nil, err
 	}
