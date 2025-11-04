@@ -3,7 +3,7 @@
         <!-- Header -->
         <a href="/admin/dashboard">
             <h1
-                class="flex items-center text-2xl text-primary-800 dark:text-primary font-bold mt-6 mb-4 gap-1 cursor-pointer"
+                class="flex items-center text-5xl text-primary-800 dark:text-primary font-bold mt-6 mb-4 gap-1 cursor-pointer"
             >
                 <Icon name="iconoir:nav-arrow-left" class="items-center" />
                 <span>Back</span>

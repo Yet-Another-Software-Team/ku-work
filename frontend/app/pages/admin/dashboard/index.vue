@@ -70,7 +70,7 @@
             <!-- Company post requests -->
             <template v-else>
                 <template v-if="companyRequests.length">
-                    <RequestedJobPost
+                    <JobRequestJobPostCard
                         v-for="job in companyRequests"
                         :key="job.id"
                         :request-id="String(job.id)"
@@ -93,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import RequestedJobPost from "~/components/job/request/JobPostReview.vue";
+import JobRequestJobPostCard from "~/components/job/request/JobPostCard.vue";
 import type { ProfileInformation, JobPost } from "~/data/datatypes";
 
 definePageMeta({
