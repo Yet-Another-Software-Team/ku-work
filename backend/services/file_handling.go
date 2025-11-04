@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"ku-work/backend/model"
-	filehandling "ku-work/backend/services/file_handling"
+	filehandling "ku-work/backend/providers/file_handling"
 	"mime/multipart"
 	"os"
 	"strings"

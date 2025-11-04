@@ -106,8 +106,8 @@ func initializeServices(db *gorm.DB) (*services.EmailService, *services.AIServic
 }
 
 // setupScheduler configures and returns the background task scheduler
-func setupScheduler(ctx context.Context, db *gorm.DB, emailService *services.EmailService) *helper.Scheduler {
-	scheduler := helper.NewScheduler(ctx)
+func setupScheduler(ctx context.Context, db *gorm.DB, emailService *services.EmailService) *services.Scheduler {
+	scheduler := services.NewScheduler(ctx)
 
 	// Token cleanup task
 	scheduler.AddTask("token-cleanup", time.Hour, func() error {
@@ -235,7 +235,7 @@ func waitForShutdownSignal() {
 }
 
 // performGracefulShutdown gracefully shuts down all services
-func performGracefulShutdown(srv *http.Server, cancel context.CancelFunc, scheduler *helper.Scheduler, redisClient *redis.Client) {
+func performGracefulShutdown(srv *http.Server, cancel context.CancelFunc, scheduler *services.Scheduler, redisClient *redis.Client) {
 	// Create shutdown context with timeout
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shutdownCancel()

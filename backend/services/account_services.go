@@ -16,7 +16,7 @@ import (
 	"ku-work/backend/model"
 	repo "ku-work/backend/repository"
 	gormrepo "ku-work/backend/repository/gorm"
-	filehandling "ku-work/backend/services/file_handling"
+	filehandling "ku-work/backend/providers/file_handling"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/datatypes"

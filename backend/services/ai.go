@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"ku-work/backend/model"
-	"ku-work/backend/services/ai"
+	"ku-work/backend/providers/ai"
 	"os"
 	"strconv"
 	"strings"

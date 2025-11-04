@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"ku-work/backend/model"
-	"ku-work/backend/services/email"
+	"ku-work/backend/providers/email"
 	"log"
 	"os"
 	"strconv"
