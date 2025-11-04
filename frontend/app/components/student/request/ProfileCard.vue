@@ -148,7 +148,8 @@
                             v-model:open="showRejectModal"
                             :ui="{
                                 title: 'text-xl font-semibold text-primary-800 dark:text-primary',
-                                container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
+                                container:
+                                    'fixed inset-0 z-[100] flex items-center justify-center p-4',
                                 overlay: 'fixed inset-0 bg-black/50',
                             }"
                         >
@@ -169,7 +170,12 @@
                                     <UButton
                                         color="error"
                                         label="Decline"
-                                        @click="() => { declineRequest(); showRejectModal = false; }"
+                                        @click="
+                                            () => {
+                                                declineRequest();
+                                                showRejectModal = false;
+                                            }
+                                        "
                                     />
                                 </div>
                             </template>
@@ -188,7 +194,8 @@
                             v-model:open="showAcceptModal"
                             :ui="{
                                 title: 'text-xl font-semibold text-primary-800 dark:text-primary',
-                                container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
+                                container:
+                                    'fixed inset-0 z-[100] flex items-center justify-center p-4',
                                 overlay: 'fixed inset-0 bg-black/50',
                             }"
                         >
@@ -209,7 +216,12 @@
                                     <UButton
                                         color="primary"
                                         label="Accept"
-                                        @click="() => { acceptRequest(); showAcceptModal = false; }"
+                                        @click="
+                                            () => {
+                                                acceptRequest();
+                                                showAcceptModal = false;
+                                            }
+                                        "
                                     />
                                 </div>
                             </template>
