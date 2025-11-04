@@ -148,7 +148,7 @@ const toast = useToast();
 const photo = ref<string>("");
 const showAcceptModal = ref(false);
 const showRejectModal = ref(false);
-const actionLoading = ref<null | 'accept' | 'decline'>(null);
+const actionLoading = ref<null | "accept" | "decline">(null);
 
 function navigateToProfile(id: string) {
     console.log("Navigating to profile of request:", props.requestId);

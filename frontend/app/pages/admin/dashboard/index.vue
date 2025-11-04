@@ -59,7 +59,10 @@
                 </template>
                 <template v-else>
                     <div class="w-full text-center py-10">
-                        <Icon name="ic:baseline-inbox" class="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <Icon
+                            name="ic:baseline-inbox"
+                            class="w-16 h-16 text-gray-400 mx-auto mb-4"
+                        />
                         <p class="text-gray-500 text-lg">No pending student registrations.</p>
                     </div>
                 </template>
@@ -77,7 +80,10 @@
                 </template>
                 <template v-else>
                     <div class="w-full text-center py-10">
-                        <Icon name="ic:baseline-inbox" class="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <Icon
+                            name="ic:baseline-inbox"
+                            class="w-16 h-16 text-gray-400 mx-auto mb-4"
+                        />
                         <p class="text-gray-500 text-lg">No pending company posts.</p>
                     </div>
                 </template>
