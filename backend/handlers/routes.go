@@ -27,7 +27,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	jwtHandlers := NewJWTHandlers(jwtService)
 
 	// File handlers
-	fileHandlers := NewFileHandlers(db)
+	fileHandlers := NewFileHandlers(db, fileService)
 
 	// Local auth service and handlers
 	authService := services.NewAuthService(jwtHandlers, userRepo, *fileService)
@@ -47,9 +47,10 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	oauthSvc := newOauthService(db, jwtHandlers, googleOauthConfig)
 	googleAuthHandlers := NewOAuthHandlers(oauthSvc)
 
-	// Job service (with optional email notifications)
+	// Job repository and service (with optional email notifications)
+	jobRepo := gormrepo.NewGormJobRepository(db)
 	if jobService == nil {
-		jobRepo := gormrepo.NewGormJobRepository(db)
+		// jobRepo already initialized
 		if emailService != nil {
 			tpl, err := template.New("job_approval_status_update.tmpl").ParseFiles("email_templates/job_approval_status_update.tmpl")
 			if err != nil {
@@ -77,7 +78,22 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 		return err
 	}
 
-	applicationHandlers, err := NewApplicationHandlers(db, fileHandlers, emailService)
+	// Application service wiring
+	appRepo := gormrepo.NewGormApplicationRepository(db)
+	var statusTpl, newApplicantTpl *template.Template
+	if emailService != nil {
+		var err error
+		statusTpl, err = template.New("job_application_status_update.tmpl").ParseFiles("email_templates/job_application_status_update.tmpl")
+		if err != nil {
+			return err
+		}
+		newApplicantTpl, err = template.New("job_new_applicant.tmpl").ParseFiles("email_templates/job_new_applicant.tmpl")
+		if err != nil {
+			return err
+		}
+	}
+	appService := services.NewApplicationService(appRepo, jobRepo, gormrepo.NewGormStudentRepository(db), userRepo, fileService, emailService, statusTpl, newApplicantTpl)
+	applicationHandlers, err := NewApplicationHandlers(db, fileHandlers, appService)
 	if err != nil {
 		return err
 	}
@@ -104,9 +120,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	if fileService == nil {
 		return fmt.Errorf("fileService must be provided")
 	}
-	// Register the FileService with package-level handlers so they can use the configured service
-	// (e.g., ServeFileHandler and file upload operations).
-	SetFileService(fileService)
+	// File service is injected into handlers; no global registration needed
 
 	// File Routes
 	router.GET("/files/:fileID", fileHandlers.ServeFileHandler)

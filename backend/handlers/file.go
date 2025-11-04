@@ -10,22 +10,15 @@ import (
 )
 
 type FileHandlers struct {
-	DB *gorm.DB
+	DB          *gorm.DB
+	FileService *services.FileService
 }
 
-func NewFileHandlers(db *gorm.DB) *FileHandlers {
+func NewFileHandlers(db *gorm.DB, s *services.FileService) *FileHandlers {
 	return &FileHandlers{
-		DB: db,
+		DB:          db,
+		FileService: s,
 	}
-}
-
-// fileService is the package-level FileService used by handlers.
-// It must be set during application initialization.
-var fileService *services.FileService
-
-// SetFileService sets the FileService instance for the handlers.
-func SetFileService(s *services.FileService) {
-	fileService = s
 }
 
 // @Summary Get a file
@@ -39,10 +32,9 @@ func SetFileService(s *services.FileService) {
 // @Failure 500 {object} object{error=string} "Internal Server Error"
 // @Router /files/{fileID} [get]
 func (h *FileHandlers) ServeFileHandler(ctx *gin.Context) {
-	if fileService == nil {
+	if h.FileService == nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "file service not configured"})
 		return
 	}
-	// Delegate serving to the file service.
-	fileService.ServeFile(ctx)
+	h.FileService.ServeFile(ctx)
 }

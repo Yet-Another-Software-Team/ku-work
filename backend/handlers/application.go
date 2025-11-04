@@ -1,10 +1,8 @@
 package handlers
 
 import (
-	"bytes"
-	"fmt"
-	"html/template"
 	"ku-work/backend/model"
+	repo "ku-work/backend/repository"
 	"ku-work/backend/services"
 	"math"
 	"mime/multipart"
@@ -17,28 +15,16 @@ import (
 )
 
 type ApplicationHandlers struct {
-	DB                                      *gorm.DB
-	FileHandlers                            *FileHandlers
-	emailService                            *services.EmailService
-	jobApplicationStatusUpdateEmailTemplate *template.Template
-	newApplicantEmailTemplate               *template.Template
+	DB           *gorm.DB
+	FileHandlers *FileHandlers
+	appService   *services.ApplicationService
 }
 
-func NewApplicationHandlers(db *gorm.DB, fileHandlers *FileHandlers, emailService *services.EmailService) (*ApplicationHandlers, error) {
-	jobApplicationStatusUpdateEmailTemplate, err := template.New("job_application_status_update.tmpl").ParseFiles("email_templates/job_application_status_update.tmpl")
-	if err != nil {
-		return nil, err
-	}
-	newApplicantEmailTemplate, err := template.New("job_new_applicant.tmpl").ParseFiles("email_templates/job_new_applicant.tmpl")
-	if err != nil {
-		return nil, err
-	}
+func NewApplicationHandlers(db *gorm.DB, fileHandlers *FileHandlers, appService *services.ApplicationService) (*ApplicationHandlers, error) {
 	return &ApplicationHandlers{
-		DB:                                      db,
-		FileHandlers:                            fileHandlers,
-		emailService:                            emailService,
-		jobApplicationStatusUpdateEmailTemplate: jobApplicationStatusUpdateEmailTemplate,
-		newApplicantEmailTemplate:               newApplicantEmailTemplate,
+		DB:           db,
+		FileHandlers: fileHandlers,
+		appService:   appService,
 	}, nil
 }
 
@@ -127,131 +113,26 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 		return
 	}
 
-	// Check if user is approved student, denied otherwise
-	student := model.Student{
-		UserID: userid,
-	}
-	result := h.DB.First(&student)
-	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
-		return
-	}
-	if student.ApprovalStatus != model.StudentApprovalAccepted {
-		ctx.JSON(http.StatusForbidden, gin.H{"error": "your student status is not approved yet"})
-		return
-	}
-	job := model.Job{
-		ID:             jobId,
-		ApprovalStatus: model.JobApprovalAccepted,
-	}
-	result = h.DB.First(&job)
-	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+	if h.appService == nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "application service not configured"})
 		return
 	}
 
-	// Use the student's profile phone and email as the default contact information if none is provided
-	if input.AltPhone == "" {
-		input.AltPhone = student.Phone
-	}
-	if input.AltEmail == "" {
-		user := model.User{
-			ID: student.UserID,
-		}
-		result = h.DB.First(&user)
-		if result.Error != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
-			return
-		}
-		input.AltEmail = user.Username // The username of OAuth User is already set as their email
-	}
-
-	jobApplication := model.JobApplication{
-		UserID:       student.UserID,
-		JobID:        job.ID,
+	params := services.ApplyToJobParams{
+		UserID:       userid,
+		JobID:        jobId,
 		ContactPhone: input.AltPhone,
 		ContactEmail: input.AltEmail,
-		Status:       model.JobApplicationPending,
-	}
-	success := false
-	// If create job application fails remove files
-	defer (func() {
-		if !success {
-			for _, file := range jobApplication.Files {
-				_ = h.DB.Delete(&file)
-			}
-		}
-	})()
-
-	// Save all files into database and file system
-	for _, file := range input.Files {
-		fileObject, err := fileService.SaveFile(ctx, student.UserID, file, model.FileCategoryDocument)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to save file %s: %s", file.Filename, err.Error())})
-			return
-		}
-		jobApplication.Files = append(jobApplication.Files, *fileObject)
+		Files:        input.Files,
+		GinCtx:       ctx,
 	}
 
-	// Create application database object
-	if err := h.DB.Create(&jobApplication).Error; err != nil {
+	if err := h.appService.ApplyToJob(ctx.Request.Context(), params); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	success = true
+
 	ctx.JSON(http.StatusOK, gin.H{"message": "ok"})
-
-	// Send Email to company about new applicant.
-	// Only if Company opted for email on new application on this job post.
-	if !job.NotifyOnApplication {
-		return // Return early if notification is not required
-	}
-
-	go (func() {
-		type Context struct {
-			CompanyUser model.User
-			Job         model.Job
-			Applicant   model.GoogleOAuthDetails
-			Application struct {
-				Date time.Time
-			}
-		}
-		var context Context
-		// Convert to Bangkok timezone (GMT+7)
-		bangkokLocation, _ := time.LoadLocation("Asia/Bangkok")
-		context.Application.Date = jobApplication.CreatedAt.In(bangkokLocation)
-		context.Job = job
-
-		// Get company user details
-		if err := h.DB.Where("id = ?", job.CompanyID).First(&context.CompanyUser).Error; err != nil {
-			return
-		}
-
-		// Get company email from Company Detail
-		var company model.Company
-		if err := h.DB.Where("user_id = ?", job.CompanyID).First(&company).Error; err != nil {
-			return
-		}
-
-		// Get applicant details (student who applied)
-		context.Applicant.UserID = student.UserID
-		if err := h.DB.Select("first_name", "last_name").Where("user_id = ?", student.UserID).First(&context.Applicant).Error; err != nil {
-			return
-		}
-
-		// Execute email template
-		var tpl bytes.Buffer
-		if err := h.newApplicantEmailTemplate.Execute(&tpl, context); err != nil {
-			return
-		}
-
-		// Send email to company
-		_ = h.emailService.SendTo(
-			company.Email,
-			fmt.Sprintf("[KU-Work] New Application for %s - %s", job.Name, job.Position),
-			tpl.String(),
-		)
-	})()
 }
 
 // @Summary Get applications for a specific job
@@ -271,7 +152,7 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 // @Failure 500 {object} object{error=string} "Internal Server Error"
 // @Router /jobs/{id}/applications [get]
 func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
-	// Extract authenticated user ID from context
+
 	userId := ctx.MustGet("userID").(string)
 
 	// Convert job id to uint from URL parameter
@@ -331,60 +212,24 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 		input.Limit = 32
 	}
 
-	// Build base query joining with users table to fetch applicant username
-	// Filter by the job ID from the URL parameter
-	query := h.DB.Model(&model.JobApplication{}).
-		Joins("INNER JOIN users ON users.id = job_applications.user_id").
-		Joins("INNER JOIN google_o_auth_details ON google_o_auth_details.user_id = job_applications.user_id").
-		Joins("INNER JOIN students ON students.user_id = job_applications.user_id").
-		Select("job_applications.*",
-			"CASE WHEN users.deleted_at IS NOT NULL THEN 'Deactivated User' ELSE CONCAT(google_o_auth_details.first_name, ' ', google_o_auth_details.last_name) END as username",
-			"CASE WHEN students.major IS NULL THEN 'Unknown' ELSE students.major END as major",
-			"CASE WHEN students.student_id IS NULL THEN 'Unknown' ELSE students.student_id END as student_id",
-			"job_applications.status as status").
-		Where("job_applications.job_id = ?", jobId)
-	// Filter by status if provided (for tabs: pending, accepted, rejected)
-	if input.Status != nil && *input.Status != "" {
-		query = query.Where("job_applications.status = ?", *input.Status)
-	}
-
-	// Sort results
-	switch input.SortBy {
-	case "latest":
-		query = query.Order("created_at DESC")
-	case "oldest":
-		query = query.Order("created_at ASC")
-	case "name_az":
-		query = query.Order("username ASC")
-	case "name_za":
-		query = query.Order("username DESC")
-	}
-
-	// Execute query with pagination
-	var jobApplications []ShortApplicationDetail
-	result := query.Offset(int(input.Offset)).Limit(int(input.Limit)).Scan(&jobApplications)
-	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+	if h.appService == nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "application service not configured"})
 		return
 	}
 
-	// Manually load files for each application
-	for i := range jobApplications {
-		var files []model.File
-		err := h.DB.Table("job_application_has_file").
-			Select("files.*").
-			Joins("INNER JOIN files ON files.id = job_application_has_file.file_id").
-			Where("job_application_has_file.job_application_job_id = ? AND job_application_has_file.job_application_user_id = ?",
-				jobApplications[i].JobID, jobApplications[i].UserID).
-			Find(&files).Error
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		jobApplications[i].Files = files
+	params := repo.FetchJobApplicationsParams{
+		Status: input.Status,
+		Offset: input.Offset,
+		Limit:  input.Limit,
+		SortBy: input.SortBy,
+	}
+	rows, err := h.appService.GetApplicationsForJob(ctx.Request.Context(), jobId, &params)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
-	ctx.JSON(http.StatusOK, jobApplications)
+	ctx.JSON(http.StatusOK, rows)
 }
 
 // @Summary Delete job applications for a job
@@ -403,7 +248,7 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 // @Failure 500 {object} object{error=string} "Internal Server Error"
 // @Router /jobs/{id}/applications [get]
 func (h *ApplicationHandlers) ClearJobApplicationsHandler(ctx *gin.Context) {
-	// Extract authenticated user ID from context
+
 	userId := ctx.MustGet("userID").(string)
 
 	// Convert job id to uint from URL parameter
@@ -441,18 +286,12 @@ func (h *ApplicationHandlers) ClearJobApplicationsHandler(ctx *gin.Context) {
 		return
 	}
 
-	// Delete job applications
-	query := h.DB.Where("job_id = ?", jobId)
-	if !input.Accepted {
-		query = query.Not("status = ?", model.JobApplicationAccepted)
+	if h.appService == nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "application service not configured"})
+		return
 	}
-	if !input.Rejected {
-		query = query.Not("status = ?", model.JobApplicationRejected)
-	}
-	if !input.Pending {
-		query = query.Not("status = ?", model.JobApplicationPending)
-	}
-	if err := query.Delete(&model.JobApplication{}).Error; err != nil {
+
+	if _, err := h.appService.ClearJobApplications(ctx.Request.Context(), jobId, input.Pending, input.Rejected, input.Accepted); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -473,7 +312,7 @@ func (h *ApplicationHandlers) ClearJobApplicationsHandler(ctx *gin.Context) {
 // @Failure 500 {object} object{error=string} "Internal Server Error"
 // @Router /jobs/{id}/applications/{email} [get]
 func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
-	// Extract job ID from URL parameter
+
 	jobIdStr := ctx.Param("id")
 	jobId64, err := strconv.ParseUint(jobIdStr, 10, 64)
 	if err != nil || jobId64 <= 0 || jobId64 > math.MaxUint32 {
@@ -484,27 +323,13 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 
 	email := ctx.Param("email")
 
-	// Query for the specific job application with full student details
-	// Exclude deactivated/anonymized students
-	var jobApplication FullApplicantDetail
+	if h.appService == nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "application service not configured"})
+		return
+	}
 
-	// Fetch the main application data, without preloading Files.
-	query := h.DB.Model(&model.JobApplication{}).
-		Joins("INNER JOIN users ON users.id = job_applications.user_id").
-		Joins("INNER JOIN students ON students.user_id = job_applications.user_id").
-		Joins("INNER JOIN google_o_auth_details ON google_o_auth_details.user_id = job_applications.user_id").
-		Select(`job_applications.*,
-		 	CONCAT(google_o_auth_details.first_name, ' ', google_o_auth_details.last_name) as username,
-			users.username as email,
-			students.phone as phone, students.photo_id as photo_id,
-			students.birth_date as birth_date, students.about_me as about_me,
-			students.git_hub as github, students.linked_in as linked_in,
-			students.student_id as student_id, students.major as major`).
-		Where("job_applications.job_id = ? AND google_o_auth_details.email = ?", jobId, email).
-		Where("users.deleted_at IS NULL").
-		Where("users.username NOT LIKE 'ANON-%'")
-
-	if err := query.First(&jobApplication).Error; err != nil {
+	detail, err := h.appService.GetApplicationByJobAndEmail(ctx.Request.Context(), jobId, email)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "job application not found or student account deactivated"})
 		} else {
@@ -513,13 +338,7 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 		return
 	}
 
-	// explicitly load the "Files" association into the struct.
-	if err := h.DB.Model(&jobApplication.JobApplication).Association("Files").Find(&jobApplication.Files); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load application files"})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, jobApplication)
+	ctx.JSON(http.StatusOK, detail)
 }
 
 // @Summary Get all applications for the current user
@@ -537,7 +356,7 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 // @Failure 500 {object} object{error=string} "Internal Server Error"
 // @Router /applications [get]
 func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
-	// Extract authenticated user ID from context
+
 	userId := ctx.MustGet("userID").(string)
 
 	// Parse and validate query parameters
@@ -559,134 +378,27 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 		input.Limit = 32
 	}
 
-	// Build base query joining with job and company tables to fetch all necessary details
-	// Exclude applications from deactivated/anonymized students
-	query := h.DB.Model(&model.JobApplication{}).
-		Joins("INNER JOIN jobs ON jobs.id = job_applications.job_id").
-		Joins("INNER JOIN companies ON companies.user_id = jobs.company_id").
-		Joins("INNER JOIN users ON users.id = companies.user_id").
-		Joins("INNER JOIN users AS student_users ON student_users.id = job_applications.user_id").
-		Select("job_applications.*",
-			"jobs.position as job_position",
-			"jobs.name as job_name",
-			"jobs.job_type as job_type",
-			"jobs.experience as experience",
-			"jobs.min_salary as min_salary",
-			"jobs.max_salary as max_salary",
-			"jobs.is_open as is_open",
-			"users.username as company_name",
-			"companies.photo_id as company_logo_id")
-
-	// Determine user role and filter applications accordingly
-	// Check if user is a company
-	company := model.Company{
-		UserID: userId,
-	}
-	result := h.DB.Limit(1).Find(&company)
-	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+	if h.appService == nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "application service not configured"})
 		return
 	}
 
-	if result.RowsAffected != 0 {
-		// User is a company: fetch applications for all their job postings
-		query = query.Where("jobs.company_id = ?", userId)
-	} else {
-		// Check if user is a student
-		student := model.Student{
-			UserID: userId,
-		}
-		result = h.DB.Limit(1).Find(&student)
-		if result.Error != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
-			return
-		}
-
-		if result.RowsAffected != 0 {
-			// User is a student: fetch only their own applications
-			query = query.Where("job_applications.user_id = ?", userId)
-		} else {
-			// User is neither company nor student: deny access
-			ctx.JSON(http.StatusForbidden, gin.H{"error": "user is neither company nor student"})
-			return
-		}
+	params := repo.FetchAllApplicationsParams{
+		Status: input.Status,
+		SortBy: input.SortBy,
+		Offset: input.Offset,
+		Limit:  input.Limit,
 	}
 
-	// Filter by status if provided
-	if input.Status != nil {
-		query = query.Where("job_applications.status = ?", *input.Status)
-	}
-
-	// Apply sorting
-	switch input.SortBy {
-	case "name":
-		query = query.Order("users.username ASC")
-	case "date-desc":
-		query = query.Order("job_applications.created_at DESC")
-	case "date-asc":
-		query = query.Order("job_applications.created_at ASC")
-	default:
-		// Default sort by creation date descending (newest first)
-		query = query.Order("job_applications.created_at DESC")
-	}
-
-	// Execute query with pagination
-	var jobApplications []ApplicationWithJobDetails
-	result = query.Offset(int(input.Offset)).Limit(int(input.Limit)).Scan(&jobApplications)
-	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
-		return
-	}
-
-	// Manually load files for each application
-	for i := range jobApplications {
-		var files []model.File
-		err := h.DB.Table("job_application_has_file").
-			Select("files.*").
-			Joins("INNER JOIN files ON files.id = job_application_has_file.file_id").
-			Where("job_application_has_file.job_application_job_id = ? AND job_application_has_file.job_application_user_id = ?",
-				jobApplications[i].JobID, jobApplications[i].UserID).
-			Find(&files).Error
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		jobApplications[i].Files = files
-	}
-
-	// Get total count for the same query (without pagination)
-	var totalCount int64
-	countQuery := h.DB.Model(&model.JobApplication{}).
-		Joins("INNER JOIN jobs ON jobs.id = job_applications.job_id").
-		Joins("INNER JOIN companies ON companies.user_id = jobs.company_id").
-		Joins("INNER JOIN users ON users.id = companies.user_id")
-
-	// Determine user role for count query
-	company = model.Company{UserID: userId}
-	companyResult := h.DB.Limit(1).Find(&company)
-
-	// Apply the same filters as the main query
-	if companyResult.RowsAffected != 0 {
-		// User is a company
-		countQuery = countQuery.Where("jobs.company_id = ?", userId)
-	} else {
-		// User is a student
-		countQuery = countQuery.Where("job_applications.user_id = ?", userId)
-	}
-
-	// Apply status filter to count query if provided
-	if input.Status != nil {
-		countQuery = countQuery.Where("job_applications.status = ?", *input.Status)
-	}
-
-	if err := countQuery.Count(&totalCount).Error; err != nil {
+	rows, total, err := h.appService.GetAllApplicationsForUser(ctx.Request.Context(), userId, &params)
+	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"applications": jobApplications,
-		"total":        totalCount,
+		"applications": rows,
+		"total":        total,
 	})
 }
 
@@ -707,7 +419,7 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 // @Failure 500 {object} object{error=string} "Internal Server Error"
 // @Router /jobs/{id}/applications/{studentUserId} [patch]
 func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context) {
-	// Extract authenticated user ID from context
+
 	userId := ctx.MustGet("userID").(string)
 
 	// Convert job id to uint from URL parameter
@@ -750,57 +462,38 @@ func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context
 		return
 	}
 
-	// Find the job application
-	jobApplication := &model.JobApplication{}
-	if err := h.DB.Model(&model.JobApplication{}).
-		Joins("INNER JOIN students ON students.user_id = students.user_id").
-		Where("job_id = ? AND students.user_id = ?", jobId, studentUserId).First(jobApplication).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "job application not found"})
-		} else {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		}
+	if h.appService == nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "application service not configured"})
 		return
 	}
 
-	// Update the status
-	jobApplication.Status = model.JobApplicationStatus(input.Status)
-	if err := h.DB.Save(jobApplication).Error; err != nil {
+	// Best-effort collect email details for notification
+	var applicantEmail string
+	var oauth model.GoogleOAuthDetails
+	if err := h.DB.Select("email").Where("user_id = ?", studentUserId).Take(&oauth).Error; err == nil {
+		applicantEmail = oauth.Email
+	}
+	var companyName string
+	_ = h.DB.Model(&model.User{ID: job.CompanyID}).Pluck("username", &companyName).Error
+
+	params := services.UpdateStatusParams{
+		JobID:                jobId,
+		StudentUserID:        studentUserId,
+		NewStatus:            model.JobApplicationStatus(input.Status),
+		NotifyApplicantEmail: applicantEmail,
+		CompanyName:          companyName,
+	}
+	if err := h.appService.UpdateJobApplicationStatus(ctx.Request.Context(), params); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "job application not found"})
+			return
+		}
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "application status updated successfully",
-		"status":  jobApplication.Status,
+		"status":  model.JobApplicationStatus(input.Status),
 	})
-
-	// Send mail
-	go (func() {
-		type Context struct {
-			OAuth       model.GoogleOAuthDetails
-			Job         *model.Job
-			CompanyName string
-			Status      string
-		}
-		var context Context
-		context.OAuth.UserID = jobApplication.UserID
-		context.Job = job
-		context.Status = string(input.Status)
-		if err := h.DB.Select("email", "first_name", "last_name").Take(&context.OAuth).Error; err != nil {
-			return
-		}
-		if err := h.DB.Model(&model.User{ID: job.CompanyID}).Pluck("username", &context.CompanyName).Error; err != nil {
-			return
-		}
-		var tpl bytes.Buffer
-		if err := h.jobApplicationStatusUpdateEmailTemplate.Execute(&tpl, context); err != nil {
-			return
-		}
-		_ = h.emailService.SendTo(
-			context.OAuth.Email,
-			fmt.Sprintf("[KU-Work] Your Application Status for %s - %s", job.Name, job.Position),
-			tpl.String(),
-		)
-	})()
 }

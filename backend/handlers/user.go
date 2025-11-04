@@ -71,6 +71,7 @@ func (h *UserHandlers) EditProfileHandler(ctx *gin.Context) {
 	}
 }
 
+// Strategy function to edit company profile
 func (h *UserHandlers) editCompanyProfile(ctx *gin.Context, userId string) {
 	// Expected form of data from request (ctx), no data is required, partial data is allowed.
 	type CompanyEditProfileInput struct {
@@ -131,6 +132,7 @@ func (h *UserHandlers) editCompanyProfile(ctx *gin.Context, userId string) {
 	})
 }
 
+// Strategy function to edit student profile
 func (h *UserHandlers) editStudentProfile(ctx *gin.Context, userId string) {
 	// Bind input data to StudentEditProfileInput struct
 	type StudentEditProfileInput struct {
