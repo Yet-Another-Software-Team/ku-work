@@ -102,29 +102,30 @@ func initializeServices(db *gorm.DB) (*services.EmailService, *services.AIServic
 	// Build provider in composition root based on environment
 	var fhProvider filehandling.FileHandlingProvider
 	providerType := strings.ToLower(strings.TrimSpace(os.Getenv("FILE_PROVIDER")))
-	if providerType == "" || providerType == "local" {
-		baseDir := strings.TrimSpace(os.Getenv("LOCAL_FILES_DIR"))
-		if baseDir == "" {
-			baseDir = "./files"
+	switch providerType {
+		case "", "local":
+			baseDir := strings.TrimSpace(os.Getenv("LOCAL_FILES_DIR"))
+			if baseDir == "" {
+				baseDir = "./files"
+			}
+			if err := os.MkdirAll(baseDir, 0o755); err != nil {
+				log.Fatalf("failed to create local files directory %s: %v", baseDir, err)
+			}
+			fhProvider = filehandling.NewLocalProvider(baseDir)
+		case "gcs":
+			bucket := strings.TrimSpace(os.Getenv("GCS_BUCKET"))
+			if bucket == "" {
+				log.Fatal("GCS_BUCKET is required for gcs provider")
+			}
+			creds := os.Getenv("GCS_CREDENTIALS_PATH")
+			p, pErr := filehandling.NewGCSProvider(context.Background(), bucket, creds)
+			if pErr != nil {
+				log.Fatalf("failed to create gcs provider: %v", pErr)
+			}
+			fhProvider = p
+		default:
+			log.Fatalf("unsupported FILE_PROVIDER: %s", providerType)
 		}
-		if err := os.MkdirAll(baseDir, 0o755); err != nil {
-			log.Fatalf("failed to create local files directory %s: %v", baseDir, err)
-		}
-		fhProvider = filehandling.NewLocalProvider(baseDir)
-	} else if providerType == "gcs" {
-		bucket := strings.TrimSpace(os.Getenv("GCS_BUCKET"))
-		if bucket == "" {
-			log.Fatal("GCS_BUCKET is required for gcs provider")
-		}
-		creds := os.Getenv("GCS_CREDENTIALS_PATH")
-		p, pErr := filehandling.NewGCSProvider(context.Background(), bucket, creds)
-		if pErr != nil {
-			log.Fatalf("failed to create gcs provider: %v", pErr)
-		}
-		fhProvider = p
-	} else {
-		log.Fatalf("unsupported FILE_PROVIDER: %s", providerType)
-	}
 	fileRepo := gormrepo.NewGormFileRepository(db)
 	fileService := services.NewFileService(fileRepo, fhProvider)
 	fileService.RegisterGlobal() // Register file services for model-level use

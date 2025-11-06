@@ -83,11 +83,11 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	var statusTpl, newApplicantTpl *template.Template
 	if emailService != nil {
 		var err error
-		statusTpl, err = template.New("job_application_status_update.tmpl").ParseFiles("email_templates/job_application_status_update.tmpl")
+		statusTpl, err = template.New("job_application_status_update.tmpl").ParseFiles("templates/emails/job_application_status_update.tmpl")
 		if err != nil {
 			return err
 		}
-		newApplicantTpl, err = template.New("job_new_applicant.tmpl").ParseFiles("email_templates/job_new_applicant.tmpl")
+		newApplicantTpl, err = template.New("job_new_applicant.tmpl").ParseFiles("templates/emails/job_new_applicant.tmpl")
 		if err != nil {
 			return err
 		}
@@ -99,7 +99,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	}
 	// Student service and handlers
 	studentRepo := gormrepo.NewGormStudentRepository(db)
-	studentApprovalStatusUpdateEmailTemplate, err := template.New("student_approval_status_update.tmpl").ParseFiles("email_templates/student_approval_status_update.tmpl")
+	studentApprovalStatusUpdateEmailTemplate, err := template.New("student_approval_status_update.tmpl").ParseFiles("templates/emails/student_approval_status_update.tmpl")
 	if err != nil {
 		return err
 	}
