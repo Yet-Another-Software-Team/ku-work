@@ -23,14 +23,15 @@ import (
 func setupTestRouter(redisClient *redis.Client, jwtHandlers *handlers.JWTHandlers) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
+	_ = redisClient
 
 	// Setup routes similar to production
 	auth := router.Group("/auth")
-	authProtected := auth.Group("", middlewares.AuthMiddlewareWithRedis(jwtHandlers.Service.JWTSecret, redisClient))
+	authProtected := auth.Group("", middlewares.AuthMiddleware(jwtHandlers.Service.JWTSecret, jwtHandlers.Service))
 	authProtected.POST("/logout", jwtHandlers.LogoutHandler)
 
 	// Protected route to test authentication
-	router.GET("/protected", middlewares.AuthMiddlewareWithRedis(jwtHandlers.Service.JWTSecret, redisClient), func(c *gin.Context) {
+	router.GET("/protected", middlewares.AuthMiddleware(jwtHandlers.Service.JWTSecret, jwtHandlers.Service), func(c *gin.Context) {
 		userID, _ := c.Get("userID")
 		c.JSON(http.StatusOK, gin.H{"userID": userID})
 	})

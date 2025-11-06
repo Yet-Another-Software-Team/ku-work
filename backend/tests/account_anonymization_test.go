@@ -26,7 +26,7 @@ func setupAccountTestRouter(jwtHandlers *handlers.JWTHandlers, userHandlers *han
 	router := gin.New()
 
 	// Protected routes
-	protected := router.Group("", middlewares.AuthMiddlewareWithRedis(jwtHandlers.Service.JWTSecret, redisClient))
+	protected := router.Group("", middlewares.AuthMiddleware(jwtHandlers.Service.JWTSecret, jwtHandlers.Service))
 	protected.POST("/me/deactivate", userHandlers.DeactivateAccount)
 	protected.POST("/me/reactivate", userHandlers.ReactivateAccount)
 	protected.GET("/me", userHandlers.GetProfileHandler)

@@ -3,11 +3,10 @@ package tests
 import (
 	"context"
 	"fmt"
+	"ku-work/backend/bootstrap"
 	"ku-work/backend/database"
-	"ku-work/backend/handlers"
 	"ku-work/backend/model"
-	filehandling "ku-work/backend/providers/file_handling"
-	gormrepo "ku-work/backend/repository/gorm"
+
 	"ku-work/backend/services"
 	"os"
 	"path/filepath"
@@ -158,36 +157,34 @@ func TestMain(m *testing.M) {
 		redisClient = nil
 	}
 
-	// Initialize services for tests
-	emailService, err := services.NewEmailService(db)
+	// Initialize application using bootstrap wiring (repositories, services, handlers, router)
+	repos, err := bootstrap.NewRepositories(db, redisClient)
 	if err != nil {
 		panic(err)
 	}
 
-	// Create a JobService used across the application and tests.
-	jobRepo := gormrepo.NewGormJobRepository(db)
-	jobService := services.NewJobService(jobRepo)
-
-	aiService, err := services.NewAIService(db, emailService, jobService)
-	if err != nil {
-		panic(err)
-	}
-
-	// Ensure files directory exists for file provider used in tests
+	// Ensure files directory exists for local provider (used by tests)
 	_ = os.MkdirAll("./files", 0o755)
 
-	// Build a local file provider and repository for tests
-	fhProvider := filehandling.NewLocalProvider("./files")
-	fileRepo := gormrepo.NewGormFileRepository(db)
-	fileService = services.NewFileService(fileRepo, fhProvider)
-	// Register the global provider and model deletion hook through the service so model
-	// hooks that call CallStorageDeleteHook will operate correctly during tests.
-	fileService.RegisterGlobal()
-
-	router = gin.Default()
-	if err := handlers.SetupRoutes(router, db, redisClient, emailService, aiService, jobService, fileService); err != nil {
+	svcs, err := bootstrap.BuildServices(ctx, db, repos)
+	if err != nil {
 		panic(err)
 	}
+
+	// Expose file service for tests that need it
+	fileService = svcs.File
+
+	h, err := bootstrap.BuildHandlers(db, svcs)
+	if err != nil {
+		panic(err)
+	}
+
+	router = bootstrap.NewRouter(bootstrap.RouterDeps{
+		DB:       db,
+		Redis:    redisClient,
+		Services: svcs,
+		Handlers: h,
+	})
 
 	code := m.Run()
 

@@ -379,3 +379,28 @@ func (s *JWTService) LogoutHandler(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }
+
+// GetRevokedJWTInfo delegates retrieving metadata about a revoked JWT to the repository.
+func (s *JWTService) GetRevokedJWTInfo(ctx context.Context, jti string) (*repo.RevokedJWTInfo, error) {
+	return s.revocationRepo.GetRevokedJWTInfo(ctx, jti)
+}
+
+// RevokeAllUserJWTs delegates creation of a user-level revocation marker to the repository.
+func (s *JWTService) RevokeAllUserJWTs(ctx context.Context, userID string, ttl time.Duration) error {
+	return s.revocationRepo.RevokeAllUserJWTs(ctx, userID, ttl)
+}
+
+// IsUserJWTsRevoked delegates checking a user-level revocation marker to the repository.
+func (s *JWTService) IsUserJWTsRevoked(ctx context.Context, userID string) (bool, error) {
+	return s.revocationRepo.IsUserJWTsRevoked(ctx, userID)
+}
+
+// CleanupExpiredJWTs delegates any cleanup to the repository (often a no-op for TTL-backed stores).
+func (s *JWTService) CleanupExpiredJWTs(ctx context.Context) error {
+	return s.revocationRepo.CleanupExpiredJWTs(ctx)
+}
+
+// GetStats delegates collection of revocation stats to the repository.
+func (s *JWTService) GetStats(ctx context.Context) (map[string]interface{}, error) {
+	return s.revocationRepo.GetStats(ctx)
+}

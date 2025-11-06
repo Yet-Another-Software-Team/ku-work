@@ -7,18 +7,16 @@ import (
 	"strings"
 
 	"ku-work/backend/model"
-	redisrepo "ku-work/backend/repository/redis"
 	"ku-work/backend/services"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/redis/go-redis/v9"
 )
 
-// AuthMiddleware creates an authentication middleware that uses an injected JWTRevocationService
+// AuthMiddleware creates an authentication middleware that uses an injected JWTService
 // to check for revoked tokens. This allows the caller to provide the revocation implementation
 // (Redis-based or another implementation) and makes the middleware easier to test.
-func AuthMiddleware(jwtSecret []byte, revocationService *services.JWTRevocationService) gin.HandlerFunc {
+func AuthMiddleware(jwtSecret []byte, revocationService *services.JWTService) gin.HandlerFunc {
 	if revocationService == nil {
 		log.Fatal("FATAL: JWT revocation service is nil. Authentication requires a revocation service to be provided.")
 	}
@@ -82,21 +80,4 @@ func AuthMiddleware(jwtSecret []byte, revocationService *services.JWTRevocationS
 			return
 		}
 	}
-}
-
-// AuthMiddlewareWithRedis is a small compatibility helper that constructs a Redis-backed
-// JWTRevocationService and delegates to AuthMiddleware. Existing call sites using the
-// older signature can keep working; prefer calling AuthMiddleware with an explicit
-// revocation service where possible.
-func AuthMiddlewareWithRedis(jwtSecret []byte, redisClient *redis.Client) gin.HandlerFunc {
-	// Validate the provided client and construct the revocation service.
-	if redisClient == nil {
-		log.Fatal("FATAL: Redis client is nil. JWT revocation requires Redis to be available.")
-	}
-
-	refreshTokenRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-	revocationService := services.NewJWTRevocationService(refreshTokenRepo)
-
-	// Delegate to the injected-service-based middleware so we keep a single auth flow.
-	return AuthMiddleware(jwtSecret, revocationService)
 }

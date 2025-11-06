@@ -3,6 +3,7 @@ package gormrepo
 import (
 	"ku-work/backend/model"
 	"ku-work/backend/repository"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -47,4 +48,27 @@ func (r *GormAuditRepository) FetchMailLog(offset uint, limit uint) ([]model.Mai
 		Find(&mailLogs)
 
 	return mailLogs, result.Error
+}
+
+// CreateAuditLog create entry of autdit log on database from audit entity
+func (r *GormAuditRepository) CreateAuditLog(logEntry *model.Audit) error {
+	return r.db.Create(logEntry).Error
+}
+
+// CreateMailLog create entry of mail log on database from mail log entity
+func (r *GormAuditRepository) CreateMailLog(logEntry *model.MailLog) error {
+	return r.db.Create(logEntry).Error
+}
+
+// Find mails that are eligable for retry
+func (r *GormAuditRepository) FindMailToRetry(retryAfter time.Time, maxAge time.Time, maxAttempts int) ([]model.MailLog, error) {
+	var failedEmails []model.MailLog
+	r.db.Where(
+		"status = ? AND updated_at < ? AND created_at > ? AND retry_count < ?",
+		model.MailLogStatusTemporaryError,
+		retryAfter,
+		maxAge,
+		maxAttempts,
+	).Find(&failedEmails)
+	return failedEmails, nil
 }

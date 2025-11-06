@@ -8,26 +8,51 @@ import (
 	"fmt"
 	"ku-work/backend/model"
 	"ku-work/backend/providers/email"
+	repo "ku-work/backend/repository"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type EmailService struct {
-	provider email.EmailProvider
-	db       *gorm.DB
-	timeout  time.Duration
+	provider             email.EmailProvider
+	auditRepo            repo.AuditRepository
+	timeout              time.Duration
+	retryIntervalMinutes int
+	maxAgeHours          int
+	maxAttempts          int
 }
 
-func NewEmailService(DB *gorm.DB) (*EmailService, error) {
+func NewEmailService(auditRepo repo.AuditRepository) (*EmailService, error) {
 	emailProvider, hasEmailProvider := os.LookupEnv("EMAIL_PROVIDER")
 	if !hasEmailProvider {
 		return nil, errors.New("EMAIL_PROVIDER not specified")
 	}
+	
+	// Get retry configuration from environment variables
+	maxAttempts := 3
+	if maxAttemptsStr, hasMaxAttempts := os.LookupEnv("EMAIL_RETRY_MAX_ATTEMPTS"); hasMaxAttempts {
+		if attempts, err := strconv.Atoi(maxAttemptsStr); err == nil && attempts > 0 {
+			maxAttempts = attempts
+		}
+	}
+
+	retryIntervalMinutes := 30
+	if intervalStr, hasInterval := os.LookupEnv("EMAIL_RETRY_INTERVAL_MINUTES"); hasInterval {
+		if interval, err := strconv.Atoi(intervalStr); err == nil && interval > 0 {
+			retryIntervalMinutes = interval
+		}
+	}
+
+	maxAgeHours := 24
+	if maxAgeStr, hasMaxAge := os.LookupEnv("EMAIL_RETRY_MAX_AGE_HOURS"); hasMaxAge {
+		if age, err := strconv.Atoi(maxAgeStr); err == nil && age > 0 {
+			maxAgeHours = age
+		}
+	}
+	
 	var provider email.EmailProvider
 
 	switch emailProvider {
@@ -58,9 +83,12 @@ func NewEmailService(DB *gorm.DB) (*EmailService, error) {
 	}
 
 	return &EmailService{
-		provider: provider,
-		db:       DB,
-		timeout:  timeout,
+		provider:  provider,
+		auditRepo: auditRepo,
+		timeout:   timeout,
+		maxAttempts: maxAttempts,
+		retryIntervalMinutes: retryIntervalMinutes,
+		maxAgeHours: maxAgeHours,
 	}, nil
 }
 
@@ -79,7 +107,7 @@ func sanitizeEmailContent(content string) string {
 	return sanitized
 }
 
-func (cur *EmailService) SendTo(target string, subject string, content string) error {
+func (s *EmailService) SendTo(target string, subject string, content string) error {
 	// Escape header values
 	escapedTarget := escapeHeaderValue(target)
 	escapedSubject := escapeHeaderValue(subject)
@@ -98,11 +126,11 @@ func (cur *EmailService) SendTo(target string, subject string, content string) e
 	}
 
 	// Create context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), cur.timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
 	defer cancel()
 
 	// Attempt to send email with timeout
-	err := cur.provider.SendTo(ctx, escapedTarget, escapedSubject, sanitizedContent)
+	err := s.provider.SendTo(ctx, escapedTarget, escapedSubject, sanitizedContent)
 
 	// Update log status based on result
 	if err != nil {
@@ -119,9 +147,7 @@ func (cur *EmailService) SendTo(target string, subject string, content string) e
 	}
 
 	// Save log to database
-	if cur.db != nil {
-		cur.db.Create(&mailLog)
-	}
+	err = s.auditRepo.CreateMailLog(&mailLog)
 
 	return err
 }
@@ -155,45 +181,16 @@ func isTemporaryError(errorMsg string) bool {
 }
 
 // RetryFailedEmails attempts to resend emails that failed with temporary errors
-func (cur *EmailService) RetryFailedEmails() error {
-
-	// Get retry configuration from environment variables
-	maxAttempts := 3
-	if maxAttemptsStr, hasMaxAttempts := os.LookupEnv("EMAIL_RETRY_MAX_ATTEMPTS"); hasMaxAttempts {
-		if attempts, err := strconv.Atoi(maxAttemptsStr); err == nil && attempts > 0 {
-			maxAttempts = attempts
-		}
-	}
-
-	retryIntervalMinutes := 30
-	if intervalStr, hasInterval := os.LookupEnv("EMAIL_RETRY_INTERVAL_MINUTES"); hasInterval {
-		if interval, err := strconv.Atoi(intervalStr); err == nil && interval > 0 {
-			retryIntervalMinutes = interval
-		}
-	}
-
-	maxAgeHours := 24
-	if maxAgeStr, hasMaxAge := os.LookupEnv("EMAIL_RETRY_MAX_AGE_HOURS"); hasMaxAge {
-		if age, err := strconv.Atoi(maxAgeStr); err == nil && age > 0 {
-			maxAgeHours = age
-		}
-	}
-
+func (s *EmailService) RetryFailedEmails() error {
 	// Calculate cutoff times
-	retryAfter := time.Now().Add(-time.Duration(retryIntervalMinutes) * time.Minute)
-	maxAge := time.Now().Add(-time.Duration(maxAgeHours) * time.Hour)
+	retryAfter := time.Now().Add(-time.Duration(s.retryIntervalMinutes) * time.Minute)
+	maxAge := time.Now().Add(-time.Duration(s.maxAgeHours) * time.Hour)
 
 	// Query for emails with temporary errors that are ready to retry
-	var failedEmails []model.MailLog
-	result := cur.db.Where(
-		"status = ? AND updated_at < ? AND created_at > ?",
-		model.MailLogStatusTemporaryError,
-		retryAfter,
-		maxAge,
-	).Find(&failedEmails)
+	failedEmails, err := s.auditRepo.FindMailToRetry(retryAfter, maxAge, s.maxAttempts)
 
-	if result.Error != nil {
-		return fmt.Errorf("failed to query failed emails: %w", result.Error)
+	if err != nil {
+		return fmt.Errorf("failed to query failed emails: %w", err)
 	}
 
 	if len(failedEmails) == 0 {
@@ -209,13 +206,13 @@ func (cur *EmailService) RetryFailedEmails() error {
 
 	for _, mailLog := range failedEmails {
 		// Check if we've exceeded max attempts
-		if mailLog.RetryCount >= maxAttempts {
+		if mailLog.RetryCount >= s.maxAttempts {
 			// Mark as permanent error after max attempts
 			mailLog.Status = model.MailLogStatusPermanentError
 			mailLog.ErrorDescription = fmt.Sprintf("Max retry attempts (%d) exceeded. Last error: %s",
-				maxAttempts, mailLog.ErrorDescription)
+				s.maxAttempts, mailLog.ErrorDescription)
 			mailLog.UpdatedAt = time.Now()
-			cur.db.Save(&mailLog)
+			s.auditRepo.CreateMailLog(&mailLog)
 			permanentFailCount++
 			log.Printf("Email ID %d marked as permanent error after %d attempts", mailLog.ID, mailLog.RetryCount)
 			continue
@@ -225,10 +222,10 @@ func (cur *EmailService) RetryFailedEmails() error {
 		mailLog.RetryCount++
 
 		// Create context with timeout
-		ctx, cancel := context.WithTimeout(context.Background(), cur.timeout)
+		ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
 
 		// Attempt to resend
-		err := cur.provider.SendTo(ctx, mailLog.To, mailLog.Subject, mailLog.Body)
+		err := s.provider.SendTo(ctx, mailLog.To, mailLog.Subject, mailLog.Body)
 		cancel()
 
 		// Update mail log based on result
@@ -253,7 +250,7 @@ func (cur *EmailService) RetryFailedEmails() error {
 			log.Printf("Email ID %d successfully resent", mailLog.ID)
 		}
 
-		cur.db.Save(&mailLog)
+		s.auditRepo.CreateMailLog(&mailLog)
 	}
 
 	log.Printf("Retry summary - Success: %d, Temporary Fail: %d, Permanent Fail: %d",

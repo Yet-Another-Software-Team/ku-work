@@ -30,7 +30,7 @@ func SetupCORS() cors.Config {
 			corsConfig.AllowMethods[i] = strings.TrimSpace(method)
 		}
 	} else {
-		corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+		corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"}
 	}
 
 	// Get allowed headers from environment variable
