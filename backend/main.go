@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"ku-work/backend/database"
+	docs "ku-work/backend/docs"
 	"ku-work/backend/handlers"
 	"ku-work/backend/helper"
 	"ku-work/backend/middlewares"
+	filehandling "ku-work/backend/providers/file_handling"
 	gormrepo "ku-work/backend/repository/gorm"
 	"ku-work/backend/services"
 	"log"
@@ -13,6 +15,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -20,12 +23,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
-	"gorm.io/gorm"
-
-	docs "ku-work/backend/docs"
-
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"gorm.io/gorm"
 )
 
 // @title KU-Work API
@@ -99,7 +99,34 @@ func initializeServices(db *gorm.DB) (*services.EmailService, *services.AIServic
 	}
 
 	// Initialize file service used for file handling
-	fileService := services.NewFileService(db)
+	// Build provider in composition root based on environment
+	var fhProvider filehandling.FileHandlingProvider
+	providerType := strings.ToLower(strings.TrimSpace(os.Getenv("FILE_PROVIDER")))
+	if providerType == "" || providerType == "local" {
+		baseDir := strings.TrimSpace(os.Getenv("LOCAL_FILES_DIR"))
+		if baseDir == "" {
+			baseDir = "./files"
+		}
+		if err := os.MkdirAll(baseDir, 0o755); err != nil {
+			log.Fatalf("failed to create local files directory %s: %v", baseDir, err)
+		}
+		fhProvider = filehandling.NewLocalProvider(baseDir)
+	} else if providerType == "gcs" {
+		bucket := strings.TrimSpace(os.Getenv("GCS_BUCKET"))
+		if bucket == "" {
+			log.Fatal("GCS_BUCKET is required for gcs provider")
+		}
+		creds := os.Getenv("GCS_CREDENTIALS_PATH")
+		p, pErr := filehandling.NewGCSProvider(context.Background(), bucket, creds)
+		if pErr != nil {
+			log.Fatalf("failed to create gcs provider: %v", pErr)
+		}
+		fhProvider = p
+	} else {
+		log.Fatalf("unsupported FILE_PROVIDER: %s", providerType)
+	}
+	fileRepo := gormrepo.NewGormFileRepository(db)
+	fileService := services.NewFileService(fileRepo, fhProvider)
 	fileService.RegisterGlobal() // Register file services for model-level use
 
 	return emailService, aiService, jobService, fileService
@@ -125,8 +152,10 @@ func setupScheduler(ctx context.Context, db *gorm.DB, emailService *services.Ema
 	// Account anonymization task - runs daily to anonymize accounts past grace period
 	accountDeletionInterval := getAccountDeletionInterval()
 	gracePeriod := helper.GetGracePeriodDays()
+	identityRepo := gormrepo.NewGormIdentityRepository(db)
+	identityService := services.NewIdentityService(identityRepo, nil)
 	scheduler.AddTask("account-deletion", accountDeletionInterval, func() error {
-		return services.AnonymizeExpiredAccounts(db, gracePeriod)
+		return identityService.AnonymizeExpiredAccounts(context.Background(), gracePeriod)
 	})
 
 	return scheduler

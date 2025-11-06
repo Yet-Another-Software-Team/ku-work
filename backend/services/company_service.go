@@ -5,21 +5,14 @@ import (
 	"errors"
 	"time"
 
-	"ku-work/backend/helper"
 	repo "ku-work/backend/repository"
 )
 
 var (
-	ErrUsernameExists     = errors.New("username already exists")
 	ErrInvalidCredentials = errors.New("invalid credentials")
-	ErrInvalidWebsite     = errors.New("invalid website url")
 )
 
 // CompanyService provides read operations for company data.
-//
-// It uses the repository abstraction for all DB access related to companies.
-// Construct via NewCompanyService (convenience constructor that wires a GORM-backed repository)
-// or NewCompanyServiceWithRepo to inject a repository (preferred for testing).
 type CompanyService struct {
 	companyRepo repo.CompanyRepository
 }
@@ -29,36 +22,6 @@ func NewCompanyService(r repo.CompanyRepository) *CompanyService {
 	return &CompanyService{
 		companyRepo: r,
 	}
-}
-
-// IsAdmin is a convenience method retained for callers that expect a simple boolean.
-// It uses the repository GetRole implementation under the hood but provides a
-// backward-compatible signature by running the call with background context and
-// swallowing errors (returns false on error).
-func (s *CompanyService) IsAdmin(userID string) bool {
-	if s == nil || s.companyRepo == nil {
-		return false
-	}
-	role, err := s.companyRepo.GetRole(context.Background(), userID)
-	if err != nil {
-		// On error, conservatively treat as non-admin.
-		return false
-	}
-	return role == helper.Admin
-}
-
-// IsAdminCtx is the preferred form: callers pass a context and receive an error
-// if role resolution fails. Handlers/middlewares should switch to this method
-// and pass request context.
-func (s *CompanyService) IsAdminCtx(ctx context.Context, userID string) (bool, error) {
-	if s == nil || s.companyRepo == nil {
-		return false, nil
-	}
-	role, err := s.companyRepo.GetRole(ctx, userID)
-	if err != nil {
-		return false, err
-	}
-	return role == helper.Admin, nil
 }
 
 // CompanyResponse mirrors the public response shape for company profiles.

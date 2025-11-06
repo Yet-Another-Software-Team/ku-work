@@ -7,15 +7,15 @@ import (
 	"sync"
 
 	"ku-work/backend/model"
+	"ku-work/backend/repository"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 type FileHandlingProvider interface {
-	SaveFile(ctx *gin.Context, db *gorm.DB, userId string, file *multipart.FileHeader, fileCategory model.FileCategory) (*model.File, error)
-	ServeFile(ctx *gin.Context, db *gorm.DB)
-	DeleteFile(ctx context.Context, fileID string) error
+	SaveFile(ctx *gin.Context, repo repository.FileRepository, userId string, file *multipart.FileHeader, fileCategory model.FileCategory) (*model.File, error)
+	ServeFile(ctx *gin.Context, repo repository.FileRepository)
+	DeleteFile(ctx context.Context, repo repository.FileRepository, fileID string) error
 }
 
 // registry is a package-level variable that holds the registered FileHandlingProvider.

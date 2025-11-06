@@ -15,13 +15,13 @@ import (
 
 type StudentHandler struct {
 	StudentSvc *services.StudentService
-	AccountSvc *services.AccountService
+	AccountSvc *services.IdentityService
 }
 
-func NewStudentHandler(studentSvc *services.StudentService, accountSvc *services.AccountService) *StudentHandler {
+func NewStudentHandler(studentSvc *services.StudentService, identitySvc *services.IdentityService) *StudentHandler {
 	return &StudentHandler{
 		StudentSvc: studentSvc,
-		AccountSvc: accountSvc,
+		AccountSvc: identitySvc,
 	}
 }
 
@@ -141,7 +141,7 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 		return
 	}
 
-	// Map handler input to service input and delegate to AccountService
+	// Map handler input to service input and delegate to IdentityService
 	payload := services.StudentEditProfileInput{
 		Phone:         input.Phone,
 		BirthDate:     input.BirthDate,
@@ -258,7 +258,7 @@ func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 	}
 
 	// If requester is admin, return list with filters
-	role := h.AccountSvc.GetRole(ctx.Request.Context(), userId)
+	role := h.AccountSvc.ResolveRole(ctx.Request.Context(), userId)
 	if role == helper.Admin {
 		var statusPtr *model.StudentApprovalStatus
 		if input.ApprovalStatus != "" {

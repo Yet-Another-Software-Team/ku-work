@@ -49,10 +49,10 @@ func TestServeFileHandler(t *testing.T) {
 		}
 		defer func() { _ = db.Unscoped().Delete(&user) }()
 
-		userRepo := gormrepo.NewGormUserRepository(db)
+		identityRepo := gormrepo.NewGormIdentityRepository(db)
 		refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
 		revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-		jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+		jwtService := services.NewJWTService(refreshRepo, revocationRepo, identityRepo)
 		jwtHandler := handlers.NewJWTHandlers(jwtService)
 		token, _, err := jwtHandler.GenerateTokens(user.ID)
 		if err != nil {
@@ -86,10 +86,10 @@ func TestServeFileHandler(t *testing.T) {
 		}
 		defer func() { _ = db.Unscoped().Delete(&user) }()
 
-		userRepo := gormrepo.NewGormUserRepository(db)
+		identityRepo := gormrepo.NewGormIdentityRepository(db)
 		refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
 		revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-		jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+		jwtService := services.NewJWTService(refreshRepo, revocationRepo, identityRepo)
 		jwtHandler := handlers.NewJWTHandlers(jwtService)
 		token, _, err := jwtHandler.GenerateTokens(user.ID)
 		if err != nil {
@@ -115,10 +115,10 @@ func TestServeFileHandler(t *testing.T) {
 		}
 		defer func() { _ = db.Unscoped().Delete(&user) }()
 
-		userRepo := gormrepo.NewGormUserRepository(db)
+		identityRepo := gormrepo.NewGormIdentityRepository(db)
 		refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
 		revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-		jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+		jwtService := services.NewJWTService(refreshRepo, revocationRepo, identityRepo)
 		jwtHandler := handlers.NewJWTHandlers(jwtService)
 		token, _, err := jwtHandler.GenerateTokens(user.ID)
 		if err != nil {

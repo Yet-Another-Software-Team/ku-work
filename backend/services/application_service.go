@@ -19,7 +19,7 @@ type ApplicationService struct {
 	applicationRepo repo.ApplicationRepository
 	jobRepo         repo.JobRepository
 	studentRepo     repo.StudentRepository
-	userRepo        repo.UserRepository
+	identityRepo    repo.IdentityRepository
 
 	fileService  *FileService
 	emailService *EmailService
@@ -34,7 +34,7 @@ func NewApplicationService(
 	appRepo repo.ApplicationRepository,
 	jobRepo repo.JobRepository,
 	studentRepo repo.StudentRepository,
-	userRepo repo.UserRepository,
+	identityRepo repo.IdentityRepository,
 	fileSvc *FileService,
 	emailSvc *EmailService,
 	statusTpl *template.Template,
@@ -44,7 +44,7 @@ func NewApplicationService(
 		applicationRepo:                         appRepo,
 		jobRepo:                                 jobRepo,
 		studentRepo:                             studentRepo,
-		userRepo:                                userRepo,
+		identityRepo:                            identityRepo,
 		fileService:                             fileSvc,
 		emailService:                            emailSvc,
 		jobApplicationStatusUpdateEmailTemplate: statusTpl,
@@ -84,9 +84,6 @@ func (s *ApplicationService) ApplyToJob(ctx context.Context, p ApplyToJobParams)
 		return fmt.Errorf("job id is required")
 	}
 
-	if s.studentRepo == nil || s.userRepo == nil {
-		return fmt.Errorf("repositories not configured")
-	}
 	stu, err := s.studentRepo.FindStudentByUserID(ctx, p.UserID)
 	if err != nil {
 		return fmt.Errorf("failed to load student: %w", err)
@@ -99,7 +96,7 @@ func (s *ApplicationService) ApplyToJob(ctx context.Context, p ApplyToJobParams)
 		p.ContactPhone = stu.Phone
 	}
 	if p.ContactEmail == "" {
-		u, err := s.userRepo.FindUserByID(p.UserID)
+		u, err := s.identityRepo.FindUserByID(ctx, p.UserID, false)
 		if err != nil {
 			return fmt.Errorf("failed to load user: %w", err)
 		}
@@ -188,9 +185,6 @@ func (s *ApplicationService) ApplyToJob(ctx context.Context, p ApplyToJobParams)
 
 // GetApplicationsForJob lists applications for a job.
 func (s *ApplicationService) GetApplicationsForJob(ctx context.Context, jobID uint, params *repo.FetchJobApplicationsParams) ([]repo.ShortApplicationDetail, error) {
-	if s == nil {
-		return nil, fmt.Errorf("application service is not initialized")
-	}
 	if jobID == 0 {
 		return nil, fmt.Errorf("job id is required")
 	}
@@ -199,9 +193,6 @@ func (s *ApplicationService) GetApplicationsForJob(ctx context.Context, jobID ui
 
 // ClearJobApplications deletes applications matching included statuses.
 func (s *ApplicationService) ClearJobApplications(ctx context.Context, jobID uint, includePending, includeRejected, includeAccepted bool) (int64, error) {
-	if s == nil {
-		return 0, fmt.Errorf("application service is not initialized")
-	}
 	if jobID == 0 {
 		return 0, fmt.Errorf("job id is required")
 	}
@@ -210,9 +201,6 @@ func (s *ApplicationService) ClearJobApplications(ctx context.Context, jobID uin
 
 // GetApplicationByJobAndEmail returns a single application detail.
 func (s *ApplicationService) GetApplicationByJobAndEmail(ctx context.Context, jobID uint, email string) (*repo.FullApplicantDetail, error) {
-	if s == nil {
-		return nil, fmt.Errorf("application service is not initialized")
-	}
 	if jobID == 0 {
 		return nil, fmt.Errorf("job id is required")
 	}
@@ -224,9 +212,6 @@ func (s *ApplicationService) GetApplicationByJobAndEmail(ctx context.Context, jo
 
 // GetAllApplicationsForUser returns applications visible to the user.
 func (s *ApplicationService) GetAllApplicationsForUser(ctx context.Context, userID string, params *repo.FetchAllApplicationsParams) ([]repo.ApplicationWithJobDetails, int64, error) {
-	if s == nil {
-		return nil, 0, fmt.Errorf("application service is not initialized")
-	}
 	if userID == "" {
 		return nil, 0, fmt.Errorf("user id is required")
 	}
@@ -245,9 +230,6 @@ type UpdateStatusParams struct {
 
 // UpdateJobApplicationStatus updates the application's status and optionally notifies the applicant via email.
 func (s *ApplicationService) UpdateJobApplicationStatus(ctx context.Context, p UpdateStatusParams) error {
-	if s == nil {
-		return fmt.Errorf("application service is not initialized")
-	}
 	if p.JobID == 0 {
 		return fmt.Errorf("job id is required")
 	}

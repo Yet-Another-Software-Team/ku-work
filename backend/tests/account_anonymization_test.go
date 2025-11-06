@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"context"
 	"encoding/json"
 	"ku-work/backend/handlers"
 	"ku-work/backend/helper"
@@ -54,13 +55,14 @@ func TestAccountReactivation(t *testing.T) {
 	}
 
 	// Setup handlers and router
-	userRepo := gormrepo.NewGormUserRepository(db)
+	identityRepo := gormrepo.NewGormIdentityRepository(db)
+	// removed stray line
 	refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
 	revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-	jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+	jwtService := services.NewJWTService(refreshRepo, revocationRepo, identityRepo)
 	jwtHandlers := handlers.NewJWTHandlers(jwtService)
 	// grace period handled inside handler
-	accountService := services.NewAccountService(db)
+	accountService := services.NewIdentityService(identityRepo, fileService)
 	userHandlers := handlers.NewUserHandlers(accountService)
 	router := setupAccountTestRouter(jwtHandlers, userHandlers)
 
@@ -127,13 +129,13 @@ func TestAccountReactivationGracePeriodExpired(t *testing.T) {
 	db.Unscoped().Model(&userResult.User).Update("deleted_at", oldDeletedAt)
 
 	// Setup handlers and router
-	userRepo := gormrepo.NewGormUserRepository(db)
+	identityRepo := gormrepo.NewGormIdentityRepository(db)
 	refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
 	revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-	jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+	jwtService := services.NewJWTService(refreshRepo, revocationRepo, identityRepo)
 	jwtHandlers := handlers.NewJWTHandlers(jwtService)
 	// grace period handled inside handler
-	accountService := services.NewAccountService(db)
+	accountService := services.NewIdentityService(identityRepo, fileService)
 	userHandlers := handlers.NewUserHandlers(accountService)
 	router := setupAccountTestRouter(jwtHandlers, userHandlers)
 
@@ -187,7 +189,9 @@ func TestAccountAnonymization(t *testing.T) {
 		db.Unscoped().Model(&userResult.User).Update("deleted_at", oldDeletedAt)
 
 		// Run anonymization
-		err = services.AnonymizeAccount(db, userResult.User.ID)
+		identityRepo := gormrepo.NewGormIdentityRepository(db)
+		identityService := services.NewIdentityService(identityRepo, fileService)
+		err = identityService.AnonymizeAccount(context.Background(), userResult.User.ID)
 		assert.NoError(t, err, "Should anonymize successfully")
 
 		// Verify user is anonymized
@@ -240,7 +244,9 @@ func TestAccountAnonymization(t *testing.T) {
 		db.Unscoped().Model(&userResult.User).Update("deleted_at", oldDeletedAt)
 
 		// Run anonymization
-		err = services.AnonymizeAccount(db, userResult.User.ID)
+		identityRepo := gormrepo.NewGormIdentityRepository(db)
+		identityService := services.NewIdentityService(identityRepo, fileService)
+		err = identityService.AnonymizeAccount(context.Background(), userResult.User.ID)
 		assert.NoError(t, err, "Should anonymize successfully")
 
 		// Verify company data is anonymized
@@ -286,7 +292,9 @@ func TestAnonymizeExpiredAccounts(t *testing.T) {
 	db.Unscoped().Model(&users[2].User).Update("deleted_at", time.Now().Add(-12*time.Hour))
 
 	// Run batch anonymization
-	err := services.AnonymizeExpiredAccounts(db, gracePeriod)
+	identityRepo := gormrepo.NewGormIdentityRepository(db)
+	identityService := services.NewIdentityService(identityRepo, fileService)
+	err := identityService.AnonymizeExpiredAccounts(context.Background(), gracePeriod)
 	assert.NoError(t, err, "Should run anonymization task successfully")
 
 	// Verify users 0 and 1 are anonymized
@@ -317,7 +325,9 @@ func TestCheckIfAnonymized(t *testing.T) {
 	defer cleanupUser(t, userResult.User.ID)
 
 	t.Run("Check not anonymized", func(t *testing.T) {
-		isAnon, err := services.CheckIfAnonymized(db, userResult.User.ID)
+		identityRepo := gormrepo.NewGormIdentityRepository(db)
+		identityService := services.NewIdentityService(identityRepo, fileService)
+		isAnon, err := identityService.CheckIfAnonymized(context.Background(), userResult.User.ID)
 		assert.NoError(t, err, "Should check successfully")
 		assert.False(t, isAnon, "User should not be anonymized")
 	})
@@ -325,10 +335,12 @@ func TestCheckIfAnonymized(t *testing.T) {
 	t.Run("Check is anonymized", func(t *testing.T) {
 		// Anonymize the user
 		db.Unscoped().Model(&userResult.User).Update("deleted_at", time.Now().Add(-2*24*time.Hour))
-		err := services.AnonymizeAccount(db, userResult.User.ID)
+		identityRepo := gormrepo.NewGormIdentityRepository(db)
+		identityService := services.NewIdentityService(identityRepo, fileService)
+		err := identityService.AnonymizeAccount(context.Background(), userResult.User.ID)
 		assert.NoError(t, err, "Should anonymize successfully")
 
-		isAnon, err := services.CheckIfAnonymized(db, userResult.User.ID)
+		isAnon, err := identityService.CheckIfAnonymized(context.Background(), userResult.User.ID)
 		assert.NoError(t, err, "Should check successfully")
 		assert.True(t, isAnon, "User should be anonymized")
 	})
@@ -377,7 +389,9 @@ func TestAnonymizationSkipsAlreadyAnonymized(t *testing.T) {
 
 	// Soft delete and anonymize
 	db.Unscoped().Model(&userResult.User).Update("deleted_at", time.Now().Add(-2*24*time.Hour))
-	err = services.AnonymizeAccount(db, userResult.User.ID)
+	identityRepo := gormrepo.NewGormIdentityRepository(db)
+	identityService := services.NewIdentityService(identityRepo, fileService)
+	err = identityService.AnonymizeAccount(context.Background(), userResult.User.ID)
 	assert.NoError(t, err, "First anonymization should succeed")
 
 	// Get the anonymized username
@@ -386,7 +400,9 @@ func TestAnonymizationSkipsAlreadyAnonymized(t *testing.T) {
 	username1 := user1.Username
 
 	// Run batch anonymization again - should skip already anonymized account
-	err = services.AnonymizeExpiredAccounts(db, gracePeriod)
+	identityRepo = gormrepo.NewGormIdentityRepository(db)
+	identityService = services.NewIdentityService(identityRepo, fileService)
+	err = identityService.AnonymizeExpiredAccounts(context.Background(), gracePeriod)
 	assert.NoError(t, err, "Batch anonymization should succeed")
 
 	// Verify username hasn't changed (was skipped)
@@ -411,7 +427,9 @@ func TestAnonymizationDataRetention(t *testing.T) {
 
 	// Anonymize
 	db.Unscoped().Model(&userResult.User).Update("deleted_at", time.Now().Add(-2*24*time.Hour))
-	err = services.AnonymizeAccount(db, userResult.User.ID)
+	identityRepo := gormrepo.NewGormIdentityRepository(db)
+	identityService := services.NewIdentityService(identityRepo, fileService)
+	err = identityService.AnonymizeAccount(context.Background(), userResult.User.ID)
 	assert.NoError(t, err, "Should anonymize successfully")
 
 	// Verify non-PII data is retained

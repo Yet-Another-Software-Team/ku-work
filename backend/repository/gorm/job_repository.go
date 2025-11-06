@@ -14,12 +14,10 @@ import (
 	"gorm.io/gorm"
 )
 
-// GormJobRepository is a GORM-backed implementation of repo.JobRepository.
 type GormJobRepository struct {
 	db *gorm.DB
 }
 
-// NewGormJobRepository creates a new instance of GormJobRepository.
 func NewGormJobRepository(db *gorm.DB) *GormJobRepository {
 	return &GormJobRepository{db: db}
 }
@@ -189,13 +187,6 @@ func (r *GormJobRepository) applyFilters(query *gorm.DB, params *repo.FetchJobsP
 	return query
 }
 
-// FetchJobs returns a paginated list of jobs according to the provided parameters.
-// Return type is interface{} so callers can cast to the expected shape (company -> []jobWithStatsResp, others -> []jobResp).
-//
-// This implementation avoids fragile large SELECT->struct mapping by:
-// 1. Applying filters and plucking the matching job IDs (with pagination).
-// 2. For each ID, using GetJobDetail to obtain the denormalized job projection.
-// 3. For company role, fetching aggregated application stats grouped by job_id and merging them.
 func (r *GormJobRepository) FetchJobs(ctx context.Context, params *repo.FetchJobsParams) (interface{}, int64, error) {
 	// Base query with required joins to enrich job rows with company info (used only for filtering/counting)
 	base := r.db.WithContext(ctx).Model(&model.Job{}).

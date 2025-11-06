@@ -1,5 +1,3 @@
-//TODO: migrate to layered architecture
-
 package services
 
 import (
@@ -17,20 +15,31 @@ import (
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
 	repo "ku-work/backend/repository"
-	gormrepo "ku-work/backend/repository/gorm"
 	filehandling "ku-work/backend/providers/file_handling"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/datatypes"
-	"gorm.io/gorm"
 )
 
+// IdentityService merges account lifecycle and user-related operations behind a single, layered service.
+// - Handlers call this service.
+// - This service depends only on repository and infra services (e.g., FileService).
+// - Only repository implementations perform DB access.
+type IdentityService struct {
+	Repo        repo.IdentityRepository
+	FileService *FileService
+}
+
+// Error definitions
 var (
 	ErrUserNotFound        = errors.New("user not found")
 	ErrAlreadyDeactivated  = errors.New("account is already deactivated")
 	ErrNotDeactivated      = errors.New("account is not deactivated")
 	ErrGracePeriodExpired  = errors.New("grace period has expired")
 	ErrAnonymizationFailed = errors.New("anonymization failed")
+
+	ErrUsernameExists = errors.New("username already exists")
+	ErrInvalidWebsite = errors.New("invalid website url")
 )
 
 // GracePeriodExpiredError enriches the error with deadline details for the handler to report.
@@ -43,34 +52,21 @@ func (e *GracePeriodExpiredError) Error() string {
 	return fmt.Sprintf("%s: deleted_at=%s deadline=%s", ErrGracePeriodExpired.Error(), e.DeletedAt.Format(time.RFC3339), e.Deadline.Format(time.RFC3339))
 }
 
-// AccountService encapsulates account lifecycle and anonymization business logic.
-// All persistence is delegated to the repository to uphold a layered architecture with DI.
-type AccountService struct {
-	Repo repo.AccountRepository
-	DB   *gorm.DB
+// NewIdentityService constructs the service with injected dependencies.
+func NewIdentityService(r repo.IdentityRepository, fileSvc *FileService) *IdentityService {
+	return &IdentityService{
+		Repo:        r,
+		FileService: fileSvc,
+	}
 }
 
-// NewAccountServiceWithRepo constructs the service with an injected repository implementation.
-func NewAccountServiceWithRepo(r repo.AccountRepository) *AccountService {
-	return &AccountService{Repo: r}
-}
-
-// WithDB sets the underlying DB on the service and optionally wires a default repository if none is set.
-// It returns the service instance to allow fluent chaining.
-func (s *AccountService) WithDB(db *gorm.DB) *AccountService {
-	if s == nil {
-		return &AccountService{DB: db, Repo: gormrepo.NewGormAccountRepository(db)}
-	}
-	s.DB = db
-	if s.Repo == nil && db != nil {
-		s.Repo = gormrepo.NewGormAccountRepository(db)
-	}
-	return s
-}
+// ---------------------------
+// Account lifecycle
+// ---------------------------
 
 // DeactivateAccount soft-deletes the user account and performs side effects like disabling company job posts.
 // It returns the deletionDate (now + gracePeriodDays) which the handler can present to the user.
-func (s *AccountService) DeactivateAccount(ctx context.Context, userID string, gracePeriodDays int) (time.Time, error) {
+func (s *IdentityService) DeactivateAccount(ctx context.Context, userID string, gracePeriodDays int) (time.Time, error) {
 	if s == nil || s.Repo == nil {
 		return time.Time{}, errors.New("service not initialized")
 	}
@@ -81,7 +77,7 @@ func (s *AccountService) DeactivateAccount(ctx context.Context, userID string, g
 		return time.Time{}, ErrUserNotFound
 	}
 
-	// Check current deactivated state
+	// Check deactivated state
 	deactivated, err := s.Repo.IsUserDeactivated(ctx, userID)
 	if err != nil {
 		return time.Time{}, err
@@ -90,7 +86,7 @@ func (s *AccountService) DeactivateAccount(ctx context.Context, userID string, g
 		return time.Time{}, ErrAlreadyDeactivated
 	}
 
-	// If user is a company, disable job posts (best-effort, do not fail deactivation on error)
+	// If user is a company, disable job posts (best-effort)
 	if _, err := s.Repo.FindCompanyByUserID(ctx, userID, false); err == nil {
 		if n, derr := s.Repo.DisableCompanyJobPosts(ctx, userID); derr != nil {
 			log.Printf("Warning: Failed to disable job posts for company %s: %v", userID, derr)
@@ -110,7 +106,7 @@ func (s *AccountService) DeactivateAccount(ctx context.Context, userID string, g
 
 // ReactivateAccount restores a soft-deactivated account if within the grace period.
 // Side effects: restores associated Student/Company/OAuth records that were soft-deleted.
-func (s *AccountService) ReactivateAccount(ctx context.Context, userID string, gracePeriodDays int) error {
+func (s *IdentityService) ReactivateAccount(ctx context.Context, userID string, gracePeriodDays int) error {
 	if s == nil || s.Repo == nil {
 		return errors.New("service not initialized")
 	}
@@ -165,15 +161,18 @@ func (s *AccountService) ReactivateAccount(ctx context.Context, userID string, g
 	return nil
 }
 
+// ---------------------------
+// Anonymization
+// ---------------------------
+
 // generateAnonymousID creates a unique anonymous identifier based on the original ID.
-// This ensures consistency while maintaining anonymity.
 func generateAnonymousID(originalID string) string {
 	hash := sha256.Sum256([]byte(originalID + time.Now().String()))
 	return "ANON-" + hex.EncodeToString(hash[:])[:12]
 }
 
 // CheckIfAnonymized checks if an account has already been anonymized by inspecting the username prefix.
-func (s *AccountService) CheckIfAnonymized(ctx context.Context, userID string) (bool, error) {
+func (s *IdentityService) CheckIfAnonymized(ctx context.Context, userID string) (bool, error) {
 	if s == nil || s.Repo == nil {
 		return false, errors.New("service not initialized")
 	}
@@ -185,7 +184,7 @@ func (s *AccountService) CheckIfAnonymized(ctx context.Context, userID string) (
 }
 
 // AnonymizeExpiredAccounts finds accounts whose grace period has expired and anonymizes them.
-func (s *AccountService) AnonymizeExpiredAccounts(ctx context.Context, gracePeriodDays int) error {
+func (s *IdentityService) AnonymizeExpiredAccounts(ctx context.Context, gracePeriodDays int) error {
 	if s == nil || s.Repo == nil {
 		return errors.New("service not initialized")
 	}
@@ -233,7 +232,7 @@ func (s *AccountService) AnonymizeExpiredAccounts(ctx context.Context, gracePeri
 
 // AnonymizeAccount anonymizes a user account and all associated personal data,
 // complying with PDPA while retaining data for analytics.
-func (s *AccountService) AnonymizeAccount(ctx context.Context, userID string) error {
+func (s *IdentityService) AnonymizeAccount(ctx context.Context, userID string) error {
 	if s == nil || s.Repo == nil {
 		return errors.New("service not initialized")
 	}
@@ -292,7 +291,7 @@ func (s *AccountService) AnonymizeAccount(ctx context.Context, userID string) er
 }
 
 // anonymizeJobApplicationsForStudent anonymizes and deletes files from all job applications for a student.
-func (s *AccountService) anonymizeJobApplicationsForStudent(ctx context.Context, studentUserID, anon string) error {
+func (s *IdentityService) anonymizeJobApplicationsForStudent(ctx context.Context, studentUserID, anon string) error {
 	log.Printf("Anonymizing job applications for student: %s", studentUserID)
 
 	apps, err := s.Repo.ListJobApplicationsWithFilesByUserID(ctx, studentUserID)
@@ -332,7 +331,7 @@ func (s *AccountService) anonymizeJobApplicationsForStudent(ctx context.Context,
 }
 
 // anonymizeStudentData anonymizes all personal data in a student record and deletes related files.
-func (s *AccountService) anonymizeStudentData(ctx context.Context, student *model.Student, anon string) error {
+func (s *IdentityService) anonymizeStudentData(ctx context.Context, student *model.Student, anon string) error {
 	fields := map[string]any{
 		"phone":                  nil,
 		"photo_id":               nil,
@@ -376,7 +375,7 @@ func (s *AccountService) anonymizeStudentData(ctx context.Context, student *mode
 }
 
 // anonymizeCompanyData anonymizes all personal data in a company record and deletes related images.
-func (s *AccountService) anonymizeCompanyData(ctx context.Context, company *model.Company, anon string) error {
+func (s *IdentityService) anonymizeCompanyData(ctx context.Context, company *model.Company, anon string) error {
 	fields := map[string]any{
 		"email":     fmt.Sprintf("%s@anonymized.local", anon),
 		"website":   "",
@@ -420,7 +419,7 @@ func (s *AccountService) anonymizeCompanyData(ctx context.Context, company *mode
 }
 
 // anonymizeGoogleOAuthData anonymizes OAuth details.
-func (s *AccountService) anonymizeGoogleOAuthData(ctx context.Context, oauth *model.GoogleOAuthDetails, anon string) error {
+func (s *IdentityService) anonymizeGoogleOAuthData(ctx context.Context, oauth *model.GoogleOAuthDetails, anon string) error {
 	fields := map[string]any{
 		"external_id": anon,
 		"first_name":  "Anonymized",
@@ -431,31 +430,9 @@ func (s *AccountService) anonymizeGoogleOAuthData(ctx context.Context, oauth *mo
 	return s.Repo.UpdateOAuthFields(ctx, oauth.UserID, fields)
 }
 
-// NewAccountService is a convenience constructor wiring a GORM-backed repository.
-// Prefer NewAccountServiceWithRepo for injection in tests.
-func NewAccountService(db *gorm.DB) *AccountService {
-	return &AccountService{Repo: gormrepo.NewGormAccountRepository(db), DB: db}
-}
-
-// Backward-compatible wrappers
-
-// AnonymizeExpiredAccounts preserves the legacy API for scheduled anonymization.
-func AnonymizeExpiredAccounts(db *gorm.DB, gracePeriodDays int) error {
-	s := NewAccountService(db)
-	return s.AnonymizeExpiredAccounts(context.Background(), gracePeriodDays)
-}
-
-// AnonymizeAccount preserves the legacy API used by tests.
-func AnonymizeAccount(db *gorm.DB, userID string) error {
-	s := NewAccountService(db)
-	return s.AnonymizeAccount(context.Background(), userID)
-}
-
-// CheckIfAnonymized preserves the legacy API used by tests.
-func CheckIfAnonymized(db *gorm.DB, userID string) (bool, error) {
-	s := NewAccountService(db)
-	return s.CheckIfAnonymized(context.Background(), userID)
-}
+// ---------------------------
+// Profile edits
+// ---------------------------
 
 // CompanyEditProfileInput represents editable fields for a company's profile.
 // All fields are optional to support partial updates.
@@ -484,58 +461,31 @@ type StudentEditProfileInput struct {
 	Photo         *multipart.FileHeader `json:"-"`
 }
 
-// GetRole resolves the role for a given user using the existing helper logic.
-// This keeps handlers decoupled from DB access while we gradually migrate logic into services.
-func (s *AccountService) GetRole(_ context.Context, userID string) helper.Role {
-	if s == nil || s.DB == nil {
-		return helper.Unknown
-	}
-	return helper.GetRole(userID, s.DB)
-}
-
-// GetUsername returns a display name based on role using the existing helper logic.
-func (s *AccountService) GetUsername(_ context.Context, userID string, role helper.Role) string {
-	if s == nil || s.DB == nil {
-		return "unknown"
-	}
-	return helper.GetUsername(userID, role, s.DB)
-}
-
 // UpdateCompanyProfile applies partial updates to a company profile and handles optional file uploads.
 // This encapsulates business rules like username uniqueness and email/URL validation.
-// The whole operation runs in a single DB transaction.
-func (s *AccountService) UpdateCompanyProfile(ctx *gin.Context, userID string, input CompanyEditProfileInput) error {
-	if s == nil || s.Repo == nil || s.DB == nil {
+func (s *IdentityService) UpdateCompanyProfile(ctx *gin.Context, userID string, input CompanyEditProfileInput) error {
+	if s == nil || s.Repo == nil {
 		return errors.New("service not initialized")
 	}
 
-	tx := s.DB.Begin()
-	if tx.Error != nil {
-		return tx.Error
-	}
-	defer func() { _ = tx.Rollback() }()
-
-	// Bind repository to the transaction
-	repoTx := s.Repo.WithTx(tx)
-
 	// Handle username change with repository-backed uniqueness check and update.
 	if input.Username != nil {
-		exists, err := repoTx.ExistsUsername(ctx.Request.Context(), *input.Username)
+		exists, err := s.Repo.ExistsUsername(ctx.Request.Context(), *input.Username)
 		if err != nil {
 			return err
 		}
 		if exists {
 			return ErrUsernameExists
 		}
-		if err := repoTx.UpdateUserFields(ctx.Request.Context(), userID, map[string]any{
+		if err := s.Repo.UpdateUserFields(ctx.Request.Context(), userID, map[string]any{
 			"username": *input.Username,
 		}); err != nil {
 			return err
 		}
 	}
 
-	// Verify company exists.
-	if _, err := repoTx.FindCompanyByUserID(ctx.Request.Context(), userID, false); err != nil {
+	// Verify company exists (non-alloc result ignored).
+	if _, err := s.Repo.FindCompanyByUserID(ctx.Request.Context(), userID, false); err != nil {
 		return err
 	}
 
@@ -570,21 +520,39 @@ func (s *AccountService) UpdateCompanyProfile(ctx *gin.Context, userID string, i
 		updates["website"] = *input.Website
 	}
 
-	// Handle file uploads if present (use tx to ensure atomicity with DB updates).
-	if input.Photo != nil || input.Banner != nil {
-		provider, err := filehandling.GetProvider()
-		if err != nil {
-			return err
+	// Handle file uploads if present.
+	if s.FileService == nil && (input.Photo != nil || input.Banner != nil) {
+		// Fallback to global provider if not injected
+		if _, err := filehandling.GetProvider(); err != nil {
+			return errors.New("file service not configured")
 		}
-		if input.Photo != nil {
-			photo, err := provider.SaveFile(ctx, tx, userID, input.Photo, model.FileCategoryImage)
+	}
+	if input.Photo != nil {
+		if s.FileService != nil {
+			photo, err := s.FileService.SaveFile(ctx, userID, input.Photo, model.FileCategoryImage)
+			if err != nil {
+				return err
+			}
+			updates["photo_id"] = photo.ID
+		} else {
+			provider, _ := filehandling.GetProvider()
+			photo, err := provider.SaveFile(ctx, nil, userID, input.Photo, model.FileCategoryImage)
 			if err != nil {
 				return err
 			}
 			updates["photo_id"] = photo.ID
 		}
-		if input.Banner != nil {
-			banner, err := provider.SaveFile(ctx, tx, userID, input.Banner, model.FileCategoryImage)
+	}
+	if input.Banner != nil {
+		if s.FileService != nil {
+			banner, err := s.FileService.SaveFile(ctx, userID, input.Banner, model.FileCategoryImage)
+			if err != nil {
+				return err
+			}
+			updates["banner_id"] = banner.ID
+		} else {
+			provider, _ := filehandling.GetProvider()
+			banner, err := provider.SaveFile(ctx, nil, userID, input.Banner, model.FileCategoryImage)
 			if err != nil {
 				return err
 			}
@@ -593,33 +561,22 @@ func (s *AccountService) UpdateCompanyProfile(ctx *gin.Context, userID string, i
 	}
 
 	if len(updates) > 0 {
-		if err := repoTx.UpdateCompanyFields(ctx.Request.Context(), userID, updates); err != nil {
+		if err := s.Repo.UpdateCompanyFields(ctx.Request.Context(), userID, updates); err != nil {
 			return err
 		}
 	}
 
-	if err := tx.Commit().Error; err != nil {
-		return err
-	}
 	return nil
 }
 
 // UpdateStudentProfile applies partial updates to a student profile and handles optional photo upload.
-func (s *AccountService) UpdateStudentProfile(ctx *gin.Context, userID string, input StudentEditProfileInput) error {
-	if s == nil || s.Repo == nil || s.DB == nil {
+func (s *IdentityService) UpdateStudentProfile(ctx *gin.Context, userID string, input StudentEditProfileInput) error {
+	if s == nil || s.Repo == nil {
 		return errors.New("service not initialized")
 	}
 
-	tx := s.DB.Begin()
-	if tx.Error != nil {
-		return tx.Error
-	}
-	defer func() { _ = tx.Rollback() }()
-
-	repoTx := s.Repo.WithTx(tx)
-
 	// Ensure the student record exists.
-	if _, err := repoTx.FindStudentByUserID(ctx.Request.Context(), userID, false); err != nil {
+	if _, err := s.Repo.FindStudentByUserID(ctx.Request.Context(), userID, false); err != nil {
 		return err
 	}
 
@@ -649,15 +606,23 @@ func (s *AccountService) UpdateStudentProfile(ctx *gin.Context, userID string, i
 	}
 
 	if input.Photo != nil {
-		provider, err := filehandling.GetProvider()
-		if err != nil {
-			return err
+		if s.FileService != nil {
+			photo, err := s.FileService.SaveFile(ctx, userID, input.Photo, model.FileCategoryImage)
+			if err != nil {
+				return err
+			}
+			updates["photo_id"] = photo.ID
+		} else {
+			provider, err := filehandling.GetProvider()
+			if err != nil {
+				return err
+			}
+			photo, err := provider.SaveFile(ctx, nil, userID, input.Photo, model.FileCategoryImage)
+			if err != nil {
+				return err
+			}
+			updates["photo_id"] = photo.ID
 		}
-		photo, err := provider.SaveFile(ctx, s.DB, userID, input.Photo, model.FileCategoryImage)
-		if err != nil {
-			return err
-		}
-		updates["photo_id"] = photo.ID
 	}
 
 	if len(updates) > 0 {
@@ -667,4 +632,48 @@ func (s *AccountService) UpdateStudentProfile(ctx *gin.Context, userID string, i
 	}
 
 	return nil
+}
+
+// ---------------------------
+// Role and profile helpers
+// ---------------------------
+
+// ResolveRole returns the effective role for a user using repository-backed checks.
+func (s *IdentityService) ResolveRole(ctx context.Context, userID string) helper.Role {
+	if s == nil || s.Repo == nil || userID == "" {
+		return helper.Unknown
+	}
+
+	if cnt, err := s.Repo.CountAdminByUserID(userID); err == nil && cnt > 0 {
+		return helper.Admin
+	}
+	if cnt, err := s.Repo.CountCompanyByUserID(userID); err == nil && cnt > 0 {
+		return helper.Company
+	}
+
+	// Attempt to classify student role
+	if u, err := s.Repo.FindUserByID(ctx, userID, true); err == nil && u != nil {
+		if registered, roleStr, err := s.Repo.IsStudentRegisteredAndRole(*u); err == nil && registered {
+			switch roleStr {
+			case string(helper.Student):
+				return helper.Student
+			default:
+				return helper.Viewer
+			}
+		}
+	}
+
+	return helper.Viewer
+}
+
+// GetUsername fetches a user's username (soft-deleted included for idempotency).
+func (s *IdentityService) GetUsername(ctx context.Context, userID string) string {
+	if s == nil || s.Repo == nil {
+		return "unknown"
+	}
+	user, err := s.Repo.FindUserByID(ctx, userID, true)
+	if err != nil || user == nil {
+		return "unknown"
+	}
+	return user.Username
 }

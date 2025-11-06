@@ -83,10 +83,10 @@ func TestStudent(t *testing.T) {
 			return
 		}
 		req, _ := http.NewRequest("POST", "/auth/student/register", &b)
-		userRepo := gormrepo.NewGormUserRepository(db)
+		identityRepo := gormrepo.NewGormIdentityRepository(db)
 		refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
 		revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-		jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+		jwtService := services.NewJWTService(refreshRepo, revocationRepo, identityRepo)
 		jwtHandler := handlers.NewJWTHandlers(jwtService)
 		jwtToken, _, err := jwtHandler.GenerateTokens(user.ID)
 		if err != nil {
@@ -154,10 +154,10 @@ func TestStudent(t *testing.T) {
 		}
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/students", strings.NewReader(""))
-		userRepo := gormrepo.NewGormUserRepository(db)
+		identityRepo := gormrepo.NewGormIdentityRepository(db)
 		refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
 		revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-		jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+		jwtService := services.NewJWTService(refreshRepo, revocationRepo, identityRepo)
 		jwtHandler := handlers.NewJWTHandlers(jwtService)
 		jwtToken, _, err := jwtHandler.GenerateTokens(student.User.ID)
 		if err != nil {
@@ -223,10 +223,10 @@ func TestStudent(t *testing.T) {
 		})()
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/students", strings.NewReader(""))
-		userRepo := gormrepo.NewGormUserRepository(db)
+		identityRepo := gormrepo.NewGormIdentityRepository(db)
 		refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
 		revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-		jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+		jwtService := services.NewJWTService(refreshRepo, revocationRepo, identityRepo)
 		jwtHandler := handlers.NewJWTHandlers(jwtService)
 		jwtToken, _, err := jwtHandler.GenerateTokens(admin.User.ID)
 		if err != nil {
@@ -278,10 +278,10 @@ func TestStudent(t *testing.T) {
 		w := httptest.NewRecorder()
 		payload := `{"approve": true}`
 		req, _ := http.NewRequest("POST", fmt.Sprintf("/students/%s/approval", student.Student.UserID), strings.NewReader(payload))
-		userRepo := gormrepo.NewGormUserRepository(db)
+		identityRepo := gormrepo.NewGormIdentityRepository(db)
 		refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
 		revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-		jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+		jwtService := services.NewJWTService(refreshRepo, revocationRepo, identityRepo)
 		jwtHandler := handlers.NewJWTHandlers(jwtService)
 		jwtToken, _, err := jwtHandler.GenerateTokens(student.User.ID)
 		if err != nil {

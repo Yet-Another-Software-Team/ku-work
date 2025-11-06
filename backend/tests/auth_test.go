@@ -167,10 +167,10 @@ func TestAuth(t *testing.T) {
 			_ = db.Unscoped().Delete(&userRes.User)
 		}()
 
-		userRepo := gormrepo.NewGormUserRepository(db)
+		identityRepo := gormrepo.NewGormIdentityRepository(db)
 		refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
 		revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-		jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+		jwtService := services.NewJWTService(refreshRepo, revocationRepo, identityRepo)
 		jwtHandler := handlers.NewJWTHandlers(jwtService)
 		jwtToken, refreshToken, err := jwtHandler.GenerateTokens(userRes.User.ID)
 		if err != nil {

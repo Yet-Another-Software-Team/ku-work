@@ -26,8 +26,8 @@ type AIService struct {
 	JobService                               *JobService
 }
 
-func (current *AIService) AutoApproveJob(job *model.Job) {
-	approvalStatus, reasons := current.AI.CheckJob(job)
+func (s *AIService) AutoApproveJob(job *model.Job) {
+	approvalStatus, reasons := s.AI.CheckJob(job)
 	if approvalStatus == model.JobApprovalPending {
 		return
 	}
@@ -35,16 +35,16 @@ func (current *AIService) AutoApproveJob(job *model.Job) {
 	reasonsString := "- " + strings.Join(reasons, "\n- ")
 
 	// Prefer the JobService path if available. JobService will handle persistence, audit and notification.
-	if current.JobService != nil {
-		if err := current.JobService.ApproveOrRejectJob(context.Background(), job.ID, approve, "ai", reasonsString); err == nil {
+	if s.JobService != nil {
+		if err := s.JobService.ApproveOrRejectJob(context.Background(), job.ID, approve, "ai", reasonsString); err == nil {
 			return
 		}
 		// If the service call fails, fall back to legacy behavior below.
 	}
 
 	// Legacy behavior (fallback): directly update DB, create audit and send email.
-	tx := current.DB.Begin()
-	if err := current.DB.Model(&model.Job{
+	tx := s.DB.Begin()
+	if err := s.DB.Model(&model.Job{
 		ID: job.ID,
 	}).Update("approval_status", approvalStatus).Error; err != nil {
 		tx.Rollback()
@@ -72,31 +72,31 @@ func (current *AIService) AutoApproveJob(job *model.Job) {
 	}
 	var context Context
 	context.Company.UserID = job.CompanyID
-	if err := current.DB.Select("email").Take(&context.Company).Error; err != nil {
+	if err := s.DB.Select("email").Take(&context.Company).Error; err != nil {
 		return
 	}
 	context.User.ID = job.CompanyID
-	if err := current.DB.Select("username").Take(&context.User).Error; err != nil {
+	if err := s.DB.Select("username").Take(&context.User).Error; err != nil {
 		return
 	}
 	context.Job = job
 	context.Status = string(job.ApprovalStatus)
 	context.Reason = reasonsString
 	var tpl bytes.Buffer
-	if err := current.jobApprovalStatusUpdateEmailTemplate.Execute(&tpl, context); err != nil {
+	if err := s.jobApprovalStatusUpdateEmailTemplate.Execute(&tpl, context); err != nil {
 		return
 	}
-	_ = current.emailService.SendTo(
+	_ = s.emailService.SendTo(
 		context.Company.Email,
 		fmt.Sprintf("[KU-WORK] Your \"%s\" job has been automatically reviewed", job.Name),
 		tpl.String(),
 	)
 }
 
-func (current *AIService) AutoApproveStudent(student *model.Student) {
+func (s *AIService) AutoApproveStudent(student *model.Student) {
 	// Use AI to check student status
 	// This might take a while
-	approvalStatus, reasons := current.AI.CheckStudent(student)
+	approvalStatus, reasons := s.AI.CheckStudent(student)
 
 	// Maybe error occur so it returns
 	if approvalStatus == model.StudentApprovalPending {
@@ -104,8 +104,8 @@ func (current *AIService) AutoApproveStudent(student *model.Student) {
 	}
 
 	// We refetch because since AI take time it might be stale now
-	tx := current.DB.Begin()
-	if err := current.DB.Model(&model.Student{
+	tx := s.DB.Begin()
+	if err := s.DB.Model(&model.Student{
 		UserID: student.UserID,
 	}).Update("approval_status", approvalStatus).Error; err != nil {
 		tx.Rollback()
@@ -133,14 +133,14 @@ func (current *AIService) AutoApproveStudent(student *model.Student) {
 	context.OAuth.UserID = student.UserID
 	context.Status = string(student.ApprovalStatus)
 	context.Reason = reasonsString
-	if err := current.DB.Select("email,first_name,last_name").Take(&context.OAuth).Error; err != nil {
+	if err := s.DB.Select("email,first_name,last_name").Take(&context.OAuth).Error; err != nil {
 		return
 	}
 	var tpl bytes.Buffer
-	if err := current.studentApprovalStatusUpdateEmailTemplate.Execute(&tpl, context); err != nil {
+	if err := s.studentApprovalStatusUpdateEmailTemplate.Execute(&tpl, context); err != nil {
 		return
 	}
-	_ = current.emailService.SendTo(
+	_ = s.emailService.SendTo(
 		context.OAuth.Email,
 		"[KU-WORK] Your student account has been automatically reviewed",
 		tpl.String(),

@@ -6,6 +6,7 @@ import (
 	"ku-work/backend/database"
 	"ku-work/backend/handlers"
 	"ku-work/backend/model"
+	filehandling "ku-work/backend/providers/file_handling"
 	gormrepo "ku-work/backend/repository/gorm"
 	"ku-work/backend/services"
 	"os"
@@ -25,6 +26,7 @@ import (
 var db *gorm.DB
 var redisClient *redis.Client
 var router *gin.Engine
+var fileService *services.FileService
 
 // A 1x1 pixel black PNG for testing file uploads.
 var pixel = []byte{
@@ -174,13 +176,10 @@ func TestMain(m *testing.M) {
 	// Ensure files directory exists for file provider used in tests
 	_ = os.MkdirAll("./files", 0o755)
 
-	// Construct FileService using NewFileService which reads configuration from environment.
-	// For tests we force the local provider so the test environment is deterministic.
-	_ = os.Setenv("FILE_PROVIDER", "local")
-	_ = os.Setenv("LOCAL_FILES_DIR", "./files")
-	// Ensure local files directory exists for provider
-	_ = os.MkdirAll("./files", 0o755)
-	fileService := services.NewFileService(db)
+	// Build a local file provider and repository for tests
+	fhProvider := filehandling.NewLocalProvider("./files")
+	fileRepo := gormrepo.NewGormFileRepository(db)
+	fileService = services.NewFileService(fileRepo, fhProvider)
 	// Register the global provider and model deletion hook through the service so model
 	// hooks that call CallStorageDeleteHook will operate correctly during tests.
 	fileService.RegisterGlobal()

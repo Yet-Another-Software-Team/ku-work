@@ -15,9 +15,9 @@ import (
 
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
+	"ku-work/backend/repository"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 // GCSProvider implements FileHandlingProvider using Google Cloud Storage.
@@ -53,7 +53,7 @@ func NewGCSProvider(ctx context.Context, bucketName string, credentialsJSONPath 
 }
 
 // SaveFile uploads a file to GCS and creates a corresponding database record.
-func (p *GCSProvider) SaveFile(ctx *gin.Context, db *gorm.DB, userId string, file *multipart.FileHeader, fileCategory model.FileCategory) (*model.File, error) {
+func (p *GCSProvider) SaveFile(ctx *gin.Context, repo repository.FileRepository, userId string, file *multipart.FileHeader, fileCategory model.FileCategory) (*model.File, error) {
 	// Open uploaded file
 	src, err := file.Open()
 	if err != nil {
@@ -80,7 +80,7 @@ func (p *GCSProvider) SaveFile(ctx *gin.Context, db *gorm.DB, userId string, fil
 		UserID:   userId,
 		Category: fileCategory,
 	}
-	if err := db.Create(fileRecord).Error; err != nil {
+	if err := repo.Save(fileRecord); err != nil {
 		return nil, fmt.Errorf("failed to create file record: %w", err)
 	}
 
@@ -105,11 +105,11 @@ func (p *GCSProvider) SaveFile(ctx *gin.Context, db *gorm.DB, userId string, fil
 
 	if _, err := io.Copy(w, bytes.NewReader(toWrite)); err != nil {
 		_ = w.Close()
-		_ = db.Delete(fileRecord).Error // Rollback DB record
+		_ = repo.Delete(fileRecord) // Rollback DB record
 		return nil, fmt.Errorf("failed to upload to gcs: %w", err)
 	}
 	if err := w.Close(); err != nil {
-		_ = db.Delete(fileRecord).Error // Rollback DB record
+		_ = repo.Delete(fileRecord) // Rollback DB record
 		return nil, fmt.Errorf("failed to finalize upload to gcs: %w", err)
 	}
 
@@ -117,7 +117,7 @@ func (p *GCSProvider) SaveFile(ctx *gin.Context, db *gorm.DB, userId string, fil
 }
 
 // ServeFile streams a file from GCS to the response.
-func (p *GCSProvider) ServeFile(ctx *gin.Context, db *gorm.DB) {
+func (p *GCSProvider) ServeFile(ctx *gin.Context, repo repository.FileRepository) {
 	fileID := ctx.Param("fileID")
 	if fileID == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "file id is required"})
@@ -161,7 +161,7 @@ func (p *GCSProvider) ServeFile(ctx *gin.Context, db *gorm.DB) {
 }
 
 // DeleteFile deletes a file from GCS. It is idempotent, so it will not return an error if the file does not exist.
-func (p *GCSProvider) DeleteFile(ctx context.Context, fileID string) error {
+func (p *GCSProvider) DeleteFile(ctx context.Context, repo repository.FileRepository, fileID string) error {
 	if fileID == "" {
 		return fmt.Errorf("file id is required")
 	}
@@ -170,11 +170,16 @@ func (p *GCSProvider) DeleteFile(ctx context.Context, fileID string) error {
 	defer cancel()
 
 	obj := p.client.Bucket(p.BucketName).Object(fileID)
-	if err := obj.Delete(delCtx); err != nil {
-		if err == storage.ErrObjectNotExist {
-			return nil // Treat 'not found' as success for idempotency
-		}
+	if err := obj.Delete(delCtx); err != nil && err != storage.ErrObjectNotExist {
 		return fmt.Errorf("failed to delete object from gcs: %w", err)
 	}
+
+	// Delete DB record (idempotent behavior expected from repository)
+	if repo != nil {
+		if err := repo.Delete(&model.File{ID: fileID}); err != nil {
+			return fmt.Errorf("failed to delete file record: %w", err)
+		}
+	}
+
 	return nil
 }

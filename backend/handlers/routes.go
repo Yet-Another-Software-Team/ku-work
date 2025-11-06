@@ -20,17 +20,17 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	// Wire services (DI) and initialize handlers
 
 	// JWT service and handlers
-	userRepo := gormrepo.NewGormUserRepository(db)
+	identityRepo := gormrepo.NewGormIdentityRepository(db)
 	refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
 	revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-	jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+	jwtService := services.NewJWTService(refreshRepo, revocationRepo, identityRepo)
 	jwtHandlers := NewJWTHandlers(jwtService)
 
 	// File handlers
 	fileHandlers := NewFileHandlers(db, fileService)
 
 	// Local auth service and handlers
-	authService := services.NewAuthService(jwtHandlers, userRepo, *fileService)
+	authService := services.NewAuthService(jwtHandlers, identityRepo, *fileService)
 	localAuthHandlers := NewLocalAuthHandlers(authService)
 
 	// Google OAuth handlers
@@ -92,7 +92,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 			return err
 		}
 	}
-	appService := services.NewApplicationService(appRepo, jobRepo, gormrepo.NewGormStudentRepository(db), userRepo, fileService, emailService, statusTpl, newApplicantTpl)
+	appService := services.NewApplicationService(appRepo, jobRepo, gormrepo.NewGormStudentRepository(db), identityRepo, fileService, emailService, statusTpl, newApplicantTpl)
 	applicationHandlers, err := NewApplicationHandlers(db, fileHandlers, appService)
 	if err != nil {
 		return err
@@ -105,13 +105,13 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 		return err
 	}
 	studentService := services.NewStudentService(studentRepo, accountRepo, fileService, emailService, studentApprovalStatusUpdateEmailTemplate, aiService)
-	accountService := services.NewAccountService(db)
-	studentHandlers := NewStudentHandler(studentService, accountService)
+
+	identityService := services.NewIdentityService(identityRepo, fileService)
+	studentHandlers := NewStudentHandler(studentService, identityService)
 	companyRepo := gormrepo.NewGormCompanyRepository(db)
 	companyService := services.NewCompanyService(companyRepo)
 	companyHandlers := NewCompanyHandlers(companyService)
-	accountService = services.NewAccountService(db)
-	userHandlers := NewUserHandlers(accountService)
+	userHandlers := NewUserHandlers(identityService)
 	// Admin handlers with injected service
 	auditRepo := gormrepo.NewGormAuditRepository(db)
 	adminSvc := services.NewAdminService(auditRepo)

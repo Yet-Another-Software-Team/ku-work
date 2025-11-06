@@ -47,10 +47,10 @@ func TestAdminEndpoints(t *testing.T) {
 	defer func() { _ = db.Unscoped().Delete(&companyRes.User) }()
 
 	// Prepare JWT tokens
-	userRepo := gormrepo.NewGormUserRepository(db)
+	identityRepo := gormrepo.NewGormIdentityRepository(db)
 	refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
 	revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-	jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+	jwtService := services.NewJWTService(refreshRepo, revocationRepo, identityRepo)
 	jwtHandler := handlers.NewJWTHandlers(jwtService)
 	adminToken, _, err := jwtHandler.GenerateTokens(adminRes.User.ID)
 	if err != nil {

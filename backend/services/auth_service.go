@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
@@ -23,15 +24,15 @@ type TokenProvider interface {
 // AuthService holds auth-related business logic.
 type AuthService struct {
 	tokenProvider TokenProvider
-	userRepo      repo.UserRepository
+	identityRepo  repo.IdentityRepository
 	fileService   FileService
 }
 
 // NewAuthService constructs an AuthService with injected dependencies.
 // The saveFile parameter allows services to call into file-saving logic without
 // depending on the handlers package.
-func NewAuthService(provider TokenProvider, userRepo repo.UserRepository, fileService FileService) *AuthService {
-	return &AuthService{tokenProvider: provider, userRepo: userRepo, fileService: fileService}
+func NewAuthService(provider TokenProvider, identityRepo repo.IdentityRepository, fileService FileService) *AuthService {
+	return &AuthService{tokenProvider: provider, identityRepo: identityRepo, fileService: fileService}
 }
 
 // RegisterCompany performs
@@ -54,7 +55,7 @@ func (s *AuthService) RegisterCompany(ctx *gin.Context, input RegisterCompanyInp
 	var zeroCompany model.Company
 
 	// check existence via repository (non-transactional check)
-	exists, err := s.userRepo.ExistsByUsernameAndType(input.Username, "company")
+	exists, err := s.identityRepo.ExistsByUsernameAndType(input.Username, "company")
 	if err != nil {
 		return zeroUser, zeroCompany, "", "", err
 	}
@@ -67,7 +68,6 @@ func (s *AuthService) RegisterCompany(ctx *gin.Context, input RegisterCompanyInp
 		return zeroUser, zeroCompany, "", "", err
 	}
 
-
 	newUser := model.User{
 		Username:     input.Username,
 		UserType:     "company",
@@ -75,7 +75,7 @@ func (s *AuthService) RegisterCompany(ctx *gin.Context, input RegisterCompanyInp
 	}
 
 	// Use a repository instance bound to the transaction for all repo calls within the tx.
-	repoTx, err := s.userRepo.BeginTx()
+	repoTx, err := s.identityRepo.BeginTx()
 
 	if err := repoTx.CreateUser(&newUser); err != nil {
 		return zeroUser, zeroCompany, "", "", err
@@ -130,7 +130,7 @@ func (s *AuthService) RegisterCompany(ctx *gin.Context, input RegisterCompanyInp
 // CompanyLogin validates credentials for a company and returns tokens on success.
 func (s *AuthService) CompanyLogin(username, password string) (model.User, string, string, error) {
 	var user model.User
-	userPtr, err := s.userRepo.FindUserByUsernameAndType(username, "company")
+	userPtr, err := s.identityRepo.FindUserByUsernameAndType(username, "company")
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return model.User{}, "", "", ErrInvalidCredentials
@@ -144,7 +144,7 @@ func (s *AuthService) CompanyLogin(username, password string) (model.User, strin
 		return model.User{}, "", "", ErrInvalidCredentials
 	}
 
-	companyCount, err := s.userRepo.CountCompanyByUserID(user.ID)
+	companyCount, err := s.identityRepo.CountCompanyByUserID(user.ID)
 	if err != nil {
 		return model.User{}, "", "", err
 	}
@@ -163,7 +163,7 @@ func (s *AuthService) CompanyLogin(username, password string) (model.User, strin
 // AdminLogin validates admin credentials and returns tokens on success.
 func (s *AuthService) AdminLogin(username, password string) (model.User, string, string, error) {
 	var user model.User
-	userPtr, err := s.userRepo.FindUserByUsernameAndType(username, "admin")
+	userPtr, err := s.identityRepo.FindUserByUsernameAndType(username, "admin")
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return model.User{}, "", "", ErrInvalidCredentials
@@ -177,7 +177,7 @@ func (s *AuthService) AdminLogin(username, password string) (model.User, string,
 		return model.User{}, "", "", ErrInvalidCredentials
 	}
 
-	adminCount, err := s.userRepo.CountAdminByUserID(user.ID)
+	adminCount, err := s.identityRepo.CountAdminByUserID(user.ID)
 	if err != nil {
 		return model.User{}, "", "", err
 	}
@@ -212,12 +212,12 @@ func (s *AuthService) HandleGoogleOAuth(userInfo struct {
 
 	// Try to fetch existing OAuth details via repository
 	var oauthDetail model.GoogleOAuthDetails
-	det, err := s.userRepo.GetGoogleOAuthDetailsByExternalID(userInfo.ID)
+	det, err := s.identityRepo.GetGoogleOAuthDetailsByExternalID(userInfo.ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// create user if not exists and attach oauth details
 			var newUser model.User
-			if err = s.userRepo.FirstOrCreateUser(&newUser, model.User{
+			if err = s.identityRepo.FirstOrCreateUser(&newUser, model.User{
 				Username: userInfo.Email,
 				UserType: "oauth",
 			}); err != nil {
@@ -231,7 +231,7 @@ func (s *AuthService) HandleGoogleOAuth(userInfo struct {
 				LastName:   userInfo.FamilyName,
 				Email:      userInfo.Email,
 			}
-			if err = s.userRepo.CreateGoogleOAuthDetails(&oauthDetail); err != nil {
+			if err = s.identityRepo.CreateGoogleOAuthDetails(&oauthDetail); err != nil {
 				return
 			}
 			statusCode = 201
@@ -244,7 +244,7 @@ func (s *AuthService) HandleGoogleOAuth(userInfo struct {
 
 	// update details
 	if oauthDetail.UserID != "" {
-		_ = s.userRepo.UpdateGoogleOAuthDetails(&model.GoogleOAuthDetails{
+		_ = s.identityRepo.UpdateGoogleOAuthDetails(&model.GoogleOAuthDetails{
 			UserID:    oauthDetail.UserID,
 			FirstName: userInfo.GivenName,
 			LastName:  userInfo.FamilyName,
@@ -252,14 +252,14 @@ func (s *AuthService) HandleGoogleOAuth(userInfo struct {
 		})
 	}
 
-	det2, err := s.userRepo.GetGoogleOAuthDetailsByExternalID(userInfo.ID)
+	det2, err := s.identityRepo.GetGoogleOAuthDetailsByExternalID(userInfo.ID)
 	if err != nil {
 		return
 	}
 	oauthDetail = *det2
 
 	var user model.User
-	userPtr2, err := s.userRepo.FindUserByID(oauthDetail.UserID)
+	userPtr2, err := s.identityRepo.FindUserByID(context.Background(), oauthDetail.UserID, false)
 	if err != nil {
 		return
 	}
@@ -276,7 +276,7 @@ func (s *AuthService) HandleGoogleOAuth(userInfo struct {
 	if statusCode == 200 {
 		var r string
 		var reg bool
-		reg, r, err = s.userRepo.IsStudentRegisteredAndRole(user)
+		reg, r, err = s.identityRepo.IsStudentRegisteredAndRole(user)
 		if err != nil {
 			return
 		}

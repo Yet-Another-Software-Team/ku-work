@@ -44,10 +44,10 @@ func TestJWTBlacklistOnLogout(t *testing.T) {
 	db.Unscoped().Where("1 = 1").Delete(&model.RefreshToken{})
 
 	// Create JWT handlers
-	userRepo := gormrepo.NewGormUserRepository(db)
+	identityRepo := gormrepo.NewGormIdentityRepository(db)
 	refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
 	revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-	jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+	jwtService := services.NewJWTService(refreshRepo, revocationRepo, identityRepo)
 	jwtHandlers := handlers.NewJWTHandlers(jwtService)
 
 	// Setup router
@@ -106,10 +106,10 @@ func TestJWTBlacklistMultipleSessions(t *testing.T) {
 	// Clean up
 	db.Unscoped().Where("1 = 1").Delete(&model.RefreshToken{})
 
-	userRepo := gormrepo.NewGormUserRepository(db)
+	identityRepo := gormrepo.NewGormIdentityRepository(db)
 	refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
 	revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-	jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+	jwtService := services.NewJWTService(refreshRepo, revocationRepo, identityRepo)
 	jwtHandlers := handlers.NewJWTHandlers(jwtService)
 	router := setupTestRouter(redisClient, jwtHandlers)
 
@@ -189,10 +189,10 @@ func TestJWTWithoutJTI(t *testing.T) {
 func TestMultipleLogoutAttempts(t *testing.T) {
 	db.Unscoped().Where("1 = 1").Delete(&model.RefreshToken{})
 
-	userRepo := gormrepo.NewGormUserRepository(db)
+	identityRepo := gormrepo.NewGormIdentityRepository(db)
 	refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
 	revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-	jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+	jwtService := services.NewJWTService(refreshRepo, revocationRepo, identityRepo)
 	jwtHandlers := handlers.NewJWTHandlers(jwtService)
 	router := setupTestRouter(redisClient, jwtHandlers)
 

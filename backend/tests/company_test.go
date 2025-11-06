@@ -231,10 +231,10 @@ func TestCompany(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		userRepo := gormrepo.NewGormUserRepository(db)
+		identityRepo := gormrepo.NewGormIdentityRepository(db)
 		refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
 		revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-		jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+		jwtService := services.NewJWTService(refreshRepo, revocationRepo, identityRepo)
 		jwtHandler := handlers.NewJWTHandlers(jwtService)
 		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
 		if err != nil {
@@ -284,10 +284,10 @@ func TestCompany(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		userRepo := gormrepo.NewGormUserRepository(db)
+		identityRepo := gormrepo.NewGormIdentityRepository(db)
 		refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
 		revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-		jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+		jwtService := services.NewJWTService(refreshRepo, revocationRepo, identityRepo)
 		jwtHandler := handlers.NewJWTHandlers(jwtService)
 		jwtToken, _, err := jwtHandler.GenerateTokens(company.UserID)
 		if err != nil {

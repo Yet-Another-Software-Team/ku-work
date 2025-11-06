@@ -28,12 +28,12 @@ type JWTService struct {
 	refreshTokenRepo repo.RefreshTokenRepository
 	revocationRepo   repo.JWTRevocationRepository
 	JWTSecret        []byte
-	userRepo         repo.UserRepository
+	identityRepo     repo.IdentityRepository
 }
 
 // NewJWTService constructs a new JWTService wired with Redis/GORM dependencies.
 // It reads JWT_SECRET from the environment (and requires it to be at least 32 bytes).
-func NewJWTService(refreshRepo repo.RefreshTokenRepository, revocationRepo repo.JWTRevocationRepository, userRepo repo.UserRepository) *JWTService {
+func NewJWTService(refreshRepo repo.RefreshTokenRepository, revocationRepo repo.JWTRevocationRepository, identityRepo repo.IdentityRepository) *JWTService {
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 
 	if len(jwtSecret) == 0 {
@@ -54,7 +54,7 @@ func NewJWTService(refreshRepo repo.RefreshTokenRepository, revocationRepo repo.
 		refreshTokenRepo: refreshRepo,
 		revocationRepo:   revocationRepo,
 		JWTSecret:        jwtSecret,
-		userRepo:         userRepo,
+		identityRepo:     identityRepo,
 	}
 }
 
@@ -291,9 +291,9 @@ func (s *JWTService) RefreshTokenHandler(ctx *gin.Context) {
 
 	// Resolve role using UserRepository (prefer explicit counts to avoid leaking DB access into helper).
 	var role helper.Role = helper.Unknown
-	if cnt, err := s.userRepo.CountAdminByUserID(rt.UserID); err == nil && cnt > 0 {
+	if cnt, err := s.identityRepo.CountAdminByUserID(rt.UserID); err == nil && cnt > 0 {
 		role = helper.Admin
-	} else if cnt, err := s.userRepo.CountCompanyByUserID(rt.UserID); err == nil && cnt > 0 {
+	} else if cnt, err := s.identityRepo.CountCompanyByUserID(rt.UserID); err == nil && cnt > 0 {
 		role = helper.Company
 	} else {
 		// Fallback: unknown (other role checks like Student/Viewer may be implemented in repo later)
@@ -303,7 +303,7 @@ func (s *JWTService) RefreshTokenHandler(ctx *gin.Context) {
 	// Resolve username via UserRepository when role is admin/company; otherwise fallback to unknown.
 	username := "unknown"
 	if role == helper.Company || role == helper.Admin {
-		if u, err := s.userRepo.FindUserByID(rt.UserID); err == nil && u != nil {
+		if u, err := s.identityRepo.FindUserByID(context.Background(), rt.UserID, true); err == nil && u != nil {
 			username = u.Username
 		}
 	}

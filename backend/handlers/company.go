@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 
 	"ku-work/backend/services"
@@ -48,19 +47,6 @@ func (h *CompanyHandlers) GetCompanyProfileHandler(ctx *gin.Context) {
 // @Failure 500 {object} object{error=string} "Internal Server Error"
 // @Router /company [get]
 func (h *CompanyHandlers) GetCompanyListHandler(ctx *gin.Context) {
-	userId := ctx.MustGet("userID").(string)
-	// Use context-aware admin check from service (delegates to repository)
-	isAdmin, err := h.Service.IsAdminCtx(ctx.Request.Context(), userId)
-	if err != nil {
-		log.Printf("ERROR: failed to check admin permission for user %s: %v", userId, err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-		return
-	}
-	if !isAdmin {
-		ctx.JSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
-		return
-	}
-
 	companies, err := h.Service.ListCompanies(ctx.Request.Context())
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

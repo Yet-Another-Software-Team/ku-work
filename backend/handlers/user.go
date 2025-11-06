@@ -16,10 +16,10 @@ import (
 // UserHandlers struct for handling user-related operations
 type UserHandlers struct {
 	gracePeriod int
-	UserService *services.AccountService
+	UserService *services.IdentityService
 }
 
-func NewUserHandlers(svc *services.AccountService) *UserHandlers {
+func NewUserHandlers(svc *services.IdentityService) *UserHandlers {
 	return &UserHandlers{
 		gracePeriod: helper.GetGracePeriodDays(),
 		UserService: svc,
@@ -55,7 +55,7 @@ func (h *UserHandlers) EditProfileHandler(ctx *gin.Context) {
 	// take user ID from context (auth middleware)
 	userId := ctx.MustGet("userID").(string)
 	// Find out user role via injected service
-	role := h.UserService.GetRole(ctx.Request.Context(), userId)
+	role := h.UserService.ResolveRole(ctx.Request.Context(), userId)
 	if role == helper.Unknown {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "Invalid User"})
 		return
@@ -182,8 +182,8 @@ func (h *UserHandlers) editStudentProfile(ctx *gin.Context, userId string) {
 // @Router /me [get]
 func (h *UserHandlers) GetProfileHandler(ctx *gin.Context) {
 	userId := ctx.MustGet("userID").(string)
-	role := h.UserService.GetRole(ctx.Request.Context(), userId)
-	username := h.UserService.GetUsername(ctx.Request.Context(), userId, role)
+	role := h.UserService.ResolveRole(ctx.Request.Context(), userId)
+	username := h.UserService.GetUsername(ctx.Request.Context(), userId)
 	ctx.JSON(http.StatusOK, gin.H{
 		"username": username,
 		"role":     role,
@@ -205,14 +205,14 @@ func (h *UserHandlers) GetProfileHandler(ctx *gin.Context) {
 func (h *UserHandlers) DeactivateAccount(ctx *gin.Context) {
 	userID := ctx.MustGet("userID").(string)
 
-	// Use injected AccountService (DI)
+	// Use injected IdentityService (DI)
 	if h.UserService == nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "account service not configured"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "identity service not configured"})
 		return
 	}
-	accountService := h.UserService
+	identityService := h.UserService
 
-	deletionDate, err := accountService.DeactivateAccount(ctx.Request.Context(), userID, h.gracePeriod)
+	deletionDate, err := identityService.DeactivateAccount(ctx.Request.Context(), userID, h.gracePeriod)
 	if err != nil {
 		switch err {
 		case services.ErrUserNotFound:
@@ -249,14 +249,14 @@ func (h *UserHandlers) DeactivateAccount(ctx *gin.Context) {
 func (h *UserHandlers) ReactivateAccount(ctx *gin.Context) {
 	userID := ctx.MustGet("userID").(string)
 
-	// Use injected AccountService (DI)
+	// Use injected IdentityService (DI)
 	if h.UserService == nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "account service not configured"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "identity service not configured"})
 		return
 	}
-	accountService := h.UserService
+	identityService := h.UserService
 
-	err := accountService.ReactivateAccount(ctx.Request.Context(), userID, h.gracePeriod)
+	err := identityService.ReactivateAccount(ctx.Request.Context(), userID, h.gracePeriod)
 	if err != nil {
 		switch e := err.(type) {
 		case *services.GracePeriodExpiredError:

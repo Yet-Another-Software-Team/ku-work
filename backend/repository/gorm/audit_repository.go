@@ -7,21 +7,17 @@ import (
 	"gorm.io/gorm"
 )
 
-// GormAuditRepository is a GORM-based implementation of AuditRepository.
 type GormAuditRepository struct {
 	db *gorm.DB
 }
 
-// NewGormAuditRepository constructs a new GormAuditRepository.
 func NewGormAuditRepository(db *gorm.DB) repository.AuditRepository {
 	return &GormAuditRepository{db: db}
 }
 
-// Fetch retrieves audit records from the database ordered by newest first.
 func (r *GormAuditRepository) FetchAuditLog(offset, limit uint) ([]model.Audit, error) {
 	var audits []model.Audit
 
-	// Provide a sensible default if caller passes 0 for limit.
 	if limit == 0 {
 		limit = 32
 	}
@@ -39,7 +35,6 @@ func (r *GormAuditRepository) FetchAuditLog(offset, limit uint) ([]model.Audit, 
 func (r *GormAuditRepository) FetchMailLog(offset uint, limit uint) ([]model.MailLog, error) {
 	var mailLogs []model.MailLog
 
-	// Provide a sensible default if caller passes 0 for limit.
 	if limit == 0 {
 		limit = 32
 	}

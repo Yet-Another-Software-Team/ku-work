@@ -8,27 +8,25 @@ import (
 	"gorm.io/gorm"
 )
 
-// GormUserRepository is a GORM-backed implementation of repository.UserRepository.
 type GormUserRepository struct {
 	db *gorm.DB
 }
 
-// NewGormUserRepository creates a new GormUserRepository.
 func NewGormUserRepository(db *gorm.DB) *GormUserRepository {
 	return &GormUserRepository{db: db}
 }
 
-// Create new GorU
+// BeginTx starts a new transaction
 func (r *GormUserRepository) BeginTx() (repo.UserRepository, error) {
 	return NewGormUserRepository(r.db.Begin()), nil
 }
 
-// Commit current Transaction
+// CommitTx commits the current transaction
 func (r *GormUserRepository) CommitTx() error {
 	return r.db.Commit().Error
 }
 
-// Rollback current Transaction
+// RollbackTx rolls back the current transaction
 func (r *GormUserRepository) RollbackTx() error {
 	return r.db.Rollback().Error
 }

@@ -6,6 +6,7 @@ import (
 	"io"
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
+	"ku-work/backend/repository"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -13,7 +14,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 // LocalProvider stores files on the local filesystem.
@@ -31,7 +31,7 @@ func NewLocalProvider(baseDir string) *LocalProvider {
 }
 
 // SaveFile saves a file to the local filesystem.
-func (p *LocalProvider) SaveFile(ctx *gin.Context, db *gorm.DB, userId string, file *multipart.FileHeader, fileCategory model.FileCategory) (*model.File, error) {
+func (p *LocalProvider) SaveFile(ctx *gin.Context, repo repository.FileRepository, userId string, file *multipart.FileHeader, fileCategory model.FileCategory) (*model.File, error) {
 	// Open uploaded file
 	src, err := file.Open()
 	if err != nil {
@@ -58,13 +58,13 @@ func (p *LocalProvider) SaveFile(ctx *gin.Context, db *gorm.DB, userId string, f
 		UserID:   userId,
 		Category: fileCategory,
 	}
-	if err := db.Create(fileRecord).Error; err != nil {
+	if err := repo.Save(fileRecord); err != nil {
 		return nil, fmt.Errorf("failed to create file record: %w", err)
 	}
 
 	// Ensure base directory exists
 	if err := os.MkdirAll(p.BaseDir, 0o755); err != nil {
-		_ = db.Delete(fileRecord).Error // Rollback DB record
+		_ = repo.Delete(fileRecord) // Rollback DB record
 		return nil, fmt.Errorf("failed to create storage directory: %w", err)
 	}
 
@@ -78,7 +78,7 @@ func (p *LocalProvider) SaveFile(ctx *gin.Context, db *gorm.DB, userId string, f
 
 	targetPath := filepath.Join(p.BaseDir, fileRecord.ID)
 	if err := os.WriteFile(targetPath, toWrite, 0o644); err != nil {
-		_ = db.Delete(fileRecord) // Rollback DB record
+		_ = repo.Delete(fileRecord) // Rollback DB record
 		return nil, fmt.Errorf("failed to write file to disk: %w", err)
 	}
 
@@ -86,7 +86,7 @@ func (p *LocalProvider) SaveFile(ctx *gin.Context, db *gorm.DB, userId string, f
 }
 
 // ServeFile serves a file from the local filesystem.
-func (p *LocalProvider) ServeFile(ctx *gin.Context, db *gorm.DB) {
+func (p *LocalProvider) ServeFile(ctx *gin.Context, repo repository.FileRepository) {
 	fileID := ctx.Param("fileID")
 	// Basic sanitization to avoid path traversal
 	if strings.Contains(fileID, "/") || strings.Contains(fileID, `\`) || strings.Contains(fileID, "..") {
@@ -116,7 +116,7 @@ func (p *LocalProvider) ServeFile(ctx *gin.Context, db *gorm.DB) {
 }
 
 // DeleteFile removes a file from the local filesystem. It is idempotent.
-func (p *LocalProvider) DeleteFile(ctx context.Context, fileID string) error {
+func (p *LocalProvider) DeleteFile(ctx context.Context, repo repository.FileRepository, fileID string) error {
 	// Basic validation to avoid path traversal
 	if strings.Contains(fileID, "/") || strings.Contains(fileID, `\`) || strings.Contains(fileID, "..") {
 		return fmt.Errorf("invalid file identifier")
@@ -125,6 +125,10 @@ func (p *LocalProvider) DeleteFile(ctx context.Context, fileID string) error {
 	path := filepath.Join(p.BaseDir, fileID)
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove local file: %w", err)
+	}
+
+	if err := repo.Delete(&model.File{ID: fileID}); err != nil {
+		return fmt.Errorf("failed to delete file record: %w", err)
 	}
 	return nil
 }

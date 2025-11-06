@@ -39,10 +39,10 @@ func TestUserMeEndpoints(t *testing.T) {
 		}()
 
 		// Generate JWT for the user
-		userRepo := gormrepo.NewGormUserRepository(db)
+		identityRepo := gormrepo.NewGormIdentityRepository(db)
 		refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
 		revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-		jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+		jwtService := services.NewJWTService(refreshRepo, revocationRepo, identityRepo)
 		jwtHandler := handlers.NewJWTHandlers(jwtService)
 		token, _, err := jwtHandler.GenerateTokens(created.User.ID)
 		if err != nil {
@@ -82,10 +82,10 @@ func TestUserMeEndpoints(t *testing.T) {
 		}()
 
 		// Generate JWT token for this user
-		userRepo := gormrepo.NewGormUserRepository(db)
+		identityRepo := gormrepo.NewGormIdentityRepository(db)
 		refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
 		revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-		jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+		jwtService := services.NewJWTService(refreshRepo, revocationRepo, identityRepo)
 		jwtHandler := handlers.NewJWTHandlers(jwtService)
 		token, _, err := jwtHandler.GenerateTokens(created.User.ID)
 		if err != nil {
@@ -167,10 +167,10 @@ func TestUserMeEndpoints(t *testing.T) {
 			}
 		}()
 
-		userRepo := gormrepo.NewGormUserRepository(db)
+		identityRepo := gormrepo.NewGormIdentityRepository(db)
 		refreshRepo := gormrepo.NewGormRefreshTokenRepository(db)
 		revocationRepo := redisrepo.NewRedisRevocationRepository(redisClient)
-		jwtService := services.NewJWTService(refreshRepo, revocationRepo, userRepo)
+		jwtService := services.NewJWTService(refreshRepo, revocationRepo, identityRepo)
 		jwtHandler := handlers.NewJWTHandlers(jwtService)
 		token, _, err := jwtHandler.GenerateTokens(created.User.ID)
 		if err != nil {
