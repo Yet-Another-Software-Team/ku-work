@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"ku-work/backend/model"
-	repo "ku-work/backend/repository"
 	filehandling "ku-work/backend/providers/file_handling"
+	repo "ku-work/backend/repository"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/datatypes"
@@ -24,7 +24,7 @@ var ErrAlreadyRegistered = errors.New("user already registered as a student")
 // (AI, Email, File) as collaborators.
 type StudentService struct {
 	repo             repo.StudentRepository
-	accountRepo      repo.AccountRepository
+	identityRepo     repo.IdentityRepository
 	fileService      *FileService
 	emailService     *EmailService
 	approvalEmailTpl *template.Template
@@ -46,15 +46,9 @@ type StudentRegistrationInput struct {
 }
 
 // NewStudentService constructs a StudentService.
-// - repo: repository for student-specific persistence.
-// - accountRepo: repository for cross-cutting account lookups (e.g., deactivation status, oauth details).
-// - fileService: used to persist uploaded files (photo, status document).
-// - emailService: optional, used to send approval notifications.
-// - approvalTpl: optional, HTML template for approval notification emails.
-// - aiService: optional, used for automatic approvals after registration.
 func NewStudentService(
 	repo repo.StudentRepository,
-	accountRepo repo.AccountRepository,
+	identityRepo repo.IdentityRepository,
 	fileService *FileService,
 	emailService *EmailService,
 	approvalTpl *template.Template,
@@ -62,7 +56,7 @@ func NewStudentService(
 ) *StudentService {
 	return &StudentService{
 		repo:             repo,
-		accountRepo:      accountRepo,
+		identityRepo:     identityRepo,
 		fileService:      fileService,
 		emailService:     emailService,
 		approvalEmailTpl: approvalTpl,
@@ -70,11 +64,7 @@ func NewStudentService(
 	}
 }
 
-// RegisterStudent handles the student registration flow:
-// - Validates there isn't an existing student record for the user.
-// - Saves uploaded files (photo and student status document).
-// - Creates the Student model with ApprovalStatus=pending.
-// - Optionally triggers AI auto-approval in background.
+// RegisterStudent handles the student registration flow.
 func (s *StudentService) RegisterStudent(ctx *gin.Context, userID string, input StudentRegistrationInput) error {
 	// Ensure service is configured
 	if s == nil || s.repo == nil {
@@ -175,16 +165,12 @@ func (s *StudentService) RegisterStudent(ctx *gin.Context, userID string, input 
 // GetStudentProfile returns a single student's profile (student + oauth fields).
 // If the target account is deactivated, personal data is anonymized.
 func (s *StudentService) GetStudentProfile(ctx context.Context, userID string) (*repo.StudentProfile, error) {
-	if s == nil || s.repo == nil || s.accountRepo == nil {
-		return nil, errors.New("student service not initialized")
-	}
-
 	profile, err := s.repo.FindStudentProfileByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	deactivated, err := s.accountRepo.IsUserDeactivated(ctx, userID)
+	deactivated, err := s.identityRepo.IsUserDeactivated(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -198,10 +184,6 @@ func (s *StudentService) GetStudentProfile(ctx context.Context, userID string) (
 // ListStudentProfiles returns a list of student profiles according to the given filter
 // and anonymizes profiles belonging to deactivated accounts.
 func (s *StudentService) ListStudentProfiles(ctx context.Context, filter repo.StudentListFilter) ([]repo.StudentProfile, error) {
-	if s == nil || s.repo == nil || s.accountRepo == nil {
-		return nil, errors.New("student service not initialized")
-	}
-
 	items, err := s.repo.ListStudentProfiles(ctx, filter)
 	if err != nil {
 		return nil, err
@@ -213,7 +195,7 @@ func (s *StudentService) ListStudentProfiles(ctx context.Context, filter repo.St
 		if uid == "" {
 			continue
 		}
-		deactivated, derr := s.accountRepo.IsUserDeactivated(ctx, uid)
+		deactivated, derr := s.identityRepo.IsUserDeactivated(ctx, uid)
 		if derr != nil {
 			// Best-effort: skip anonymization on error
 			continue
@@ -239,7 +221,7 @@ func (s *StudentService) ApproveOrRejectStudent(ctx context.Context, targetUserI
 	}
 
 	// Optionally send email
-	if s.emailService == nil || s.approvalEmailTpl == nil || s.accountRepo == nil {
+	if s.emailService == nil || s.approvalEmailTpl == nil || s.identityRepo == nil {
 		return nil
 	}
 
@@ -250,7 +232,7 @@ func (s *StudentService) ApproveOrRejectStudent(ctx context.Context, targetUserI
 		Reason string
 	}
 
-	oauth, err := s.accountRepo.FindGoogleOAuthByUserID(ctx, targetUserID, false)
+	oauth, err := s.identityRepo.FindGoogleOAuthByUserID(ctx, targetUserID, false)
 	if err != nil || oauth == nil {
 		// Best-effort: skip emailing if we can't resolve address
 		return nil

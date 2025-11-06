@@ -99,12 +99,11 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	}
 	// Student service and handlers
 	studentRepo := gormrepo.NewGormStudentRepository(db)
-	accountRepo := gormrepo.NewGormAccountRepository(db)
 	studentApprovalStatusUpdateEmailTemplate, err := template.New("student_approval_status_update.tmpl").ParseFiles("email_templates/student_approval_status_update.tmpl")
 	if err != nil {
 		return err
 	}
-	studentService := services.NewStudentService(studentRepo, accountRepo, fileService, emailService, studentApprovalStatusUpdateEmailTemplate, aiService)
+	studentService := services.NewStudentService(studentRepo, identityRepo, fileService, emailService, studentApprovalStatusUpdateEmailTemplate, aiService)
 
 	identityService := services.NewIdentityService(identityRepo, fileService)
 	studentHandlers := NewStudentHandler(studentService, identityService)

@@ -464,10 +464,6 @@ type StudentEditProfileInput struct {
 // UpdateCompanyProfile applies partial updates to a company profile and handles optional file uploads.
 // This encapsulates business rules like username uniqueness and email/URL validation.
 func (s *IdentityService) UpdateCompanyProfile(ctx *gin.Context, userID string, input CompanyEditProfileInput) error {
-	if s == nil || s.Repo == nil {
-		return errors.New("service not initialized")
-	}
-
 	// Handle username change with repository-backed uniqueness check and update.
 	if input.Username != nil {
 		exists, err := s.Repo.ExistsUsername(ctx.Request.Context(), *input.Username)
