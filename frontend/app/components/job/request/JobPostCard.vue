@@ -1,37 +1,42 @@
 <template>
-    <div :id="'Component-' + requestId" class="flex justify-center items-center w-[20em] h-full">
+    <div :id="'Job-' + requestId" class="flex justify-center items-center w-[28em] h-full">
         <!-- card container is clickable -->
         <div
-            class="flex w-full h-[7em] m-2 shadow-md bg-[#fdfdfd] dark:bg-[#1f2937] rounded-md cursor-pointer"
-            @click="() => navigateToProfile(requestId)"
+            class="flex items-stretch w-full h-[7em] m-2 shadow-md bg-[#fdfdfd] dark:bg-[#1f2937] rounded-md cursor-pointer"
+            @click="() => navigateToJob(requestId)"
         >
-            <!-- profile pic -->
-            <div
-                v-if="data.photoId"
-                class="flex items-center justify-center w-20 h-full flex-shrink-0"
-            >
+            <!-- logo / image -->
+            <div class="flex items-center justify-center w-20 h-full flex-shrink-0">
                 <img
-                    :src="photo"
-                    alt="Profile photo"
-                    class="w-16 h-16 object-cover rounded-full justify-center items-center m-2"
+                    v-if="logoSrc"
+                    :src="logoSrc"
+                    alt="Company Logo"
+                    class="w-16 h-16 object-cover rounded-md justify-center items-center m-2"
+                />
+                <img
+                    v-else
+                    src="/images/company.png"
+                    alt="Company Logo"
+                    class="w-16 h-16 object-cover rounded-md m-2"
                 />
             </div>
-            <div v-else class="flex items-center justify-center w-20 h-full flex-shrink-0">
-                <Icon name="ic:baseline-account-circle" class="size-full" />
+
+            <!-- job data -->
+            <div class="flex flex-col justify-center flex-1 p-2 min-w-0">
+                <!-- title / position -->
+                <p class="overflow-hidden truncate font-semibold max-w-[14em]">
+                    {{ job.name }}
+                </p>
+                <p class="text-xs text-gray-600 dark:text-gray-300 truncate">
+                    {{ job.companyName }}
+                </p>
             </div>
 
-            <!-- user data -->
-            <div class="flex flex-col justify-center flex-1 p-2">
-                <!-- name -->
-                <p class="overflow-hidden truncate max-w-[12em]">
-                    {{ data.firstName }} {{ data.lastName }}
-                </p>
-                <p class="text-xs">{{ data.major }}</p>
-
-                <!-- buttons -->
-                <div class="flex gap-2 mt-2 w-full">
+            <!-- buttons -->
+            <div class="flex flex-col items-end justify-end ml-3 p-2 h-full">
+                <div class="flex gap-2 mt-2">
                     <UButton
-                        class="font-bold p-1 rounded flex items-center gap-1 w-full flex-1 px-2"
+                        class="font-bold p-1 rounded flex items-center gap-1 w-fit px-2"
                         variant="outline"
                         color="error"
                         label="Decline"
@@ -48,8 +53,7 @@
                     >
                         <template #header>
                             <p>
-                                Are you sure you want to <strong>decline</strong>
-                                {{ data.firstName }} {{ data.lastName }}?
+                                Are you sure you want to <strong>decline</strong> {{ job?.name }}?
                             </p>
                         </template>
                         <template #body>
@@ -63,22 +67,18 @@
                                 <UButton
                                     color="error"
                                     label="Decline"
-                                    :loading="actionLoading === 'decline'"
                                     @click="
                                         () => {
-                                            actionLoading = 'decline';
-                                            declineRequest();
+                                            declineJob();
                                             showRejectModal = false;
-                                            actionLoading = null;
                                         }
                                     "
                                 />
                             </div>
                         </template>
                     </UModal>
-
                     <UButton
-                        class="font-bold p-1 rounded flex items-center gap-1 w-full flex-1 px-2"
+                        class="font-bold p-1 rounded flex items-center gap-1 w-fit px-2"
                         variant="outline"
                         color="primary"
                         label="Accept"
@@ -94,10 +94,7 @@
                         }"
                     >
                         <template #header>
-                            <p>
-                                Are you sure you want to <strong>accept</strong>
-                                {{ data.firstName }} {{ data.lastName }}?
-                            </p>
+                            <p>Are you sure you want to <strong>accept</strong> {{ job?.name }}?</p>
                         </template>
                         <template #body>
                             <div class="flex justify-end gap-2">
@@ -110,13 +107,10 @@
                                 <UButton
                                     color="primary"
                                     label="Accept"
-                                    :loading="actionLoading === 'accept'"
                                     @click="
                                         () => {
-                                            actionLoading = 'accept';
-                                            acceptRequest();
+                                            approveJob();
                                             showAcceptModal = false;
-                                            actionLoading = null;
                                         }
                                     "
                                 />
@@ -130,77 +124,60 @@
 </template>
 
 <script setup lang="ts">
-import type { ProfileInformation } from "~/data/datatypes";
+import type { JobPost } from "~/data/datatypes";
 
 const props = defineProps<{
     requestId: string;
-    data?: ProfileInformation;
+    data?: JobPost;
 }>();
 
 const emit = defineEmits<{
-    (e: "studentApprovalStatus", id: string): void;
+    (e: "jobApprovalStatus", id: string): void;
 }>();
 
-const data = props.data as ProfileInformation;
+const job = ref<JobPost>(props.data!);
 const api = useApi();
 
 const toast = useToast();
-const photo = ref<string>("");
+// Modal visibility state
 const showAcceptModal = ref(false);
 const showRejectModal = ref(false);
-const actionLoading = ref<null | "accept" | "decline">(null);
+const logoSrc = computed<string>(() =>
+    job.value?.photoId ? `${useRuntimeConfig().public.apiBaseUrl}/files/${job.value.photoId}` : ""
+);
 
-function navigateToProfile(id: string) {
-    console.log("Navigating to profile of request:", props.requestId);
-    navigateTo(`/admin/dashboard/profile/${id}`, { replace: true });
+function navigateToJob(id: string) {
+    console.log("Navigating to job post of request:", props.requestId);
+    navigateTo(`/admin/dashboard/jobs/${id}`, { replace: false });
 }
 
 // Accept request
-async function acceptRequest() {
-    console.log("Accepted request:", props.requestId);
-    toast.add({
-        title: "Request accepted!",
-        description: data.name,
-        color: "success",
-    });
+async function approveJob() {
+    console.log("Approved request:", props.requestId);
+    toast.add({ title: "Job Approved!", description: job.value?.name, color: "success" });
     await api.post(
-        `/students/${props.requestId}/approval`,
+        `/jobs/${props.requestId}/approval`,
         { approve: true },
         { withCredentials: true }
     );
-    emit("studentApprovalStatus", props.requestId);
+    emit("jobApprovalStatus", props.requestId);
 }
 
 // Decline request
-async function declineRequest() {
+async function declineJob() {
     console.log("Declined request:", props.requestId);
-    toast.add({
-        title: "Request declined!",
-        description: data.name,
-        color: "error",
-    });
+    toast.add({ title: "Job declined!", description: job.value?.name, color: "error" });
     await api.post(
-        `/students/${props.requestId}/approval`,
+        `/jobs/${props.requestId}/approval`,
         { approve: false },
         { withCredentials: true }
     );
-    emit("studentApprovalStatus", props.requestId);
+    emit("jobApprovalStatus", props.requestId);
 }
-
 watch(
     () => props.data,
     (newData) => {
-        if (newData) {
-            data.name = newData.name;
-            data.major = newData.major;
-            data.photoId = newData.photoId;
-            data.phone = newData.phone;
-            data.email = newData.email;
-            photo.value = newData.photoId
-                ? `${useRuntimeConfig().public.apiBaseUrl}/files/${newData.photoId}`
-                : "";
-        }
-    },
-    { immediate: true }
+        if (newData) job.value = newData;
+    }
 );
 </script>

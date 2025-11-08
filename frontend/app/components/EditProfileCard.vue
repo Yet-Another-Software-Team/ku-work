@@ -19,7 +19,7 @@
                 </div>
                 <button
                     type="button"
-                    class="absolute -right-1 bottom-0 translate-y-1 inline-flex items-center justify-center w-9 h-9 rounded-full bg-primary-500 text-white shadow hover:bg- primary-600 ring-4 ring-white/60"
+                    class="absolute -right-1 bottom-0 translate-y-1 inline-flex items-center justify-center w-9 h-9 rounded-full bg-primary-500 text-white shadow hover:bg-primary-600 ring-4 ring-white/60"
                     aria-label="Change avatar"
                     @click="triggerAvatarPicker"
                 >
@@ -41,7 +41,7 @@
                     >Name</label
                 >
                 <div
-                    class="rounded-lg border border- primary-700/50 bg-gray-100 px-4 py-2 text-gray-900 dark:border- primary-700/40 dark:bg-[#013B49] dark:text-white"
+                    class="rounded-lg border border-primary-700/50 bg-gray-100 px-4 py-2 text-gray-900 dark:border-primary-700/40 dark:bg-[#013B49] dark:text-white"
                 >
                     {{ `${profile.firstName} ${profile.lastName}` }}
                 </div>
@@ -181,6 +181,7 @@ interface StudentProfile {
     linkedIn?: string;
     aboutMe?: string;
     photo?: string;
+    approvalStatus?: string;
 }
 
 interface FormState {
@@ -207,12 +208,13 @@ const props = defineProps<{
         firstName: string;
         lastName: string;
         email: string;
+        approvalStatus?: string;
     };
 }>();
 
 const emit = defineEmits<{
     (e: "close"): void;
-    (e: "saved", payload: SavedPayload, token: string): SavedPayload;
+    (e: "saved", payload: SavedPayload, token: string): void;
 }>();
 
 const form = reactive<FormState>({
@@ -307,6 +309,7 @@ function triggerAvatarPicker() {
 function onAvatarSelected(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
+    // Restrict GIFs (not supported)
     const isGif = file.type === "image/gif" || file.name.toLowerCase().endsWith(".gif");
     if (isGif) {
         addToast({
@@ -317,8 +320,12 @@ function onAvatarSelected(event: Event) {
         (event.target as HTMLInputElement).value = "";
         return;
     }
-    updateAvatarPreview(URL.createObjectURL(file));
     avatarFile.value = file;
+    // Do not preview new picture when profile is rejected
+    if (props.profile?.approvalStatus === "rejected") {
+        return;
+    }
+    updateAvatarPreview(URL.createObjectURL(file));
 }
 
 function updateAvatarPreview(source: string) {

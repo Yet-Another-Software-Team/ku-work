@@ -28,14 +28,9 @@
                     {{ profile.major }}
                 </p>
 
-                <p class="mt-2 text-gray-800 dark:text-gray-200 font-semibold">
+                <p v-if="hasBirthDate" class="mt-2 text-gray-800 dark:text-gray-200 font-semibold">
                     Age:
-                    <span class="font-normal">{{
-                        Math.abs(
-                            new Date(Date.now() - Date.parse(profile.birthDate)).getUTCFullYear() -
-                                1970
-                        )
-                    }}</span>
+                    <span class="font-normal">{{ age }}</span>
                 </p>
                 <p v-if="profile.phone" class="text-gray-800 dark:text-gray-200 font-semibold">
                     Phone:
@@ -64,31 +59,27 @@
         <!-- Bottom Section -->
         <div class="flex flex-wrap md:flex-nowrap text-xl">
             <!-- Connections -->
-            <div class="w-[12rem] mr-5 mb-5">
+            <div v-if="hasAnyConnection" class="w-[12rem] mr-5 mb-5">
                 <h3 class="font-semibold text-gray-800 dark:text-white mb-2">Connections</h3>
                 <ul class="space-y-2 text-primary-600">
-                    <li v-if="profile.linkedIn">
+                    <li v-if="hasLinkedIn">
                         <a
                             :href="profile.linkedIn"
                             target="_blank"
                             class="flex items-center gap-2 hover:underline"
                         >
                             <Icon name="devicon:linkedin" class="size-[2em]" />
-                            <span class="w-[10em] truncate">{{
-                                `${profile.firstName} ${profile.lastName}`
-                            }}</span>
+                            <span class="w-[10em] truncate">{{ linkedInLabel }}</span>
                         </a>
                     </li>
-                    <li v-if="profile.github">
+                    <li v-if="hasGitHub">
                         <a
                             :href="profile.github"
                             target="_blank"
                             class="flex items-center gap-2 hover:underline"
                         >
                             <Icon name="devicon:github" class="size-[2em] bg-white rounded-full" />
-                            <span class="w-[10em] truncate">{{
-                                `${profile.firstName} ${profile.lastName}`
-                            }}</span>
+                            <span class="w-[10em] truncate">{{ githubLabel }}</span>
                         </a>
                     </li>
                 </ul>
@@ -97,8 +88,10 @@
             <!-- About Me -->
             <div class="flex-1">
                 <h3 class="font-semibold text-gray-800 dark:text-white mb-2">About me</h3>
-                <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
-                    {{ profile.aboutMe }}
+                <p
+                    class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap break-words overflow-x-hidden"
+                >
+                    {{ aboutMeDisplay }}
                 </p>
             </div>
         </div>
@@ -182,6 +175,7 @@ const profile = ref({
     lastName: "",
     email: "",
     status: "",
+    approvalStatus: "",
 });
 
 const config = useRuntimeConfig();
@@ -203,5 +197,50 @@ async function fetchStudentProfile() {
 
 onMounted(async () => {
     await fetchStudentProfile();
+});
+
+// Social connections helpers
+const hasLinkedIn = computed(
+    () => !!profile.value.linkedIn && profile.value.linkedIn.trim() !== ""
+);
+const hasGitHub = computed(() => !!profile.value.github && profile.value.github.trim() !== "");
+const hasAnyConnection = computed(() => hasLinkedIn.value || hasGitHub.value);
+
+function extractLabel(url?: string) {
+    if (!url) return "";
+    try {
+        const u = new URL(url);
+        const parts = u.pathname.split("/").filter(Boolean);
+        return parts[parts.length - 1] || u.hostname;
+    } catch {
+        return url;
+    }
+}
+const linkedInLabel = computed(() => extractLabel(profile.value.linkedIn));
+const githubLabel = computed(() => extractLabel(profile.value.github));
+
+// Birthdate helpers
+const hasBirthDate = computed(() => {
+    const bd = profile.value.birthDate;
+    if (!bd) return false;
+    const d = new Date(bd);
+    return !isNaN(d.getTime());
+});
+const age = computed(() => {
+    if (!hasBirthDate.value) return "";
+    const birth = new Date(profile.value.birthDate);
+    const today = new Date();
+    let years = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+        years--;
+    }
+    return years;
+});
+
+// About me fallback
+const aboutMeDisplay = computed(() => {
+    const v = profile.value.aboutMe || "";
+    return v.trim() === "" ? "None" : v;
 });
 </script>
