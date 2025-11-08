@@ -132,7 +132,7 @@ interface StudentProfile {
 
 type StudentProfileUpdate = StudentProfile & { _avatarFile?: File | null };
 
-const handleProfileSaved = async (updated: StudentProfileUpdate) => {
+const handleProfileSaved = async (updated: StudentProfileUpdate, cfToken: string) => {
     const { _avatarFile, ...newProfile } = updated;
     isEditModalOpen.value = false;
     const formData = new FormData();
@@ -149,6 +149,7 @@ const handleProfileSaved = async (updated: StudentProfileUpdate) => {
         await api.patch("/me", formData, {
             headers: {
                 "Content-Type": "multipart/form-data",
+                "X-Turnstile-Token": cfToken,
             },
         });
         await fetchStudentProfile();

@@ -171,18 +171,23 @@
                         {{ errors.aboutUs }}
                     </p>
                 </div>
+                <div class="flex justify-center md:col-span-2">
+                    <TurnstileWidget @callback="(tk) => (cfToken = tk)" />
+                </div>
 
                 <div class="md:col-span-2 flex flex-wrap justify-end gap-3 pt-4">
                     <UButton
                         type="button"
                         variant="outline"
                         color="neutral"
-                        class="rounded-md px-4"
+                        class="rounded-md px-4 cursor-pointer"
                         @click="openDiscardModal"
                     >
                         Discard
                     </UButton>
-                    <UButton type="submit" color="primary" class="rounded-md px-5"> Save </UButton>
+                    <UButton type="submit" color="primary" class="rounded-md px-5 cursor-pointer"
+                        >Save</UButton
+                    >
                 </div>
             </form>
         </div>
@@ -251,7 +256,7 @@ type SavedPayload = Profile & {
 const props = defineProps<{ profile: Profile }>();
 const emit = defineEmits<{
     (e: "close"): void;
-    (e: "saved", val: SavedPayload): void;
+    (e: "saved", val: SavedPayload, cfToken: string): void;
 }>();
 
 const showDiscardConfirm = ref(false);
@@ -295,6 +300,7 @@ const logoPreview = ref<string>("");
 const bannerInput = ref<HTMLInputElement | null>(null);
 const bannerFile = ref<File | null>(null);
 const bannerPreview = ref<string>("");
+const cfToken = ref("");
 
 watch(
     () => props.profile,
@@ -450,20 +456,24 @@ function handleSubmit() {
         color: "success",
     });
 
-    emit("saved", {
-        ...props.profile,
-        name: result.data.companyName,
-        email: result.data.mail,
-        phone: result.data.phone,
-        address: result.data.address,
-        city: result.data.city,
-        country: result.data.country,
-        about: result.data.aboutUs ?? "",
-        banner: bannerPreview.value || props.profile.banner || "",
-        photo: logoPreview.value || props.profile.photo || "",
-        _logoFile: logoFile.value,
-        _bannerFile: bannerFile.value,
-    });
+    emit(
+        "saved",
+        {
+            ...props.profile,
+            name: result.data.companyName,
+            email: result.data.mail,
+            phone: result.data.phone,
+            address: result.data.address,
+            city: result.data.city,
+            country: result.data.country,
+            about: result.data.aboutUs ?? "",
+            banner: bannerPreview.value || props.profile.banner || "",
+            photo: logoPreview.value || props.profile.photo || "",
+            _logoFile: logoFile.value,
+            _bannerFile: bannerFile.value,
+        },
+        cfToken.value
+    );
 
     emit("close");
 }
