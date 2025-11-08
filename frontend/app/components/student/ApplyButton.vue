@@ -26,7 +26,7 @@
             <div v-if="currentStep === 1">
                 <!-- Dropzone -->
                 <label
-                    class="mt-4 block rounded-md border-2 border-dashed border-neutral-500/50 bg-neutral-50 p-6 text-center cursor-pointer transition light:hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700"
+                    class="mt-4 block rounded-md border-2 border-dashed border-neutral-500/50 bg-neutral-50 p-6 text-center cursor-pointer transition hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700"
                     @dragover.prevent
                     @drop="onDrop"
                 >
@@ -127,7 +127,7 @@
                     label="Cancel"
                     color="neutral"
                     variant="outline"
-                    class="flex-1 rounded-md text-neutral-900 bg-white justify-center hover:bg-gray-200 hover:cursor-pointer border-1 border-gray-200 px-4 py-2 font-md transition"
+                    class="flex-1 rounded-md text-neutral-900 bg-white justify-center hover:bg-gray-200 hover:cursor-pointer border border-gray-200 px-4 py-2 font-medium transition"
                     @click="close"
                 />
                 <UButton

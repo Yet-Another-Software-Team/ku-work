@@ -46,44 +46,55 @@
                             </p>
                         </div>
 
-                        <!-- Divider -->
-                        <hr class="border-gray-500 dark:border-gray-600 m-5 w-full" />
+                        <!-- Divider (only if there are connections) -->
+                        <template v-if="hasAnyConnection">
+                            <hr class="border-gray-500 dark:border-gray-600 m-5 w-full" />
 
-                        <!-- Connections -->
-                        <ul>
-                            <li>
-                                <a
-                                    :href="data.profile.linkedIn"
-                                    target="_blank"
-                                    class="flex hover:underline items-center justify-center gap-2 my-5"
-                                >
-                                    <Icon name="devicon:linkedin" class="size-[2em]" />
-                                    <span class="truncate w-[12em]">{{ data.profile.name }}</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a
-                                    :href="data.profile.github"
-                                    target="_blank"
-                                    class="flex hover:underline items-center justify-center gap-2 my-5"
-                                >
-                                    <Icon
-                                        name="devicon:github"
-                                        class="size-[2em] bg-[#FDFDFD] rounded-full"
-                                    />
-                                    <span class="truncate w-[12em]">{{ data.profile.name }}</span>
-                                </a>
-                            </li>
-                        </ul>
+                            <!-- Connections -->
+                            <ul>
+                                <li v-if="hasLinkedIn">
+                                    <a
+                                        :href="data.profile.linkedIn"
+                                        target="_blank"
+                                        class="flex hover:underline items-center justify-center gap-2 my-5"
+                                    >
+                                        <Icon name="devicon:linkedin" class="size-[2em]" />
+                                        <span class="truncate w-[12em]">{{ linkedInLabel }}</span>
+                                    </a>
+                                </li>
+                                <li v-if="hasGitHub">
+                                    <a
+                                        :href="data.profile.github"
+                                        target="_blank"
+                                        class="flex hover:underline items-center justify-center gap-2 my-5"
+                                    >
+                                        <Icon
+                                            name="devicon:github"
+                                            class="size-[2em] bg-[#FDFDFD] rounded-full"
+                                        />
+                                        <span class="truncate w-[12em]">{{ githubLabel }}</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </template>
                     </div>
                 </div>
 
                 <!-- Second Card -->
-                <div class="r-card flex justify-between">
+                <div class="r-card flex items-center justify-between">
                     <!-- File Download -->
                     <span class="text-xl">Submitted File</span>
-                    <a :href="file" download>
-                        <Icon name="ic:outline-file-download" class="size-[2em]" />
+                    <a
+                        :href="file"
+                        :download="suggestedFileName"
+                        target="_blank"
+                        aria-label="Download submitted file"
+                        class="flex items-center gap-2"
+                    >
+                        <Icon
+                            name="ic:outline-file-download"
+                            class="size-[2em] hover:text-primary transition-colors duration-200"
+                        />
                     </a>
                 </div>
             </section>
@@ -93,7 +104,10 @@
                 <!-- First Card -->
                 <div class="r-card">
                     <div class="flex flex-col text-xl text-left whitespace-normal">
-                        <p class="mt-2 text-gray-800 dark:text-gray-200 font-semibold">
+                        <p
+                            v-if="hasBirthDate"
+                            class="mt-2 text-gray-800 dark:text-gray-200 font-semibold"
+                        >
                             Age: <span class="font-normal">{{ age }}</span>
                         </p>
                         <p class="text-gray-800 dark:text-gray-200 font-semibold">
@@ -106,38 +120,112 @@
                 </div>
 
                 <!-- Second Card -->
-                <div class="r-card">
+                <div
+                    v-if="data.profile.aboutMe && data.profile.aboutMe.trim() !== ''"
+                    class="r-card"
+                >
                     <div class="flex flex-col text-xl text-left">
-                        <p class="text-gray-800 dark:text-gray-200 font-semibold">
-                            <span v-if="data.profile.aboutMe.trim() !== ''" class="font-normal">{{
-                                data.profile.aboutMe
-                            }}</span>
-                            <span v-else class="font-normal">No description provided</span>
+                        <p
+                            class="text-gray-800 dark:text-gray-200 font-semibold whitespace-pre-wrap break-words overflow-x-hidden"
+                        >
+                            <span class="font-normal break-words">{{ data.profile.aboutMe }}</span>
                         </p>
                     </div>
                 </div>
 
                 <!-- Decision Button -->
-                <div class="flex gap-5">
-                    <span class="c-ubutton w-full sm:w-1/2">
+                <div class="flex gap-5 w-full">
+                    <span class="c-ubutton w-full flex-1">
                         <UButton
-                            class="size-full font-bold p-1 rounded flex items-center gap-1 px-2 text-xl"
+                            class="font-bold p-1 rounded flex items-center gap-1 w-full flex-1 px-2"
                             variant="outline"
                             color="error"
                             label="Decline"
                             :icon="'iconoir:xmark'"
-                            @click.stop="declineRequest"
+                            @click.stop="showRejectModal = true"
                         />
+                        <UModal
+                            v-model:open="showRejectModal"
+                            :ui="{
+                                title: 'text-xl font-semibold text-primary-800 dark:text-primary',
+                                container:
+                                    'fixed inset-0 z-[100] flex items-center justify-center p-4',
+                                overlay: 'fixed inset-0 bg-black/50',
+                            }"
+                        >
+                            <template #header>
+                                <p>
+                                    Are you sure you want to <strong>decline</strong>
+                                    {{ data?.profile.name }}?
+                                </p>
+                            </template>
+                            <template #body>
+                                <div class="flex justify-end gap-2">
+                                    <UButton
+                                        variant="outline"
+                                        color="neutral"
+                                        label="Cancel"
+                                        @click="showRejectModal = false"
+                                    />
+                                    <UButton
+                                        color="error"
+                                        label="Decline"
+                                        @click="
+                                            () => {
+                                                declineRequest();
+                                                showRejectModal = false;
+                                            }
+                                        "
+                                    />
+                                </div>
+                            </template>
+                        </UModal>
                     </span>
-                    <span class="c-ubutton w-full sm:w-1/2">
+                    <span class="c-ubutton w-full flex-1">
                         <UButton
-                            class="size-full font-bold p-1 rounded flex items-center gap-1 px-2 text-xl"
+                            class="font-bold p-1 rounded flex items-center gap-1 w-full flex-1 px-2"
                             variant="outline"
                             color="primary"
                             label="Accept"
                             :icon="'iconoir:check'"
-                            @click.stop="acceptRequest"
+                            @click.stop="showAcceptModal = true"
                         />
+                        <UModal
+                            v-model:open="showAcceptModal"
+                            :ui="{
+                                title: 'text-xl font-semibold text-primary-800 dark:text-primary',
+                                container:
+                                    'fixed inset-0 z-[100] flex items-center justify-center p-4',
+                                overlay: 'fixed inset-0 bg-black/50',
+                            }"
+                        >
+                            <template #header>
+                                <p>
+                                    Are you sure you want to <strong>accept</strong>
+                                    {{ data?.profile.name }}?
+                                </p>
+                            </template>
+                            <template #body>
+                                <div class="flex justify-end gap-2">
+                                    <UButton
+                                        variant="outline"
+                                        color="neutral"
+                                        label="Cancel"
+                                        @click="showAcceptModal = false"
+                                    />
+                                    <UButton
+                                        color="primary"
+                                        label="Accept"
+                                        @click="
+                                            () => {
+                                                acceptRequest();
+                                                showAcceptModal = false;
+                                            }
+                                        "
+                                    />
+                                </div>
+                            </template>
+                        </UModal>
                     </span>
                 </div>
             </section>
@@ -227,14 +315,54 @@ const isLoading = ref(true);
 
 const photo = ref("");
 const file = ref("");
+const showAcceptModal = ref(false);
+const showRejectModal = ref(false);
 const email = computed(() => {
     if (!data.value) return "";
     return data.value.profile.email || "No email provided";
 });
 
-// Compute age
+// Social connections visibility and labels
+const hasLinkedIn = computed(
+    () => !!data.value?.profile.linkedIn && data.value.profile.linkedIn.trim() !== ""
+);
+const hasGitHub = computed(
+    () => !!data.value?.profile.github && data.value.profile.github.trim() !== ""
+);
+const hasAnyConnection = computed(() => hasLinkedIn.value || hasGitHub.value);
+
+function extractLabel(url?: string) {
+    if (!url) return "";
+    try {
+        const u = new URL(url);
+        const parts = u.pathname.split("/").filter(Boolean);
+        // Prefer last non-empty path segment, else host
+        return parts[parts.length - 1] || u.hostname;
+    } catch {
+        return url;
+    }
+}
+const linkedInLabel = computed(() => extractLabel(data.value?.profile.linkedIn));
+const githubLabel = computed(() => extractLabel(data.value?.profile.github));
+
+// Suggested filename for submitted document
+const suggestedFileName = computed(() => {
+    const ext = (data.value?.profile.statusFile?.fileType || "").toString();
+    const suffix = ext ? `.${ext}` : "";
+    return `student-status${suffix}`;
+});
+
+// Birthdate helpers
+const hasBirthDate = computed(() => {
+    const bd = data.value?.profile.birthDate;
+    if (!bd) return false;
+    const d = new Date(bd);
+    return !isNaN(d.getTime());
+});
+// Compute age (only if valid birthdate)
 const age = computed(() => {
-    const birth = new Date(data.value?.profile.birthDate ?? "");
+    if (!hasBirthDate.value) return "";
+    const birth = new Date(data.value!.profile.birthDate);
     const today = new Date();
     let years = today.getFullYear() - birth.getFullYear();
     const m = today.getMonth() - birth.getMonth();
