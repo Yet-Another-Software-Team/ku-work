@@ -116,6 +116,11 @@ The backend offers a pluggable file storage provider. Configure the provider usi
 - `APPROVAL_AI_MODEL`: Choose what AI model to use (e.g. gemma3)
 - `APPROVAL_AI_URI`: Endpoint of AI server
 
+### Cloudflare Turnstile Configuration
+- `TURNSTILE_SECRET`: The secret turnstile server key
+
+For Cloudflare Turnstile to work correctly, make sure to add `X-Turnstile-Token` to `CORS_ALLOWED_HEADERS`
+
 ### Email Configuration
 - `EMAIL_PROVIDER`: Choose what email provider to use (dummy, SMTP, gmail, ...)
 - `EMAIL_TIMEOUT_SECONDS`: Specify the timeout duration of email sending attempt in seconds
@@ -124,9 +129,6 @@ The backend offers a pluggable file storage provider. Configure the provider usi
 - `EMAIL_RETRY_MAX_ATTEMPTS`: Maximum number of retry attempts for failed emails (default: 3)
 - `EMAIL_RETRY_INTERVAL_MINUTES`: Minutes to wait before retrying failed emails (default: 30)
 - `EMAIL_RETRY_MAX_AGE_HOURS`: Maximum age of emails to retry in hours (default: 24)
-
-### Cloudflare Turnstile Configuration
-- `TURNSTILE_SECRET`: The secret turnstile server key
 
 The email service automatically retries emails that fail with temporary errors (e.g., network issues, rate limits, timeouts). Each retry attempt is tracked in the database (`RetryCount` field), and emails that exceed the maximum retry attempts are marked as permanent failures.
 
