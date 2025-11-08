@@ -1,5 +1,11 @@
 import { test, expect } from "@playwright/test";
 
+// setup(() => {
+//     // Any setup steps if necessary
+//     const config = useRuntimeConfig();
+//     const testCompanyEmail = config.public.testCompanyEmail;
+// });
+
 test("company signup google", async ({ page }) => {
     await page.goto("/"); // http://localhost:3000/
 
@@ -60,11 +66,11 @@ test("student signup google", async ({ page }) => {
     await popup.waitForLoadState("domcontentloaded");
 
     const insertEmailText = await popup.getByRole("textbox", { name: "Email or phone" });
-    await insertEmailText.fill(process.env.TEST_STUDENT_EMAIL);
+    await insertEmailText.fill("WhenWillThisWork" + "@gmail.com");
     await insertEmailText.press("Enter");
 
     const insertPasswordText = await popup.getByRole("textbox", { name: "Enter your password" });
-    await insertPasswordText.fill(process.env.TEST_STUDENT_PASSWORD);
+    await insertPasswordText.fill("ThisIsThePassword");
     await insertPasswordText.press("Enter");
 
     await popup.getByRole("button", { name: "Continue" }).click();
