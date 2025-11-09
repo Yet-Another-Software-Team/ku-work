@@ -33,17 +33,15 @@
                 </p>
             </div>
 
-            <!-- Edit Button -->
-            <UButton
+            <!-- Edit Option -->
+            <UDropdownMenu
                 v-if="canEdit"
-                variant="outline"
-                color="neutral"
+                :items="items"
+                :content="{ align: 'end' }"
                 class="px-4 py-2 text-sm hover:cursor-pointer flex items-center mt-4 ml-auto mb-auto"
-                @click="openEditModal = true"
             >
-                <Icon name="material-symbols:edit-square-outline-rounded" class="size-[1.5em]" />
-                Edit Profile
-            </UButton>
+                <UButton color="neutral" variant="outline" icon="i-lucide-menu" />
+            </UDropdownMenu>
         </div>
 
         <!-- Divider -->
@@ -104,10 +102,10 @@
             </div>
         </div>
 
+        <!-- Edit Modal -->
         <UModal
             v-model:open="openEditModal"
             :ui="{
-                container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
                 overlay: 'fixed inset-0 bg-black/50',
                 content: 'w-full max-w-6xl',
             }"
@@ -120,11 +118,60 @@
                 />
             </template>
         </UModal>
+        <!-- Deactivate Modal -->
+        <UModal
+            v-model:open="openDeactivateModal"
+            :ui="{
+                overlay: 'fixed inset-0 bg-black/50',
+                content: 'w-full max-w-md',
+            }"
+        >
+            <template #content>
+                <div class="p-6">
+                    <h3 class="font-semibold text-gray-800 dark:text-white mb-2">
+                        Confirm Deactivation
+                    </h3>
+                    <p class="text-gray-700 dark:text-gray-300">
+                        Are you sure you want to deactivate your profile?
+                    </p>
+                    <p class="mt-2">
+                        To confirm, type
+                        <strong class="text-red-600">DEACTIVATE</strong> below.
+                    </p>
+                    <UInput v-model="confirmDeactivate" class="mt-4 w-full" />
+                    <div class="flex justify-center md:col-span-2">
+                        <TurnstileWidget @callback="(tk) => (cfToken = tk)" />
+                    </div>
+                    <div class="mt-4">
+                        <UButton
+                            variant="outline"
+                            color="neutral"
+                            @click="
+                                openDeactivateModal = false;
+                                confirmDeactivate = '';
+                            "
+                        >
+                            Cancel
+                        </UButton>
+                        <UButton
+                            :disabled="confirmDeactivate !== 'DEACTIVATE'"
+                            variant="solid"
+                            color="error"
+                            class="ml-2"
+                            @click="onDeactivated"
+                        >
+                            Deactivate
+                        </UButton>
+                    </div>
+                </div>
+            </template>
+        </UModal>
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import type { DropdownMenuItem } from "@nuxt/ui";
 import EditCompanyProfileCard from "~/components/EditCompanyProfileCard.vue";
 
 const props = withDefaults(
@@ -152,6 +199,12 @@ const profile = ref({
 });
 
 const openEditModal = ref(false);
+const openDeactivateModal = ref(false);
+
+const cfToken = ref<string>("");
+
+const confirmDeactivate = ref<string>("");
+
 const api = useApi();
 const config = useRuntimeConfig();
 const toast = useToast();
@@ -161,6 +214,8 @@ const canEdit = computed(() => {
     const uid = import.meta.client ? localStorage.getItem("userId") : null;
     return props.isOwner || (!!props.companyId && props.companyId === uid);
 });
+
+// Fetch company profile
 async function fetchCompanyProfile() {
     try {
         let idToFetch: string | null = props.companyId;
@@ -184,6 +239,25 @@ async function fetchCompanyProfile() {
     }
 }
 
+// Dropdown menu items
+const items: DropdownMenuItem[] = [
+    {
+        label: "Edit Profile",
+        icon: "material-symbols:edit-square-outline-rounded",
+        onClick: () => {
+            openEditModal.value = true;
+        },
+    },
+    {
+        label: "Deactivate Profile",
+        icon: "material-symbols:delete-outline",
+        onClick: () => {
+            openDeactivateModal.value = true;
+        },
+    },
+];
+
+// Handle Saves, Deactivation, and Deletion
 async function onSaved(
     updated: {
         name?: string;
@@ -226,6 +300,33 @@ async function onSaved(
         console.log(error);
         toast.add({
             title: "Failed to update profile",
+            description: (error as { message: string }).message,
+            color: "error",
+        });
+    }
+}
+
+async function onDeactivated() {
+    openDeactivateModal.value = false;
+    try {
+        // send headers as the request config (third argument) and use the ref's value
+        const response = await api.post("/me/deactivate", null, {
+            headers: {
+                "X-Turnstile-Token": cfToken.value,
+            },
+            withCredentials: true,
+        });
+        console.log(response);
+        toast.add({
+            title: "Profile Deactivated",
+            description: "Your company profile has been deactivated.",
+            color: "success",
+        });
+        navigateTo("/", { replace: true });
+    } catch (error) {
+        console.log(error);
+        toast.add({
+            title: "Failed to deactivate profile",
             description: (error as { message: string }).message,
             color: "error",
         });
