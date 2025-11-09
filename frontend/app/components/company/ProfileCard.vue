@@ -119,53 +119,10 @@
             </template>
         </UModal>
         <!-- Deactivate Modal -->
-        <UModal
+        <DeactivateModal
             v-model:open="openDeactivateModal"
-            :ui="{
-                overlay: 'fixed inset-0 bg-black/50',
-                content: 'w-full max-w-md',
-            }"
-        >
-            <template #content>
-                <div class="p-6">
-                    <h3 class="font-semibold text-gray-800 dark:text-white mb-2">
-                        Confirm Deactivation
-                    </h3>
-                    <p class="text-gray-700 dark:text-gray-300">
-                        Are you sure you want to deactivate your profile?
-                    </p>
-                    <p class="mt-2">
-                        To confirm, type
-                        <strong class="text-red-600">DEACTIVATE</strong> below.
-                    </p>
-                    <UInput v-model="confirmDeactivate" class="mt-4 w-full" />
-                    <div class="flex justify-center md:col-span-2">
-                        <TurnstileWidget @callback="(tk) => (cfToken = tk)" />
-                    </div>
-                    <div class="mt-4">
-                        <UButton
-                            variant="outline"
-                            color="neutral"
-                            @click="
-                                openDeactivateModal = false;
-                                confirmDeactivate = '';
-                            "
-                        >
-                            Cancel
-                        </UButton>
-                        <UButton
-                            :disabled="confirmDeactivate !== 'DEACTIVATE'"
-                            variant="solid"
-                            color="error"
-                            class="ml-2"
-                            @click="onDeactivated"
-                        >
-                            Deactivate
-                        </UButton>
-                    </div>
-                </div>
-            </template>
-        </UModal>
+            @update:close="(value) => (openDeactivateModal = value)"
+        />
     </div>
 </template>
 
@@ -200,10 +157,6 @@ const profile = ref({
 
 const openEditModal = ref(false);
 const openDeactivateModal = ref(false);
-
-const cfToken = ref<string>("");
-
-const confirmDeactivate = ref<string>("");
 
 const api = useApi();
 const config = useRuntimeConfig();
@@ -300,33 +253,6 @@ async function onSaved(
         console.log(error);
         toast.add({
             title: "Failed to update profile",
-            description: (error as { message: string }).message,
-            color: "error",
-        });
-    }
-}
-
-async function onDeactivated() {
-    openDeactivateModal.value = false;
-    try {
-        // send headers as the request config (third argument) and use the ref's value
-        const response = await api.post("/me/deactivate", null, {
-            headers: {
-                "X-Turnstile-Token": cfToken.value,
-            },
-            withCredentials: true,
-        });
-        console.log(response);
-        toast.add({
-            title: "Profile Deactivated",
-            description: "Your company profile has been deactivated.",
-            color: "success",
-        });
-        navigateTo("/", { replace: true });
-    } catch (error) {
-        console.log(error);
-        toast.add({
-            title: "Failed to deactivate profile",
             description: (error as { message: string }).message,
             color: "error",
         });
