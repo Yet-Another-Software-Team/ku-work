@@ -50,7 +50,7 @@
         <hr class="my-6 border-gray-300 dark:border-gray-600" />
 
         <!-- Bottom Section -->
-        <div class="flex flex-wrap md:flex-nowrap text-xl">
+        <div class="flex flex-wrap md:flex-nowrap text-xl overflow-x-hidden">
             <!-- Connections -->
             <div class="w-[12rem] mr-5 mb-5">
                 <h3 class="font-semibold text-gray-800 dark:text-white mb-2">Connections</h3>
@@ -94,10 +94,12 @@
             </div>
 
             <!-- About Me -->
-            <div class="flex-1">
+            <div class="flex-1 overflow-x-hidden">
                 <h3 class="font-semibold text-gray-800 dark:text-white mb-2">About us</h3>
-                <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
-                    {{ profile.about }}
+                <p
+                    class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap break-all overflow-x-hidden max-w-full"
+                >
+                    {{ profile.about || "None" }}
                 </p>
             </div>
         </div>
@@ -182,20 +184,23 @@ async function fetchCompanyProfile() {
     }
 }
 
-async function onSaved(updated: {
-    name?: string;
-    address?: string;
-    website?: string;
-    banner?: string;
-    photo?: string;
-    about?: string;
-    city?: string;
-    country?: string;
-    email?: string;
-    phone?: string;
-    _logoFile?: File | null;
-    _bannerFile?: File | null;
-}) {
+async function onSaved(
+    updated: {
+        name?: string;
+        address?: string;
+        website?: string;
+        banner?: string;
+        photo?: string;
+        about?: string;
+        city?: string;
+        country?: string;
+        email?: string;
+        phone?: string;
+        _logoFile?: File | null;
+        _bannerFile?: File | null;
+    },
+    cfToken: string
+) {
     openEditModal.value = false;
     const formData = new FormData();
     if (profile.value.name !== updated.name) formData.append("username", updated.name!);
@@ -213,6 +218,7 @@ async function onSaved(updated: {
         await api.patch("/me", formData, {
             headers: {
                 "Content-Type": "multipart/form-data",
+                "X-Turnstile-Token": cfToken,
             },
         });
         await fetchCompanyProfile();

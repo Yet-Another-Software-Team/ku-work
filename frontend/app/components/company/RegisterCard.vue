@@ -46,6 +46,9 @@
                 <p class="text-gray-600">You have successfully registered your account.</p>
             </div>
         </div>
+        <div v-if="currentStep === 2" class="flex justify-center">
+            <TurnstileWidget @callback="(tk) => (token = tk)" />
+        </div>
         <div class="flex justify-center gap-x-2 py-4">
             <UButton
                 v-if="currentStep > 1 && currentStep < totalSteps"
@@ -108,6 +111,8 @@ const isSubmitting = ref(false);
 
 const stepOneRef = ref<{ isValid: boolean } | null>(null);
 const stepTwoRef = ref<{ isValid: boolean } | null>(null);
+
+const token = ref<string>("");
 
 const form = reactive({
     companyName: "",
@@ -214,7 +219,11 @@ const onSubmit = async () => {
         formData.append("photo", form.companyLogo);
         formData.append("banner", form.banner);
 
-        const response = await api.postFormData<AuthResponse>("/auth/company/register", formData);
+        const response = await api.postFormData<AuthResponse>("/auth/company/register", formData, {
+            headers: {
+                "X-Turnstile-Token": token.value,
+            },
+        });
 
         if (response.data.token) {
             localStorage.setItem("token", response.data.token);

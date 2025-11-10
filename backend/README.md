@@ -116,6 +116,11 @@ The backend offers a pluggable file storage provider. Configure the provider usi
 - `APPROVAL_AI_MODEL`: Choose what AI model to use (e.g. gemma3)
 - `APPROVAL_AI_URI`: Endpoint of AI server
 
+### Cloudflare Turnstile Configuration
+- `TURNSTILE_SECRET`: The secret turnstile server key
+
+For Cloudflare Turnstile to work correctly, make sure to add `X-Turnstile-Token` to `CORS_ALLOWED_HEADERS`
+
 ### Email Configuration
 - `EMAIL_PROVIDER`: Choose what email provider to use (dummy, SMTP, gmail, ...)
 - `EMAIL_TIMEOUT_SECONDS`: Specify the timeout duration of email sending attempt in seconds

@@ -25,7 +25,7 @@
                     <NuxtLink :to="`/jobs/${data.companyId}`">
                         <UTooltip :text="data.companyName">
                             <h2
-                                class="text-primary-700 text-md font-semibold truncate max-w-[200px]"
+                                class="text-primary-700 text-base font-semibold truncate max-w-[200px] capitalize"
                             >
                                 {{ data.companyName }}
                             </h2>
@@ -63,7 +63,7 @@
         </span>
         <USeparator class="mb-2" />
 
-        <div>
+        <div class="overflow-x-hidden">
             <h2 class="font-semibold">About This Job</h2>
             <p>
                 <span class="text-primary-700 font-semibold">Position Title: </span>
@@ -81,17 +81,19 @@
                 <span class="text-primary-700 font-semibold">Duration: </span>
                 {{ data.duration }}
             </p>
-            <StudentApplyButton
-                v-if="!isViewer"
-                :job-id="data.id"
-                :applied="data.applied"
-                label="Apply"
-                @update:applied="(value) => emit('update:applied', value)"
-            />
-            <p>
+            <div class="mb-2">
+                <StudentApplyButton
+                    v-if="!isViewer"
+                    :job-id="data.id"
+                    :applied="data.applied"
+                    label="Apply"
+                    @update:applied="(value) => emit('update:applied', value)"
+                />
+            </div>
+            <p class="whitespace-pre-wrap break-words overflow-x-hidden">
                 <span class="text-primary-700 font-semibold">Description:</span>
                 <br />
-                {{ data.description }}
+                <span class="break-words">{{ data.description }}</span>
             </p>
         </div>
     </div>
