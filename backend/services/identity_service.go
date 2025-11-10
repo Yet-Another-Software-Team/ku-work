@@ -2,8 +2,6 @@ package services
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -168,12 +166,6 @@ func (s *IdentityService) ReactivateAccount(ctx context.Context, userID string, 
 // ---------------------------
 // Anonymization
 // ---------------------------
-
-// generateAnonymousID creates a unique anonymous identifier based on the original ID.
-func generateAnonymousID(originalID string) string {
-	hash := sha256.Sum256([]byte(originalID + time.Now().String()))
-	return "ANON-" + hex.EncodeToString(hash[:])[:12]
-}
 
 // CheckIfAnonymized checks if an account has already been anonymized by inspecting the username prefix.
 func (s *IdentityService) CheckIfAnonymized(ctx context.Context, userID string) (bool, error) {

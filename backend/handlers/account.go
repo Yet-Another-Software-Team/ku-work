@@ -1,14 +1,11 @@
 package handlers
 
 import (
-	"ku-work/backend/model"
 	"ku-work/backend/services"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 // @Summary Deactivate account
@@ -25,43 +22,23 @@ import (
 func (h *UserHandlers) DeactivateAccount(ctx *gin.Context) {
 	userID := ctx.MustGet("userID").(string)
 
-	// Find User
-	user := model.User{}
-	if err := h.DB.Where("id = ?", userID).First(&user).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+	deletionDate, err := h.UserService.DeactivateAccount(ctx.Request.Context(), userID, h.gracePeriod)
+	if err != nil {
+		switch err {
+		case services.ErrUserNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
-			return
+		case services.ErrAlreadyDeactivated:
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Account is already deactivated"})
+		default:
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to deactivate account"})
 		}
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to find user"})
-		return
-	}
-
-	// Check if already deactivated
-	if user.DeletedAt.Valid {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Account is already deactivated"})
-		return
-	}
-
-	// Check if user is a company and disable their job posts
-	var company model.Company
-	if err := h.DB.Where("user_id = ?", userID).First(&company).Error; err == nil {
-		// User is a company - disable all their job posts
-		if err := services.DisableCompanyJobPosts(h.DB, userID); err != nil {
-			log.Printf("Warning: Failed to disable job posts for company %s: %v", userID, err)
-			// Don't fail the deactivation, just log the warning
-		}
-	}
-
-	// Soft Delete User (this will trigger BeforeDelete hooks)
-	if err := h.DB.Delete(&user).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to deactivate account"})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"message":           "Account deactivated successfully",
 		"grace_period_days": h.gracePeriod,
-		"deletion_date":     time.Now().Add(time.Duration(h.gracePeriod) * 24 * time.Hour).Format(time.RFC3339),
+		"deletion_date":     deletionDate.Format(time.RFC3339),
 	})
 }
 
@@ -80,65 +57,25 @@ func (h *UserHandlers) DeactivateAccount(ctx *gin.Context) {
 func (h *UserHandlers) ReactivateAccount(ctx *gin.Context) {
 	userID := ctx.MustGet("userID").(string)
 
-	// Find User including soft deleted records
-	user := model.User{}
-	if err := h.DB.Unscoped().Where("id = ?", userID).First(&user).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+	err := h.UserService.ReactivateAccount(ctx.Request.Context(), userID, h.gracePeriod)
+	if err != nil {
+		switch err {
+		case services.ErrUserNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
-			return
+		case services.ErrNotDeactivated:
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Account is not deactivated"})
+		default:
+			if gracePeriodErr, ok := err.(*services.GracePeriodExpiredError); ok {
+				ctx.JSON(http.StatusForbidden, gin.H{
+					"error":        "Grace period has expired. Account cannot be reactivated.",
+					"deleted_at":   gracePeriodErr.DeletedAt.Format(time.RFC3339),
+					"deadline_was": gracePeriodErr.Deadline.Format(time.RFC3339),
+				})
+			} else {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reactivate account"})
+			}
 		}
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to find user"})
 		return
-	}
-
-	// Check if account is deactivated
-	if !user.DeletedAt.Valid {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Account is not deactivated"})
-		return
-	}
-
-	// Check if within grace period
-	gracePeriodDuration := time.Duration(h.gracePeriod) * 24 * time.Hour
-	deletionDeadline := user.DeletedAt.Time.Add(gracePeriodDuration)
-
-	if time.Now().After(deletionDeadline) {
-		ctx.JSON(http.StatusForbidden, gin.H{
-			"error":        "Grace period has expired. Account cannot be reactivated.",
-			"deleted_at":   user.DeletedAt.Time.Format(time.RFC3339),
-			"deadline_was": deletionDeadline.Format(time.RFC3339),
-		})
-		return
-	}
-
-	// Restore the user account
-	if err := h.DB.Model(&user).Unscoped().Update("deleted_at", nil).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reactivate account"})
-		return
-	}
-
-	// Also restore related student or company records
-	// Check if student exists
-	var student model.Student
-	if err := h.DB.Unscoped().Where("user_id = ?", userID).First(&student).Error; err == nil {
-		if student.DeletedAt.Valid {
-			h.DB.Model(&student).Unscoped().Update("deleted_at", nil)
-		}
-	}
-
-	// Check if company exists and re-activate their account
-	var company model.Company
-	if err := h.DB.Unscoped().Where("user_id = ?", userID).First(&company).Error; err == nil {
-		if company.DeletedAt.Valid {
-			h.DB.Model(&company).Unscoped().Update("deleted_at", nil)
-		}
-	}
-
-	// Check if Google OAuth details exist
-	var googleOAuth model.GoogleOAuthDetails
-	if err := h.DB.Unscoped().Where("user_id = ?", userID).First(&googleOAuth).Error; err == nil {
-		if googleOAuth.DeletedAt.Valid {
-			h.DB.Model(&googleOAuth).Unscoped().Update("deleted_at", nil)
-		}
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
