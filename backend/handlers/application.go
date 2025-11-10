@@ -401,7 +401,7 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 // @Failure 401 {object} object{error=string} "Unauthorized"
 // @Failure 404 {object} object{error=string} "Not Found: Job not found"
 // @Failure 500 {object} object{error=string} "Internal Server Error"
-// @Router /jobs/{id}/applications [get]
+// @Router /jobs/{id}/applications [delete]
 func (h *ApplicationHandlers) ClearJobApplicationsHandler(ctx *gin.Context) {
 	// Extract authenticated user ID from context
 	userId := ctx.MustGet("userID").(string)
