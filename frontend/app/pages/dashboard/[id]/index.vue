@@ -3,7 +3,7 @@
         <!-- Back -->
         <NuxtLink to="/dashboard">
             <h1
-                class="flex items-center text-2xl text-primary-800 dark:text-primary font-bold mt-6 mb-4 gap-1 cursor-pointer"
+                class="flex items-center text-5xl text-primary-800 dark:text-primary font-bold mt-6 mb-4 gap-1 cursor-pointer"
             >
                 <Icon name="iconoir:nav-arrow-left" class="items-center" />
                 <span>Back</span>
@@ -52,11 +52,46 @@
                     <p class="font-bold px-5 py-1 text-2xl">Rejected</p>
                 </div>
             </div>
+
+            <!-- Clear Modal -->
+            <UModal
+                v-model:open="openClearModal"
+                :ui="{
+                    title: 'text-xl font-semibold text-primary-800 dark:text-primary',
+                    overlay: 'fixed inset-0 bg-black/50',
+                }"
+            >
+                <template #header>
+                    <p>Are you sure you want to clear all {{ isSelected }} applications?</p>
+                </template>
+                <template #body>
+                    <div class="flex justify-end gap-2">
+                        <UButton
+                            variant="outline"
+                            color="neutral"
+                            label="Cancel"
+                            @click="openClearModal = false"
+                        />
+                        <UButton color="error" label="Clear" @click="clearApplicationsHandler" />
+                    </div>
+                </template>
+            </UModal>
         </section>
         <!-- Job Applications List -->
         <section v-if="job">
             <div class="flex justify-between">
-                <h1 class="text-lg font-semibold mb-2">{{ countedApplication }} Applicants</h1>
+                <div class="flex">
+                    <h1 class="text-lg font-semibold m-2">{{ countedApplication }} Applicants</h1>
+                    <!-- Clear Button -->
+                    <UButton
+                        color="neutral"
+                        variant="ghost"
+                        :label="clearLabel"
+                        @mouseenter="hover(true)"
+                        @mouseleave="hover(false)"
+                        @click="openClearModal = true"
+                    />
+                </div>
                 <div class="flex gap-5">
                     <h1 class="text-2xl font-semibold mb-2">Sort by:</h1>
                     <USelectMenu
@@ -85,7 +120,6 @@
                     v-model:open="showAppConfirm"
                     :ui="{
                         title: 'text-xl font-semibold text-primary-800 dark:text-primary',
-                        container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
                         overlay: 'fixed inset-0 bg-black/50',
                     }"
                 >
@@ -147,6 +181,17 @@ const api = useApi();
 const route = useRoute();
 const isLoading = ref(true);
 const limit = 32;
+
+const openClearModal = ref<boolean>(false);
+const clearLabel = ref("Clear");
+const hover = (val: boolean) => {
+    if (val) {
+        clearLabel.value = "Clear?";
+    } else {
+        clearLabel.value = "Clear";
+    }
+};
+
 let currentJobOffset = 0;
 
 interface getApplicationForm {
@@ -261,6 +306,30 @@ const fetchApplication = async (token: string | null, jobId: number) => {
         console.error("Error fetching job application:", error);
     }
 };
+
+async function clearApplicationsHandler() {
+    if (!job.value) return;
+    console.log("Clearing applications for job ID:", job.value.id);
+    console.log("Selected status to clear:", isSelected.value);
+    try {
+        const response = await api.delete(`/jobs/${job.value.id}/applications`, {
+            data: {
+                accepted: isSelected.value === "accepted",
+                pending: isSelected.value === "inprogress",
+                rejected: isSelected.value === "rejected",
+            },
+            withCredentials: true,
+        });
+        console.log("Clear applications response:", response);
+        currentJobOffset = 0;
+        applications.value = undefined;
+        await loadContents();
+    } catch (error) {
+        console.error("Error clearing applications:", error);
+    } finally {
+        openClearModal.value = false;
+    }
+}
 
 // Toggle between inprogress, accepted, rejected
 const isSelected = ref("inprogress");
