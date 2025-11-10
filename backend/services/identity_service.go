@@ -346,7 +346,7 @@ func (s *IdentityService) anonymizeStudentData(ctx context.Context, student *mod
 
 	// Delete associated files (photos, documents)
 	if student.PhotoID != "" {
-		if photo, err := s.repo.FindFileByID(ctx, student.PhotoID); err == nil && photo != nil {
+		if photo, err := s.fileService.repo.GetByID(student.PhotoID); err == nil && photo != nil {
 			if derr := model.CallStorageDeleteHook(ctx, photo.ID); derr != nil {
 				log.Printf("Warning: Failed to delete file %s: %v", photo.ID, derr)
 			}
@@ -357,7 +357,7 @@ func (s *IdentityService) anonymizeStudentData(ctx context.Context, student *mod
 	}
 
 	if student.StudentStatusFileID != "" {
-		if statusFile, err := s.repo.FindFileByID(ctx, student.StudentStatusFileID); err == nil && statusFile != nil {
+		if statusFile, err := s.fileService.repo.GetByID(student.StudentStatusFileID); err == nil && statusFile != nil {
 			if derr := model.CallStorageDeleteHook(ctx, statusFile.ID); derr != nil {
 				log.Printf("Warning: Failed to delete status file %s: %v", statusFile.ID, derr)
 			}
@@ -390,7 +390,7 @@ func (s *IdentityService) anonymizeCompanyData(ctx context.Context, company *mod
 
 	// Delete associated files (photos, banners)
 	if company.PhotoID != "" {
-		if photo, err := s.repo.FindFileByID(ctx, company.PhotoID); err == nil && photo != nil {
+		if photo, err := s.fileService.repo.GetByID(company.PhotoID); err == nil && photo != nil {
 			if derr := model.CallStorageDeleteHook(ctx, photo.ID); derr != nil {
 				log.Printf("Warning: Failed to delete file %s: %v", photo.ID, derr)
 			}
@@ -401,7 +401,7 @@ func (s *IdentityService) anonymizeCompanyData(ctx context.Context, company *mod
 	}
 
 	if company.BannerID != "" {
-		if banner, err := s.repo.FindFileByID(ctx, company.BannerID); err == nil && banner != nil {
+		if banner, err := s.fileService.repo.GetByID(company.BannerID); err == nil && banner != nil {
 			if derr := model.CallStorageDeleteHook(ctx, banner.ID); derr != nil {
 				log.Printf("Warning: Failed to delete banner file %s: %v", banner.ID, derr)
 			}

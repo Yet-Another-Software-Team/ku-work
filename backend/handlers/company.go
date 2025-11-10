@@ -24,7 +24,7 @@ func NewCompanyHandlers(service *services.CompanyService) *CompanyHandlers {
 // @Security BearerAuth
 // @Produce json
 // @Param id path string true "Company User ID"
-// @Success 200 {object} handlers.CompanyResponse "Company profile retrieved successfully"
+// @Success 200 {object} services.CompanyResponse "Company profile retrieved successfully"
 // @Failure 500 {object} object{error=string} "Internal Server Error"
 // @Router /company/{id} [get]
 func (h *CompanyHandlers) GetCompanyProfileHandler(ctx *gin.Context) {
@@ -42,7 +42,7 @@ func (h *CompanyHandlers) GetCompanyProfileHandler(ctx *gin.Context) {
 // @Tags Companies
 // @Security BearerAuth
 // @Produce json
-// @Success 200 {array} handlers.CompanyResponse "List of all companies"
+// @Success 200 {array} services.CompanyResponse "List of all companies"
 // @Failure 403 {object} object{error=string} "Forbidden"
 // @Failure 500 {object} object{error=string} "Internal Server Error"
 // @Router /company [get]

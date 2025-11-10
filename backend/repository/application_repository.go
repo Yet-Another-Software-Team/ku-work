@@ -45,7 +45,7 @@ type ShortApplicationDetail struct {
 	StudentID string `json:"studentId"`
 
 	// Attached files for the application (if loaded by the repository implementation)
-	Files []model.File `json:"files"`
+	Files []model.File `json:"files" gorm:"-"`
 }
 
 type ApplicationWithJobDetails struct {
@@ -69,7 +69,7 @@ type ApplicationWithJobDetails struct {
 	IsOpen        bool   `json:"isOpen"`
 
 	// Attached files for the application (if loaded by the repository implementation)
-	Files []model.File `json:"files"`
+	Files []model.File `json:"files" gorm:"-"`
 }
 
 // FullApplicantDetail projection for a single application with profile and files.
@@ -81,7 +81,7 @@ type FullApplicantDetail struct {
 	ContactPhone string       `json:"phone"`
 	ContactEmail string       `json:"email"`
 	Status       string       `json:"status"`
-	Files        []model.File `json:"files"`
+	Files        []model.File `json:"files" gorm:"-"`
 
 	// Applicant details
 	Username  string    `json:"username"`

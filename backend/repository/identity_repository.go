@@ -138,9 +138,6 @@ type IdentityRepository interface {
 	// UpdateJobApplicationFields performs partial updates on a job application identified by (jobID, userID).
 	UpdateJobApplicationFields(ctx context.Context, jobID uint, userID string, fields map[string]any) error
 
-	// FindFileByID returns a file record by id (used to invoke storage hooks before deletion).
-	FindFileByID(ctx context.Context, fileID string) (*model.File, error)
-
 	// UnscopedDeleteFileRecord permanently deletes a file record by id.
 	UnscopedDeleteFileRecord(ctx context.Context, fileID string) error
 }

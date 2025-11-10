@@ -18,6 +18,9 @@ type OauthHandlers struct {
 
 // NewOAuthHandlers constructs a new OauthHandlers instance.
 func NewOAuthHandlers(oauth *services.OAuthService, auth *services.AuthService) *OauthHandlers {
+	if oauth == nil || auth == nil {
+		panic("OAuth and Auth services must be provided")
+	}
 	return &OauthHandlers{
 		OAuth: oauth,
 		Auth:  auth,
@@ -43,11 +46,6 @@ type oauthToken struct {
 // @Failure 500 {object} object{error=string} "Internal Server Error"
 // @Router /auth/google/login [post]
 func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
-	if h.OAuth == nil || h.Auth == nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "service not available"})
-		return
-	}
-
 	var req oauthToken
 	if err := ctx.ShouldBindJSON(&req); err != nil || req.Code == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "authorization code is required"})

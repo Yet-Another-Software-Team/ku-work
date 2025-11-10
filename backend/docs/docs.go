@@ -10,10 +10,6 @@ const docTemplate = `{
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
         "contact": {},
-        "license": {
-            "name": "Apache 2.0",
-            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
-        },
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -126,53 +122,50 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Fetches job applications for the authenticated user. If the user is a company, it returns all applications for all their job postings. If the user is a student, it returns all of their own applications. Supports pagination and status filtering.",
+                "description": "Returns applications belonging to the authenticated user (company or student).",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Job Applications"
                 ],
-                "summary": "Get all applications for the current user",
+                "summary": "List current user's applications",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Filter by status (pending, accepted, rejected)",
+                        "description": "Status filter (pending|accepted|rejected)",
                         "name": "status",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "default": "date-desc",
-                        "description": "Sort by (name, date-desc, date-asc)",
+                        "description": "Sort (name|date-desc|date-asc)",
                         "name": "sortBy",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "default": 0,
-                        "description": "Offset for pagination",
+                        "description": "Offset",
                         "name": "offset",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "default": 32,
-                        "description": "Limit for pagination",
+                        "description": "Limit (max 64)",
                         "name": "limit",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of job applications with total count",
+                        "description": "OK",
                         "schema": {
                             "type": "object",
                             "properties": {
                                 "applications": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/definitions/handlers.ApplicationWithJobDetails"
+                                        "$ref": "#/definitions/repository.ApplicationWithJobDetails"
                                     }
                                 },
                                 "total": {
@@ -183,326 +176,6 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden: User is not a company or student",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/auth/admin/login": {
-            "post": {
-                "description": "Authenticates an admin user with their username and password. On successful authentication, it returns a JWT token for session management and sets a refresh token in a cookie.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Authentication"
-                ],
-                "summary": "Admin login",
-                "parameters": [
-                    {
-                        "description": "Login Credentials",
-                        "name": "credentials",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.LoginRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Login successful",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                " role": {
-                                    "type": "string"
-                                },
-                                " userId": {
-                                    "type": "string"
-                                },
-                                " username": {
-                                    "type": "string"
-                                },
-                                "token": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized: Invalid credentials",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/auth/company/login": {
-            "post": {
-                "description": "Authenticates a company user with their username and password. On successful authentication, it returns a JWT token for session management and sets a refresh token in a cookie.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Authentication"
-                ],
-                "summary": "Company login",
-                "parameters": [
-                    {
-                        "description": "Login Credentials",
-                        "name": "credentials",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.LoginRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Login successful",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                " role": {
-                                    "type": "string"
-                                },
-                                " userId": {
-                                    "type": "string"
-                                },
-                                " username": {
-                                    "type": "string"
-                                },
-                                "token": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized: Invalid credentials",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/auth/company/register": {
-            "post": {
-                "description": "Handles the registration of a new company account. It takes company details and credentials, creates a new user and company profile, and returns JWT tokens upon successful registration.",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Authentication"
-                ],
-                "summary": "Register a new company",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Company's username",
-                        "name": "username",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Password (min 8 characters)",
-                        "name": "password",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Company's contact email",
-                        "name": "email",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Company's website URL",
-                        "name": "website",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Company's contact phone number",
-                        "name": "phone",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Company's physical address",
-                        "name": "address",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "City",
-                        "name": "city",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Country",
-                        "name": "country",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "file",
-                        "description": "Company's profile photo",
-                        "name": "photo",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "file",
-                        "description": "Company's banner image",
-                        "name": "banner",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "About the company",
-                        "name": "about",
-                        "in": "formData"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Registration successful",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                " role": {
-                                    "type": "string"
-                                },
-                                " userId": {
-                                    "type": "string"
-                                },
-                                " username": {
-                                    "type": "string"
-                                },
-                                "token": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict: Username already exists",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -556,49 +229,26 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "properties": {
-                                " isRegistered": {
+                                "isRegistered": {
                                     "type": "boolean"
                                 },
-                                " role": {
-                                    "type": "string"
-                                },
-                                " userId": {
-                                    "type": "string"
-                                },
-                                " username": {
+                                "role": {
                                     "type": "string"
                                 },
                                 "token": {
                                     "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "201": {
-                        "description": "User registration successful",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                " isRegistered": {
-                                    "type": "boolean"
                                 },
-                                " role": {
+                                "userId": {
                                     "type": "string"
                                 },
-                                " userId": {
-                                    "type": "string"
-                                },
-                                " username": {
-                                    "type": "string"
-                                },
-                                "token": {
+                                "username": {
                                     "type": "string"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "Bad Request: Authorization code is required",
+                        "description": "Bad Request",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -609,7 +259,7 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Unauthorized: Invalid access token",
+                        "description": "Unauthorized",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -897,7 +547,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.CompanyResponse"
+                                "$ref": "#/definitions/services.CompanyResponse"
                             }
                         }
                     },
@@ -954,7 +604,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Company profile retrieved successfully",
                         "schema": {
-                            "$ref": "#/definitions/handlers.CompanyResponse"
+                            "$ref": "#/definitions/services.CompanyResponse"
                         }
                     },
                     "500": {
@@ -1033,27 +683,33 @@ const docTemplate = `{
                 }
             }
         },
-        "/jobs": {
+        "/jobs/{id}/applications": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieves a list of job postings with extensive filtering options. Behavior changes based on user role. Companies see their own jobs with application stats. Admins can see all jobs. Others see only open, approved jobs.",
+                "description": "Returns applications for a specific job (authorization enforced in service layer).",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Jobs"
+                    "Job Applications"
                 ],
-                "summary": "Fetch job listings",
+                "summary": "List applications for a job",
                 "parameters": [
                     {
                         "type": "integer",
-                        "default": 32,
-                        "description": "Pagination limit",
-                        "name": "limit",
+                        "description": "Job ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Status filter (pending|accepted|rejected)",
+                        "name": "status",
                         "in": "query"
                     },
                     {
@@ -1063,150 +719,25 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "Filter by location",
-                        "name": "location",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Search keyword for name and description",
-                        "name": "keyword",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Filter by job type(s)",
-                        "name": "jobType",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Filter by experience level(s)",
-                        "name": "experience",
-                        "in": "query"
-                    },
-                    {
                         "type": "integer",
-                        "description": "Minimum salary filter",
-                        "name": "minSalary",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Maximum salary filter",
-                        "name": "maxSalary",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "Filter by open status (company only)",
-                        "name": "open",
+                        "description": "Pagination limit (max 64)",
+                        "name": "limit",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter by company ID",
-                        "name": "companyId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Filter by specific job ID",
-                        "name": "id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by approval status (admin/company only)",
-                        "name": "approvalStatus",
+                        "description": "Sort (latest|oldest|name_az|name_za)",
+                        "name": "sortBy",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of jobs for a non-company user",
+                        "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "properties": {
-                                "jobs": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/definitions/handlers.JobResponse"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Allows an authenticated company to create a new job posting. The job will be pending approval by an admin.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Jobs"
-                ],
-                "summary": "Create a new job listing",
-                "parameters": [
-                    {
-                        "description": "Job creation data",
-                        "name": "job",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.CreateJobInput"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully created job listing",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "id": {
-                                    "type": "integer"
-                                }
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/repository.ShortApplicationDetail"
                             }
                         }
                     },
@@ -1244,183 +775,21 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/jobs/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retrieves the detailed information for a single job posting by its ID.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Jobs"
-                ],
-                "summary": "Get job details",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Job ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Job details retrieved successfully",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.JobResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request: Invalid job ID",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
             },
-            "patch": {
+            "delete": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Allows a company to edit one of their own job postings. Supports partial updates.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Jobs"
-                ],
-                "summary": "Edit a job listing",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Job ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Job update data",
-                        "name": "job",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.EditJobInput"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Job updated successfully",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "message": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/jobs/{id}/applications": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Delete all job applications for a job, includes filter for only rejected, pending, or accepted jobs.",
+                "description": "Deletes applications for a job filtered by status flags.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Job Applications"
                 ],
-                "summary": "Delete job applications for a job",
+                "summary": "Clear job applications",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1430,36 +799,33 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Whether to include pending job applications or not",
+                        "description": "Include pending",
                         "name": "pending",
                         "in": "body",
-                        "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.ClearJobApplicationsHandler.ClearJobApplicationsInput"
+                            "type": "boolean"
                         }
                     },
                     {
-                        "description": "Whether to include accepted job applications or not",
-                        "name": "accepted",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ClearJobApplicationsHandler.ClearJobApplicationsInput"
-                        }
-                    },
-                    {
-                        "description": "Whether to include rejected job applications or not",
+                        "description": "Include rejected",
                         "name": "rejected",
                         "in": "body",
-                        "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.ClearJobApplicationsHandler.ClearJobApplicationsInput"
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "description": "Include accepted",
+                        "name": "accepted",
+                        "in": "body",
+                        "schema": {
+                            "type": "boolean"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Success",
+                        "description": "OK",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -1470,7 +836,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request: Invalid job ID",
+                        "description": "Bad Request",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -1482,17 +848,6 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found: Job not found",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -1523,14 +878,14 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieves detailed information about a single job application for a specific student, including the applicant's full profile, contact information, and attached files (resume, etc.).",
+                "description": "Returns detailed application info for a student email on a job.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Job Applications"
                 ],
-                "summary": "Get a specific job application",
+                "summary": "Get a single job application",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1541,21 +896,21 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Student Email",
+                        "description": "Student email",
                         "name": "email",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Detailed job application",
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.FullApplicantDetail"
+                            "$ref": "#/definitions/repository.FullApplicantDetail"
                         }
                     },
                     "400": {
-                        "description": "Bad Request: Invalid job ID",
+                        "description": "Bad Request",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -1577,7 +932,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "Not Found: Job application not found",
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -1608,7 +963,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Updates the status of a job application to 'accepted', 'rejected', or 'pending'. This action can only be performed by the company that posted the job.",
+                "description": "Changes the status of a student's application for a job.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1618,7 +973,7 @@ const docTemplate = `{
                 "tags": [
                     "Job Applications"
                 ],
-                "summary": "Update job application status",
+                "summary": "Update application status",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1636,31 +991,31 @@ const docTemplate = `{
                     },
                     {
                         "description": "New status",
-                        "name": "status",
+                        "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.UpdateJobApplicationStatusHandler.UpdateStatusInput"
+                            "$ref": "#/definitions/handlers.UpdateStatusInput"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Application status updated successfully",
+                        "description": "OK",
                         "schema": {
                             "type": "object",
                             "properties": {
-                                " status": {
+                                "message": {
                                     "type": "string"
                                 },
-                                "message": {
+                                "status": {
                                     "type": "string"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "Bad Request: Invalid ID or input",
+                        "description": "Bad Request",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -1672,28 +1027,6 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden: User is not authorized to update this application",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found: Job or application not found",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -1724,7 +1057,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Creates a new job application. Allows an approved student to apply to an approved job posting by submitting their application with optional alternate contact information and required document files (e.g., resume, cover letter).",
+                "description": "Submit a new application (approved student applying to an approved job). Files must include up to 2 documents.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -1744,28 +1077,28 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "file",
-                        "description": "Files to upload (e.g., Resume, Cover Letter). Max 2 files.",
-                        "name": "Files",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
                         "type": "string",
                         "description": "Alternate phone number",
-                        "name": "AltPhone",
+                        "name": "phone",
                         "in": "formData"
                     },
                     {
                         "type": "string",
                         "description": "Alternate email address",
-                        "name": "AltEmail",
+                        "name": "email",
                         "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Application files (max 2)",
+                        "name": "files",
+                        "in": "formData",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successfully created job application",
+                        "description": "OK",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -1776,7 +1109,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request: Invalid input",
+                        "description": "Invalid input",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -1797,114 +1130,8 @@ const docTemplate = `{
                             }
                         }
                     },
-                    "403": {
-                        "description": "Forbidden: Student status not approved",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found: Invalid Job ID",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
                     "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/jobs/{id}/approval": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Allows an admin to approve or reject a job posting submitted by a company.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Jobs"
-                ],
-                "summary": "Approve or reject a job listing (Admin only)",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Job ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Approval action",
-                        "name": "approval",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ApproveJobInput"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "ok",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "message": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal error",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -2203,75 +1430,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/me/delete": {
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Marks the account for anonymization. Account will be deactivated immediately and all personal data will be anonymized after the grace period (PDPA compliant). Anonymized data is retained for analytics and compliance purposes but cannot be linked back to the individual.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Request account deletion",
-                "responses": {
-                    "200": {
-                        "description": "Account marked for anonymization",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "deletion_date": {
-                                    "type": "string"
-                                },
-                                "grace_period_days": {
-                                    "type": "integer"
-                                },
-                                "message": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "User not found",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/me/reactivate": {
             "post": {
                 "security": [
@@ -2411,7 +1569,7 @@ const docTemplate = `{
                             "type": "object",
                             "properties": {
                                 "profile": {
-                                    "$ref": "#/definitions/handlers.StudentHandler"
+                                    "$ref": "#/definitions/repository.StudentProfile"
                                 }
                             }
                         }
@@ -2527,499 +1685,18 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "handlers.ApplicationWithJobDetails": {
-            "type": "object",
-            "properties": {
-                "companyName": {
-                    "type": "string"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "experience": {
-                    "type": "string"
-                },
-                "files": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.File"
-                    }
-                },
-                "isOpen": {
-                    "type": "boolean"
-                },
-                "jobId": {
-                    "type": "integer"
-                },
-                "jobName": {
-                    "type": "string"
-                },
-                "jobType": {
-                    "type": "string"
-                },
-                "maxSalary": {
-                    "type": "integer"
-                },
-                "minSalary": {
-                    "type": "integer"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "photoId": {
-                    "type": "string"
-                },
-                "position": {
-                    "type": "string"
-                },
-                "status": {
-                    "$ref": "#/definitions/model.JobApplicationStatus"
-                },
-                "userId": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.ApproveJobInput": {
-            "type": "object",
-            "properties": {
-                "approve": {
-                    "type": "boolean"
-                },
-                "reason": {
-                    "type": "string",
-                    "maxLength": 16384
-                }
-            }
-        },
-        "handlers.ClearJobApplicationsHandler.ClearJobApplicationsInput": {
-            "type": "object",
-            "properties": {
-                "accepted": {
-                    "type": "boolean"
-                },
-                "pending": {
-                    "type": "boolean"
-                },
-                "rejected": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "handlers.CompanyResponse": {
-            "type": "object",
-            "properties": {
-                "about": {
-                    "type": "string"
-                },
-                "address": {
-                    "type": "string"
-                },
-                "bannerId": {
-                    "type": "string"
-                },
-                "city": {
-                    "type": "string"
-                },
-                "country": {
-                    "type": "string"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "photoId": {
-                    "type": "string"
-                },
-                "updatedAt": {
-                    "type": "string"
-                },
-                "userId": {
-                    "type": "string"
-                },
-                "website": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.CreateJobInput": {
-            "type": "object",
-            "required": [
-                "description",
-                "duration",
-                "experience",
-                "jobType",
-                "location",
-                "maxSalary",
-                "minSalary",
-                "name",
-                "position"
-            ],
-            "properties": {
-                "description": {
-                    "type": "string",
-                    "maxLength": 16384
-                },
-                "duration": {
-                    "type": "string",
-                    "maxLength": 128
-                },
-                "experience": {
-                    "type": "string",
-                    "enum": [
-                        "newgrad",
-                        "junior",
-                        "senior",
-                        "manager",
-                        "internship"
-                    ]
-                },
-                "jobType": {
-                    "type": "string",
-                    "enum": [
-                        "fulltime",
-                        "parttime",
-                        "contract",
-                        "casual",
-                        "internship"
-                    ]
-                },
-                "location": {
-                    "type": "string",
-                    "maxLength": 128
-                },
-                "maxSalary": {
-                    "type": "integer"
-                },
-                "minSalary": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string",
-                    "maxLength": 128
-                },
-                "notifyOnApplication": {
-                    "type": "boolean"
-                },
-                "open": {
-                    "type": "boolean"
-                },
-                "position": {
-                    "type": "string",
-                    "maxLength": 128
-                }
-            }
-        },
-        "handlers.EditJobInput": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string",
-                    "maxLength": 16384
-                },
-                "duration": {
-                    "type": "string",
-                    "maxLength": 128
-                },
-                "experience": {
-                    "type": "string",
-                    "enum": [
-                        "newgrad",
-                        "junior",
-                        "senior",
-                        "manager",
-                        "internship"
-                    ]
-                },
-                "jobType": {
-                    "type": "string",
-                    "enum": [
-                        "fulltime",
-                        "parttime",
-                        "contract",
-                        "casual",
-                        "internship"
-                    ]
-                },
-                "location": {
-                    "type": "string",
-                    "maxLength": 128
-                },
-                "maxSalary": {
-                    "type": "integer"
-                },
-                "minSalary": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string",
-                    "maxLength": 128
-                },
-                "notifyOnApplication": {
-                    "type": "boolean"
-                },
-                "open": {
-                    "type": "boolean"
-                },
-                "position": {
-                    "type": "string",
-                    "maxLength": 128
-                }
-            }
-        },
-        "handlers.FullApplicantDetail": {
-            "type": "object",
-            "properties": {
-                "aboutMe": {
-                    "type": "string"
-                },
-                "birthDate": {
-                    "type": "string"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "files": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.File"
-                    }
-                },
-                "github": {
-                    "type": "string"
-                },
-                "jobId": {
-                    "type": "integer"
-                },
-                "linkedIn": {
-                    "type": "string"
-                },
-                "major": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "photoId": {
-                    "type": "string"
-                },
-                "status": {
-                    "$ref": "#/definitions/model.JobApplicationStatus"
-                },
-                "studentId": {
-                    "type": "string"
-                },
-                "userId": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.JobResponse": {
-            "type": "object",
-            "properties": {
-                "approvalStatus": {
-                    "type": "string"
-                },
-                "bannerId": {
-                    "type": "string"
-                },
-                "companyId": {
-                    "type": "string"
-                },
-                "companyName": {
-                    "type": "string"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "duration": {
-                    "type": "string"
-                },
-                "experience": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "jobType": {
-                    "type": "string"
-                },
-                "location": {
-                    "type": "string"
-                },
-                "maxSalary": {
-                    "type": "integer"
-                },
-                "minSalary": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "notifyOnApplication": {
-                    "type": "boolean"
-                },
-                "open": {
-                    "type": "boolean"
-                },
-                "photoId": {
-                    "type": "string"
-                },
-                "position": {
-                    "type": "string"
-                },
-                "updatedAt": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.JobWithStatsResponse": {
-            "type": "object",
-            "properties": {
-                "accepted": {
-                    "type": "integer"
-                },
-                "approvalStatus": {
-                    "type": "string"
-                },
-                "bannerId": {
-                    "type": "string"
-                },
-                "companyId": {
-                    "type": "string"
-                },
-                "companyName": {
-                    "type": "string"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "duration": {
-                    "type": "string"
-                },
-                "experience": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "jobType": {
-                    "type": "string"
-                },
-                "location": {
-                    "type": "string"
-                },
-                "maxSalary": {
-                    "type": "integer"
-                },
-                "minSalary": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "notifyOnApplication": {
-                    "type": "boolean"
-                },
-                "open": {
-                    "type": "boolean"
-                },
-                "pending": {
-                    "type": "integer"
-                },
-                "photoId": {
-                    "type": "string"
-                },
-                "position": {
-                    "type": "string"
-                },
-                "rejected": {
-                    "type": "integer"
-                },
-                "updatedAt": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.LoginRequest": {
-            "type": "object",
-            "properties": {
-                "password": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.ShortApplicationDetail": {
-            "type": "object",
-            "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "files": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.File"
-                    }
-                },
-                "jobId": {
-                    "type": "integer"
-                },
-                "major": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "studentId": {
-                    "type": "string"
-                },
-                "userId": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
         "handlers.StudentHandler": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+                "accountSvc": {
+                    "$ref": "#/definitions/services.IdentityService"
+                },
+                "studentSvc": {
+                    "$ref": "#/definitions/services.StudentService"
+                }
+            }
         },
-        "handlers.UpdateJobApplicationStatusHandler.UpdateStatusInput": {
+        "handlers.UpdateStatusInput": {
             "type": "object",
             "required": [
                 "status"
@@ -3078,9 +1755,6 @@ const docTemplate = `{
                 "createdAt": {
                     "type": "string"
                 },
-                "fileType": {
-                    "$ref": "#/definitions/model.FileType"
-                },
                 "id": {
                     "type": "string"
                 },
@@ -3101,40 +1775,6 @@ const docTemplate = `{
             "x-enum-varnames": [
                 "FileCategoryImage",
                 "FileCategoryDocument"
-            ]
-        },
-        "model.FileType": {
-            "type": "string",
-            "enum": [
-                "jpg",
-                "jpeg",
-                "png",
-                "webp",
-                "pdf",
-                "doc",
-                "docx"
-            ],
-            "x-enum-varnames": [
-                "FileTypeJPG",
-                "FileTypeJPEG",
-                "FileTypePNG",
-                "FileTypeWEBP",
-                "FileTypePDF",
-                "FileTypeDOC",
-                "FileTypeDOCX"
-            ]
-        },
-        "model.JobApplicationStatus": {
-            "type": "string",
-            "enum": [
-                "accepted",
-                "rejected",
-                "pending"
-            ],
-            "x-enum-varnames": [
-                "JobApplicationAccepted",
-                "JobApplicationRejected",
-                "JobApplicationPending"
             ]
         },
         "model.MailLog": {
@@ -3185,26 +1825,299 @@ const docTemplate = `{
                 "MailLogStatusTemporaryError",
                 "MailLogStatusPermanentError"
             ]
-        }
-    },
-    "securityDefinitions": {
-        "BearerAuth": {
-            "description": "Type \"Bearer\" followed by a space and the Token",
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header"
+        },
+        "model.StudentApprovalStatus": {
+            "type": "string",
+            "enum": [
+                "accepted",
+                "rejected",
+                "pending"
+            ],
+            "x-enum-varnames": [
+                "StudentApprovalAccepted",
+                "StudentApprovalRejected",
+                "StudentApprovalPending"
+            ]
+        },
+        "repository.ApplicationWithJobDetails": {
+            "type": "object",
+            "properties": {
+                "companyName": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "description": "Base application fields",
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "experience": {
+                    "type": "string"
+                },
+                "files": {
+                    "description": "Attached files for the application (if loaded by the repository implementation)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.File"
+                    }
+                },
+                "isOpen": {
+                    "type": "boolean"
+                },
+                "jobId": {
+                    "type": "integer"
+                },
+                "jobName": {
+                    "type": "string"
+                },
+                "jobType": {
+                    "type": "string"
+                },
+                "maxSalary": {
+                    "type": "integer"
+                },
+                "minSalary": {
+                    "type": "integer"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "photoId": {
+                    "type": "string"
+                },
+                "position": {
+                    "description": "Denormalized job/company fields",
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
+        "repository.FullApplicantDetail": {
+            "type": "object",
+            "properties": {
+                "aboutMe": {
+                    "type": "string"
+                },
+                "birthDate": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "description": "Base application fields",
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.File"
+                    }
+                },
+                "github": {
+                    "type": "string"
+                },
+                "jobId": {
+                    "type": "integer"
+                },
+                "linkedIn": {
+                    "type": "string"
+                },
+                "major": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "photoId": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "studentId": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "string"
+                },
+                "username": {
+                    "description": "Applicant details",
+                    "type": "string"
+                }
+            }
+        },
+        "repository.ShortApplicationDetail": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "description": "Base application fields",
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "files": {
+                    "description": "Attached files for the application (if loaded by the repository implementation)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.File"
+                    }
+                },
+                "jobId": {
+                    "type": "integer"
+                },
+                "major": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "studentId": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "string"
+                },
+                "username": {
+                    "description": "Denormalized applicant fields",
+                    "type": "string"
+                }
+            }
+        },
+        "repository.StudentProfile": {
+            "type": "object",
+            "properties": {
+                "aboutMe": {
+                    "type": "string"
+                },
+                "approvalStatus": {
+                    "$ref": "#/definitions/model.StudentApprovalStatus"
+                },
+                "birthDate": {
+                    "type": "string",
+                    "format": "date"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "firstName": {
+                    "type": "string"
+                },
+                "fullName": {
+                    "type": "string"
+                },
+                "github": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "lastName": {
+                    "type": "string"
+                },
+                "linkedIn": {
+                    "type": "string"
+                },
+                "major": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "photo": {
+                    "$ref": "#/definitions/model.File"
+                },
+                "photoId": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "statusFile": {
+                    "$ref": "#/definitions/model.File"
+                },
+                "statusFileId": {
+                    "type": "string"
+                },
+                "studentId": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "services.CompanyResponse": {
+            "type": "object",
+            "properties": {
+                "about": {
+                    "type": "string"
+                },
+                "address": {
+                    "type": "string"
+                },
+                "bannerId": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "country": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "photoId": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "string"
+                },
+                "website": {
+                    "type": "string"
+                }
+            }
+        },
+        "services.IdentityService": {
+            "type": "object"
+        },
+        "services.StudentService": {
+            "type": "object"
         }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "",
 	Host:             "",
 	BasePath:         "",
 	Schemes:          []string{},
-	Title:            "KU-Work API",
-	Description:      "This is a sample API for KU-Work",
+	Title:            "",
+	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

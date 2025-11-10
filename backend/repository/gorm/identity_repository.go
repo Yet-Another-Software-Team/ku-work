@@ -339,17 +339,6 @@ func (r *GormIdentityRepository) UpdateJobApplicationFields(ctx context.Context,
 		Updates(fields).Error
 }
 
-func (r *GormIdentityRepository) FindFileByID(ctx context.Context, fileID string) (*model.File, error) {
-	var f model.File
-	if err := r.db.WithContext(ctx).
-		Model(&model.File{}).
-		Where("id = ?", fileID).
-		First(&f).Error; err != nil {
-		return nil, err
-	}
-	return &f, nil
-}
-
 func (r *GormIdentityRepository) UnscopedDeleteFileRecord(ctx context.Context, fileID string) error {
 	return r.db.WithContext(ctx).
 		Unscoped().

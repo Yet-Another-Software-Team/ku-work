@@ -218,6 +218,7 @@ const isLoading = ref(true);
 
 const showAcceptModal = ref(false);
 const showRejectModal = ref(false);
+const actionLoading = ref<null | "accept" | "decline">(null);
 
 const job = ref<JobPost | null>(null);
 const photo = ref<string>("");

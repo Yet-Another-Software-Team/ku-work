@@ -1,341 +1,12 @@
 definitions:
-  handlers.ApplicationWithJobDetails:
-    properties:
-      companyName:
-        type: string
-      createdAt:
-        type: string
-      email:
-        type: string
-      experience:
-        type: string
-      files:
-        items:
-          $ref: '#/definitions/model.File'
-        type: array
-      isOpen:
-        type: boolean
-      jobId:
-        type: integer
-      jobName:
-        type: string
-      jobType:
-        type: string
-      maxSalary:
-        type: integer
-      minSalary:
-        type: integer
-      phone:
-        type: string
-      photoId:
-        type: string
-      position:
-        type: string
-      status:
-        $ref: '#/definitions/model.JobApplicationStatus'
-      userId:
-        type: string
-    type: object
-  handlers.ApproveJobInput:
-    properties:
-      approve:
-        type: boolean
-      reason:
-        maxLength: 16384
-        type: string
-    type: object
-  handlers.ClearJobApplicationsHandler.ClearJobApplicationsInput:
-    properties:
-      accepted:
-        type: boolean
-      pending:
-        type: boolean
-      rejected:
-        type: boolean
-    type: object
-  handlers.CompanyResponse:
-    properties:
-      about:
-        type: string
-      address:
-        type: string
-      bannerId:
-        type: string
-      city:
-        type: string
-      country:
-        type: string
-      createdAt:
-        type: string
-      email:
-        type: string
-      id:
-        type: integer
-      name:
-        type: string
-      phone:
-        type: string
-      photoId:
-        type: string
-      updatedAt:
-        type: string
-      userId:
-        type: string
-      website:
-        type: string
-    type: object
-  handlers.CreateJobInput:
-    properties:
-      description:
-        maxLength: 16384
-        type: string
-      duration:
-        maxLength: 128
-        type: string
-      experience:
-        enum:
-        - newgrad
-        - junior
-        - senior
-        - manager
-        - internship
-        type: string
-      jobType:
-        enum:
-        - fulltime
-        - parttime
-        - contract
-        - casual
-        - internship
-        type: string
-      location:
-        maxLength: 128
-        type: string
-      maxSalary:
-        type: integer
-      minSalary:
-        type: integer
-      name:
-        maxLength: 128
-        type: string
-      notifyOnApplication:
-        type: boolean
-      open:
-        type: boolean
-      position:
-        maxLength: 128
-        type: string
-    required:
-    - description
-    - duration
-    - experience
-    - jobType
-    - location
-    - maxSalary
-    - minSalary
-    - name
-    - position
-    type: object
-  handlers.EditJobInput:
-    properties:
-      description:
-        maxLength: 16384
-        type: string
-      duration:
-        maxLength: 128
-        type: string
-      experience:
-        enum:
-        - newgrad
-        - junior
-        - senior
-        - manager
-        - internship
-        type: string
-      jobType:
-        enum:
-        - fulltime
-        - parttime
-        - contract
-        - casual
-        - internship
-        type: string
-      location:
-        maxLength: 128
-        type: string
-      maxSalary:
-        type: integer
-      minSalary:
-        type: integer
-      name:
-        maxLength: 128
-        type: string
-      notifyOnApplication:
-        type: boolean
-      open:
-        type: boolean
-      position:
-        maxLength: 128
-        type: string
-    type: object
-  handlers.FullApplicantDetail:
-    properties:
-      aboutMe:
-        type: string
-      birthDate:
-        type: string
-      createdAt:
-        type: string
-      email:
-        type: string
-      files:
-        items:
-          $ref: '#/definitions/model.File'
-        type: array
-      github:
-        type: string
-      jobId:
-        type: integer
-      linkedIn:
-        type: string
-      major:
-        type: string
-      phone:
-        type: string
-      photoId:
-        type: string
-      status:
-        $ref: '#/definitions/model.JobApplicationStatus'
-      studentId:
-        type: string
-      userId:
-        type: string
-      username:
-        type: string
-    type: object
-  handlers.JobResponse:
-    properties:
-      approvalStatus:
-        type: string
-      bannerId:
-        type: string
-      companyId:
-        type: string
-      companyName:
-        type: string
-      createdAt:
-        type: string
-      description:
-        type: string
-      duration:
-        type: string
-      experience:
-        type: string
-      id:
-        type: integer
-      jobType:
-        type: string
-      location:
-        type: string
-      maxSalary:
-        type: integer
-      minSalary:
-        type: integer
-      name:
-        type: string
-      notifyOnApplication:
-        type: boolean
-      open:
-        type: boolean
-      photoId:
-        type: string
-      position:
-        type: string
-      updatedAt:
-        type: string
-    type: object
-  handlers.JobWithStatsResponse:
-    properties:
-      accepted:
-        type: integer
-      approvalStatus:
-        type: string
-      bannerId:
-        type: string
-      companyId:
-        type: string
-      companyName:
-        type: string
-      createdAt:
-        type: string
-      description:
-        type: string
-      duration:
-        type: string
-      experience:
-        type: string
-      id:
-        type: integer
-      jobType:
-        type: string
-      location:
-        type: string
-      maxSalary:
-        type: integer
-      minSalary:
-        type: integer
-      name:
-        type: string
-      notifyOnApplication:
-        type: boolean
-      open:
-        type: boolean
-      pending:
-        type: integer
-      photoId:
-        type: string
-      position:
-        type: string
-      rejected:
-        type: integer
-      updatedAt:
-        type: string
-    type: object
-  handlers.LoginRequest:
-    properties:
-      password:
-        type: string
-      username:
-        type: string
-    type: object
-  handlers.ShortApplicationDetail:
-    properties:
-      createdAt:
-        type: string
-      email:
-        type: string
-      files:
-        items:
-          $ref: '#/definitions/model.File'
-        type: array
-      jobId:
-        type: integer
-      major:
-        type: string
-      phone:
-        type: string
-      status:
-        type: string
-      studentId:
-        type: string
-      userId:
-        type: string
-      username:
-        type: string
-    type: object
   handlers.StudentHandler:
+    properties:
+      accountSvc:
+        $ref: '#/definitions/services.IdentityService'
+      studentSvc:
+        $ref: '#/definitions/services.StudentService'
     type: object
-  handlers.UpdateJobApplicationStatusHandler.UpdateStatusInput:
+  handlers.UpdateStatusInput:
     properties:
       status:
         enum:
@@ -374,8 +45,6 @@ definitions:
         $ref: '#/definitions/model.FileCategory'
       createdAt:
         type: string
-      fileType:
-        $ref: '#/definitions/model.FileType'
       id:
         type: string
       updatedAt:
@@ -391,34 +60,6 @@ definitions:
     x-enum-varnames:
     - FileCategoryImage
     - FileCategoryDocument
-  model.FileType:
-    enum:
-    - jpg
-    - jpeg
-    - png
-    - webp
-    - pdf
-    - doc
-    - docx
-    type: string
-    x-enum-varnames:
-    - FileTypeJPG
-    - FileTypeJPEG
-    - FileTypePNG
-    - FileTypeWEBP
-    - FileTypePDF
-    - FileTypeDOC
-    - FileTypeDOCX
-  model.JobApplicationStatus:
-    enum:
-    - accepted
-    - rejected
-    - pending
-    type: string
-    x-enum-varnames:
-    - JobApplicationAccepted
-    - JobApplicationRejected
-    - JobApplicationPending
   model.MailLog:
     properties:
       body:
@@ -453,14 +94,200 @@ definitions:
     - MailLogStatusDelivered
     - MailLogStatusTemporaryError
     - MailLogStatusPermanentError
+  model.StudentApprovalStatus:
+    enum:
+    - accepted
+    - rejected
+    - pending
+    type: string
+    x-enum-varnames:
+    - StudentApprovalAccepted
+    - StudentApprovalRejected
+    - StudentApprovalPending
+  repository.ApplicationWithJobDetails:
+    properties:
+      companyName:
+        type: string
+      createdAt:
+        description: Base application fields
+        type: string
+      email:
+        type: string
+      experience:
+        type: string
+      files:
+        description: Attached files for the application (if loaded by the repository
+          implementation)
+        items:
+          $ref: '#/definitions/model.File'
+        type: array
+      isOpen:
+        type: boolean
+      jobId:
+        type: integer
+      jobName:
+        type: string
+      jobType:
+        type: string
+      maxSalary:
+        type: integer
+      minSalary:
+        type: integer
+      phone:
+        type: string
+      photoId:
+        type: string
+      position:
+        description: Denormalized job/company fields
+        type: string
+      status:
+        type: string
+      userId:
+        type: string
+    type: object
+  repository.FullApplicantDetail:
+    properties:
+      aboutMe:
+        type: string
+      birthDate:
+        type: string
+      createdAt:
+        description: Base application fields
+        type: string
+      email:
+        type: string
+      files:
+        items:
+          $ref: '#/definitions/model.File'
+        type: array
+      github:
+        type: string
+      jobId:
+        type: integer
+      linkedIn:
+        type: string
+      major:
+        type: string
+      phone:
+        type: string
+      photoId:
+        type: string
+      status:
+        type: string
+      studentId:
+        type: string
+      userId:
+        type: string
+      username:
+        description: Applicant details
+        type: string
+    type: object
+  repository.ShortApplicationDetail:
+    properties:
+      createdAt:
+        description: Base application fields
+        type: string
+      email:
+        type: string
+      files:
+        description: Attached files for the application (if loaded by the repository
+          implementation)
+        items:
+          $ref: '#/definitions/model.File'
+        type: array
+      jobId:
+        type: integer
+      major:
+        type: string
+      phone:
+        type: string
+      status:
+        type: string
+      studentId:
+        type: string
+      userId:
+        type: string
+      username:
+        description: Denormalized applicant fields
+        type: string
+    type: object
+  repository.StudentProfile:
+    properties:
+      aboutMe:
+        type: string
+      approvalStatus:
+        $ref: '#/definitions/model.StudentApprovalStatus'
+      birthDate:
+        format: date
+        type: string
+      createdAt:
+        type: string
+      email:
+        type: string
+      firstName:
+        type: string
+      fullName:
+        type: string
+      github:
+        type: string
+      id:
+        type: string
+      lastName:
+        type: string
+      linkedIn:
+        type: string
+      major:
+        type: string
+      phone:
+        type: string
+      photo:
+        $ref: '#/definitions/model.File'
+      photoId:
+        type: string
+      status:
+        type: string
+      statusFile:
+        $ref: '#/definitions/model.File'
+      statusFileId:
+        type: string
+      studentId:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  services.CompanyResponse:
+    properties:
+      about:
+        type: string
+      address:
+        type: string
+      bannerId:
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      createdAt:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      photoId:
+        type: string
+      userId:
+        type: string
+      website:
+        type: string
+    type: object
+  services.IdentityService:
+    type: object
+  services.StudentService:
+    type: object
 info:
   contact: {}
-  description: This is a sample API for KU-Work
-  license:
-    name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
-  title: KU-Work API
-  version: "1.0"
 paths:
   /admin/audits:
     get:
@@ -528,27 +355,22 @@ paths:
       - Admin
   /applications:
     get:
-      description: Fetches job applications for the authenticated user. If the user
-        is a company, it returns all applications for all their job postings. If the
-        user is a student, it returns all of their own applications. Supports pagination
-        and status filtering.
+      description: Returns applications belonging to the authenticated user (company
+        or student).
       parameters:
-      - description: Filter by status (pending, accepted, rejected)
+      - description: Status filter (pending|accepted|rejected)
         in: query
         name: status
         type: string
-      - default: date-desc
-        description: Sort by (name, date-desc, date-asc)
+      - description: Sort (name|date-desc|date-asc)
         in: query
         name: sortBy
         type: string
-      - default: 0
-        description: Offset for pagination
+      - description: Offset
         in: query
         name: offset
         type: integer
-      - default: 32
-        description: Limit for pagination
+      - description: Limit (max 64)
         in: query
         name: limit
         type: integer
@@ -556,25 +378,18 @@ paths:
       - application/json
       responses:
         "200":
-          description: List of job applications with total count
+          description: OK
           schema:
             properties:
               applications:
                 items:
-                  $ref: '#/definitions/handlers.ApplicationWithJobDetails'
+                  $ref: '#/definitions/repository.ApplicationWithJobDetails'
                 type: array
               total:
                 type: integer
             type: object
         "401":
           description: Unauthorized
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "403":
-          description: 'Forbidden: User is not a company or student'
           schema:
             properties:
               error:
@@ -589,218 +404,9 @@ paths:
             type: object
       security:
       - BearerAuth: []
-      summary: Get all applications for the current user
+      summary: List current user's applications
       tags:
       - Job Applications
-  /auth/admin/login:
-    post:
-      consumes:
-      - application/json
-      description: Authenticates an admin user with their username and password. On
-        successful authentication, it returns a JWT token for session management and
-        sets a refresh token in a cookie.
-      parameters:
-      - description: Login Credentials
-        in: body
-        name: credentials
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.LoginRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Login successful
-          schema:
-            properties:
-              ' role':
-                type: string
-              ' userId':
-                type: string
-              ' username':
-                type: string
-              token:
-                type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "401":
-          description: 'Unauthorized: Invalid credentials'
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-      summary: Admin login
-      tags:
-      - Authentication
-  /auth/company/login:
-    post:
-      consumes:
-      - application/json
-      description: Authenticates a company user with their username and password.
-        On successful authentication, it returns a JWT token for session management
-        and sets a refresh token in a cookie.
-      parameters:
-      - description: Login Credentials
-        in: body
-        name: credentials
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.LoginRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Login successful
-          schema:
-            properties:
-              ' role':
-                type: string
-              ' userId':
-                type: string
-              ' username':
-                type: string
-              token:
-                type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "401":
-          description: 'Unauthorized: Invalid credentials'
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-      summary: Company login
-      tags:
-      - Authentication
-  /auth/company/register:
-    post:
-      consumes:
-      - multipart/form-data
-      description: Handles the registration of a new company account. It takes company
-        details and credentials, creates a new user and company profile, and returns
-        JWT tokens upon successful registration.
-      parameters:
-      - description: Company's username
-        in: formData
-        name: username
-        required: true
-        type: string
-      - description: Password (min 8 characters)
-        in: formData
-        name: password
-        required: true
-        type: string
-      - description: Company's contact email
-        in: formData
-        name: email
-        required: true
-        type: string
-      - description: Company's website URL
-        in: formData
-        name: website
-        type: string
-      - description: Company's contact phone number
-        in: formData
-        name: phone
-        required: true
-        type: string
-      - description: Company's physical address
-        in: formData
-        name: address
-        required: true
-        type: string
-      - description: City
-        in: formData
-        name: city
-        required: true
-        type: string
-      - description: Country
-        in: formData
-        name: country
-        required: true
-        type: string
-      - description: Company's profile photo
-        in: formData
-        name: photo
-        required: true
-        type: file
-      - description: Company's banner image
-        in: formData
-        name: banner
-        required: true
-        type: file
-      - description: About the company
-        in: formData
-        name: about
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Registration successful
-          schema:
-            properties:
-              ' role':
-                type: string
-              ' userId':
-                type: string
-              ' username':
-                type: string
-              token:
-                type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "409":
-          description: 'Conflict: Username already exists'
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-      summary: Register a new company
-      tags:
-      - Authentication
   /auth/google/login:
     post:
       consumes:
@@ -824,41 +430,26 @@ paths:
           description: Login successful
           schema:
             properties:
-              ' isRegistered':
+              isRegistered:
                 type: boolean
-              ' role':
-                type: string
-              ' userId':
-                type: string
-              ' username':
+              role:
                 type: string
               token:
                 type: string
-            type: object
-        "201":
-          description: User registration successful
-          schema:
-            properties:
-              ' isRegistered':
-                type: boolean
-              ' role':
+              userId:
                 type: string
-              ' userId':
-                type: string
-              ' username':
-                type: string
-              token:
+              username:
                 type: string
             type: object
         "400":
-          description: 'Bad Request: Authorization code is required'
+          description: Bad Request
           schema:
             properties:
               error:
                 type: string
             type: object
         "401":
-          description: 'Unauthorized: Invalid access token'
+          description: Unauthorized
           schema:
             properties:
               error:
@@ -1046,7 +637,7 @@ paths:
           description: List of all companies
           schema:
             items:
-              $ref: '#/definitions/handlers.CompanyResponse'
+              $ref: '#/definitions/services.CompanyResponse'
             type: array
         "403":
           description: Forbidden
@@ -1082,7 +673,7 @@ paths:
         "200":
           description: Company profile retrieved successfully
           schema:
-            $ref: '#/definitions/handlers.CompanyResponse'
+            $ref: '#/definitions/services.CompanyResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -1136,204 +727,35 @@ paths:
       summary: Get a file
       tags:
       - Files
-  /jobs:
-    get:
-      description: Retrieves a list of job postings with extensive filtering options.
-        Behavior changes based on user role. Companies see their own jobs with application
-        stats. Admins can see all jobs. Others see only open, approved jobs.
-      parameters:
-      - default: 32
-        description: Pagination limit
-        in: query
-        name: limit
-        type: integer
-      - description: Pagination offset
-        in: query
-        name: offset
-        type: integer
-      - description: Filter by location
-        in: query
-        name: location
-        type: string
-      - description: Search keyword for name and description
-        in: query
-        name: keyword
-        type: string
-      - collectionFormat: csv
-        description: Filter by job type(s)
-        in: query
-        items:
-          type: string
-        name: jobType
-        type: array
-      - collectionFormat: csv
-        description: Filter by experience level(s)
-        in: query
-        items:
-          type: string
-        name: experience
-        type: array
-      - description: Minimum salary filter
-        in: query
-        name: minSalary
-        type: integer
-      - description: Maximum salary filter
-        in: query
-        name: maxSalary
-        type: integer
-      - description: Filter by open status (company only)
-        in: query
-        name: open
-        type: boolean
-      - description: Filter by company ID
-        in: query
-        name: companyId
-        type: string
-      - description: Filter by specific job ID
-        in: query
-        name: id
-        type: integer
-      - description: Filter by approval status (admin/company only)
-        in: query
-        name: approvalStatus
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of jobs for a non-company user
-          schema:
-            properties:
-              jobs:
-                items:
-                  $ref: '#/definitions/handlers.JobResponse'
-                type: array
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Fetch job listings
-      tags:
-      - Jobs
-    post:
-      consumes:
-      - application/json
-      description: Allows an authenticated company to create a new job posting. The
-        job will be pending approval by an admin.
-      parameters:
-      - description: Job creation data
-        in: body
-        name: job
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.CreateJobInput'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully created job listing
-          schema:
-            properties:
-              id:
-                type: integer
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "401":
-          description: Unauthorized
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Create a new job listing
-      tags:
-      - Jobs
-  /jobs/{id}:
-    get:
-      description: Retrieves the detailed information for a single job posting by
-        its ID.
+  /jobs/{id}/applications:
+    delete:
+      description: Deletes applications for a job filtered by status flags.
       parameters:
       - description: Job ID
         in: path
         name: id
         required: true
         type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Job details retrieved successfully
-          schema:
-            $ref: '#/definitions/handlers.JobResponse'
-        "400":
-          description: 'Bad Request: Invalid job ID'
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get job details
-      tags:
-      - Jobs
-    patch:
-      consumes:
-      - application/json
-      description: Allows a company to edit one of their own job postings. Supports
-        partial updates.
-      parameters:
-      - description: Job ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Job update data
+      - description: Include pending
         in: body
-        name: job
-        required: true
+        name: pending
         schema:
-          $ref: '#/definitions/handlers.EditJobInput'
+          type: boolean
+      - description: Include rejected
+        in: body
+        name: rejected
+        schema:
+          type: boolean
+      - description: Include accepted
+        in: body
+        name: accepted
+        schema:
+          type: boolean
       produces:
       - application/json
       responses:
         "200":
-          description: Job updated successfully
+          description: OK
           schema:
             properties:
               message:
@@ -1353,8 +775,108 @@ paths:
               error:
                 type: string
             type: object
-        "403":
-          description: Forbidden
+        "500":
+          description: Internal Server Error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Clear job applications
+      tags:
+      - Job Applications
+    get:
+      description: Returns applications for a specific job (authorization enforced
+        in service layer).
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Status filter (pending|accepted|rejected)
+        in: query
+        name: status
+        type: string
+      - description: Pagination offset
+        in: query
+        name: offset
+        type: integer
+      - description: Pagination limit (max 64)
+        in: query
+        name: limit
+        type: integer
+      - description: Sort (latest|oldest|name_az|name_za)
+        in: query
+        name: sortBy
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/repository.ShortApplicationDetail'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List applications for a job
+      tags:
+      - Job Applications
+  /jobs/{id}/applications/{email}:
+    get:
+      description: Returns detailed application info for a student email on a job.
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Student email
+        in: path
+        name: email
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repository.FullApplicantDetail'
+        "400":
+          description: Bad Request
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "401":
+          description: Unauthorized
           schema:
             properties:
               error:
@@ -1376,143 +898,14 @@ paths:
             type: object
       security:
       - BearerAuth: []
-      summary: Edit a job listing
-      tags:
-      - Jobs
-  /jobs/{id}/applications:
-    get:
-      description: Delete all job applications for a job, includes filter for only
-        rejected, pending, or accepted jobs.
-      parameters:
-      - description: Job ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Whether to include pending job applications or not
-        in: body
-        name: pending
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.ClearJobApplicationsHandler.ClearJobApplicationsInput'
-      - description: Whether to include accepted job applications or not
-        in: body
-        name: accepted
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.ClearJobApplicationsHandler.ClearJobApplicationsInput'
-      - description: Whether to include rejected job applications or not
-        in: body
-        name: rejected
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.ClearJobApplicationsHandler.ClearJobApplicationsInput'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Success
-          schema:
-            properties:
-              message:
-                type: string
-            type: object
-        "400":
-          description: 'Bad Request: Invalid job ID'
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "401":
-          description: Unauthorized
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "404":
-          description: 'Not Found: Job not found'
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Delete job applications for a job
-      tags:
-      - Job Applications
-  /jobs/{id}/applications/{email}:
-    get:
-      description: Retrieves detailed information about a single job application for
-        a specific student, including the applicant's full profile, contact information,
-        and attached files (resume, etc.).
-      parameters:
-      - description: Job ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Student Email
-        in: query
-        name: email
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Detailed job application
-          schema:
-            $ref: '#/definitions/handlers.FullApplicantDetail'
-        "400":
-          description: 'Bad Request: Invalid job ID'
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "401":
-          description: Unauthorized
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "404":
-          description: 'Not Found: Job application not found'
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get a specific job application
+      summary: Get a single job application
       tags:
       - Job Applications
   /jobs/{id}/applications/{studentUserId}:
     patch:
       consumes:
       - application/json
-      description: Updates the status of a job application to 'accepted', 'rejected',
-        or 'pending'. This action can only be performed by the company that posted
-        the job.
+      description: Changes the status of a student's application for a job.
       parameters:
       - description: Job ID
         in: path
@@ -1526,24 +919,24 @@ paths:
         type: string
       - description: New status
         in: body
-        name: status
+        name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.UpdateJobApplicationStatusHandler.UpdateStatusInput'
+          $ref: '#/definitions/handlers.UpdateStatusInput'
       produces:
       - application/json
       responses:
         "200":
-          description: Application status updated successfully
+          description: OK
           schema:
             properties:
-              ' status':
-                type: string
               message:
+                type: string
+              status:
                 type: string
             type: object
         "400":
-          description: 'Bad Request: Invalid ID or input'
+          description: Bad Request
           schema:
             properties:
               error:
@@ -1551,20 +944,6 @@ paths:
             type: object
         "401":
           description: Unauthorized
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "403":
-          description: 'Forbidden: User is not authorized to update this application'
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "404":
-          description: 'Not Found: Job or application not found'
           schema:
             properties:
               error:
@@ -1579,47 +958,46 @@ paths:
             type: object
       security:
       - BearerAuth: []
-      summary: Update job application status
+      summary: Update application status
       tags:
       - Job Applications
   /jobs/{id}/apply:
     post:
       consumes:
       - multipart/form-data
-      description: Creates a new job application. Allows an approved student to apply
-        to an approved job posting by submitting their application with optional alternate
-        contact information and required document files (e.g., resume, cover letter).
+      description: Submit a new application (approved student applying to an approved
+        job). Files must include up to 2 documents.
       parameters:
       - description: Job ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Files to upload (e.g., Resume, Cover Letter). Max 2 files.
-        in: formData
-        name: Files
-        required: true
-        type: file
       - description: Alternate phone number
         in: formData
-        name: AltPhone
+        name: phone
         type: string
       - description: Alternate email address
         in: formData
-        name: AltEmail
+        name: email
         type: string
+      - description: Application files (max 2)
+        in: formData
+        name: files
+        required: true
+        type: file
       produces:
       - application/json
       responses:
         "200":
-          description: Successfully created job application
+          description: OK
           schema:
             properties:
               message:
                 type: string
             type: object
         "400":
-          description: 'Bad Request: Invalid input'
+          description: Invalid input
           schema:
             properties:
               error:
@@ -1632,22 +1010,8 @@ paths:
               error:
                 type: string
             type: object
-        "403":
-          description: 'Forbidden: Student status not approved'
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "404":
-          description: 'Not Found: Invalid Job ID'
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
         "500":
-          description: Internal Server Error
+          description: Internal error
           schema:
             properties:
               error:
@@ -1658,60 +1022,6 @@ paths:
       summary: Apply to a job
       tags:
       - Job Applications
-  /jobs/{id}/approval:
-    post:
-      consumes:
-      - application/json
-      description: Allows an admin to approve or reject a job posting submitted by
-        a company.
-      parameters:
-      - description: Job ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Approval action
-        in: body
-        name: approval
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.ApproveJobInput'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: ok
-          schema:
-            properties:
-              message:
-                type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Approve or reject a job listing (Admin only)
-      tags:
-      - Jobs
   /me:
     get:
       description: Retrieves basic profile information (username, role, and user ID)
@@ -1901,52 +1211,6 @@ paths:
       summary: Deactivate account
       tags:
       - Users
-  /me/delete:
-    delete:
-      description: Marks the account for anonymization. Account will be deactivated
-        immediately and all personal data will be anonymized after the grace period
-        (PDPA compliant). Anonymized data is retained for analytics and compliance
-        purposes but cannot be linked back to the individual.
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Account marked for anonymization
-          schema:
-            properties:
-              deletion_date:
-                type: string
-              grace_period_days:
-                type: integer
-              message:
-                type: string
-            type: object
-        "401":
-          description: Unauthorized
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "404":
-          description: User not found
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Request account deletion
-      tags:
-      - Users
   /me/reactivate:
     post:
       description: Reactivates a deactivated account if within the grace period. Once
@@ -2038,7 +1302,7 @@ paths:
           schema:
             properties:
               profile:
-                $ref: '#/definitions/handlers.StudentHandler'
+                $ref: '#/definitions/repository.StudentProfile'
             type: object
         "400":
           description: Bad Request
@@ -2113,10 +1377,4 @@ paths:
       summary: Approve or reject a student registration (Admin only)
       tags:
       - Students
-securityDefinitions:
-  BearerAuth:
-    description: Type "Bearer" followed by a space and the Token
-    in: header
-    name: Authorization
-    type: apiKey
 swagger: "2.0"

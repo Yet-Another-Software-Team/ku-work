@@ -26,7 +26,7 @@ type Student struct {
 	Phone               string                `json:"phone"`
 	PhotoID             string                `gorm:"type:uuid" json:"photoId"`
 	Photo               File                  `gorm:"foreignKey:PhotoID;constraint:OnDelete:CASCADE;" json:"photo"`
-	BirthDate           datatypes.Date        `json:"birthDate"`
+	BirthDate           datatypes.Date        `json:"birthDate" swaggertype:"string" format:"date"`
 	AboutMe             string                `json:"aboutMe"`
 	GitHub              string                `json:"github"`
 	LinkedIn            string                `json:"linkedIn"`
