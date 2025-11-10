@@ -6,18 +6,15 @@ import (
 	"ku-work/backend/services"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 type FileHandlers struct {
-	DB          *gorm.DB
-	FileService *services.FileService
+	fileService *services.FileService
 }
 
-func NewFileHandlers(db *gorm.DB, s *services.FileService) *FileHandlers {
+func NewFileHandlers(s *services.FileService) *FileHandlers {
 	return &FileHandlers{
-		DB:          db,
-		FileService: s,
+		fileService: s,
 	}
 }
 
@@ -32,9 +29,9 @@ func NewFileHandlers(db *gorm.DB, s *services.FileService) *FileHandlers {
 // @Failure 500 {object} object{error=string} "Internal Server Error"
 // @Router /files/{fileID} [get]
 func (h *FileHandlers) ServeFileHandler(ctx *gin.Context) {
-	if h.FileService == nil {
+	if h.fileService == nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "file service not configured"})
 		return
 	}
-	h.FileService.ServeFile(ctx)
+	h.fileService.ServeFile(ctx)
 }

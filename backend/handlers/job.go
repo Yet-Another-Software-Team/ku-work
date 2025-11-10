@@ -15,13 +15,13 @@ import (
 
 type JobHandlers struct {
 	aiService  *services.AIService
-	JobService *services.JobService
+	jobService *services.JobService
 }
 
 func NewJobHandlers(aiService *services.AIService, jobService *services.JobService) (*JobHandlers, error) {
 	return &JobHandlers{
 		aiService:  aiService,
-		JobService: jobService,
+		jobService: jobService,
 	}, nil
 }
 
@@ -114,7 +114,7 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 	}
 
 	// Resolve company via service abstraction
-	company, err := h.JobService.FindCompanyByUserID(ctx.Request.Context(), userid)
+	company, err := h.jobService.FindCompanyByUserID(ctx.Request.Context(), userid)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -146,7 +146,7 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 	}
 
 	// Persist via service
-	if err := h.JobService.CreateJob(ctx.Request.Context(), &job); err != nil {
+	if err := h.jobService.CreateJob(ctx.Request.Context(), &job); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -190,7 +190,7 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 	}
 
 	// Resolve role using service-level resolver so handlers don't access DB directly.
-	role, err := h.JobService.ResolveRole(ctx.Request.Context(), userId)
+	role, err := h.jobService.ResolveRole(ctx.Request.Context(), userId)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -214,7 +214,7 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 		UserID:         userId,
 	}
 
-	jobsResult, totalCount, err := h.JobService.FetchJobs(ctx.Request.Context(), &params)
+	jobsResult, totalCount, err := h.jobService.FetchJobs(ctx.Request.Context(), &params)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -239,7 +239,7 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 	jobId := uint(jobId64)
 
 	// Retrieve job through service
-	job, err := h.JobService.FindJobByID(ctx.Request.Context(), jobId)
+	job, err := h.jobService.FindJobByID(ctx.Request.Context(), jobId)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "job not found"})
@@ -319,7 +319,7 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 		job.ApprovalStatus = model.JobApprovalPending
 	}
 
-	if err := h.JobService.UpdateJob(ctx.Request.Context(), job); err != nil {
+	if err := h.jobService.UpdateJob(ctx.Request.Context(), job); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -345,7 +345,7 @@ func (h *JobHandlers) JobApprovalHandler(ctx *gin.Context) {
 	jobID := uint(jobId64)
 
 	actorID := ctx.MustGet("userID").(string)
-	if err := h.JobService.ApproveOrRejectJob(ctx.Request.Context(), jobID, input.Approve, actorID, input.Reason); err != nil {
+	if err := h.jobService.ApproveOrRejectJob(ctx.Request.Context(), jobID, input.Approve, actorID, input.Reason); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -363,7 +363,7 @@ func (h *JobHandlers) GetJobDetailHandler(ctx *gin.Context) {
 	}
 	jobId := uint(jobId64)
 
-	jobDetail, err := h.JobService.GetJobDetail(ctx.Request.Context(), jobId)
+	jobDetail, err := h.jobService.GetJobDetail(ctx.Request.Context(), jobId)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -388,7 +388,7 @@ func (h *JobHandlers) AcceptJobApplication(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.JobService.AcceptOrRejectJobApplication(ctx.Request.Context(), userId, input.ID, input.Accept); err != nil {
+	if err := h.jobService.AcceptOrRejectJobApplication(ctx.Request.Context(), userId, input.ID, input.Accept); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

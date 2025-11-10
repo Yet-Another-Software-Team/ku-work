@@ -1,16 +1,9 @@
 package bootstrap
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"net/http"
 	"os"
-	"strings"
-	"time"
 
 	docs "ku-work/backend/docs"
-	"ku-work/backend/helper"
 	"ku-work/backend/middlewares"
 	gormrepo "ku-work/backend/repository/gorm"
 
@@ -19,8 +12,6 @@ import (
 	"github.com/redis/go-redis/v9"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 	"gorm.io/gorm"
 )
 
@@ -56,13 +47,7 @@ func registerRoutes(router *gin.Engine, d RouterDeps) {
 	auth.POST("/admin/login", middlewares.RateLimiterWithLimits(d.Services.RateLimiter, 5, 20), d.Handlers.LocalAuth.AdminLoginHandler)
 	auth.POST("/company/register", d.Handlers.LocalAuth.CompanyRegisterHandler)
 	auth.POST("/company/login", middlewares.RateLimiterWithLimits(d.Services.RateLimiter, 5, 20), d.Handlers.LocalAuth.CompanyLoginHandler)
-
-	// Google OAuth - only register if env is configured
-	if googleOAuthConfigured() {
-		auth.POST("/google/login", middlewares.RateLimiterWithLimits(d.Services.RateLimiter, 5, 20), googleOAuthLoginHandler(d.Services))
-	} else {
-		// Intentionally silent to avoid leaking configuration details
-	}
+	auth.POST("/google/login", middlewares.RateLimiterWithLimits(d.Services.RateLimiter, 5, 20), d.Handlers.OAuth.GoogleOauthHandler)
 
 	// Protected Authentication Routes
 	authProtected := auth.Group("", middlewares.AuthMiddleware(d.Services.JWT.JWTSecret, d.Services.JWT))
@@ -120,105 +105,8 @@ func registerRoutes(router *gin.Engine, d RouterDeps) {
 	admin.GET("/emaillog", d.Handlers.Admin.FetchEmailLog)
 }
 
-func googleOAuthConfigured() bool {
-	return strings.TrimSpace(os.Getenv("GOOGLE_CLIENT_ID")) != "" &&
-		strings.TrimSpace(os.Getenv("GOOGLE_CLIENT_SECRET")) != ""
-}
-
-func googleOAuthConfig() *oauth2.Config {
-	return &oauth2.Config{
-		RedirectURL:  "postmessage",
-		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-		Scopes:       []string{"openid", "https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"},
-		Endpoint:     google.Endpoint,
-	}
-}
-
 // googleOAuthLoginHandler performs Google OAuth code exchange, fetches userinfo,
 // delegates to AuthService.HandleGoogleOAuth, and sets refresh cookie + response.
-func googleOAuthLoginHandler(svcs *ServicesBundle) gin.HandlerFunc {
-	type oauthToken struct {
-		Code string `json:"code"`
-	}
-	type userInfo struct {
-		ID         string `json:"id"`
-		Email      string `json:"email"`
-		Name       string `json:"name"`
-		GivenName  string `json:"given_name"`
-		FamilyName string `json:"family_name"`
-	}
-
-	return func(ctx *gin.Context) {
-		var req oauthToken
-		if err := ctx.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.Code) == "" {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "authorization code is required"})
-			return
-		}
-
-		cfg := googleOAuthConfig()
-		tok, err := cfg.Exchange(context.Background(), req.Code)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to exchange code"})
-			return
-		}
-
-		reqHttp, err := http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo", nil)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to init userinfo request"})
-			return
-		}
-		reqHttp.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tok.AccessToken))
-
-		client := &http.Client{Timeout: 10 * time.Second}
-		res, err := client.Do(reqHttp)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch userinfo"})
-			return
-		}
-		defer res.Body.Close()
-		if res.StatusCode != http.StatusOK {
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "access token invalid or expired"})
-			return
-		}
-
-		var ui userInfo
-		if err := json.NewDecoder(res.Body).Decode(&ui); err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to decode userinfo"})
-			return
-		}
-
-		jwtToken, refreshToken, username, role, userId, isRegistered, statusCode, err := svcs.Auth.HandleGoogleOAuth(struct {
-			ID         string
-			Email      string
-			Name       string
-			GivenName  string
-			FamilyName string
-		}{
-			ID:         ui.ID,
-			Email:      ui.Email,
-			Name:       ui.Name,
-			GivenName:  ui.GivenName,
-			FamilyName: ui.FamilyName,
-		})
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		maxAge := int(time.Hour * 24 * 30 / time.Second)
-		ctx.SetSameSite(helper.GetCookieSameSite())
-		ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", helper.GetCookieSecure(), true)
-
-		ctx.JSON(statusCode, gin.H{
-			"token":        jwtToken,
-			"username":     username,
-			"role":         role,
-			"userId":       userId,
-			"isRegistered": isRegistered,
-		})
-	}
-}
 
 func setupSwagger(router *gin.Engine) {
 	swaggerHost, hasHost := os.LookupEnv("SWAGGER_HOST")

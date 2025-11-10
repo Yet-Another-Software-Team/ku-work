@@ -2,200 +2,98 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"net/http"
-	"time"
 
 	"ku-work/backend/helper"
-	"ku-work/backend/model"
+	"ku-work/backend/services"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/oauth2"
-	"gorm.io/gorm"
 )
 
-// OauthHandlers is a thin HTTP layer that delegates work to an internal service.
+// OauthHandlers wires HTTP requests to the OAuth and Auth services.
 type OauthHandlers struct {
-	service *oauthService
+	OAuth *services.OAuthService
+	Auth  *services.AuthService
 }
 
-type oauthService struct {
-	DB                *gorm.DB
-	GoogleOauthConfig *oauth2.Config
-	JWTHandlers       *JWTHandlers
-	HTTPClient        *http.Client
-}
-
-func newOauthService(db *gorm.DB, jwtHandlers *JWTHandlers, cfg *oauth2.Config) *oauthService {
-	return &oauthService{
-		DB:                db,
-		GoogleOauthConfig: cfg,
-		JWTHandlers:       jwtHandlers,
-		HTTPClient:        &http.Client{Timeout: 10 * time.Second},
-	}
-}
-
-func NewOAuthHandlers(service *oauthService) *OauthHandlers {
+// NewOAuthHandlers constructs a new OauthHandlers instance.
+func NewOAuthHandlers(oauth *services.OAuthService, auth *services.AuthService) *OauthHandlers {
 	return &OauthHandlers{
-		service: service,
+		OAuth: oauth,
+		Auth:  auth,
 	}
 }
 
+// oauthToken represents the incoming payload for Google OAuth code exchange.
+// Kept unexported to match swagger definition path "handlers.oauthToken".
 type oauthToken struct {
 	Code string `json:"code"`
 }
 
-type userInfo struct {
-	ID         string `json:"id"`
-	Email      string `json:"email"`
-	Name       string `json:"name"`
-	GivenName  string `json:"given_name"`
-	FamilyName string `json:"family_name"`
-}
-
-// ExchangeCode exchanges an authorization code for an access token.
-func (s *oauthService) ExchangeCode(ctx context.Context, code string) (*oauth2.Token, error) {
-	return s.GoogleOauthConfig.Exchange(ctx, code)
-}
-
-// FetchUserInfo retrieves user info from Google using an access token.
-func (s *oauthService) FetchUserInfo(token *oauth2.Token) (userInfo, int, error) {
-	var ui userInfo
-
-	req, err := http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo", nil)
-	if err != nil {
-		return ui, http.StatusInternalServerError, err
-	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
-
-	res, err := s.HTTPClient.Do(req)
-	if err != nil {
-		return ui, http.StatusInternalServerError, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		return ui, http.StatusUnauthorized, fmt.Errorf("access token invalid or expired")
-	}
-
-	if err := json.NewDecoder(res.Body).Decode(&ui); err != nil {
-		return ui, http.StatusInternalServerError, err
-	}
-	return ui, http.StatusOK, nil
-}
-
-// EnsureUser creates or updates local user records based on external user info.
-func (s *oauthService) EnsureUser(ui userInfo) (model.User, model.GoogleOAuthDetails, int, error) {
-	var oauthDetail model.GoogleOAuthDetails
-	var status = http.StatusOK
-
-	var count int64
-	if err := s.DB.Model(&model.GoogleOAuthDetails{}).Where("external_id = ?", ui.ID).Count(&count).Error; err != nil {
-		return model.User{}, oauthDetail, http.StatusInternalServerError, err
-	}
-
-	if count == 0 {
-		var newUser model.User
-		if err := s.DB.FirstOrCreate(&newUser, model.User{
-			Username: ui.Email,
-			UserType: "oauth",
-		}).Error; err != nil {
-			return model.User{}, oauthDetail, http.StatusInternalServerError, err
-		}
-
-		oauthDetail = model.GoogleOAuthDetails{
-			UserID:     newUser.ID,
-			ExternalID: ui.ID,
-			FirstName:  ui.GivenName,
-			LastName:   ui.FamilyName,
-			Email:      ui.Email,
-		}
-		if err := s.DB.Create(&oauthDetail).Error; err != nil {
-			return model.User{}, oauthDetail, http.StatusInternalServerError, err
-		}
-		status = http.StatusCreated
-	} else {
-		// load existing and update fields
-		if err := s.DB.Model(&model.GoogleOAuthDetails{}).Where("external_id = ?", ui.ID).First(&oauthDetail).Error; err != nil {
-			return model.User{}, oauthDetail, http.StatusInternalServerError, err
-		}
-		oauthDetail.FirstName = ui.GivenName
-		oauthDetail.LastName = ui.FamilyName
-		oauthDetail.Email = ui.Email
-		if err := s.DB.Save(&oauthDetail).Error; err != nil {
-			return model.User{}, oauthDetail, http.StatusInternalServerError, err
-		}
-	}
-
-	var user model.User
-	if err := s.DB.Model(&user).Where("id = ?", oauthDetail.UserID).First(&user).Error; err != nil {
-		return model.User{}, oauthDetail, http.StatusInternalServerError, err
-	}
-
-	return user, oauthDetail, status, nil
-}
-
-// GoogleOauthHandler handles the HTTP request; it keeps the handler small and delegates the work.
+// GoogleOauthHandler
+// @Summary Handle Google OAuth login
+// @Description Handles the server-side flow for Google OAuth2. It receives an authorization code from the client, exchanges it for a token with Google, fetches the user's profile information, and then either creates a new user account or logs in an existing user. On success, it returns a JWT token and sets a refresh token cookie.
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param code body handlers.oauthToken true "Google Authorization Code"
+// @Success 200 {object} object{token=string,username=string,role=string,userId=string,isRegistered=bool} "Login successful"
+// @Failure 400 {object} object{error=string} "Bad Request"
+// @Failure 401 {object} object{error=string} "Unauthorized"
+// @Failure 500 {object} object{error=string} "Internal Server Error"
+// @Router /auth/google/login [post]
 func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
+	if h.OAuth == nil || h.Auth == nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "service not available"})
+		return
+	}
+
 	var req oauthToken
-	if err := ctx.ShouldBindJSON(&req); err != nil {
+	if err := ctx.ShouldBindJSON(&req); err != nil || req.Code == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "authorization code is required"})
 		return
 	}
 
-	token, err := h.service.ExchangeCode(context.Background(), req.Code)
+	// Exchange code and fetch user info from Google.
+	ui, code, err := h.OAuth.ExchangeAndFetchUserInfo(context.Background(), req.Code)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	ui, code, err := h.service.FetchUserInfo(token)
-	if err != nil {
+		// code is an HTTP-like status from the OAuth service
+		if code <= 0 {
+			code = http.StatusInternalServerError
+		}
 		ctx.JSON(code, gin.H{"error": err.Error()})
 		return
 	}
 
-	user, oauthDetail, status, err := h.service.EnsureUser(ui)
+	// Delegate business logic (create/update users and issue tokens) to AuthService.
+	jwtToken, refreshToken, username, role, userId, isRegistered, statusCode, err := h.Auth.HandleGoogleOAuth(struct {
+		ID         string
+		Email      string
+		Name       string
+		GivenName  string
+		FamilyName string
+	}{
+		ID:         ui.ID,
+		Email:      ui.Email,
+		Name:       ui.Name,
+		GivenName:  ui.GivenName,
+		FamilyName: ui.FamilyName,
+	})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	jwtToken, refreshToken, err := h.service.JWTHandlers.HandleToken(user)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate jwt token"})
-		return
-	}
-
-	maxAge := int(time.Hour * 24 * 30 / time.Second)
+	// Set refresh token cookie
+	maxAge := helper.CookieMaxAge()
 	ctx.SetSameSite(helper.GetCookieSameSite())
 	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", helper.GetCookieSecure(), true)
 
-	username := oauthDetail.FirstName + " " + oauthDetail.LastName
-	role := helper.Viewer
-	isRegistered := false
-
-	if status == http.StatusOK {
-		var count int64
-		if err := h.service.DB.Model(&model.Student{}).Where("user_id = ?", user.ID).Count(&count).Error; err == nil {
-			isRegistered = count > 0
-			if count > 0 {
-				var student model.Student
-				if err := h.service.DB.Model(&student).Where("user_id = ?", user.ID).First(&student).Error; err == nil {
-					if student.ApprovalStatus == model.StudentApprovalAccepted {
-						role = helper.Student
-					}
-				}
-			}
-		}
-	}
-
-	ctx.JSON(status, gin.H{
+	ctx.JSON(statusCode, gin.H{
 		"token":        jwtToken,
 		"username":     username,
 		"role":         role,
-		"userId":       user.ID,
+		"userId":       userId,
 		"isRegistered": isRegistered,
 	})
 }

@@ -14,6 +14,8 @@ type HandlersBundle struct {
 	// Core auth
 	JWT       *handlers.JWTHandlers
 	LocalAuth *handlers.LocalAuthHandlers
+	// OAuth
+	OAuth *handlers.OauthHandlers
 
 	// File
 	File *handlers.FileHandlers
@@ -70,8 +72,14 @@ func BuildHandlers(db *gorm.DB, svc *ServicesBundle) (*HandlersBundle, error) {
 	jwtHandlers := handlers.NewJWTHandlers(svc.JWT)
 	localAuthHandlers := handlers.NewLocalAuthHandlers(svc.Auth)
 
+	// OAuth handlers (optional based on config)
+	var oauthHandlers *handlers.OauthHandlers
+	if svc.OAuth != nil {
+		oauthHandlers = handlers.NewOAuthHandlers(svc.OAuth, svc.Auth)
+	}
+
 	// File handlers - requires DB for some associations and checks
-	fileHandlers := handlers.NewFileHandlers(db, svc.File)
+	fileHandlers := handlers.NewFileHandlers(svc.File)
 
 	// Job handlers (uses AI service optionally for auto-approve)
 	jobHandlers, err := handlers.NewJobHandlers(svc.AI, svc.Job)
@@ -91,6 +99,7 @@ func BuildHandlers(db *gorm.DB, svc *ServicesBundle) (*HandlersBundle, error) {
 	return &HandlersBundle{
 		JWT:         jwtHandlers,
 		LocalAuth:   localAuthHandlers,
+		OAuth:       oauthHandlers,
 		File:        fileHandlers,
 		Job:         jobHandlers,
 		Application: applicationHandlers,

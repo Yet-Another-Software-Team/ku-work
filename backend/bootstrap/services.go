@@ -12,6 +12,9 @@ import (
 	provideremail "ku-work/backend/providers/email"
 	filehandling "ku-work/backend/providers/file_handling"
 	"ku-work/backend/services"
+
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
 
 // NOTE: gorm import removed because the refactored services no longer directly need *gorm.DB here.
@@ -24,6 +27,7 @@ type ServicesBundle struct {
 	AI          *services.AIService
 	EventBus    *services.EventBus
 	RateLimiter *services.RateLimiterService
+	OAuth       *services.OAuthService
 
 	// Core business services
 	JWT         *services.JWTService
@@ -37,7 +41,7 @@ type ServicesBundle struct {
 }
 
 // BuildServices constructs and wires all services from repositories and environment configuration.
-func BuildServices(ctx context.Context, _ interface{}, repos *Repositories) (*ServicesBundle, error) {
+func BuildServices(ctx context.Context, _ any, repos *Repositories) (*ServicesBundle, error) {
 	// (The first parameter previously was *gorm.DB; kept placeholder to avoid broader signature cascade)
 	if repos == nil {
 		return nil, fmt.Errorf("repositories bundle must not be nil")
@@ -59,6 +63,7 @@ func BuildServices(ctx context.Context, _ interface{}, repos *Repositories) (*Se
 		company     *services.CompanyService
 		adminSvc    services.AdminService
 		rateLimiter *services.RateLimiterService
+		oauthSvc    *services.OAuthService
 	)
 
 	// -------------------------
@@ -208,12 +213,28 @@ func BuildServices(ctx context.Context, _ interface{}, repos *Repositories) (*Se
 		rateLimiter = services.NewRateLimiterService(repos.RateLimit, true)
 	}
 
+	// -------------------------
+	// OAuth Service (Google) from env config
+	// -------------------------
+	if strings.TrimSpace(os.Getenv("GOOGLE_CLIENT_ID")) != "" &&
+		strings.TrimSpace(os.Getenv("GOOGLE_CLIENT_SECRET")) != "" {
+		cfg := &oauth2.Config{
+			RedirectURL:  "postmessage",
+			ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+			ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+			Scopes:       []string{"openid", "https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"},
+			Endpoint:     google.Endpoint,
+		}
+		oauthSvc = services.NewOAuthService(cfg, nil, "")
+	}
+
 	return &ServicesBundle{
 		Email:       emailSvc,
 		File:        fileSvc,
 		AI:          aiSvc,
 		EventBus:    eventBus,
 		RateLimiter: rateLimiter,
+		OAuth:       oauthSvc,
 		JWT:         jwtSvc,
 		Auth:        authSvc,
 		Job:         jobSvc,

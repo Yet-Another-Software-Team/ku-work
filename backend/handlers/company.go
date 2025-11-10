@@ -9,12 +9,12 @@ import (
 )
 
 type CompanyHandlers struct {
-	Service *services.CompanyService
+	companyService *services.CompanyService
 }
 
 func NewCompanyHandlers(service *services.CompanyService) *CompanyHandlers {
 	return &CompanyHandlers{
-		Service: service,
+		companyService: service,
 	}
 }
 
@@ -29,7 +29,7 @@ func NewCompanyHandlers(service *services.CompanyService) *CompanyHandlers {
 // @Router /company/{id} [get]
 func (h *CompanyHandlers) GetCompanyProfileHandler(ctx *gin.Context) {
 	id := ctx.Param("id")
-	company, err := h.Service.GetCompanyByUserID(ctx.Request.Context(), id)
+	company, err := h.companyService.GetCompanyByUserID(ctx.Request.Context(), id)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -47,7 +47,7 @@ func (h *CompanyHandlers) GetCompanyProfileHandler(ctx *gin.Context) {
 // @Failure 500 {object} object{error=string} "Internal Server Error"
 // @Router /company [get]
 func (h *CompanyHandlers) GetCompanyListHandler(ctx *gin.Context) {
-	companies, err := h.Service.ListCompanies(ctx.Request.Context())
+	companies, err := h.companyService.ListCompanies(ctx.Request.Context())
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
