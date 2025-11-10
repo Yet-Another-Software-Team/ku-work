@@ -14,8 +14,8 @@ import (
 
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
-	repo "ku-work/backend/repository"
 	filehandling "ku-work/backend/providers/file_handling"
+	repo "ku-work/backend/repository"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/datatypes"
@@ -54,6 +54,10 @@ func (e *GracePeriodExpiredError) Error() string {
 
 // NewIdentityService constructs the service with injected dependencies.
 func NewIdentityService(r repo.IdentityRepository, fileSvc *FileService) *IdentityService {
+	if r == nil {
+		log.Fatal("identity repository cannot be nil")
+	}
+	// FileService is optional; when nil, file-dependent operations must be guarded by callers.
 	return &IdentityService{
 		repo:        r,
 		fileService: fileSvc,
@@ -464,6 +468,9 @@ type StudentEditProfileInput struct {
 // UpdateCompanyProfile applies partial updates to a company profile and handles optional file uploads.
 // This encapsulates business rules like username uniqueness and email/URL validation.
 func (s *IdentityService) UpdateCompanyProfile(ctx *gin.Context, userID string, input CompanyEditProfileInput) error {
+	if s.fileService == nil && (input.Photo != nil || input.Banner != nil) {
+		return errors.New("file service not configured")
+	}
 	// Handle username change with repository-backed uniqueness check and update.
 	if input.Username != nil {
 		exists, err := s.repo.ExistsUsername(ctx.Request.Context(), *input.Username)
@@ -567,6 +574,9 @@ func (s *IdentityService) UpdateCompanyProfile(ctx *gin.Context, userID string, 
 
 // UpdateStudentProfile applies partial updates to a student profile and handles optional photo upload.
 func (s *IdentityService) UpdateStudentProfile(ctx *gin.Context, userID string, input StudentEditProfileInput) error {
+	if s.fileService == nil && input.Photo != nil {
+		return errors.New("file service not configured")
+	}
 	if s == nil || s.repo == nil {
 		return errors.New("service not initialized")
 	}

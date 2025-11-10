@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"log"
 	"mime/multipart"
 	"time"
 
@@ -48,6 +49,18 @@ func NewStudentService(
 	fileService *FileService,
 	eventBus *EventBus,
 ) *StudentService {
+	if repo == nil {
+		log.Fatal("student repository cannot be nil")
+	}
+	if identityRepo == nil {
+		log.Fatal("identity repository cannot be nil")
+	}
+	if fileService == nil {
+		log.Fatal("file service cannot be nil")
+	}
+	if eventBus == nil {
+		// EventBus is optional; when nil, email/AI events are skipped.
+	}
 	return &StudentService{
 		repo:         repo,
 		identityRepo: identityRepo,
@@ -146,7 +159,9 @@ func (s *StudentService) RegisterStudent(ctx *gin.Context, userID string, input 
 		return err
 	}
 
-	s.eventBus.PublishAIStudentCheck(student.UserID)
+	if s.eventBus != nil {
+		s.eventBus.PublishAIStudentCheck(student.UserID)
+	}
 
 	return nil
 }
@@ -229,7 +244,9 @@ func (s *StudentService) ApproveOrRejectStudent(ctx context.Context, targetUserI
 		Status:    status,
 	}
 
-	s.eventBus.PublishEmailStudentApproval(event)
+	if s.eventBus != nil {
+		s.eventBus.PublishEmailStudentApproval(event)
+	}
 
 	return nil
 }

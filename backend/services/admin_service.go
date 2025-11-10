@@ -3,6 +3,7 @@ package services
 import (
 	"ku-work/backend/model"
 	"ku-work/backend/repository"
+	"log"
 )
 
 // AdminService defines service-level operations for admin functionality.
@@ -24,6 +25,9 @@ type adminService struct {
 
 // NewAdminService constructs a new AdminService backed by the provided repository.
 func NewAdminService(repo repository.AuditRepository) AdminService {
+	if repo == nil {
+		log.Fatal("audit repository cannot be nil")
+	}
 	return &adminService{repo: repo}
 }
 

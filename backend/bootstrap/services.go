@@ -19,10 +19,11 @@ import (
 // ServicesBundle groups all application services wired from repositories and infra.
 type ServicesBundle struct {
 	// Infra services
-	Email    *services.EmailService
-	File     *services.FileService
-	AI       *services.AIService
-	EventBus *services.EventBus
+	Email       *services.EmailService
+	File        *services.FileService
+	AI          *services.AIService
+	EventBus    *services.EventBus
+	RateLimiter *services.RateLimiterService
 
 	// Core business services
 	JWT         *services.JWTService
@@ -43,20 +44,21 @@ func BuildServices(ctx context.Context, _ interface{}, repos *Repositories) (*Se
 	}
 
 	var (
-		err      error
-		emailSvc *services.EmailService
-		eventBus *services.EventBus
-		aiSvc    *services.AIService
-		aiEngine ai.ApprovalAI
-		jobSvc   *services.JobService
-		fileSvc  *services.FileService
-		jwtSvc   *services.JWTService
-		authSvc  *services.AuthService
-		appSvc   *services.ApplicationService
-		identity *services.IdentityService
-		student  *services.StudentService
-		company  *services.CompanyService
-		adminSvc services.AdminService
+		err         error
+		emailSvc    *services.EmailService
+		eventBus    *services.EventBus
+		aiSvc       *services.AIService
+		aiEngine    ai.ApprovalAI
+		jobSvc      *services.JobService
+		fileSvc     *services.FileService
+		jwtSvc      *services.JWTService
+		authSvc     *services.AuthService
+		appSvc      *services.ApplicationService
+		identity    *services.IdentityService
+		student     *services.StudentService
+		company     *services.CompanyService
+		adminSvc    services.AdminService
+		rateLimiter *services.RateLimiterService
 	)
 
 	// -------------------------
@@ -110,14 +112,12 @@ func BuildServices(ctx context.Context, _ interface{}, repos *Repositories) (*Se
 		return nil, fmt.Errorf("jwt service requires refresh, revocation, and identity repositories")
 	}
 	jwtSvc = services.NewJWTService(repos.RefreshToken, repos.Revocation, repos.Identity)
-	authSvc = services.NewAuthService(jwtSvc, repos.Identity, *fileSvc)
+	authSvc = services.NewAuthService(jwtSvc, repos.Identity, fileSvc)
 
 	// -------------------------
-	// Job Service
+	// Job Service (initialized after EventBus to ensure non-nil bus)
 	// -------------------------
-	if repos.Job != nil {
-		jobSvc = services.NewJobService(repos.Job, eventBus)
-	}
+	// Deferred until after EventBus creation; see initialization later.
 
 	// -------------------------
 	// Optional AI + EventBus
@@ -164,6 +164,13 @@ func BuildServices(ctx context.Context, _ interface{}, repos *Repositories) (*Se
 	}
 
 	// -------------------------
+	// Initialize Job Service now that EventBus (and possibly AI) are configured
+	// -------------------------
+	if repos.Job != nil {
+		jobSvc = services.NewJobService(repos.Job, eventBus)
+	}
+
+	// -------------------------
 	// Application Service (email templates optional)
 	// -------------------------
 	appSvc = services.NewApplicationService(
@@ -196,11 +203,17 @@ func BuildServices(ctx context.Context, _ interface{}, repos *Repositories) (*Se
 	company = services.NewCompanyService(repos.Company)
 	adminSvc = services.NewAdminService(repos.Audit)
 
+	// Rate Limiter (repository-backed, fail-open on errors)
+	if repos.RateLimit != nil {
+		rateLimiter = services.NewRateLimiterService(repos.RateLimit, true)
+	}
+
 	return &ServicesBundle{
 		Email:       emailSvc,
 		File:        fileSvc,
 		AI:          aiSvc,
 		EventBus:    eventBus,
+		RateLimiter: rateLimiter,
 		JWT:         jwtSvc,
 		Auth:        authSvc,
 		Job:         jobSvc,

@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"log"
 	"mime/multipart"
 
 	"github.com/gin-gonic/gin"
@@ -32,8 +33,8 @@ func NewApplicationService(
 	eventBus *EventBus,
 ) *ApplicationService {
 	// Check nil
-	if appRepo == nil || jobRepo == nil || studentRepo == nil || identityRepo == nil || fileSvc == nil || eventBus == nil {
-		panic("Application service requires non-nil core dependencies")
+	if appRepo == nil || jobRepo == nil || studentRepo == nil || identityRepo == nil || fileSvc == nil {
+		log.Fatal("Application service requires non-nil core dependencies")
 	}
 	return &ApplicationService{
 		applicationRepo: appRepo,
@@ -151,7 +152,9 @@ func (s *ApplicationService) ApplyToJob(ctx context.Context, p ApplyToJobParams)
 			ApplicationDate:    application.CreatedAt,
 		}
 
-		s.eventBus.PublishEmailJobNewApplicant(event)
+		if s.eventBus != nil {
+			_ = s.eventBus.PublishEmailJobNewApplicant(event)
+		}
 	}
 
 	return nil
@@ -237,7 +240,9 @@ func (s *ApplicationService) UpdateJobApplicationStatus(ctx context.Context, p U
 				event.LastName = oauth.LastName
 			}
 
-			_ = s.eventBus.PublishEmailJobApplicationStatus(event)
+			if s.eventBus != nil {
+				_ = s.eventBus.PublishEmailJobApplicationStatus(event)
+			}
 		}
 	}
 

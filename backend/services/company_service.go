@@ -19,6 +19,9 @@ type CompanyService struct {
 
 // NewCompanyServiceWithRepo creates a CompanyService with an injected repository implementation.
 func NewCompanyService(r repo.CompanyRepository) *CompanyService {
+	if r == nil {
+		panic("company repository cannot be nil")
+	}
 	return &CompanyService{
 		companyRepo: r,
 	}

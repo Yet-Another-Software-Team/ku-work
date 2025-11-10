@@ -19,6 +19,9 @@ type FileService struct {
 
 // NewFileService constructs a FileService with an injected provider and repository.
 func NewFileService(repo repository.FileRepository, p filehandling.FileHandlingProvider) *FileService {
+	if repo == nil {
+		panic("file repository cannot be nil")
+	}
 	if p == nil {
 		panic("file handling provider must not be nil")
 	}

@@ -12,6 +12,7 @@ import (
 	docs "ku-work/backend/docs"
 	"ku-work/backend/helper"
 	"ku-work/backend/middlewares"
+	gormrepo "ku-work/backend/repository/gorm"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -52,20 +53,20 @@ func registerRoutes(router *gin.Engine, d RouterDeps) {
 
 	// Authentication
 	auth := router.Group("/auth")
-	auth.POST("/admin/login", middlewares.RateLimiterWithLimits(d.Redis, 5, 20), d.Handlers.LocalAuth.AdminLoginHandler)
+	auth.POST("/admin/login", middlewares.RateLimiterWithLimits(d.Services.RateLimiter, 5, 20), d.Handlers.LocalAuth.AdminLoginHandler)
 	auth.POST("/company/register", d.Handlers.LocalAuth.CompanyRegisterHandler)
-	auth.POST("/company/login", middlewares.RateLimiterWithLimits(d.Redis, 5, 20), d.Handlers.LocalAuth.CompanyLoginHandler)
+	auth.POST("/company/login", middlewares.RateLimiterWithLimits(d.Services.RateLimiter, 5, 20), d.Handlers.LocalAuth.CompanyLoginHandler)
 
 	// Google OAuth - only register if env is configured
 	if googleOAuthConfigured() {
-		auth.POST("/google/login", middlewares.RateLimiterWithLimits(d.Redis, 5, 20), googleOAuthLoginHandler(d.Services))
+		auth.POST("/google/login", middlewares.RateLimiterWithLimits(d.Services.RateLimiter, 5, 20), googleOAuthLoginHandler(d.Services))
 	} else {
 		// Intentionally silent to avoid leaking configuration details
 	}
 
 	// Protected Authentication Routes
 	authProtected := auth.Group("", middlewares.AuthMiddleware(d.Services.JWT.JWTSecret, d.Services.JWT))
-	authProtected.POST("/refresh", middlewares.RateLimiterWithLimits(d.Redis, 5, 20), d.Handlers.JWT.RefreshTokenHandler)
+	authProtected.POST("/refresh", middlewares.RateLimiterWithLimits(d.Services.RateLimiter, 5, 20), d.Handlers.JWT.RefreshTokenHandler)
 	authProtected.POST("/logout", d.Handlers.JWT.LogoutHandler)
 
 	// Student registration requires active account
@@ -84,7 +85,7 @@ func registerRoutes(router *gin.Engine, d RouterDeps) {
 	// Company routes
 	company := protectedActive.Group("/company")
 	company.GET("/:id", d.Handlers.Company.GetCompanyProfileHandler)
-	companyAdmin := company.Group("", middlewares.AdminPermissionMiddleware(d.DB))
+	companyAdmin := company.Group("", middlewares.AdminPermissionMiddleware(gormrepo.NewGormIdentityRepository(d.DB)))
 	companyAdmin.GET("", d.Handlers.Company.GetCompanyListHandler)
 
 	// Job routes
@@ -99,7 +100,7 @@ func registerRoutes(router *gin.Engine, d RouterDeps) {
 	job.GET("/:id/applications/:email", d.Handlers.Application.GetJobApplicationHandler)
 	job.PATCH("/:id/applications/:studentUserId/status", d.Handlers.Application.UpdateJobApplicationStatusHandler)
 
-	jobAdmin := job.Group("", middlewares.AdminPermissionMiddleware(d.DB))
+	jobAdmin := job.Group("", middlewares.AdminPermissionMiddleware(gormrepo.NewGormIdentityRepository(d.DB)))
 	jobAdmin.POST("/:id/approval", d.Handlers.Job.JobApprovalHandler)
 
 	// Application routes
@@ -110,11 +111,11 @@ func registerRoutes(router *gin.Engine, d RouterDeps) {
 	student := protectedActive.Group("/students")
 	student.GET("", d.Handlers.Student.GetProfileHandler)
 
-	studentAdmin := student.Group("", middlewares.AdminPermissionMiddleware(d.DB))
+	studentAdmin := student.Group("", middlewares.AdminPermissionMiddleware(gormrepo.NewGormIdentityRepository(d.DB)))
 	studentAdmin.POST("/:id/approval", d.Handlers.Student.ApproveHandler)
 
 	// Admin routes
-	admin := protectedActive.Group("/admin", middlewares.AdminPermissionMiddleware(d.DB))
+	admin := protectedActive.Group("/admin", middlewares.AdminPermissionMiddleware(gormrepo.NewGormIdentityRepository(d.DB)))
 	admin.GET("/audits", d.Handlers.Admin.FetchAuditLog)
 	admin.GET("/emaillog", d.Handlers.Admin.FetchEmailLog)
 }

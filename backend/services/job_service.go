@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"ku-work/backend/helper"
@@ -19,6 +20,10 @@ type JobService struct {
 
 // NewJobService creates a new JobService instance wired with a JobRepository and EventBus.
 func NewJobService(r repo.JobRepository, bus *EventBus) *JobService {
+	if r == nil {
+		log.Fatal("job repository cannot be nil")
+	}
+	// EventBus is optional; when nil, notification/AI events are simply skipped.
 	return &JobService{jobRepo: r, eventBus: bus}
 }
 

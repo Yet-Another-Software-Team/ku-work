@@ -25,13 +25,22 @@ type TokenProvider interface {
 type AuthService struct {
 	tokenProvider TokenProvider
 	identityRepo  repo.IdentityRepository
-	fileService   FileService
+	fileService   *FileService
 }
 
 // NewAuthService constructs an AuthService with injected dependencies.
 // The saveFile parameter allows services to call into file-saving logic without
 // depending on the handlers package.
-func NewAuthService(provider TokenProvider, identityRepo repo.IdentityRepository, fileService FileService) *AuthService {
+func NewAuthService(provider TokenProvider, identityRepo repo.IdentityRepository, fileService *FileService) *AuthService {
+	if provider == nil {
+		panic("token provider cannot be nil")
+	}
+	if identityRepo == nil {
+		panic("identity repository cannot be nil")
+	}
+	if fileService == nil {
+		panic("file service cannot be nil")
+	}
 	return &AuthService{tokenProvider: provider, identityRepo: identityRepo, fileService: fileService}
 }
 

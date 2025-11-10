@@ -35,7 +35,7 @@ type JWTService struct {
 // It reads JWT_SECRET from the environment (and requires it to be at least 32 bytes).
 func NewJWTService(refreshRepo repo.RefreshTokenRepository, revocationRepo repo.JWTRevocationRepository, identityRepo repo.IdentityRepository) *JWTService {
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
-
+	
 	if len(jwtSecret) == 0 {
 		log.Fatal("JWT_SECRET environment variable is not set")
 	}
@@ -46,6 +46,14 @@ func NewJWTService(refreshRepo repo.RefreshTokenRepository, revocationRepo repo.
 	if revocationRepo == nil {
 		log.Fatal("revocation repository is required for JWT revocation")
 	}
+	if refreshRepo == nil {
+		log.Fatal("refresh token repository is required")
+	}
+	
+	if identityRepo == nil {
+		log.Fatal("identity repository is required")
+	}
+	
 	if refreshRepo == nil {
 		log.Fatal("refresh token repository is required")
 	}

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"ku-work/backend/middlewares"
+	redisrepo "ku-work/backend/repository/redis"
+	"ku-work/backend/services"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -16,7 +18,7 @@ import (
 func TestRateLimiterWithNilRedis(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	// Create middleware with nil Redis client
+	// Create middleware with nil rate limiter (DI fail-open scenario)
 	middleware := middlewares.RateLimiterWithLimits(nil, 5, 20)
 
 	router := gin.New()
@@ -42,8 +44,9 @@ func TestRateLimiterWithNilRedis(t *testing.T) {
 func TestRateLimiterMinuteLimit(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	// Create middleware with 5 requests per minute limit
-	middleware := middlewares.RateLimiterWithLimits(redisClient, 5, 100)
+	// Create middleware with 5 requests per minute limit using DI rate limiter service
+	rateLimiter := services.NewRateLimiterService(redisrepo.NewRedisRateLimitRepository(redisClient), true)
+	middleware := middlewares.RateLimiterWithLimits(rateLimiter, 5, 100)
 
 	router := gin.New()
 	router.GET("/test", middleware, func(c *gin.Context) {
@@ -81,8 +84,9 @@ func TestRateLimiterMinuteLimit(t *testing.T) {
 func TestRateLimiterHourLimit(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	// Create middleware with high minute limit but low hour limit
-	middleware := middlewares.RateLimiterWithLimits(redisClient, 100, 10)
+	// Create middleware with high minute limit but low hour limit using DI rate limiter service
+	rateLimiter := services.NewRateLimiterService(redisrepo.NewRedisRateLimitRepository(redisClient), true)
+	middleware := middlewares.RateLimiterWithLimits(rateLimiter, 100, 10)
 
 	router := gin.New()
 	router.GET("/test", middleware, func(c *gin.Context) {
@@ -124,7 +128,8 @@ func TestRateLimiterDifferentIPs(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 
-	middleware := middlewares.RateLimiterWithLimits(redisClient, 5, 20)
+	rateLimiter := services.NewRateLimiterService(redisrepo.NewRedisRateLimitRepository(redisClient), true)
+	middleware := middlewares.RateLimiterWithLimits(rateLimiter, 5, 20)
 
 	router := gin.New()
 	router.GET("/test", middleware, func(c *gin.Context) {
@@ -175,7 +180,8 @@ func TestRateLimiterRedisKeys(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 
-	middleware := middlewares.RateLimiterWithLimits(redisClient, 5, 20)
+	rateLimiter := services.NewRateLimiterService(redisrepo.NewRedisRateLimitRepository(redisClient), true)
+	middleware := middlewares.RateLimiterWithLimits(rateLimiter, 5, 20)
 
 	router := gin.New()
 	router.GET("/test", middleware, func(c *gin.Context) {
@@ -258,7 +264,8 @@ func TestRateLimiterCounterIncrement(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 
-	middleware := middlewares.RateLimiterWithLimits(redisClient, 10, 50)
+	rateLimiter := services.NewRateLimiterService(redisrepo.NewRedisRateLimitRepository(redisClient), true)
+	middleware := middlewares.RateLimiterWithLimits(rateLimiter, 10, 50)
 
 	router := gin.New()
 	router.GET("/test", middleware, func(c *gin.Context) {
@@ -305,7 +312,8 @@ func TestRateLimiterConcurrency(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 
-	middleware := middlewares.RateLimiterWithLimits(redisClient, 10, 50)
+	rateLimiter := services.NewRateLimiterService(redisrepo.NewRedisRateLimitRepository(redisClient), true)
+	middleware := middlewares.RateLimiterWithLimits(rateLimiter, 10, 50)
 
 	router := gin.New()
 	router.GET("/test", middleware, func(c *gin.Context) {
@@ -362,13 +370,14 @@ func TestRateLimiterMultipleEndpoints(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
+	rateLimiter := services.NewRateLimiterService(redisrepo.NewRedisRateLimitRepository(redisClient), true)
 
 	// Different endpoints with different limits
-	router.GET("/strict", middlewares.RateLimiterWithLimits(redisClient, 2, 10), func(c *gin.Context) {
+	router.GET("/strict", middlewares.RateLimiterWithLimits(rateLimiter, 2, 10), func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "strict"})
 	})
 
-	router.GET("/lenient", middlewares.RateLimiterWithLimits(redisClient, 10, 50), func(c *gin.Context) {
+	router.GET("/lenient", middlewares.RateLimiterWithLimits(rateLimiter, 10, 50), func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "lenient"})
 	})
 
@@ -429,7 +438,8 @@ func TestRateLimiterErrorMessage(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 
-	middleware := middlewares.RateLimiterWithLimits(redisClient, 2, 5)
+	rateLimiter := services.NewRateLimiterService(redisrepo.NewRedisRateLimitRepository(redisClient), true)
+	middleware := middlewares.RateLimiterWithLimits(rateLimiter, 2, 5)
 
 	router := gin.New()
 	router.GET("/test", middleware, func(c *gin.Context) {
@@ -481,7 +491,8 @@ func TestRateLimiterRedisConnection(t *testing.T) {
 func BenchmarkRateLimiter(b *testing.B) {
 	gin.SetMode(gin.TestMode)
 
-	middleware := middlewares.RateLimiterWithLimits(redisClient, 1000000, 1000000)
+	rateLimiter := services.NewRateLimiterService(redisrepo.NewRedisRateLimitRepository(redisClient), true)
+	middleware := middlewares.RateLimiterWithLimits(rateLimiter, 1000000, 1000000)
 
 	router := gin.New()
 	router.GET("/test", middleware, func(c *gin.Context) {

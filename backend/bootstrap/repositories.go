@@ -24,8 +24,9 @@ type Repositories struct {
 	Company      repository.CompanyRepository
 	Application  repository.ApplicationRepository
 
-	// Redis-backed repository
+	// Redis-backed repositories
 	Revocation repository.JWTRevocationRepository
+	RateLimit  repository.RateLimitRepository
 }
 
 // NewRepositories constructs all repositories using the provided DB and Redis client.
@@ -49,6 +50,7 @@ func NewRepositories(db *gorm.DB, redisClient *redis.Client) (*Repositories, err
 
 	if redisClient != nil {
 		repos.Revocation = redisrepo.NewRedisRevocationRepository(redisClient)
+		repos.RateLimit = redisrepo.NewRedisRateLimitRepository(redisClient)
 	}
 
 	return repos, nil
