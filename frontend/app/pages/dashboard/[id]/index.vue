@@ -75,7 +75,7 @@
             <div v-else class="flex flex-wrap gap-5 mb-10">
                 <JobApplicationComponent
                     v-for="app in filteredApplications()"
-                    :key="app.id"
+                    :key="`${app.id}-${app.status}-${app.userId}`"
                     :application-data="app"
                     @approve="openConfirm(app, 'accept')"
                     @reject="openConfirm(app, 'reject')"
@@ -129,6 +129,7 @@
 <script setup lang="ts">
 import { mockJobApplicationData } from "~/data/mockData";
 import type { JobPost, JobApplication } from "~/data/datatypes";
+import JobApplicationComponent from "~/components/job/ApplicationComponent.vue";
 
 definePageMeta({
     layout: "viewer",
@@ -202,6 +203,9 @@ function openConfirm(app: JobApplication, action: "accept" | "reject") {
 
 const acceptApplication = async (jobApplication: JobApplication, accept: boolean) => {
     try {
+        console.log(
+            `[Dashboard] Updating application status for user ${jobApplication.userId} to ${accept ? "accepted" : "rejected"}`
+        );
         await api.patch(
             `/jobs/${jobApplication.jobId}/applications/${jobApplication.userId}/status`,
             {
@@ -213,9 +217,11 @@ const acceptApplication = async (jobApplication: JobApplication, accept: boolean
                 },
             }
         );
+        console.log(`[Dashboard] Status update successful, refreshing applications data`);
         currentJobOffset = 0;
         applications.value = undefined;
         await loadContents();
+        console.log(`[Dashboard] Applications refreshed, new count:`, applications.value?.length);
     } catch (error) {
         console.error("Error accepting/rejecting job application:", error);
     }
@@ -251,12 +257,23 @@ const fetchApplication = async (token: string | null, jobId: number) => {
             },
             params: jobForm,
         });
+
+        console.log(`[Dashboard] Fetched ${response.data?.length || 0} applications`);
+
         if (applications.value === undefined) {
             applications.value = response.data;
         } else {
             applications.value.push(...response.data);
         }
         currentJobOffset += limit;
+
+        // Log application details for debugging
+        console.log(`[Dashboard] Applications by status:`, {
+            pending: applications.value?.filter((app) => app.status === "pending").length,
+            accepted: applications.value?.filter((app) => app.status === "accepted").length,
+            rejected: applications.value?.filter((app) => app.status === "rejected").length,
+            total: applications.value?.length,
+        });
     } catch (error) {
         console.error("Error fetching job application:", error);
     }
@@ -293,13 +310,21 @@ function selectRejected() {
 }
 
 function filteredApplications() {
-    if (isSelected.value === "inprogress") {
-        return applications.value?.filter((app) => app.status === "pending");
-    } else if (isSelected.value === "accepted") {
-        return applications.value?.filter((app) => app.status === "accepted");
-    } else if (isSelected.value === "rejected") {
-        return applications.value?.filter((app) => app.status === "rejected");
-    }
+    const filtered = (() => {
+        if (isSelected.value === "inprogress") {
+            return applications.value?.filter((app) => app.status === "pending");
+        } else if (isSelected.value === "accepted") {
+            return applications.value?.filter((app) => app.status === "accepted");
+        } else if (isSelected.value === "rejected") {
+            return applications.value?.filter((app) => app.status === "rejected");
+        }
+        return [];
+    })();
+
+    console.log(
+        `[Dashboard] Filtering for ${isSelected.value}, found ${filtered?.length || 0} applications`
+    );
+    return filtered;
 }
 
 function applicationCount() {

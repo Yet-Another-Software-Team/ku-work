@@ -251,6 +251,27 @@ func (r *GormApplicationRepository) GetAllApplicationsForUser(ctx context.Contex
 	return rows, total, nil
 }
 
+func (r *GormApplicationRepository) GetApplication(ctx context.Context, jobID uint, studentUserID string) (*repo.ApplicationWithJobDetails, error) {
+	var row repo.ApplicationWithJobDetails
+	err := r.db.WithContext(ctx).
+		Table("job_applications").
+		Select("job_applications.*, jobs.title AS job_title").
+		Joins("INNER JOIN jobs ON jobs.id = job_applications.job_id").
+		Where("job_applications.job_id = ? AND job_applications.user_id = ?", jobID, studentUserID).
+		Scan(&row).Error
+	if err != nil {
+		return nil, err
+	}
+
+	files, err := r.loadApplicationFiles(ctx, jobID, studentUserID)
+	if err != nil {
+		return nil, err
+	}
+	row.Files = files
+
+	return &row, nil
+}
+
 func (r *GormApplicationRepository) UpdateApplicationStatus(ctx context.Context, jobID uint, studentUserID string, status model.JobApplicationStatus) error {
 	res := r.db.WithContext(ctx).
 		Model(&model.JobApplication{}).

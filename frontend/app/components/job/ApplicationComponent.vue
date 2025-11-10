@@ -8,11 +8,16 @@
             <div
                 class="w-[6em] h-[6em] rounded-full border border-gray-700 flex items-center justify-center overflow-hidden"
             >
+                <div
+                    v-if="isLoadingProfile"
+                    class="w-full h-full bg-gray-200 dark:bg-gray-600 animate-pulse rounded-full"
+                ></div>
                 <img
-                    v-if="avatar"
+                    v-else-if="avatar"
                     :src="avatar"
                     alt="Profile photo"
                     class="object-cover w-full h-full"
+                    @error="avatar = ''"
                 />
                 <Icon v-else name="ic:baseline-account-circle" class="w-full h-full" />
             </div>
@@ -72,6 +77,7 @@ const config = useRuntimeConfig();
 // Normalize and store profile in a consistent shape: { profile: ProfileInformation }
 const profile = ref<Profile | undefined>(undefined);
 const avatar = ref("");
+const isLoadingProfile = ref(false);
 
 // Computed helpers to avoid template runtime errors when data is missing
 const major = computed(() => {
@@ -83,26 +89,89 @@ const beforeEmail = computed(() => {
     return email.split("@")[0];
 });
 
-onMounted(async () => {
-    if (props.applicationData.userId) {
-        try {
-            const response = await api.get(`/students`, {
-                params: { id: props.applicationData.userId },
-            });
-            const data = response && response.data ? response.data : null;
-            if (data) {
-                // API sometimes returns the profile directly or wrapped as { profile: ... }
-                const student: ProfileInformation = data.profile ?? data;
-                if (student?.photoId) {
-                    avatar.value = `${config.public.apiBaseUrl}/files/${student.photoId}`;
-                }
-                // Ensure callers can always access profile.profile.*
-                profile.value = { profile: student };
+const fetchUserProfile = async (userId: string) => {
+    if (!userId) return;
+
+    console.log(`[ApplicationComponent] Fetching profile for userId: ${userId}`);
+    isLoadingProfile.value = true;
+
+    try {
+        const response = await api.get(`/students`, {
+            params: { id: userId },
+        });
+        const data = response && response.data ? response.data : null;
+        if (data) {
+            // API sometimes returns the profile directly or wrapped as { profile: ... }
+            const student: ProfileInformation = data.profile ?? data;
+            if (student?.photoId) {
+                // Add cache-busting parameter to prevent browser image caching
+                const timestamp = Date.now();
+                const newAvatarUrl = `${config.public.apiBaseUrl}/files/${student.photoId}?t=${timestamp}`;
+                console.log(`[ApplicationComponent] Setting avatar for ${userId}: ${newAvatarUrl}`);
+                avatar.value = newAvatarUrl;
+            } else {
+                console.log(`[ApplicationComponent] No photoId for ${userId}`);
+                avatar.value = "";
             }
-        } catch (error) {
-            console.error("Error fetching user data:", error);
+            // Ensure callers can always access profile.profile.*
+            profile.value = { profile: student };
         }
+    } catch (error) {
+        console.error("Error fetching user data:", error);
+        avatar.value = "";
+        profile.value = undefined;
+    } finally {
+        isLoadingProfile.value = false;
     }
+};
+
+// Watch for changes in userId and refetch profile
+watch(
+    () => props.applicationData.userId,
+    (newUserId, oldUserId) => {
+        if (newUserId !== oldUserId) {
+            console.log(`[ApplicationComponent] UserId changed from ${oldUserId} to ${newUserId}`);
+            // Reset avatar immediately to prevent showing wrong image
+            avatar.value = "";
+            profile.value = undefined;
+            isLoadingProfile.value = true;
+            fetchUserProfile(newUserId);
+        }
+    },
+    { immediate: true }
+);
+
+// Watch for changes in the entire applicationData object
+watch(
+    () => props.applicationData,
+    (newApp, oldApp) => {
+        // Force refresh if the application object changes significantly
+        if (
+            newApp &&
+            oldApp &&
+            (newApp.id !== oldApp.id ||
+                newApp.userId !== oldApp.userId ||
+                newApp.status !== oldApp.status)
+        ) {
+            console.log(`[ApplicationComponent] Application data changed:`, {
+                oldId: oldApp.id,
+                newId: newApp.id,
+                oldUserId: oldApp.userId,
+                newUserId: newApp.userId,
+                oldStatus: oldApp.status,
+                newStatus: newApp.status,
+            });
+            avatar.value = "";
+            profile.value = undefined;
+            isLoadingProfile.value = true;
+            fetchUserProfile(newApp.userId);
+        }
+    },
+    { deep: true }
+);
+
+onMounted(async () => {
+    await fetchUserProfile(props.applicationData.userId);
 });
 
 const emit = defineEmits<{

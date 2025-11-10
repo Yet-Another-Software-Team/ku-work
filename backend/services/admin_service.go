@@ -12,10 +12,9 @@ type AdminService interface {
 
 	// FetchAuditLog returns audit entries using pagination parameters.
 	FetchAuditLog(offset, limit uint) ([]model.Audit, error)
-	
+
 	// FetchMailLog returns mail log entries using pagination parameters.
 	FetchMailLog(offset, limit uint) ([]model.MailLog, error)
-	
 }
 
 // adminService is the default implementation of AdminService.

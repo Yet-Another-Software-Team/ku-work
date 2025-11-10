@@ -197,11 +197,10 @@ func (s *ApplicationService) GetAllApplicationsForUser(ctx context.Context, user
 
 // UpdateStatusParams groups inputs for updating an application's status.
 type UpdateStatusParams struct {
-	JobID                uint
-	StudentUserID        string
-	NewStatus            model.JobApplicationStatus
-	CompanyName          string // Used in email body/template
-	NotifyApplicantEmail string // If provided, triggers email event
+	JobID         uint
+	StudentUserID string
+	NewStatus     model.JobApplicationStatus
+	CompanyName   string // Used in email body/template
 }
 
 // UpdateJobApplicationStatus updates the application's status and optionally notifies the applicant via email.
@@ -215,35 +214,36 @@ func (s *ApplicationService) UpdateJobApplicationStatus(ctx context.Context, p U
 	if p.NewStatus == "" {
 		return fmt.Errorf("new status is required")
 	}
-
+	
+	if application, err := s.applicationRepo.GetApplicationByJobIDandUserID(ctx, p.JobID, p.StudentUserID); err != nil {
+		if application.Status == string(p.NewStatus) {
+			return nil // Return Early since status is already matched
+		}
+	}
+	
 	if err := s.applicationRepo.UpdateApplicationStatus(ctx, p.JobID, p.StudentUserID, p.NewStatus); err != nil {
 		return err
 	}
 
-	if p.NotifyApplicantEmail != "" {
-		// Best-effort enrichment for email event; failures are non-fatal.
-		jobDetail, err := s.jobRepo.GetJobDetail(ctx, p.JobID)
-		if err == nil && jobDetail != nil {
-			oauth, _ := s.identityRepo.FindGoogleOAuthByUserID(ctx, p.StudentUserID, false)
+	// Best-effort enrichment for email event; failures are non-fatal.
+	jobDetail, err := s.jobRepo.GetJobDetail(ctx, p.JobID)
+	if err == nil && jobDetail != nil {
+		oauth, _ := s.identityRepo.FindGoogleOAuthByUserID(ctx, p.StudentUserID, false)
 
-			event := EmailJobApplicationStatusEvent{
-				Email:       p.NotifyApplicantEmail,
-				FirstName:   "",
-				LastName:    "",
-				JobName:     jobDetail.Name,
-				JobPosition: jobDetail.Position,
-				CompanyName: jobDetail.CompanyName,
-				Status:      string(p.NewStatus),
-			}
-			if oauth != nil {
-				event.FirstName = oauth.FirstName
-				event.LastName = oauth.LastName
-			}
-
-			if s.eventBus != nil {
-				_ = s.eventBus.PublishEmailJobApplicationStatus(event)
-			}
+		if oauth == nil {
+			return nil // Silent failure
 		}
+		event := EmailJobApplicationStatusEvent{
+			Email:       oauth.Email,
+			FirstName:   oauth.FirstName,
+			LastName:    oauth.LastName,
+			JobName:     jobDetail.Name,
+			JobPosition: jobDetail.Position,
+			CompanyName: jobDetail.CompanyName,
+			Status:      string(p.NewStatus),
+		}
+
+		_ = s.eventBus.PublishEmailJobApplicationStatus(event)
 	}
 
 	return nil
