@@ -23,7 +23,7 @@
                 <div class="flex justify-center md:col-span-2">
                     <TurnstileWidget @callback="(tk) => (cfToken = tk)" />
                 </div>
-                <div class="mt-4">
+                <div class="flex justify-end gap-2 mt-4">
                     <UButton
                         variant="outline"
                         color="neutral"
