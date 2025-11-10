@@ -38,9 +38,9 @@
                 v-if="canEdit"
                 :items="items"
                 :content="{ align: 'end' }"
-                class="px-4 py-2 text-sm hover:cursor-pointer flex items-center mt-4 ml-auto mb-auto"
+                class="p-1 text-sm hover:cursor-pointer flex items-center mt-4 ml-auto mb-auto"
             >
-                <UButton color="neutral" variant="outline" icon="i-lucide-menu" />
+                <UButton color="neutral" variant="ghost" icon="ic:baseline-more-vert" />
             </UDropdownMenu>
         </div>
 
