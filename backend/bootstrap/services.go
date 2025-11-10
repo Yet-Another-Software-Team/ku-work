@@ -8,18 +8,21 @@ import (
 	"os"
 	"strings"
 
+	"ku-work/backend/providers/ai"
+	provideremail "ku-work/backend/providers/email"
 	filehandling "ku-work/backend/providers/file_handling"
 	"ku-work/backend/services"
-
-	"gorm.io/gorm"
 )
+
+// NOTE: gorm import removed because the refactored services no longer directly need *gorm.DB here.
 
 // ServicesBundle groups all application services wired from repositories and infra.
 type ServicesBundle struct {
 	// Infra services
-	Email *services.EmailService
-	File  *services.FileService
-	AI    *services.AIService
+	Email    *services.EmailService
+	File     *services.FileService
+	AI       *services.AIService
+	EventBus *services.EventBus
 
 	// Core business services
 	JWT         *services.JWTService
@@ -33,109 +36,178 @@ type ServicesBundle struct {
 }
 
 // BuildServices constructs and wires all services from repositories and environment configuration.
-// - db is used only for services that still depend on GORM directly (e.g., AIService).
-// - repos must be fully initialized (SQL + Redis where applicable).
-// - ctx is used for provider initializations that need context (e.g., GCS).
-func BuildServices(ctx context.Context, db *gorm.DB, repos *Repositories) (*ServicesBundle, error) {
-	if db == nil {
-		return nil, fmt.Errorf("db must not be nil")
-	}
+func BuildServices(ctx context.Context, _ interface{}, repos *Repositories) (*ServicesBundle, error) {
+	// (The first parameter previously was *gorm.DB; kept placeholder to avoid broader signature cascade)
 	if repos == nil {
 		return nil, fmt.Errorf("repositories bundle must not be nil")
 	}
 
-	var err error
+	var (
+		err      error
+		emailSvc *services.EmailService
+		eventBus *services.EventBus
+		aiSvc    *services.AIService
+		aiEngine ai.ApprovalAI
+		jobSvc   *services.JobService
+		fileSvc  *services.FileService
+		jwtSvc   *services.JWTService
+		authSvc  *services.AuthService
+		appSvc   *services.ApplicationService
+		identity *services.IdentityService
+		student  *services.StudentService
+		company  *services.CompanyService
+		adminSvc services.AdminService
+	)
 
-	// Email service (optional; depends on EMAIL_PROVIDER)
-	var emailSvc *services.EmailService
+	// -------------------------
+	// Email Service (DI-based)
+	// -------------------------
 	if repos.Audit != nil {
-		if emailSvc, err = services.NewEmailService(repos.Audit); err != nil {
-			log.Printf("Email service not configured or failed to init: %v", err)
-			emailSvc = nil
+		emailProviderName := strings.ToLower(strings.TrimSpace(os.Getenv("EMAIL_PROVIDER")))
+		var ep provideremail.EmailProvider
+		switch emailProviderName {
+		case "smtp":
+			if p, e := provideremail.NewSMTPEmailProvider(); e == nil {
+				ep = p
+			} else {
+				log.Printf("SMTP provider init failed: %v", e)
+			}
+		case "gmail":
+			if p, e := provideremail.NewGmailEmailProvider(); e == nil {
+				ep = p
+			} else {
+				log.Printf("Gmail provider init failed: %v", e)
+			}
+		case "dummy":
+			ep = provideremail.NewDummyEmailProvider()
+		case "", "none":
+			// disabled
+		default:
+			log.Printf("Unknown EMAIL_PROVIDER '%s' -> email disabled", emailProviderName)
+		}
+		if ep != nil {
+			if emailSvc, err = services.NewEmailService(ep, repos.Audit); err != nil {
+				log.Printf("Email service init failed: %v", err)
+				emailSvc = nil
+			}
 		}
 	}
 
-	// File service with provider selection (local | gcs)
+	// -------------------------
+	// File Service
+	// -------------------------
 	fileProvider, err := buildFileProvider(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("file provider init failed: %w", err)
 	}
-	fileSvc := services.NewFileService(repos.File, fileProvider)
-	// Register storage provider for model-level hooks
+	fileSvc = services.NewFileService(repos.File, fileProvider)
 	fileSvc.RegisterGlobal()
 
-	// JWT service (requires: refresh repo, revocation repo, identity repo)
+	// -------------------------
+	// JWT + Auth
+	// -------------------------
 	if repos.RefreshToken == nil || repos.Revocation == nil || repos.Identity == nil {
 		return nil, fmt.Errorf("jwt service requires refresh, revocation, and identity repositories")
 	}
-	jwtSvc := services.NewJWTService(repos.RefreshToken, repos.Revocation, repos.Identity)
+	jwtSvc = services.NewJWTService(repos.RefreshToken, repos.Revocation, repos.Identity)
+	authSvc = services.NewAuthService(jwtSvc, repos.Identity, *fileSvc)
 
-	// Auth service uses a token provider; JWT service implements HandleToken
-	authSvc := services.NewAuthService(jwtSvc, repos.Identity, *fileSvc)
+	// -------------------------
+	// Job Service
+	// -------------------------
+	if repos.Job != nil {
+		jobSvc = services.NewJobService(repos.Job, eventBus)
+	}
 
-	// Job service (+ optional email template)
-	jobSvc := services.NewJobService(repos.Job)
-	if emailSvc != nil {
-		if tpl := parseTemplateIfExists("email_templates/job_approval_status_update.tmpl", "job_approval_status_update.tmpl"); tpl != nil {
-			jobSvc.SetEmailConfig(emailSvc, tpl)
+	// -------------------------
+	// Optional AI + EventBus
+	// -------------------------
+	if emailSvc != nil && repos.Job != nil && repos.Student != nil {
+		switch strings.ToLower(strings.TrimSpace(os.Getenv("APPROVAL_AI"))) {
+		case "ollama":
+			if eng, e := ai.NewOllamaApprovalAI(); e == nil {
+				aiEngine = eng
+			} else {
+				log.Printf("Ollama AI init failed: %v", e)
+			}
+		case "dummy":
+			aiEngine = ai.NewDummyApprovalAI()
+		case "", "none":
+			// disabled
+		default:
+			log.Printf("Unknown APPROVAL_AI '%s' -> AI disabled", os.Getenv("APPROVAL_AI"))
+		}
+
+		if aiEngine != nil {
+			// EventBus (loads templates itself if not provided)
+			eventBus, err = services.NewEventBus(services.EventBusOptions{
+				AI:          aiEngine,
+				JobRepo:     repos.Job,
+				StudentRepo: repos.Student,
+				Email:       emailSvc,
+			})
+			if err != nil {
+				log.Printf("EventBus init failed: %v", err)
+				eventBus = nil
+			}
+
+			// AI Service (wraps AI + repos + Bus)
+			if eventBus != nil {
+				aiSvc, err = services.NewAIService(aiEngine, repos.Job, repos.Student, eventBus)
+				if err != nil {
+					log.Printf("AI service init failed: %v", err)
+					aiSvc = nil
+				}
+
+			}
 		}
 	}
 
-	// AI service (optional)
-	var aiSvc *services.AIService
-	if emailSvc != nil {
-		if aiSvc, err = services.NewAIService(db, emailSvc, jobSvc); err != nil {
-			log.Printf("AI service not configured or failed to init: %v", err)
-			aiSvc = nil
-		}
-	}
-
-	// Application service (+ optional email templates)
-	var appStatusTpl, appNewApplicantTpl *template.Template
-	appStatusTpl = parseTemplateIfExists("templates/emails/job_application_status_update.tmpl", "job_application_status_update.tmpl")
-	appNewApplicantTpl = parseTemplateIfExists("templates/emails/job_new_applicant.tmpl", "job_new_applicant.tmpl")
-	appSvc := services.NewApplicationService(
+	// -------------------------
+	// Application Service (email templates optional)
+	// -------------------------
+	appSvc = services.NewApplicationService(
 		repos.Application,
 		repos.Job,
 		repos.Student,
 		repos.Identity,
 		fileSvc,
-		emailSvc,
-		appStatusTpl,
-		appNewApplicantTpl,
+		eventBus,
 	)
 
-	// Identity service
-	identitySvc := services.NewIdentityService(repos.Identity, fileSvc)
+	// -------------------------
+	// Identity Service
+	// -------------------------
+	identity = services.NewIdentityService(repos.Identity, fileSvc)
 
-	// Student service (+ optional email template, AI)
-	studentApprovalTpl := parseTemplateIfExists("templates/emails/student_approval_status_update.tmpl", "student_approval_status_update.tmpl")
-	studentSvc := services.NewStudentService(
+	// -------------------------
+	// Student Service (EventBus wiring)
+	// -------------------------
+	student = services.NewStudentService(
 		repos.Student,
 		repos.Identity,
 		fileSvc,
-		emailSvc,
-		studentApprovalTpl,
-		aiSvc,
+		eventBus,
 	)
 
-	// Company service
-	companySvc := services.NewCompanyService(repos.Company)
-
-	// Admin service
-	adminSvc := services.NewAdminService(repos.Audit)
+	// -------------------------
+	// Company + Admin
+	// -------------------------
+	company = services.NewCompanyService(repos.Company)
+	adminSvc = services.NewAdminService(repos.Audit)
 
 	return &ServicesBundle{
 		Email:       emailSvc,
 		File:        fileSvc,
 		AI:          aiSvc,
+		EventBus:    eventBus,
 		JWT:         jwtSvc,
 		Auth:        authSvc,
 		Job:         jobSvc,
 		Application: appSvc,
-		Identity:    identitySvc,
-		Student:     studentSvc,
-		Company:     companySvc,
+		Identity:    identity,
+		Student:     student,
+		Company:     company,
 		Admin:       adminSvc,
 	}, nil
 }
@@ -152,7 +224,6 @@ func buildFileProvider(ctx context.Context) (filehandling.FileHandlingProvider, 
 		if baseDir == "" {
 			baseDir = "./files"
 		}
-		// No need to create directory here; local provider will handle write path and error out if missing.
 		return filehandling.NewLocalProvider(baseDir), nil
 	case "gcs":
 		bucket := strings.TrimSpace(os.Getenv("GCS_BUCKET"))

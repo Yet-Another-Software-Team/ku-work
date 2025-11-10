@@ -14,14 +14,14 @@ import (
 )
 
 type JobHandlers struct {
-	aiService    *services.AIService
-	JobService   *services.JobService
+	aiService  *services.AIService
+	JobService *services.JobService
 }
 
 func NewJobHandlers(aiService *services.AIService, jobService *services.JobService) (*JobHandlers, error) {
 	return &JobHandlers{
-		aiService:    aiService,
-		JobService:   jobService,
+		aiService:  aiService,
+		JobService: jobService,
 	}, nil
 }
 
@@ -153,7 +153,7 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 
 	// Trigger AI auto-approval if configured (best-effort)
 	if h.aiService != nil {
-		go h.aiService.AutoApproveJob(&job)
+		_ = h.aiService.PublishAsyncJobCheck(job.ID)
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"id": job.ID})

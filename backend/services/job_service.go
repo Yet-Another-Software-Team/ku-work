@@ -1,11 +1,9 @@
 package services
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"time"
 
 	"ku-work/backend/helper"
@@ -15,30 +13,13 @@ import (
 
 // JobService encapsulates all database operations related to jobs.
 type JobService struct {
-	jobRepo repo.JobRepository
-	emailService                         *EmailService
-	jobApprovalStatusUpdateEmailTemplate *template.Template
+	jobRepo  repo.JobRepository
+	eventBus *EventBus
 }
 
-// NewJobService creates a new JobService instance wired with a JobRepository.
-func NewJobService(r repo.JobRepository) *JobService {
-	return &JobService{jobRepo: r}
-}
-
-// NewJobServiceWithEmail creates a JobService with email wiring so the service
-// itself can send notification emails after approvals/rejections.
-func NewJobServiceWithEmail(r repo.JobRepository, emailService *EmailService, tpl *template.Template) *JobService {
-	return &JobService{
-		jobRepo:                                 r,
-		emailService:                         emailService,
-		jobApprovalStatusUpdateEmailTemplate: tpl,
-	}
-}
-
-// SetEmailConfig allows wiring an EmailService and template after construction.
-func (s *JobService) SetEmailConfig(emailService *EmailService, tpl *template.Template) {
-	s.emailService = emailService
-	s.jobApprovalStatusUpdateEmailTemplate = tpl
+// NewJobService creates a new JobService instance wired with a JobRepository and EventBus.
+func NewJobService(r repo.JobRepository, bus *EventBus) *JobService {
+	return &JobService{jobRepo: r, eventBus: bus}
 }
 
 // FetchJobsParams contains the filtering & pagination options used when fetching jobs.
@@ -115,66 +96,37 @@ func (s *JobService) UpdateJob(ctx context.Context, job *model.Job) error {
 }
 
 // ApproveOrRejectJob updates job approval status and records an audit entry via repository.
-// If an EmailService and template are configured on the JobService, this method will
-// also attempt to notify the company that owns the job in a background goroutine.
+// It also publishes an email event via EventBus (if configured).
 func (s *JobService) ApproveOrRejectJob(ctx context.Context, jobID uint, approve bool, actorID, reason string) error {
 	// delegate persistence to repository (this creates audit as well)
 	if err := s.jobRepo.ApproveOrRejectJob(ctx, jobID, approve, actorID, reason); err != nil {
 		return err
 	}
 
-	// If email is not configured, nothing more to do
-	if s.emailService == nil || s.jobApprovalStatusUpdateEmailTemplate == nil {
-		return nil
-	}
-
-	// Send notification in background; don't block the caller.
-	go func() {
+	// Publish email via EventBus (best-effort)
+	if s.eventBus != nil {
 		// Fetch denormalized job detail (includes company id and company name)
 		jobDetail, err := s.jobRepo.GetJobDetail(ctx, jobID)
-		if err != nil {
-			// Best-effort: bail out if we can't build email context
-			return
+		if err == nil && jobDetail != nil {
+			// Fetch company record to get email address
+			company, err := s.jobRepo.FindCompanyByUserID(ctx, jobDetail.CompanyID)
+			if err == nil && company != nil && company.Email != "" {
+				status := string(model.JobApprovalRejected)
+				if approve {
+					status = string(model.JobApprovalAccepted)
+				}
+				ev := EmailJobApprovalEvent{
+					CompanyEmail:    company.Email,
+					CompanyUsername: jobDetail.CompanyName,
+					JobName:         jobDetail.Name,
+					JobPosition:     jobDetail.Position,
+					Status:          status,
+					Reason:          reason,
+				}
+				_ = s.eventBus.PublishEmailJobApproval(ev)
+			}
 		}
-
-		// Fetch company record to get email address
-		company, err := s.jobRepo.FindCompanyByUserID(ctx, jobDetail.CompanyID)
-		if err != nil || company == nil || company.Email == "" {
-			return
-		}
-
-		// Build template context consistent with other handlers
-		type templateContext struct {
-			Company model.Company
-			User    model.User
-			Job     repo.JobDetail
-			Status  string
-			Reason  string
-		}
-		var tplCtx templateContext
-		tplCtx.Company = *company
-		tplCtx.User.ID = jobDetail.CompanyID
-		// jobDetail contains company_name (denormalized) so populate username from there
-		tplCtx.User.Username = jobDetail.CompanyName
-		tplCtx.Job = *jobDetail
-		if approve {
-			tplCtx.Status = string(model.JobApprovalAccepted)
-		} else {
-			tplCtx.Status = string(model.JobApprovalRejected)
-		}
-		tplCtx.Reason = reason
-
-		var buf bytes.Buffer
-		if err := s.jobApprovalStatusUpdateEmailTemplate.Execute(&buf, tplCtx); err != nil {
-			return
-		}
-
-		_ = s.emailService.SendTo(
-			tplCtx.Company.Email,
-			fmt.Sprintf("[KU-Work] Your \"%s - %s\" job has been reviewed", jobDetail.Name, jobDetail.Position),
-			buf.String(),
-		)
-	}()
+	}
 
 	return nil
 }

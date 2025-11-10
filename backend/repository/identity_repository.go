@@ -11,7 +11,7 @@ import (
 type IdentityRepository interface {
 
 	/*
-	 * Transaction Contol
+	 * Transaction Control
 	 */
 
 	BeginTx() (IdentityRepository, error)

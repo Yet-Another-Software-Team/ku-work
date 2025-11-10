@@ -25,12 +25,14 @@ type EmailService struct {
 	maxAttempts          int
 }
 
-func NewEmailService(auditRepo repo.AuditRepository) (*EmailService, error) {
-	emailProvider, hasEmailProvider := os.LookupEnv("EMAIL_PROVIDER")
-	if !hasEmailProvider {
-		return nil, errors.New("EMAIL_PROVIDER not specified")
+func NewEmailService(provider email.EmailProvider, auditRepo repo.AuditRepository) (*EmailService, error) {
+	if provider == nil {
+		return nil, errors.New("email provider is required")
 	}
-	
+	if auditRepo == nil {
+		return nil, errors.New("audit repository is required")
+	}
+
 	// Get retry configuration from environment variables
 	maxAttempts := 3
 	if maxAttemptsStr, hasMaxAttempts := os.LookupEnv("EMAIL_RETRY_MAX_ATTEMPTS"); hasMaxAttempts {
@@ -52,27 +54,6 @@ func NewEmailService(auditRepo repo.AuditRepository) (*EmailService, error) {
 			maxAgeHours = age
 		}
 	}
-	
-	var provider email.EmailProvider
-
-	switch emailProvider {
-	case "SMTP":
-		smtpProvider, err := email.NewSMTPEmailProvider()
-		if err != nil {
-			return nil, err
-		}
-		provider = smtpProvider
-	case "gmail":
-		gmailProvider, err := email.NewGmailEmailProvider()
-		if err != nil {
-			return nil, err
-		}
-		provider = gmailProvider
-	case "dummy":
-		provider = email.NewDummyEmailProvider()
-	default:
-		return nil, errors.New("invalid EMAIL_PROVIDER specified")
-	}
 
 	// Get timeout from environment variable, default to 30 seconds
 	timeout := 30 * time.Second
@@ -83,12 +64,12 @@ func NewEmailService(auditRepo repo.AuditRepository) (*EmailService, error) {
 	}
 
 	return &EmailService{
-		provider:  provider,
-		auditRepo: auditRepo,
-		timeout:   timeout,
-		maxAttempts: maxAttempts,
+		provider:             provider,
+		auditRepo:            auditRepo,
+		timeout:              timeout,
 		retryIntervalMinutes: retryIntervalMinutes,
-		maxAgeHours: maxAgeHours,
+		maxAgeHours:          maxAgeHours,
+		maxAttempts:          maxAttempts,
 	}, nil
 }
 

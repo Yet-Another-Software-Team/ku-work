@@ -1,10 +1,8 @@
 package services
 
 import (
-	"bytes"
 	"context"
 	"errors"
-	"html/template"
 	"mime/multipart"
 	"time"
 
@@ -23,12 +21,10 @@ var ErrAlreadyRegistered = errors.New("user already registered as a student")
 // Handlers call this service; the service delegates DB access to repositories and uses other infrastructure services
 // (AI, Email, File) as collaborators.
 type StudentService struct {
-	repo             repo.StudentRepository
-	identityRepo     repo.IdentityRepository
-	fileService      *FileService
-	emailService     *EmailService
-	approvalEmailTpl *template.Template
-	aiService        *AIService
+	repo         repo.StudentRepository
+	identityRepo repo.IdentityRepository
+	fileService  *FileService
+	eventBus     *EventBus
 }
 
 // StudentRegistrationInput represents the payload required to register a user as a student.
@@ -50,17 +46,13 @@ func NewStudentService(
 	repo repo.StudentRepository,
 	identityRepo repo.IdentityRepository,
 	fileService *FileService,
-	emailService *EmailService,
-	approvalTpl *template.Template,
-	aiService *AIService,
+	eventBus *EventBus,
 ) *StudentService {
 	return &StudentService{
-		repo:             repo,
-		identityRepo:     identityRepo,
-		fileService:      fileService,
-		emailService:     emailService,
-		approvalEmailTpl: approvalTpl,
-		aiService:        aiService,
+		repo:         repo,
+		identityRepo: identityRepo,
+		fileService:  fileService,
+		eventBus:     eventBus,
 	}
 }
 
@@ -154,10 +146,7 @@ func (s *StudentService) RegisterStudent(ctx *gin.Context, userID string, input 
 		return err
 	}
 
-	// Optionally trigger AI auto-approval
-	if s.aiService != nil {
-		go s.aiService.AutoApproveStudent(&student)
-	}
+	s.eventBus.PublishAIStudentCheck(student.UserID)
 
 	return nil
 }
@@ -219,19 +208,6 @@ func (s *StudentService) ApproveOrRejectStudent(ctx context.Context, targetUserI
 	if err := s.repo.ApproveOrRejectStudent(ctx, targetUserID, approve, actorID, reason); err != nil {
 		return err
 	}
-
-	// Optionally send email
-	if s.emailService == nil || s.approvalEmailTpl == nil || s.identityRepo == nil {
-		return nil
-	}
-
-	// Build context for template
-	type templateContext struct {
-		OAuth  model.GoogleOAuthDetails
-		Status string
-		Reason string
-	}
-
 	oauth, err := s.identityRepo.FindGoogleOAuthByUserID(ctx, targetUserID, false)
 	if err != nil || oauth == nil {
 		// Best-effort: skip emailing if we can't resolve address
@@ -245,22 +221,15 @@ func (s *StudentService) ApproveOrRejectStudent(ctx context.Context, targetUserI
 		status = string(model.StudentApprovalRejected)
 	}
 
-	tctx := templateContext{
-		OAuth:  *oauth,
-		Status: status,
-		Reason: reason,
+	event := EmailStudentApprovalEvent{
+		Email:     oauth.Email,
+		FirstName: oauth.FirstName,
+		LastName:  oauth.LastName,
+		Reason:    reason,
+		Status:    status,
 	}
 
-	var buf bytes.Buffer
-	if err := s.approvalEmailTpl.Execute(&buf, tctx); err != nil {
-		return nil // best-effort
-	}
-
-	_ = s.emailService.SendTo(
-		oauth.Email,
-		"[KU-Work] Your student account has been reviewed",
-		buf.String(),
-	)
+	s.eventBus.PublishEmailStudentApproval(event)
 
 	return nil
 }

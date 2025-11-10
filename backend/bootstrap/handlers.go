@@ -70,7 +70,7 @@ func BuildHandlers(db *gorm.DB, svc *ServicesBundle) (*HandlersBundle, error) {
 	jwtHandlers := handlers.NewJWTHandlers(svc.JWT)
 	localAuthHandlers := handlers.NewLocalAuthHandlers(svc.Auth)
 
-	// File handlers
+	// File handlers - requires DB for some associations and checks
 	fileHandlers := handlers.NewFileHandlers(db, svc.File)
 
 	// Job handlers (uses AI service optionally for auto-approve)
@@ -79,11 +79,8 @@ func BuildHandlers(db *gorm.DB, svc *ServicesBundle) (*HandlersBundle, error) {
 		return nil, fmt.Errorf("failed to build job handlers: %w", err)
 	}
 
-	// Application handlers (needs DB for some authorization checks and FileHandlers for serving files on responses)
-	applicationHandlers, err := handlers.NewApplicationHandlers(db, fileHandlers, svc.Application)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build application handlers: %w", err)
-	}
+	// Application handlers
+	applicationHandlers := handlers.NewApplicationHandlers(svc.Application)
 
 	// Student, Company, User, Admin handlers
 	studentHandlers := handlers.NewStudentHandler(svc.Student, svc.Identity)

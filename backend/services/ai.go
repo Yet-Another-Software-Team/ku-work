@@ -1,186 +1,167 @@
-// TODO: migrate to layered architecture
-
 package services
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"html/template"
-	"ku-work/backend/model"
-	"ku-work/backend/providers/ai"
-	"os"
-	"strconv"
 	"strings"
 
-	"gorm.io/gorm"
+	"ku-work/backend/model"
+	"ku-work/backend/providers/ai"
+	repo "ku-work/backend/repository"
 )
 
+// AIService coordinates automated approval checks for Jobs and Students.
+// It no longer depends on a raw *gorm.DB; all persistence is done through repositories.
+// Email notifications are delegated to the EventBus (if provided).
 type AIService struct {
-	DB                                       *gorm.DB
-	AI                                       ai.ApprovalAI
-	emailService                             *EmailService
-	jobApprovalStatusUpdateEmailTemplate     *template.Template
-	studentApprovalStatusUpdateEmailTemplate *template.Template
-	JobService                               *JobService
+	approvalAI  ai.ApprovalAI
+	jobRepo     repo.JobRepository
+	studentRepo repo.StudentRepository
+	eventBus    *EventBus
 }
 
-func (s *AIService) AutoApproveJob(job *model.Job) {
-	approvalStatus, reasons := s.AI.CheckJob(job)
-	if approvalStatus == model.JobApprovalPending {
-		return
+// NewAIService constructs an AIService using dependency injection only.
+// All dependencies must be non-nil.
+func NewAIService(approvalAI ai.ApprovalAI, jobRepo repo.JobRepository, studentRepo repo.StudentRepository, eventBus *EventBus) (*AIService, error) {
+	if approvalAI == nil {
+		return nil, errors.New("approvalAI is required")
 	}
-	approve := approvalStatus == model.JobApprovalAccepted
-	reasonsString := "- " + strings.Join(reasons, "\n- ")
-
-	// Prefer the JobService path if available. JobService will handle persistence, audit and notification.
-	if s.JobService != nil {
-		if err := s.JobService.ApproveOrRejectJob(context.Background(), job.ID, approve, "ai", reasonsString); err == nil {
-			return
-		}
-		// If the service call fails, fall back to legacy behavior below.
+	if jobRepo == nil {
+		return nil, errors.New("jobRepo is required")
 	}
-
-	// Legacy behavior (fallback): directly update DB, create audit and send email.
-	tx := s.DB.Begin()
-	if err := s.DB.Model(&model.Job{
-		ID: job.ID,
-	}).Update("approval_status", approvalStatus).Error; err != nil {
-		tx.Rollback()
-		return
+	if studentRepo == nil {
+		return nil, errors.New("studentRepo is required")
 	}
-	reasonsString = "- " + strings.Join(reasons, "\n- ")
-	if err := tx.Create(&model.Audit{
-		ActorID:    "ai",
-		Action:     string(approvalStatus),
-		ObjectName: "Job",
-		Reason:     reasonsString,
-		ObjectID:   strconv.FormatUint(uint64(job.ID), 10),
-	}).Error; err != nil {
-		tx.Rollback()
-		return
+	if eventBus == nil {
+		return nil, errors.New("eventBus is required")
 	}
-	_ = tx.Commit()
-
-	type Context struct {
-		Company model.Company
-		User    model.User
-		Job     *model.Job
-		Status  string
-		Reason  string
-	}
-	var context Context
-	context.Company.UserID = job.CompanyID
-	if err := s.DB.Select("email").Take(&context.Company).Error; err != nil {
-		return
-	}
-	context.User.ID = job.CompanyID
-	if err := s.DB.Select("username").Take(&context.User).Error; err != nil {
-		return
-	}
-	context.Job = job
-	context.Status = string(job.ApprovalStatus)
-	context.Reason = reasonsString
-	var tpl bytes.Buffer
-	if err := s.jobApprovalStatusUpdateEmailTemplate.Execute(&tpl, context); err != nil {
-		return
-	}
-	_ = s.emailService.SendTo(
-		context.Company.Email,
-		fmt.Sprintf("[KU-WORK] Your \"%s\" job has been automatically reviewed", job.Name),
-		tpl.String(),
-	)
+	return &AIService{
+		approvalAI:  approvalAI,
+		jobRepo:     jobRepo,
+		studentRepo: studentRepo,
+		eventBus:    eventBus,
+	}, nil
 }
 
-func (s *AIService) AutoApproveStudent(student *model.Student) {
-	// Use AI to check student status
-	// This might take a while
-	approvalStatus, reasons := s.AI.CheckStudent(student)
-
-	// Maybe error occur so it returns
-	if approvalStatus == model.StudentApprovalPending {
-		return
-	}
-
-	// We refetch because since AI take time it might be stale now
-	tx := s.DB.Begin()
-	if err := s.DB.Model(&model.Student{
-		UserID: student.UserID,
-	}).Update("approval_status", approvalStatus).Error; err != nil {
-		tx.Rollback()
-		return
-	}
-	reasonsString := "- " + strings.Join(reasons, "\n- ")
-	if err := tx.Create(&model.Audit{
-		ActorID:    "ai",
-		Action:     string(approvalStatus),
-		ObjectName: "Student",
-		Reason:     reasonsString,
-		ObjectID:   student.UserID,
-	}).Error; err != nil {
-		tx.Rollback()
-		return
-	}
-	_ = tx.Commit()
-
-	type Context struct {
-		OAuth  model.GoogleOAuthDetails
-		Status string
-		Reason string
-	}
-	var context Context
-	context.OAuth.UserID = student.UserID
-	context.Status = string(student.ApprovalStatus)
-	context.Reason = reasonsString
-	if err := s.DB.Select("email,first_name,last_name").Take(&context.OAuth).Error; err != nil {
-		return
-	}
-	var tpl bytes.Buffer
-	if err := s.studentApprovalStatusUpdateEmailTemplate.Execute(&tpl, context); err != nil {
-		return
-	}
-	_ = s.emailService.SendTo(
-		context.OAuth.Email,
-		"[KU-WORK] Your student account has been automatically reviewed",
-		tpl.String(),
-	)
-}
-
-func NewAIService(DB *gorm.DB, emailService *EmailService, jobService *JobService) (*AIService, error) {
-	approvalAIName, hasApprovalAI := os.LookupEnv("APPROVAL_AI")
-	if !hasApprovalAI {
-		return nil, errors.New("approval ai not specified")
-	}
-	jobApprovalStatusUpdateEmailTemplate, err := template.New("job_approval_status_update.tmpl").ParseFiles("email_templates/job_approval_status_update.tmpl")
+// AutoApproveJob performs an AI check on the job identified by jobID.
+// If the AI returns accepted/rejected (not pending), it persists the decision and
+// publishes an email notification event (when EventBus is configured).
+func (s *AIService) AutoApproveJob(ctx context.Context, jobID uint) error {
+	job, err := s.jobRepo.FindJobByID(ctx, jobID)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("find job: %w", err)
 	}
-	studentApprovalStatusUpdateEmailTemplate, err := template.New("student_approval_status_update.tmpl").ParseFiles("email_templates/student_approval_status_update.tmpl")
+	if job == nil {
+		return fmt.Errorf("job %d not found", jobID)
+	}
+
+	status, reasons := s.approvalAI.CheckJob(job)
+	if status == model.JobApprovalPending {
+		// Nothing to persist; still under review.
+		return nil
+	}
+
+	approve := status == model.JobApprovalAccepted
+	reason := joinReasons(reasons)
+
+	if err := s.jobRepo.ApproveOrRejectJob(ctx, job.ID, approve, "ai", reason); err != nil {
+		return fmt.Errorf("persist job approval: %w", err)
+	}
+
+	detail, err := s.jobRepo.GetJobDetail(ctx, job.ID)
+	if err != nil || detail == nil {
+		// Non-fatal: approval persisted; return nil.
+		return nil
+	}
+	company, err := s.jobRepo.FindCompanyByUserID(ctx, detail.CompanyID)
+	if err != nil || company == nil || company.Email == "" {
+		return nil
+	}
+
+	_ = s.eventBus.PublishEmailJobApproval(EmailJobApprovalEvent{
+		CompanyEmail:    company.Email,
+		CompanyUsername: detail.CompanyName,
+		JobName:         detail.Name,
+		JobPosition:     detail.Position,
+		Status:          string(status),
+		Reason:          reason,
+	})
+
+	return nil
+}
+
+// AutoApproveJobModel variant that accepts a loaded *model.Job.
+// Uses background context for repository calls (caller can supply its own if needed).
+func (s *AIService) AutoApproveJobModel(job *model.Job) error {
+	if job == nil {
+		return errors.New("job is nil")
+	}
+	return s.AutoApproveJob(context.Background(), job.ID)
+}
+
+// AutoApproveStudent performs an AI check on the student identified by userID.
+// If accepted/rejected, it persists via repository and publishes an email notification event.
+func (s *AIService) AutoApproveStudent(ctx context.Context, userID string) error {
+	student, err := s.studentRepo.FindStudentByUserID(ctx, userID)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("find student: %w", err)
 	}
-	aiService := &AIService{
-		DB:                                       DB,
-		jobApprovalStatusUpdateEmailTemplate:     jobApprovalStatusUpdateEmailTemplate,
-		studentApprovalStatusUpdateEmailTemplate: studentApprovalStatusUpdateEmailTemplate,
-		emailService:                             emailService,
-		JobService:                               jobService,
+	if student == nil {
+		return fmt.Errorf("student %s not found", userID)
 	}
 
-	// The JobService is supplied by the caller (DI). Do not construct a new JobService here.
+	status, reasons := s.approvalAI.CheckStudent(student)
+	if status == model.StudentApprovalPending {
+		return nil
+	}
 
-	switch approvalAIName {
-	case "ollama":
-		approvalAI, err := ai.NewOllamaApprovalAI()
-		if err != nil {
-			return nil, err
+	approve := status == model.StudentApprovalAccepted
+	reason := joinReasons(reasons)
+
+	if err := s.studentRepo.ApproveOrRejectStudent(ctx, userID, approve, "ai", reason); err != nil {
+		return fmt.Errorf("persist student approval: %w", err)
+	}
+
+	if s.eventBus != nil {
+		profile, err := s.studentRepo.FindStudentProfileByUserID(ctx, userID)
+		if err != nil || profile == nil || profile.Email == "" {
+			return nil
 		}
-		aiService.AI = approvalAI
-		return aiService, nil
-	case "dummy":
-		aiService.AI = ai.NewDummyApprovalAI()
-		return aiService, nil
+		_ = s.eventBus.PublishEmailStudentApproval(EmailStudentApprovalEvent{
+			Email:     profile.Email,
+			FirstName: profile.FirstName,
+			LastName:  profile.LastName,
+			Status:    string(status),
+			Reason:    reason,
+		})
 	}
-	return nil, errors.New("invalid approval ai specified")
+
+	return nil
+}
+
+// AutoApproveStudentModel variant that accepts a loaded *model.Student.
+func (s *AIService) AutoApproveStudentModel(student *model.Student) error {
+	if student == nil {
+		return errors.New("student is nil")
+	}
+	return s.AutoApproveStudent(context.Background(), student.UserID)
+}
+
+// PublishAsyncJobCheck enqueues a job ID for asynchronous AI evaluation using the EventBus AI queue.
+// Falls back to synchronous processing if no EventBus is configured.
+func (s *AIService) PublishAsyncJobCheck(jobID uint) error {
+	if s.eventBus == nil {
+		// Fallback: synchronous
+		return s.AutoApproveJob(context.Background(), jobID)
+	}
+	return s.eventBus.PublishAIJobCheck(jobID)
+}
+
+// Helper to format reasons list.
+func joinReasons(reasons []string) string {
+	if len(reasons) == 0 {
+		return ""
+	}
+	return "- " + strings.Join(reasons, "\n- ")
 }

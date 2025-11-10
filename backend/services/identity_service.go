@@ -26,8 +26,8 @@ import (
 // - This service depends only on repository and infra services (e.g., FileService).
 // - Only repository implementations perform DB access.
 type IdentityService struct {
-	Repo        repo.IdentityRepository
-	FileService *FileService
+	repo        repo.IdentityRepository
+	fileService *FileService
 }
 
 // Error definitions
@@ -55,8 +55,8 @@ func (e *GracePeriodExpiredError) Error() string {
 // NewIdentityService constructs the service with injected dependencies.
 func NewIdentityService(r repo.IdentityRepository, fileSvc *FileService) *IdentityService {
 	return &IdentityService{
-		Repo:        r,
-		FileService: fileSvc,
+		repo:        r,
+		fileService: fileSvc,
 	}
 }
 
@@ -67,18 +67,18 @@ func NewIdentityService(r repo.IdentityRepository, fileSvc *FileService) *Identi
 // DeactivateAccount soft-deletes the user account and performs side effects like disabling company job posts.
 // It returns the deletionDate (now + gracePeriodDays) which the handler can present to the user.
 func (s *IdentityService) DeactivateAccount(ctx context.Context, userID string, gracePeriodDays int) (time.Time, error) {
-	if s == nil || s.Repo == nil {
+	if s == nil || s.repo == nil {
 		return time.Time{}, errors.New("service not initialized")
 	}
 
 	// Ensure user exists
-	_, err := s.Repo.FindUserByID(ctx, userID, false)
+	_, err := s.repo.FindUserByID(ctx, userID, false)
 	if err != nil {
 		return time.Time{}, ErrUserNotFound
 	}
 
 	// Check deactivated state
-	deactivated, err := s.Repo.IsUserDeactivated(ctx, userID)
+	deactivated, err := s.repo.IsUserDeactivated(ctx, userID)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -87,8 +87,8 @@ func (s *IdentityService) DeactivateAccount(ctx context.Context, userID string, 
 	}
 
 	// If user is a company, disable job posts (best-effort)
-	if _, err := s.Repo.FindCompanyByUserID(ctx, userID, false); err == nil {
-		if n, derr := s.Repo.DisableCompanyJobPosts(ctx, userID); derr != nil {
+	if _, err := s.repo.FindCompanyByUserID(ctx, userID, false); err == nil {
+		if n, derr := s.repo.DisableCompanyJobPosts(ctx, userID); derr != nil {
 			log.Printf("Warning: Failed to disable job posts for company %s: %v", userID, derr)
 		} else {
 			log.Printf("Disabled %d job posts for company: %s", n, userID)
@@ -96,7 +96,7 @@ func (s *IdentityService) DeactivateAccount(ctx context.Context, userID string, 
 	}
 
 	// Soft delete user (triggers any registered hooks)
-	if err := s.Repo.SoftDeleteUserByID(ctx, userID); err != nil {
+	if err := s.repo.SoftDeleteUserByID(ctx, userID); err != nil {
 		return time.Time{}, err
 	}
 
@@ -107,12 +107,12 @@ func (s *IdentityService) DeactivateAccount(ctx context.Context, userID string, 
 // ReactivateAccount restores a soft-deactivated account if within the grace period.
 // Side effects: restores associated Student/Company/OAuth records that were soft-deleted.
 func (s *IdentityService) ReactivateAccount(ctx context.Context, userID string, gracePeriodDays int) error {
-	if s == nil || s.Repo == nil {
+	if s == nil || s.repo == nil {
 		return errors.New("service not initialized")
 	}
 
 	// Load user including soft-deleted records
-	user, err := s.Repo.FindUserByID(ctx, userID, true)
+	user, err := s.repo.FindUserByID(ctx, userID, true)
 	if err != nil {
 		return ErrUserNotFound
 	}
@@ -133,27 +133,27 @@ func (s *IdentityService) ReactivateAccount(ctx context.Context, userID string, 
 	}
 
 	// Restore user
-	if err := s.Repo.RestoreUserByID(ctx, userID); err != nil {
+	if err := s.repo.RestoreUserByID(ctx, userID); err != nil {
 		return err
 	}
 
 	// Restore related student record if exists
-	if student, err := s.Repo.FindStudentByUserID(ctx, userID, true); err == nil && student.DeletedAt.Valid {
-		if err := s.Repo.RestoreStudentByUserID(ctx, userID); err != nil {
+	if student, err := s.repo.FindStudentByUserID(ctx, userID, true); err == nil && student.DeletedAt.Valid {
+		if err := s.repo.RestoreStudentByUserID(ctx, userID); err != nil {
 			log.Printf("Warning: Failed to restore student for user %s: %v", userID, err)
 		}
 	}
 
 	// Restore related company record if exists
-	if company, err := s.Repo.FindCompanyByUserID(ctx, userID, true); err == nil && company.DeletedAt.Valid {
-		if err := s.Repo.RestoreCompanyByUserID(ctx, userID); err != nil {
+	if company, err := s.repo.FindCompanyByUserID(ctx, userID, true); err == nil && company.DeletedAt.Valid {
+		if err := s.repo.RestoreCompanyByUserID(ctx, userID); err != nil {
 			log.Printf("Warning: Failed to restore company for user %s: %v", userID, err)
 		}
 	}
 
 	// Restore OAuth details if exists
-	if oauth, err := s.Repo.FindGoogleOAuthByUserID(ctx, userID, true); err == nil && oauth.DeletedAt.Valid {
-		if err := s.Repo.RestoreGoogleOAuthByUserID(ctx, userID); err != nil {
+	if oauth, err := s.repo.FindGoogleOAuthByUserID(ctx, userID, true); err == nil && oauth.DeletedAt.Valid {
+		if err := s.repo.RestoreGoogleOAuthByUserID(ctx, userID); err != nil {
 			log.Printf("Warning: Failed to restore OAuth details for user %s: %v", userID, err)
 		}
 	}
@@ -173,10 +173,10 @@ func generateAnonymousID(originalID string) string {
 
 // CheckIfAnonymized checks if an account has already been anonymized by inspecting the username prefix.
 func (s *IdentityService) CheckIfAnonymized(ctx context.Context, userID string) (bool, error) {
-	if s == nil || s.Repo == nil {
+	if s == nil || s.repo == nil {
 		return false, errors.New("service not initialized")
 	}
-	user, err := s.Repo.FindUserByID(ctx, userID, true)
+	user, err := s.repo.FindUserByID(ctx, userID, true)
 	if err != nil {
 		return false, err
 	}
@@ -185,7 +185,7 @@ func (s *IdentityService) CheckIfAnonymized(ctx context.Context, userID string) 
 
 // AnonymizeExpiredAccounts finds accounts whose grace period has expired and anonymizes them.
 func (s *IdentityService) AnonymizeExpiredAccounts(ctx context.Context, gracePeriodDays int) error {
-	if s == nil || s.Repo == nil {
+	if s == nil || s.repo == nil {
 		return errors.New("service not initialized")
 	}
 
@@ -194,7 +194,7 @@ func (s *IdentityService) AnonymizeExpiredAccounts(ctx context.Context, gracePer
 
 	log.Printf("Starting expired accounts anonymization (grace period: %d days)", gracePeriodDays)
 
-	users, err := s.Repo.ListSoftDeletedUsersBefore(ctx, cutoff)
+	users, err := s.repo.ListSoftDeletedUsersBefore(ctx, cutoff)
 	if err != nil {
 		log.Printf("Error finding expired accounts: %v", err)
 		return err
@@ -233,14 +233,14 @@ func (s *IdentityService) AnonymizeExpiredAccounts(ctx context.Context, gracePer
 // AnonymizeAccount anonymizes a user account and all associated personal data,
 // complying with PDPA while retaining data for analytics.
 func (s *IdentityService) AnonymizeAccount(ctx context.Context, userID string) error {
-	if s == nil || s.Repo == nil {
+	if s == nil || s.repo == nil {
 		return errors.New("service not initialized")
 	}
 
 	log.Printf("Anonymizing account: %s", userID)
 
 	// Ensure user exists (unscoped)
-	user, err := s.Repo.FindUserByID(ctx, userID, true)
+	user, err := s.repo.FindUserByID(ctx, userID, true)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrAnonymizationFailed, err)
 	}
@@ -248,7 +248,7 @@ func (s *IdentityService) AnonymizeAccount(ctx context.Context, userID string) e
 	anon := generateAnonymousID(userID)
 
 	// Anonymize user record
-	if err := s.Repo.UpdateUserAnonymized(ctx, user.ID, map[string]any{
+	if err := s.repo.UpdateUserAnonymized(ctx, user.ID, map[string]any{
 		"username":      anon,
 		"password_hash": "",
 	}); err != nil {
@@ -258,7 +258,7 @@ func (s *IdentityService) AnonymizeAccount(ctx context.Context, userID string) e
 	log.Printf("Anonymized user record for: %s", userID)
 
 	// If student, anonymize student data + job applications
-	if student, err := s.Repo.FindStudentByUserID(ctx, userID, true); err == nil {
+	if student, err := s.repo.FindStudentByUserID(ctx, userID, true); err == nil {
 		if err := s.anonymizeStudentData(ctx, student, anon); err != nil {
 			return fmt.Errorf("%w: anonymize student failed: %v", ErrAnonymizationFailed, err)
 		}
@@ -271,7 +271,7 @@ func (s *IdentityService) AnonymizeAccount(ctx context.Context, userID string) e
 	}
 
 	// If company, anonymize company data
-	if company, err := s.Repo.FindCompanyByUserID(ctx, userID, true); err == nil {
+	if company, err := s.repo.FindCompanyByUserID(ctx, userID, true); err == nil {
 		if err := s.anonymizeCompanyData(ctx, company, anon); err != nil {
 			return fmt.Errorf("%w: anonymize company failed: %v", ErrAnonymizationFailed, err)
 		}
@@ -279,7 +279,7 @@ func (s *IdentityService) AnonymizeAccount(ctx context.Context, userID string) e
 	}
 
 	// If OAuth record exists, anonymize it
-	if oauth, err := s.Repo.FindGoogleOAuthByUserID(ctx, userID, true); err == nil {
+	if oauth, err := s.repo.FindGoogleOAuthByUserID(ctx, userID, true); err == nil {
 		if err := s.anonymizeGoogleOAuthData(ctx, oauth, anon); err != nil {
 			return fmt.Errorf("%w: anonymize oauth failed: %v", ErrAnonymizationFailed, err)
 		}
@@ -294,7 +294,7 @@ func (s *IdentityService) AnonymizeAccount(ctx context.Context, userID string) e
 func (s *IdentityService) anonymizeJobApplicationsForStudent(ctx context.Context, studentUserID, anon string) error {
 	log.Printf("Anonymizing job applications for student: %s", studentUserID)
 
-	apps, err := s.Repo.ListJobApplicationsWithFilesByUserID(ctx, studentUserID)
+	apps, err := s.repo.ListJobApplicationsWithFilesByUserID(ctx, studentUserID)
 	if err != nil {
 		return fmt.Errorf("failed to list job applications: %w", err)
 	}
@@ -311,7 +311,7 @@ func (s *IdentityService) anonymizeJobApplicationsForStudent(ctx context.Context
 				log.Printf("Warning: Failed to delete file %s: %v", f.ID, derr)
 			}
 			// Delete the DB record unscoped
-			if derr := s.Repo.UnscopedDeleteFileRecord(ctx, f.ID); derr != nil {
+			if derr := s.repo.UnscopedDeleteFileRecord(ctx, f.ID); derr != nil {
 				log.Printf("Warning: Failed to delete file record %s: %v", f.ID, derr)
 			}
 		}
@@ -321,7 +321,7 @@ func (s *IdentityService) anonymizeJobApplicationsForStudent(ctx context.Context
 			"contact_phone": "",
 			"contact_email": fmt.Sprintf("%s@anonymized.local", anon),
 		}
-		if err := s.Repo.UpdateJobApplicationFields(ctx, app.JobID, studentUserID, fields); err != nil {
+		if err := s.repo.UpdateJobApplicationFields(ctx, app.JobID, studentUserID, fields); err != nil {
 			log.Printf("Warning: Failed to anonymize application for job %d: %v", app.JobID, err)
 		}
 	}
@@ -344,28 +344,28 @@ func (s *IdentityService) anonymizeStudentData(ctx context.Context, student *mod
 		"student_status_file_id": nil,
 	}
 
-	if err := s.Repo.UpdateStudentFields(ctx, student.UserID, fields); err != nil {
+	if err := s.repo.UpdateStudentFields(ctx, student.UserID, fields); err != nil {
 		return err
 	}
 
 	// Delete associated files (photos, documents)
 	if student.PhotoID != "" {
-		if photo, err := s.Repo.FindFileByID(ctx, student.PhotoID); err == nil && photo != nil {
+		if photo, err := s.repo.FindFileByID(ctx, student.PhotoID); err == nil && photo != nil {
 			if derr := model.CallStorageDeleteHook(ctx, photo.ID); derr != nil {
 				log.Printf("Warning: Failed to delete file %s: %v", photo.ID, derr)
 			}
-			if derr := s.Repo.UnscopedDeleteFileRecord(ctx, photo.ID); derr != nil {
+			if derr := s.repo.UnscopedDeleteFileRecord(ctx, photo.ID); derr != nil {
 				log.Printf("Warning: Failed to delete file record %s: %v", photo.ID, derr)
 			}
 		}
 	}
 
 	if student.StudentStatusFileID != "" {
-		if statusFile, err := s.Repo.FindFileByID(ctx, student.StudentStatusFileID); err == nil && statusFile != nil {
+		if statusFile, err := s.repo.FindFileByID(ctx, student.StudentStatusFileID); err == nil && statusFile != nil {
 			if derr := model.CallStorageDeleteHook(ctx, statusFile.ID); derr != nil {
 				log.Printf("Warning: Failed to delete status file %s: %v", statusFile.ID, derr)
 			}
-			if derr := s.Repo.UnscopedDeleteFileRecord(ctx, statusFile.ID); derr != nil {
+			if derr := s.repo.UnscopedDeleteFileRecord(ctx, statusFile.ID); derr != nil {
 				log.Printf("Warning: Failed to delete status file record %s: %v", statusFile.ID, derr)
 			}
 		}
@@ -388,28 +388,28 @@ func (s *IdentityService) anonymizeCompanyData(ctx context.Context, company *mod
 		"country":   "Anonymized",
 	}
 
-	if err := s.Repo.UpdateCompanyFields(ctx, company.UserID, fields); err != nil {
+	if err := s.repo.UpdateCompanyFields(ctx, company.UserID, fields); err != nil {
 		return err
 	}
 
 	// Delete associated files (photos, banners)
 	if company.PhotoID != "" {
-		if photo, err := s.Repo.FindFileByID(ctx, company.PhotoID); err == nil && photo != nil {
+		if photo, err := s.repo.FindFileByID(ctx, company.PhotoID); err == nil && photo != nil {
 			if derr := model.CallStorageDeleteHook(ctx, photo.ID); derr != nil {
 				log.Printf("Warning: Failed to delete file %s: %v", photo.ID, derr)
 			}
-			if derr := s.Repo.UnscopedDeleteFileRecord(ctx, photo.ID); derr != nil {
+			if derr := s.repo.UnscopedDeleteFileRecord(ctx, photo.ID); derr != nil {
 				log.Printf("Warning: Failed to delete file record %s: %v", photo.ID, derr)
 			}
 		}
 	}
 
 	if company.BannerID != "" {
-		if banner, err := s.Repo.FindFileByID(ctx, company.BannerID); err == nil && banner != nil {
+		if banner, err := s.repo.FindFileByID(ctx, company.BannerID); err == nil && banner != nil {
 			if derr := model.CallStorageDeleteHook(ctx, banner.ID); derr != nil {
 				log.Printf("Warning: Failed to delete banner file %s: %v", banner.ID, derr)
 			}
-			if derr := s.Repo.UnscopedDeleteFileRecord(ctx, banner.ID); derr != nil {
+			if derr := s.repo.UnscopedDeleteFileRecord(ctx, banner.ID); derr != nil {
 				log.Printf("Warning: Failed to delete banner file record %s: %v", banner.ID, derr)
 			}
 		}
@@ -427,7 +427,7 @@ func (s *IdentityService) anonymizeGoogleOAuthData(ctx context.Context, oauth *m
 		"email":       fmt.Sprintf("%s@anonymized.local", anon),
 	}
 
-	return s.Repo.UpdateOAuthFields(ctx, oauth.UserID, fields)
+	return s.repo.UpdateOAuthFields(ctx, oauth.UserID, fields)
 }
 
 // ---------------------------
@@ -466,14 +466,14 @@ type StudentEditProfileInput struct {
 func (s *IdentityService) UpdateCompanyProfile(ctx *gin.Context, userID string, input CompanyEditProfileInput) error {
 	// Handle username change with repository-backed uniqueness check and update.
 	if input.Username != nil {
-		exists, err := s.Repo.ExistsUsername(ctx.Request.Context(), *input.Username)
+		exists, err := s.repo.ExistsUsername(ctx.Request.Context(), *input.Username)
 		if err != nil {
 			return err
 		}
 		if exists {
 			return ErrUsernameExists
 		}
-		if err := s.Repo.UpdateUserFields(ctx.Request.Context(), userID, map[string]any{
+		if err := s.repo.UpdateUserFields(ctx.Request.Context(), userID, map[string]any{
 			"username": *input.Username,
 		}); err != nil {
 			return err
@@ -481,7 +481,7 @@ func (s *IdentityService) UpdateCompanyProfile(ctx *gin.Context, userID string, 
 	}
 
 	// Verify company exists (non-alloc result ignored).
-	if _, err := s.Repo.FindCompanyByUserID(ctx.Request.Context(), userID, false); err != nil {
+	if _, err := s.repo.FindCompanyByUserID(ctx.Request.Context(), userID, false); err != nil {
 		return err
 	}
 
@@ -517,15 +517,15 @@ func (s *IdentityService) UpdateCompanyProfile(ctx *gin.Context, userID string, 
 	}
 
 	// Handle file uploads if present.
-	if s.FileService == nil && (input.Photo != nil || input.Banner != nil) {
+	if s.fileService == nil && (input.Photo != nil || input.Banner != nil) {
 		// Fallback to global provider if not injected
 		if _, err := filehandling.GetProvider(); err != nil {
 			return errors.New("file service not configured")
 		}
 	}
 	if input.Photo != nil {
-		if s.FileService != nil {
-			photo, err := s.FileService.SaveFile(ctx, userID, input.Photo, model.FileCategoryImage)
+		if s.fileService != nil {
+			photo, err := s.fileService.SaveFile(ctx, userID, input.Photo, model.FileCategoryImage)
 			if err != nil {
 				return err
 			}
@@ -540,8 +540,8 @@ func (s *IdentityService) UpdateCompanyProfile(ctx *gin.Context, userID string, 
 		}
 	}
 	if input.Banner != nil {
-		if s.FileService != nil {
-			banner, err := s.FileService.SaveFile(ctx, userID, input.Banner, model.FileCategoryImage)
+		if s.fileService != nil {
+			banner, err := s.fileService.SaveFile(ctx, userID, input.Banner, model.FileCategoryImage)
 			if err != nil {
 				return err
 			}
@@ -557,7 +557,7 @@ func (s *IdentityService) UpdateCompanyProfile(ctx *gin.Context, userID string, 
 	}
 
 	if len(updates) > 0 {
-		if err := s.Repo.UpdateCompanyFields(ctx.Request.Context(), userID, updates); err != nil {
+		if err := s.repo.UpdateCompanyFields(ctx.Request.Context(), userID, updates); err != nil {
 			return err
 		}
 	}
@@ -567,12 +567,12 @@ func (s *IdentityService) UpdateCompanyProfile(ctx *gin.Context, userID string, 
 
 // UpdateStudentProfile applies partial updates to a student profile and handles optional photo upload.
 func (s *IdentityService) UpdateStudentProfile(ctx *gin.Context, userID string, input StudentEditProfileInput) error {
-	if s == nil || s.Repo == nil {
+	if s == nil || s.repo == nil {
 		return errors.New("service not initialized")
 	}
 
 	// Ensure the student record exists.
-	if _, err := s.Repo.FindStudentByUserID(ctx.Request.Context(), userID, false); err != nil {
+	if _, err := s.repo.FindStudentByUserID(ctx.Request.Context(), userID, false); err != nil {
 		return err
 	}
 
@@ -602,8 +602,8 @@ func (s *IdentityService) UpdateStudentProfile(ctx *gin.Context, userID string, 
 	}
 
 	if input.Photo != nil {
-		if s.FileService != nil {
-			photo, err := s.FileService.SaveFile(ctx, userID, input.Photo, model.FileCategoryImage)
+		if s.fileService != nil {
+			photo, err := s.fileService.SaveFile(ctx, userID, input.Photo, model.FileCategoryImage)
 			if err != nil {
 				return err
 			}
@@ -622,7 +622,7 @@ func (s *IdentityService) UpdateStudentProfile(ctx *gin.Context, userID string, 
 	}
 
 	if len(updates) > 0 {
-		if err := s.Repo.UpdateStudentFields(ctx.Request.Context(), userID, updates); err != nil {
+		if err := s.repo.UpdateStudentFields(ctx.Request.Context(), userID, updates); err != nil {
 			return err
 		}
 	}
@@ -636,20 +636,20 @@ func (s *IdentityService) UpdateStudentProfile(ctx *gin.Context, userID string, 
 
 // ResolveRole returns the effective role for a user using repository-backed checks.
 func (s *IdentityService) ResolveRole(ctx context.Context, userID string) helper.Role {
-	if s == nil || s.Repo == nil || userID == "" {
+	if s == nil || s.repo == nil || userID == "" {
 		return helper.Unknown
 	}
 
-	if cnt, err := s.Repo.CountAdminByUserID(userID); err == nil && cnt > 0 {
+	if cnt, err := s.repo.CountAdminByUserID(userID); err == nil && cnt > 0 {
 		return helper.Admin
 	}
-	if cnt, err := s.Repo.CountCompanyByUserID(userID); err == nil && cnt > 0 {
+	if cnt, err := s.repo.CountCompanyByUserID(userID); err == nil && cnt > 0 {
 		return helper.Company
 	}
 
 	// Attempt to classify student role
-	if u, err := s.Repo.FindUserByID(ctx, userID, true); err == nil && u != nil {
-		if registered, roleStr, err := s.Repo.IsStudentRegisteredAndRole(*u); err == nil && registered {
+	if u, err := s.repo.FindUserByID(ctx, userID, true); err == nil && u != nil {
+		if registered, roleStr, err := s.repo.IsStudentRegisteredAndRole(*u); err == nil && registered {
 			switch roleStr {
 			case string(helper.Student):
 				return helper.Student
@@ -664,10 +664,10 @@ func (s *IdentityService) ResolveRole(ctx context.Context, userID string) helper
 
 // GetUsername fetches a user's username (soft-deleted included for idempotency).
 func (s *IdentityService) GetUsername(ctx context.Context, userID string) string {
-	if s == nil || s.Repo == nil {
+	if s == nil || s.repo == nil {
 		return "unknown"
 	}
-	user, err := s.Repo.FindUserByID(ctx, userID, true)
+	user, err := s.repo.FindUserByID(ctx, userID, true)
 	if err != nil || user == nil {
 		return "unknown"
 	}
