@@ -10,6 +10,7 @@ import (
 
 	"ku-work/backend/model"
 	repo "ku-work/backend/repository"
+	"ku-work/backend/services/internal"
 )
 
 // ApplicationService handles job application flows.
@@ -20,7 +21,7 @@ type ApplicationService struct {
 	identityRepo    repo.IdentityRepository
 
 	fileService *FileService
-	eventBus    *EventBus
+	eventBus    *internal.EventBus
 }
 
 // NewApplicationService constructs an ApplicationService.
@@ -30,7 +31,7 @@ func NewApplicationService(
 	studentRepo repo.StudentRepository,
 	identityRepo repo.IdentityRepository,
 	fileSvc *FileService,
-	eventBus *EventBus,
+	eventBus *internal.EventBus,
 ) *ApplicationService {
 	// Check nil
 	if appRepo == nil || jobRepo == nil || studentRepo == nil || identityRepo == nil || fileSvc == nil {
@@ -142,7 +143,7 @@ func (s *ApplicationService) ApplyToJob(ctx context.Context, p ApplyToJobParams)
 			return nil
 		}
 
-		event := EmailJobNewApplicantEvent{
+		event := internal.EmailJobNewApplicantEvent{
 			CompanyEmail:       company.Email,
 			CompanyUsername:    user.Username,
 			JobName:            job.Name,
@@ -214,13 +215,13 @@ func (s *ApplicationService) UpdateJobApplicationStatus(ctx context.Context, p U
 	if p.NewStatus == "" {
 		return fmt.Errorf("new status is required")
 	}
-	
+
 	if application, err := s.applicationRepo.GetApplicationByJobIDandUserID(ctx, p.JobID, p.StudentUserID); err != nil {
 		if application.Status == string(p.NewStatus) {
 			return nil // Return Early since status is already matched
 		}
 	}
-	
+
 	if err := s.applicationRepo.UpdateApplicationStatus(ctx, p.JobID, p.StudentUserID, p.NewStatus); err != nil {
 		return err
 	}
@@ -233,7 +234,7 @@ func (s *ApplicationService) UpdateJobApplicationStatus(ctx context.Context, p U
 		if oauth == nil {
 			return nil // Silent failure
 		}
-		event := EmailJobApplicationStatusEvent{
+		event := internal.EmailJobApplicationStatusEvent{
 			Email:       oauth.Email,
 			FirstName:   oauth.FirstName,
 			LastName:    oauth.LastName,

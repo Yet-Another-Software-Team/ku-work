@@ -1,6 +1,4 @@
-//TODO: migrate to layered architecture
-
-package services
+package internal
 
 import (
 	"context"

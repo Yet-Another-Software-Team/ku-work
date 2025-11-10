@@ -10,16 +10,17 @@ import (
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
 	repo "ku-work/backend/repository"
+	"ku-work/backend/services/internal"
 )
 
 // JobService encapsulates all database operations related to jobs.
 type JobService struct {
 	jobRepo  repo.JobRepository
-	eventBus *EventBus
+	eventBus *internal.EventBus
 }
 
 // NewJobService creates a new JobService instance wired with a JobRepository and EventBus.
-func NewJobService(r repo.JobRepository, bus *EventBus) *JobService {
+func NewJobService(r repo.JobRepository, bus *internal.EventBus) *JobService {
 	if r == nil {
 		log.Fatal("job repository cannot be nil")
 	}
@@ -120,7 +121,7 @@ func (s *JobService) ApproveOrRejectJob(ctx context.Context, jobID uint, approve
 				if approve {
 					status = string(model.JobApprovalAccepted)
 				}
-				ev := EmailJobApprovalEvent{
+				ev := internal.EmailJobApprovalEvent{
 					CompanyEmail:    company.Email,
 					CompanyUsername: jobDetail.CompanyName,
 					JobName:         jobDetail.Name,
