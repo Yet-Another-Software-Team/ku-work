@@ -139,7 +139,15 @@
                 >
                     Discard
                 </UButton>
-                <UButton type="submit" color="primary" class="rounded-md px-5"> Save </UButton>
+                <UButton
+                    type="submit"
+                    color="primary"
+                    class="rounded-md px-5"
+                    :loading="saving"
+                    :disabled="saving"
+                >
+                    Save
+                </UButton>
             </div>
         </form>
 
@@ -210,6 +218,7 @@ const props = defineProps<{
         email: string;
         approvalStatus?: string;
     };
+    saving?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -375,7 +384,7 @@ function handleSubmit() {
         return;
     }
 
-    addToast({ title: "Saved", description: "Profile updated successfully.", color: "success" });
+    // Removed premature success toast; parent should toast after backend confirms
 
     emit(
         "saved",
@@ -392,7 +401,7 @@ function handleSubmit() {
         cfToken.value
     );
 
-    emit("close");
+    // Removed premature close; parent should close modal after backend confirms
 }
 
 function isHost(url: string, expectedHost: string) {

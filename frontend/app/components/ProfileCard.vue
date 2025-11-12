@@ -106,6 +106,7 @@
             <template #content>
                 <EditProfileCard
                     :profile="profile"
+                    :saving="isSaving"
                     @close="isEditModalOpen = false"
                     @saved="handleProfileSaved"
                 />
@@ -119,6 +120,7 @@ import EditProfileCard from "./EditProfileCard.vue";
 const toast = useToast();
 
 const isEditModalOpen = ref(false);
+const isSaving = ref(false);
 
 interface StudentProfile {
     name?: string;
@@ -133,8 +135,8 @@ interface StudentProfile {
 type StudentProfileUpdate = StudentProfile & { _avatarFile?: File | null };
 
 const handleProfileSaved = async (updated: StudentProfileUpdate, cfToken: string) => {
-    const { _avatarFile, ...newProfile } = updated;
-    isEditModalOpen.value = false;
+    const { _avatarFile } = updated;
+    isSaving.value = true;
     const formData = new FormData();
     if (profile.value.phone !== updated.phone) formData.append("phone", updated.phone!);
     if (profile.value.birthDate !== updated.birthDate)
@@ -144,7 +146,6 @@ const handleProfileSaved = async (updated: StudentProfileUpdate, cfToken: string
     if (profile.value.linkedIn !== updated.linkedIn) formData.append("linkedIn", updated.linkedIn!);
     if (_avatarFile) formData.append("photo", _avatarFile!);
     formData.append("studentStatus", profile.value.status);
-    Object.assign(profile.value, newProfile);
     try {
         await api.patch("/me", formData, {
             headers: {
@@ -153,6 +154,12 @@ const handleProfileSaved = async (updated: StudentProfileUpdate, cfToken: string
             },
         });
         await fetchStudentProfile();
+        toast.add({
+            title: "Saved",
+            description: "Profile updated successfully.",
+            color: "success",
+        });
+        isEditModalOpen.value = false;
     } catch (error) {
         console.log(error);
         toast.add({
@@ -160,6 +167,8 @@ const handleProfileSaved = async (updated: StudentProfileUpdate, cfToken: string
             description: (error as { message: string }).message,
             color: "error",
         });
+    } finally {
+        isSaving.value = false;
     }
 };
 
