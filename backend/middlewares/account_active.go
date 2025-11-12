@@ -3,14 +3,14 @@ package middlewares
 import (
 	"net/http"
 
-	"ku-work/backend/helper"
+	"ku-work/backend/services"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 // AccountActiveMiddleware blocks requests if the authenticated user's account is deactivated.
-func AccountActiveMiddleware(db *gorm.DB) gin.HandlerFunc {
+// Uses AccountStatusService following layered architecture principles.
+func AccountActiveMiddleware(accountStatusService *services.AccountStatusService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		uidVal, ok := c.Get("userID")
 		if !ok {
@@ -24,8 +24,14 @@ func AccountActiveMiddleware(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// helper.IsDeactivated returns true when the user's DeletedAt is valid.
-		if helper.IsDeactivated(db, userID) {
+		// Use service layer instead of direct database access
+		isDeactivated, err := accountStatusService.IsAccountDeactivated(c.Request.Context(), userID)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Unable to verify account status"})
+			return
+		}
+
+		if isDeactivated {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "account deactivated"})
 			return
 		}

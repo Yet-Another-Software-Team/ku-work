@@ -57,14 +57,14 @@ func registerRoutes(router *gin.Engine, d RouterDeps) {
 	authProtected.POST("/logout", d.Handlers.JWT.LogoutHandler)
 
 	// Student registration requires active account
-	authProtectedActive := authProtected.Group("", middlewares.AccountActiveMiddleware(d.DB))
+	authProtectedActive := authProtected.Group("", middlewares.AccountActiveMiddleware(d.Services.AccountStatus))
 	authProtectedActive.POST("/student/register", turnstileMiddleware, d.Handlers.Student.RegisterHandler)
 
 	// User routes
 	protectedRouter := router.Group("", middlewares.AuthMiddleware(d.Services.JWT.JWTSecret, d.Services.JWT))
 	protectedRouter.POST("/me/reactivate", d.Handlers.User.ReactivateAccount)
 
-	protectedActive := protectedRouter.Group("", middlewares.AccountActiveMiddleware(d.DB))
+	protectedActive := protectedRouter.Group("", middlewares.AccountActiveMiddleware(d.Services.AccountStatus))
 	protectedActive.PATCH("/me", turnstileMiddleware, d.Handlers.User.EditProfileHandler)
 	protectedActive.GET("/me", d.Handlers.User.GetProfileHandler)
 	protectedActive.POST("/me/deactivate", turnstileMiddleware, d.Handlers.User.DeactivateAccount)
@@ -80,7 +80,7 @@ func registerRoutes(router *gin.Engine, d RouterDeps) {
 	job.GET("", d.Handlers.Job.FetchJobsHandler)
 	job.POST("", turnstileMiddleware, d.Handlers.Job.CreateJobHandler)
 	job.GET("/:id", d.Handlers.Job.GetJobDetailHandler)
-	job.PATCH("/:id",middlewares.TurnstileExceptionMiddleware(), turnstileMiddleware, d.Handlers.Job.EditJobHandler)
+	job.PATCH("/:id", middlewares.TurnstileExceptionMiddleware(), turnstileMiddleware, d.Handlers.Job.EditJobHandler)
 	job.POST("/:id/apply", turnstileMiddleware, d.Handlers.Application.CreateJobApplicationHandler)
 	job.GET("/:id/applications", d.Handlers.Application.GetJobApplicationsHandler)
 	job.DELETE("/:id/applications", d.Handlers.Application.ClearJobApplicationsHandler)

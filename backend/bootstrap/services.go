@@ -29,14 +29,15 @@ type ServicesBundle struct {
 	OAuth       *services.OAuthService
 
 	// Core business services
-	JWT         *services.JWTService
-	Auth        *services.AuthService
-	Job         *services.JobService
-	Application *services.ApplicationService
-	Identity    *services.IdentityService
-	Student     *services.StudentService
-	Company     *services.CompanyService
-	Admin       services.AdminService
+	JWT           *services.JWTService
+	Auth          *services.AuthService
+	Job           *services.JobService
+	Application   *services.ApplicationService
+	Identity      *services.IdentityService
+	Student       *services.StudentService
+	Company       *services.CompanyService
+	Admin         services.AdminService
+	AccountStatus *services.AccountStatusService
 }
 
 // BuildServices constructs and wires all services from repositories and environment configuration.
@@ -47,22 +48,23 @@ func BuildServices(ctx context.Context, _ any, repos *Repositories) (*ServicesBu
 	}
 
 	var (
-		err         error
-		emailSvc    *infraService.EmailService
-		eventBus    *infraService.EventBus
-		aiSvc       *infraService.AIService
-		aiEngine    ai.ApprovalAI
-		jobSvc      *services.JobService
-		fileSvc     *services.FileService
-		jwtSvc      *services.JWTService
-		authSvc     *services.AuthService
-		appSvc      *services.ApplicationService
-		identity    *services.IdentityService
-		student     *services.StudentService
-		company     *services.CompanyService
-		adminSvc    services.AdminService
-		rateLimiter *services.RateLimiterService
-		oauthSvc    *services.OAuthService
+		err           error
+		emailSvc      *infraService.EmailService
+		eventBus      *infraService.EventBus
+		aiSvc         *infraService.AIService
+		aiEngine      ai.ApprovalAI
+		jobSvc        *services.JobService
+		fileSvc       *services.FileService
+		jwtSvc        *services.JWTService
+		authSvc       *services.AuthService
+		appSvc        *services.ApplicationService
+		identity      *services.IdentityService
+		student       *services.StudentService
+		company       *services.CompanyService
+		adminSvc      services.AdminService
+		rateLimiter   *services.RateLimiterService
+		oauthSvc      *services.OAuthService
+		accountStatus *services.AccountStatusService
 	)
 
 	// -------------------------
@@ -202,10 +204,11 @@ func BuildServices(ctx context.Context, _ any, repos *Repositories) (*ServicesBu
 	)
 
 	// -------------------------
-	// Company + Admin
+	// Company + Admin + AccountStatus
 	// -------------------------
 	company = services.NewCompanyService(repos.Company)
 	adminSvc = services.NewAdminService(repos.Audit)
+	accountStatus = services.NewAccountStatusService(repos.Identity)
 
 	// Rate Limiter (repository-backed, fail-open on errors)
 	if repos.RateLimit != nil {
@@ -228,20 +231,21 @@ func BuildServices(ctx context.Context, _ any, repos *Repositories) (*ServicesBu
 	}
 
 	return &ServicesBundle{
-		Email:       emailSvc,
-		File:        fileSvc,
-		AI:          aiSvc,
-		EventBus:    eventBus,
-		RateLimiter: rateLimiter,
-		OAuth:       oauthSvc,
-		JWT:         jwtSvc,
-		Auth:        authSvc,
-		Job:         jobSvc,
-		Application: appSvc,
-		Identity:    identity,
-		Student:     student,
-		Company:     company,
-		Admin:       adminSvc,
+		Email:         emailSvc,
+		File:          fileSvc,
+		AI:            aiSvc,
+		EventBus:      eventBus,
+		RateLimiter:   rateLimiter,
+		OAuth:         oauthSvc,
+		JWT:           jwtSvc,
+		Auth:          authSvc,
+		Job:           jobSvc,
+		Application:   appSvc,
+		Identity:      identity,
+		Student:       student,
+		Company:       company,
+		Admin:         adminSvc,
+		AccountStatus: accountStatus,
 	}, nil
 }
 

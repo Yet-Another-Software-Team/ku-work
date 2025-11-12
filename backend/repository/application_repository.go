@@ -121,7 +121,7 @@ type ApplicationRepository interface {
 	// GetApplicationByJobIDandUserID returns a detailed projection for a single application identified
 	// by job id and applicant user id. Implementations should exclude deactivated/anonymized users.
 	GetApplicationByJobIDandUserID(ctx context.Context, jobID uint, userID string) (*FullApplicantDetail, error)
-	
+
 	// UpdateApplicationStatus sets the application status for the given (jobID, studentUserID) pair.
 	UpdateApplicationStatus(ctx context.Context, jobID uint, studentUserID string, status model.JobApplicationStatus) error
 }
