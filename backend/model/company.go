@@ -17,7 +17,6 @@ type Company struct {
 	CreatedAt time.Time      `json:"createdAt"`
 	UpdatedAt time.Time      `json:"updatedAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
-<<<<<<< HEAD
 
 	Email    string `json:"email"`
 	Website  string `json:"website"`
@@ -38,23 +37,6 @@ type Company struct {
 // BeforeDelete is a GORM hook executed before a company record is deleted.
 // It attempts to remove associated files (photo and banner) from the configured
 // storage provider via the model-level storage hook.
-=======
-	Email     string         `json:"email"`
-	Website   string         `json:"website"`
-	Phone     string         `json:"phone"`
-	PhotoID   string         `gorm:"type:uuid" json:"photoId"`
-	Photo     File           `gorm:"foreignKey:PhotoID" json:"-"`
-	BannerID  string         `gorm:"type:uuid" json:"bannerId"`
-	Banner    File           `gorm:"foreignKey:BannerID" json:"-"`
-	AboutUs   string         `json:"about"`
-	Address   string         `json:"address"`
-	City      string         `json:"city"`
-	Country   string         `json:"country"`
-	Jobs      []Job          `gorm:"foreignkey:CompanyID;constraint:OnDelete:CASCADE;" json:"-"`
-}
-
-// BeforeDelete is a GORM hook that deletes associated files from storage.
->>>>>>> main
 func (company *Company) BeforeDelete(tx *gorm.DB) (err error) {
 	// Load the company along with file relations to obtain file IDs.
 	var existing Company
@@ -62,7 +44,6 @@ func (company *Company) BeforeDelete(tx *gorm.DB) (err error) {
 		return err
 	}
 
-<<<<<<< HEAD
 	// If a photo is present, call the storage deletion hook (best-effort; surface errors).
 	if existing.Photo.ID != "" {
 		if err := CallStorageDeleteHook(context.Background(), existing.Photo.ID); err != nil {
@@ -73,15 +54,6 @@ func (company *Company) BeforeDelete(tx *gorm.DB) (err error) {
 	// If a banner is present, call the storage deletion hook.
 	if existing.Banner.ID != "" {
 		if err := CallStorageDeleteHook(context.Background(), existing.Banner.ID); err != nil {
-=======
-	if newCompany.Photo.ID != "" {
-		if err := CallStorageDeleteHook(context.Background(), newCompany.Photo.ID); err != nil {
-			return err
-		}
-	}
-	if newCompany.Banner.ID != "" {
-		if err := CallStorageDeleteHook(context.Background(), newCompany.Banner.ID); err != nil {
->>>>>>> main
 			return err
 		}
 	}

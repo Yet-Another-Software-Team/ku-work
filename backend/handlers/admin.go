@@ -85,38 +85,3 @@ func (h *AdminHandlers) FetchEmailLog(ctx *gin.Context) {
 	// Respond with the same payload shape as before.
 	ctx.JSON(http.StatusOK, audits)
 }
-
-// @Summary Get log of email (Admin only)
-// @Description Retrieves a list logs related to email i.e, sending success failure, to whom.
-// @Tags Admin
-// @Security BearerAuth
-// @Produce json
-// @Success 200 {array} model.MailLog "List of all audit log entries"
-// @Failure 403 {object} object{error=string} "Forbidden"
-// @Failure 500 {object} object{error=string} "Internal Server Error"
-// @Router /admin/emaillog [get]
-func (h *AdminHandlers) FetchEmailLog(ctx *gin.Context) {
-	type FetchEmailLogInput struct {
-		Offset uint `json:"offset" form:"offset"`
-		Limit  uint `json:"limit" form:"limit" binding:"max=64"`
-	}
-	input := FetchEmailLogInput{
-		Limit: 32,
-	}
-	err := ctx.Bind(&input)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	var emailLogs []model.MailLog
-	result := h.DB.Model(&model.MailLog{}).
-		Offset(int(input.Offset)).
-		Limit(int(input.Limit)).
-		Order(clause.OrderByColumn{Column: clause.Column{Name: "created_at"}, Desc: true}).
-		Find(&emailLogs)
-	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
-		return
-	}
-	ctx.JSON(http.StatusOK, emailLogs)
-}
