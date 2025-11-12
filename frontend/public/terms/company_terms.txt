@@ -1,137 +1,121 @@
-KU Work – Company Terms of Use and Privacy Notice (Employers/Companies)
+KU Work – Company Supplement to Core Terms of Use and Privacy Notice
 Effective date: TBD
 
-IMPORTANT: By creating or using a company account on KU Work, you acknowledge that you have read and agree to these Company Terms of Use and Privacy Notice. Where the platform also presents “KU Work Terms,” you must review and accept those separately. These terms are designed with GDPR and Thailand’s PDPA compliance in mind.
+IMPORTANT: These Company Terms supplement the KU Work Core Terms of Use and Privacy Notice (/terms/ku_work_core_terms.txt). They add company‑specific obligations, data categories, and responsibilities (especially regarding candidate/student data). You must also accept the KU Work Privacy Policy (/terms/privacy_policy.txt). If there is a conflict, this Company Supplement governs for company‑specific activities, while the Core Terms govern generally.
 
 ----------------------------------------
 1) Scope and Relationship
 ----------------------------------------
-This document covers:
-- The Terms of Use that apply to your company’s access and use of KU Work (the “Service”).
-- The Privacy Notice describing how we process personal data of company representatives and how your use of the Service may involve the processing of candidate (student) personal data.
+This Company Supplement covers:
+- Company‑specific Terms of Use for access and use of KU Work (the “Service”) by authorized company representatives.
+- Company‑specific Privacy details about processing of representative data and responsibilities when handling candidate (student) data.
 
 Roles and responsibilities:
-- KU Work (the KU-operated parts of the platform) acts as a data controller for platform operations affecting your company user account and the platform’s general features.
-- Your Company acts as an independent controller for personal data processing you undertake outside the platform (e.g., data you export, decisions you make about applicants, your own HR systems).
-- Where KU processes personal data strictly according to your Company’s documented instructions within the platform (if any such processor-like feature is provided), KU will act as a processor for those limited purposes. Otherwise, KU remains a controller for the platform.
+- KU (Kasetsart University) acts as a data controller for platform operations affecting company accounts.
+- Your Company acts as an independent controller for any candidate personal data you export or process outside the platform (e.g., internal HR systems, external assessments).
+- Where KU executes processing strictly according to documented, platform‑supported instructions (if such processor‑like features are added), KU acts as processor for those limited purposes; otherwise KU remains a controller.
 
 ----------------------------------------
-2) Terms of Use
+2) Terms of Use (Company Supplement)
 ----------------------------------------
-2.1 Eligibility and Account Ownership
-- Only authorized representatives of a legitimate company may register and use a company account.
-- You are responsible for maintaining the confidentiality of credentials and for all actions taken using your account.
+The Core Terms govern acceptable use, accounts, authentication, communications, security, and general obligations. Company‑specific additions:
+2.1 Eligibility & Account Ownership
+- Only authorized representatives of a legitimate company (accurate, verifiable details) may register and use a company account.
+- You are responsible for credential confidentiality and actions under your account.
 
-2.2 Acceptable Use
-You agree not to:
-- Violate any laws, regulations, or third-party rights, including labor, anti-discrimination, data protection, and intellectual property laws.
-- Post misleading, unlawful, discriminatory, harassing, or infringing content.
-- Attempt to gain unauthorized access to any data, accounts, or systems.
-- Interfere with the security, integrity, or availability of the Service.
-- Use the Service to send unsolicited commercial communications (spam).
+2.2 Enhanced Acceptable Use (Company Context)
+In addition to Core Terms prohibitions, you agree not to:
+- Post or advertise roles that are unlawful, deceptive, discriminatory, exploitative, or misrepresent compensation or required qualifications.
+- Attempt scraping or bulk extraction of student data beyond legitimate job‑matching purposes.
+- Use platform data for unsolicited marketing or unrelated profiling without a lawful basis and any required consents.
 
-2.3 Content Your Company Provides
-- You are responsible for the accuracy and lawfulness of the company profile, job postings, and other content you submit.
-- You grant KU a limited, non-exclusive license to store, display, and process such content to operate and improve the Service, including security and compliance.
+2.3 Company Content
+- You remain responsible for accuracy and lawfulness of company profile, job postings, and related materials (logos, banners).
+- You grant KU a limited, non‑exclusive license to store, display, and process submitted company content solely to operate, secure, improve, and moderate the Service.
 
 2.4 Service Emails (Transactional)
-- We use an email service to send transactional or service-related messages (e.g., account notices, job posting confirmations, application notifications). We do not send marketing emails without separate consent.
+- KU sends transactional/service emails (e.g., posting confirmations, application notifications). No marketing emails without separate lawful basis and consent where required.
 
-2.5 AI-Assisted Support
-- We may use AI to assist with content quality checks, moderation, fraud prevention, or decision-support features (e.g., highlighting incomplete postings). Any decisions with legal or similarly significant effects are not made solely by automated means without appropriate human review or any additional consents required by law.
+2.5 AI‑Assisted Support
+- KU may use AI to surface incomplete postings, potential policy violations, or quality improvements. Decisions with legal or similarly significant effects are not made solely by automated means without appropriate human review or required consents.
 
-2.6 Changes to the Service
-- Features may evolve over time. If changes materially affect these Terms or the Privacy Notice, we will provide appropriate notice and, where required, seek your consent.
+2.6 Changes
+- Feature evolution may occur. Material changes to these Company Terms or privacy notices will trigger appropriate notice and, where required, renewed acceptance.
 
 2.7 Suspension/Termination
-- We may suspend or terminate your access if you violate these Terms, create security or legal risks, or as otherwise required by law.
+- KU may suspend or terminate company access for violations creating legal, security, reputational, or compliance risks.
 
 ----------------------------------------
-3) Privacy Notice (Company Representatives)
+3) Privacy (Company Representatives – Supplement)
 ----------------------------------------
-3.1 Data Controller
-- For KU-operated components of KU Work, KU (Kasetsart University) is the data controller under GDPR/PDPA.
-- Contact (Data Protection/Privacy): [Insert contact email/office/phone here]
-- Postal address: [Insert official KU address here]
+Supplementing the Core Privacy Notice:
+3.1 Representative Data Categories (additions to Core)
+- Company profile & administrative data: company name, address, website, representative name, role/title, contact details.
+- Posting content: Job descriptions, criteria, metadata, media (logos/banners).
+- Operational & security logs: limited necessary logs (timestamps, request identifiers, possibly IP addresses) for fraud prevention, security investigation, and stability.
+- Communications: service notifications, application status messages (received or triggered), support requests.
 
-3.2 What Personal Data We Collect (Company Users)
-Depending on your use, we may process:
-- Company and account data: company name, contact details, representative’s name, email, phone, job title/role, and company profile information (address, website).
-- Job posting and content data: job descriptions, requirements, media (e.g., logos, banners).
-- Communications: transactional/service emails (via our email provider), in-platform notifications, and support requests.
-- Technical and security logs: essential logs for security, performance, and troubleshooting (e.g., timestamps, IPs where necessary for security). We do not conduct behavioral analytics for tracking.
-- Uploaded files and media: company logo, banner, or other materials you submit.
+3.2 Purposes & Legal Bases (Company Supplement)
+In addition to Core purposes:
+- Company account provisioning & role management (Contract necessity).
+- Job posting publication & moderation (Contract necessity / Legitimate interests).
+- Representative identification for compliance, audit, or dispute resolution (Legitimate interests / Legal obligation).
+- Quality, integrity, and safety assessments (Legitimate interests).
 
-3.3 Purposes and Legal Bases (GDPR Art. 6; PDPA lawful bases)
-- Provide and maintain the Service (account setup, job posting, notifications)
-  Legal bases: Contract necessity (GDPR Art. 6(1)(b)); PDPA: contractual necessity.
-- Transactional/service email delivery (via email service)
-  Legal bases: Contract necessity and/or Legitimate interests (GDPR Art. 6(1)(b)/(f)); PDPA: contractual necessity/legitimate interest. No marketing emails without separate consent.
-- Security, fraud prevention, and compliance
-  Legal bases: Legitimate interests (GDPR Art. 6(1)(f)) and/or Legal obligation (GDPR Art. 6(1)(c)); PDPA: legitimate interest/legal obligation.
-- Content moderation and AI-assisted decision support
-  Legal bases: Contract necessity and Legitimate interests (GDPR Art. 6(1)(b)/(f)); PDPA: contractual necessity/legitimate interest. We do not make solely automated decisions with legal or similarly significant effects without appropriate human review and required consents.
+3.3 No Behavioral Tracking
+- KU does not perform behavioral tracking analytics for advertising or profiling of company representatives.
 
-3.4 No Analytics
-- We do not perform behavioral analytics or tracking for advertising or profiling. We may use strictly necessary technical measures (e.g., session management, security logs).
+3.4 Sharing & Processors (Company Context)
+- Hosting/infrastructure, email delivery, and optional moderation/AI tooling operate under data processing agreements with safeguards.
+- Minimal exposure principle: only necessary data for each processor’s function.
 
-3.5 Sharing and Processors
-We may share data with:
-- Email service provider: to deliver transactional/service emails.
-- Hosting and infrastructure providers: to securely operate the platform.
-- Content moderation/AI providers (where applicable): to assist with quality checks and security.
-- KU internal administrators: for support, compliance, and operations.
-All third-party providers act under data processing agreements with appropriate safeguards.
+3.5 International Transfers
+- Safeguards (e.g., Standard Contractual Clauses, PDPA‑compliant mechanisms) applied when data leaves Thailand or the EEA.
 
-3.6 International Transfers
-- If data is transferred outside Thailand or the EEA (if applicable), we use appropriate safeguards (e.g., standard contractual clauses, PDPA-compliant mechanisms) to ensure adequate protection.
+3.6 Retention
+- Representative data retained while the company account is active and as needed for postings, legal compliance, or dispute resolution.
+- Upon account closure or inactivity beyond defined grace periods, personal identifiers may be anonymized while retaining non‑identifiable aggregates.
 
-3.7 Data Retention
-- We retain data for as long as necessary to provide the Service and meet legal obligations. Afterward, we delete or anonymize data unless longer retention is required to establish, exercise, or defend legal claims.
+3.7 Rights
+- Access, rectification, erasure (subject to retention obligations), restriction, objection, portability (where applicable), withdrawal of consent (if consent used).
+- Identity verification required for requests. Company is responsible for rights requests about candidate data processed outside KU Work.
 
-3.8 Your Rights (Company Representatives)
-Under GDPR (if applicable) and PDPA, you may have rights to:
-- Access, rectify, and in certain cases erase your personal data.
-- Restrict or object to specific processing.
-- Data portability (where applicable).
-- Withdraw consent where processing is based on consent (withdrawal does not affect prior processing).
-- Lodge a complaint with a supervisory authority (GDPR) or the PDPC (PDPA).
-To exercise rights, contact us at: [Insert privacy contact]. We may need to verify your identity.
+3.8 Children & Sensitive Data
+- Company accounts are for adult representatives; sensitive categories are not required. If you submit any sensitive data, you are responsible for legality and minimization.
 
-3.9 Children and Sensitive Data
-- The Service is intended for adult representatives of companies. We do not require special categories of personal data from company users.
+3.9 Security
+- Layered controls: authentication limits, token revocation, encryption in transit, least‑privilege access for support staff, integrity checks, anomaly monitoring.
 
-3.10 Security
-- We implement technical and organizational measures appropriate to risks, including access controls, encryption in transit where applicable, and periodic reviews.
-
-3.11 Updates to this Notice
-- We may revise this Notice and will provide appropriate notice where required.
+3.10 Updates
+- KU may update this Company Supplement; material changes prompt notice and possible re‑acceptance.
 
 ----------------------------------------
-4) Processing of Candidate (Student) Data by Your Company
+4) Candidate (Student) Data Handling by Your Company
 ----------------------------------------
-4.1 Your Company’s Responsibilities
-- Your Company is responsible for ensuring that any processing of candidate personal data you perform (inside or outside the platform) complies with GDPR/PDPA or other applicable laws.
-- You must ensure you have a lawful basis (e.g., contract necessity, legitimate interests with proper balancing, or consent where required) before processing candidate data.
-- You must implement appropriate security, honor applicable data subject rights, and delete data when it is no longer needed for the purposes for which it was collected (subject to lawful retention requirements).
+4.1 Controller Responsibilities
+- You must establish a lawful basis (e.g., contract necessity for application review, legitimate interests with balancing test, or consent where required) before processing candidate data.
+- Implement suitable safeguards, minimize data, respect retention limits, and respond to rights requests promptly.
 
 4.2 Exporting/Sharing Candidate Data
-- When exporting or sharing candidate data outside the platform, your Company acts as a controller and must ensure appropriate safeguards, transparency, and security.
-- Do not use candidate data for unrelated purposes (e.g., unsolicited marketing) without a lawful basis and required consents.
+- Exports from the platform create independent controller obligations. Ensure secure channels, proper disclosure, and avoid repurposing for unrelated marketing or profiling without separate lawful basis and required consents.
 
-4.3 Automated Decision-Making and AI
-- If your Company uses AI or automated systems for candidate evaluation, you are responsible for ensuring compliance with applicable laws (including avoiding solely automated decisions with legal or similarly significant effects unless lawful conditions are met and appropriate human review is provided).
+4.3 Automated Decision‑Making / AI
+- Any internal AI or automated review systems you deploy must comply with applicable laws (avoid solely automated adverse decisions without required conditions and human oversight).
+- KU’s AI assistance remains bounded as described (support signals, not final determinations).
 
 ----------------------------------------
 5) Acceptance
 ----------------------------------------
-By checking the acceptance boxes and proceeding:
-- You represent and warrant that you are an authorized representative of your Company and agree to these Terms of Use.
-- You acknowledge the Privacy Notice, including that:
-  (i) We use an email service to send transactional/service-related communications,
-  (ii) We do not use analytics to track your behavior, and
-  (iii) We may use AI to assist certain decisions and moderation, without relying solely on automated decision-making for legally or similarly significant effects without appropriate human review and required consents.
-- You agree your Company will comply with GDPR and Thailand’s PDPA when processing candidate data.
+By checking the acceptance boxes and proceeding, you confirm that:
+- You have read and agree to the KU Work Core Terms & Privacy Notice (/terms/ku_work_core_terms.txt).
+- You have read and agree to this Company Supplement (these company‑specific Terms and Privacy additions).
+- You have read and agree to the KU Work Privacy Policy summary (/terms/privacy_policy.txt).
+- You acknowledge and understand:
+  (i) Transactional/service emails are sent via an email service provider,
+  (ii) No behavior‑tracking analytics are performed,
+  (iii) AI is used only for assistance/moderation support and not as sole decision‑maker for legally or similarly significant effects without human review.
+- You agree your Company will comply with GDPR and Thailand’s PDPA when processing candidate (student) data.
+- If Google OAuth is later used for your account, you will also be bound by the Google Sign‑In Notice (/terms/google_oauth_notice.txt).
 
 If you do not agree, do not proceed with registration or use of KU Work.
 
@@ -140,7 +124,7 @@ If you do not agree, do not proceed with registration or use of KU Work.
 ----------------------------------------
 Data Protection/Privacy Contact: [Insert contact email/office/phone]
 Postal Address: [Insert official KU address]
-For GDPR complaints: You may contact your local supervisory authority.
-For PDPA complaints: You may contact the Personal Data Protection Committee (PDPC).
+For GDPR complaints: Contact your local supervisory authority.
+For PDPA complaints: Contact the Personal Data Protection Committee (PDPC).
 
 End of document.

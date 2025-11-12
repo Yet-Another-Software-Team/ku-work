@@ -122,6 +122,6 @@ By choosing “Continue with Google,” you confirm that:
 - You understand we may use AI to assist certain decisions with appropriate human oversight;
 - You acknowledge that KU Work is operated in alignment with GDPR and Thailand’s PDPA and that you can exercise your rights as described in this notice.
 
-If you do not agree, please use an alternative sign‑in option (if available) or do not proceed with Google Sign‑In.
+If you do not agree, please do not proceed with Google Sign‑In.
 
 End of document.

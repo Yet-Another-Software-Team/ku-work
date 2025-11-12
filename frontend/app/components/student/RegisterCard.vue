@@ -136,6 +136,11 @@ const cfToken = ref<string>("");
 const termsAccepted = ref(false);
 const termsDocs = [
     {
+        key: "ku-work-core-terms",
+        title: "KU Work Core Terms of Use and Privacy Notice",
+        src: "/terms/ku_work_core_terms.txt",
+    },
+    {
         key: "ku-work-terms",
         title: "KU-Work Terms of Use and Privacy Notice",
         src: "/terms/ku_work_terms.txt",

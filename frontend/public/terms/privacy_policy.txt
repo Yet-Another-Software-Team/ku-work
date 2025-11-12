@@ -1,0 +1,134 @@
+KU Work – Privacy Policy (All Users – Core Reference)
+Version: 1.0.0
+Effective Date: TBD
+
+IMPORTANT: This Privacy Policy provides a concise, human‑readable overview of how KU Work (“we,” “us,” “our”) handles personal data for all users (students/KU users, company representatives, and viewers using Google Sign‑In). It is a simplified guide. For full legal detail, you MUST review:
+- Core Terms & Privacy Notice: /terms/ku_work_core_terms.txt
+- Student/KU Supplement: /terms/ku_work_terms.txt (applies to student/KU accounts)
+- Company Supplement: /terms/company_terms.txt (applies to company accounts)
+- Google Sign‑In Notice: /terms/google_oauth_notice.txt (applies when you use Google OAuth)
+
+If any conflict arises, the detailed documents above govern over this summary.
+
+------------------------------------------------------------
+1) What Data We Handle
+------------------------------------------------------------
+We process:
+- Identity & Profile: name, email/username, role, company/student status, and optional links (GitHub, LinkedIn).
+- Account & Security: authentication identifiers, tokens, timestamps, necessary logs (security, integrity, troubleshooting).
+- Submitted Content: profile information, uploaded files, job postings, verification documents.
+- Communications: transactional/service emails (registration, status changes, application notifications), support interactions.
+We DO NOT collect behavioral tracking analytics (no profiling/ad metrics) and DO NOT request third‑party service passwords.
+
+------------------------------------------------------------
+2) How We Collect
+------------------------------------------------------------
+- Directly from you (forms, uploads, profile edits).
+- Via authentication flows (e.g., Google Sign‑In basic profile data).
+- Automatically as necessary security/technical logs (IP/time/hash tokens as required for fraud prevention, rate limiting, abuse detection).
+
+------------------------------------------------------------
+3) Why We Use Your Data (Purposes)
+------------------------------------------------------------
+- Provide and operate KU Work (account creation, login, jobs, applications).
+- Transactional/service communications (account notices, application updates).
+- Security, fraud prevention, service integrity (token validation, revocation, abuse checks).
+- Content moderation and AI‑assisted decision support (non‑deterministic hints; not solely automated for legally significant decisions).
+- Compliance with applicable laws and institutional policies.
+We do NOT use your data for unsolicited marketing without an additional lawful basis and consent where required.
+
+------------------------------------------------------------
+4) Legal Bases (GDPR) / Lawful Bases (PDPA)
+------------------------------------------------------------
+- Contract Necessity: account access, core service features.
+- Legitimate Interests: security, abuse prevention, service improvement, non‑invasive decision support.
+- Legal Obligation: responding to lawful requests, safeguarding systems, regulatory retention.
+- Consent: Google Sign‑In data sharing; any optional features explicitly asking for consent.
+Where consent is the basis, withdrawal does not affect prior lawful processing.
+
+------------------------------------------------------------
+5) Sharing & Third‑Party Processors
+------------------------------------------------------------
+We may share limited data with:
+- Hosting/infrastructure providers (secure operation).
+- Email service provider (transactional delivery only).
+- AI or moderation tooling (if used) under strict contracts and safeguards.
+- Authorized KU administrators (support, compliance).
+All third parties operate under agreements enforcing confidentiality, security, and purpose limitation.
+
+------------------------------------------------------------
+6) International Transfers
+------------------------------------------------------------
+If data moves outside Thailand or the EEA (where GDPR applies), we implement appropriate safeguards (e.g., Standard Contractual Clauses, PDPA‑compliant transfer mechanisms). We assess vendor protections and minimize exposure.
+
+------------------------------------------------------------
+7) Cookies & Tracking
+------------------------------------------------------------
+- Strictly Necessary Only: session tokens, security flags, rate limit or CSRF protection values.
+- No behavioral tracking, advertising, or cross‑site profiling cookies.
+
+------------------------------------------------------------
+8) AI‑Assisted Features
+------------------------------------------------------------
+We may use AI for:
+- Content completeness hints
+- Moderation assistance
+- Fraud/risk pattern spotting
+Human oversight applies for decisions with legal or similarly significant effects. No solely automated adverse decisions without required legal safeguards.
+
+------------------------------------------------------------
+9) Retention & Anonymization
+------------------------------------------------------------
+- Active Accounts: retained as needed for service.
+- Deactivation: grace period applies (see supplements); reactivation possible within configured interval.
+- Post‑Grace: personal identifiers may be anonymized (not raw deletion) to retain non‑identifiable historical/aggregated data for analytics, security, and compliance where lawful.
+- Legal Hold: data may be preserved if required for investigations or legal claims.
+
+------------------------------------------------------------
+10) Your Rights (Subject to Jurisdiction)
+------------------------------------------------------------
+Potential rights include: access, rectification, erasure, restriction, objection, portability, and withdrawal of consent. You may also lodge complaints with a supervisory authority (GDPR) or PDPC (PDPA). Identity verification may be required for requests.
+For company representative processing beyond the platform (e.g., exported candidate data), the company acts independently and must handle rights requests appropriately.
+
+------------------------------------------------------------
+11) Security Measures
+------------------------------------------------------------
+Technical & organizational controls may include:
+- Token revocation & short‑lived JWTs
+- Transport encryption (HTTPS)
+- Access controls & role segregation
+- Limited necessary logs
+- Periodic review and anonymization routines
+No system is perfectly secure; you must safeguard your credentials and devices.
+
+------------------------------------------------------------
+12) Children / Eligibility
+------------------------------------------------------------
+The platform targets KU students/staff and authorized company representatives. We do not knowingly target unqualified minors. Report any concerns via the contact details below.
+
+------------------------------------------------------------
+13) Changes to this Policy
+------------------------------------------------------------
+We may update this summary. Material changes will be signaled through platform notices or updated effective dates. Continued use after notice constitutes acknowledgment. Always consult the full documents for authoritative terms.
+
+------------------------------------------------------------
+14) Contact
+------------------------------------------------------------
+Data Protection / Privacy Contact: [Insert email/office/phone]
+Postal Address: [Insert official KU address]
+For GDPR complaints: Contact your local supervisory authority.
+For PDPA complaints: Contact the Personal Data Protection Committee (PDPC).
+
+------------------------------------------------------------
+15) Quick Role Mapping
+------------------------------------------------------------
+Viewer (Google Sign‑In only): Accepts Google OAuth Notice + implicitly bound by Core Terms.
+Student/KU: Accepts Core Terms + Student/KU Supplement.
+Company: Accepts Core Terms + Company Supplement.
+
+------------------------------------------------------------
+16) Acceptance Reminder
+------------------------------------------------------------
+By continuing (e.g., using Google Sign‑In or creating an account), you acknowledge this Privacy Policy summary and agree to review and be bound by the full Core Terms and any applicable supplements for your role.
+
+End of document.

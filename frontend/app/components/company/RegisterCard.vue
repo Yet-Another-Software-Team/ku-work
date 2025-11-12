@@ -124,9 +124,14 @@ const token = ref<string>("");
 const termsAccepted = ref(false);
 const termsDocs = [
     {
-        key: "ku-work-terms",
-        title: "KU-Work Terms of Use and Privacy Notice",
-        src: "/terms/ku_work_terms.txt",
+        key: "ku-work-core-terms",
+        title: "KU Work Core Terms of Use and Privacy Notice",
+        src: "/terms/ku_work_core_terms.txt",
+    },
+    {
+        key: "privacy-policy",
+        title: "KU Work Privacy Policy (Summary)",
+        src: "/terms/privacy_policy.txt",
     },
     {
         key: "company-terms",

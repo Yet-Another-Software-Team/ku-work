@@ -1,0 +1,175 @@
+KU Work – Core Terms of Use and Privacy Notice (All Users)
+Effective date: TBD
+
+IMPORTANT: These Core Terms of Use and Privacy Notice apply to all users of KU Work. They are complemented by role‑specific terms:
+- Students Accounts: “KU Work Student Terms of Use and Privacy Notice (Students)”
+- Companies/Employers: “Company Terms of Use and Privacy Notice”
+If there is a conflict, the role‑specific document governs for that role’s activities, and the Core Terms apply generally.
+
+------------------------------------------------------------
+1) What this document covers
+------------------------------------------------------------
+This document sets out:
+- The core Terms of Use that apply to your access and use of KU Work (the “Service”).
+- The core Privacy Notice describing how we process personal data in alignment with the EU General Data Protection Regulation (GDPR) and Thailand’s Personal Data Protection Act (PDPA).
+
+“KU Work,” “we,” “us,” or “our” refers to the KU‑operated components of the system. “You” refers to any person accessing or using the Service (e.g., students, KU staff, company representatives).
+
+------------------------------------------------------------
+2) Who should read this
+------------------------------------------------------------
+All users should read these Core Terms. In addition:
+- Students/KU Accounts should read the student/KU‑specific terms.
+- Companies should read the company‑specific terms.
+Some features, rights, or responsibilities differ by role and are described in those role‑specific documents.
+
+------------------------------------------------------------
+3) Definitions (summary)
+------------------------------------------------------------
+- Account: A user profile and associated credentials allowing access to the Service.
+- Personal Data: Any information relating to an identified or identifiable individual.
+- Processor/Controller: Terms as defined under GDPR/PDPA. See Section 8 for roles and responsibilities.
+- Necessary Cookies/Logs: Technical data required to operate the Service securely (e.g., session tokens).
+
+------------------------------------------------------------
+4) Acceptable Use (applies to all users)
+------------------------------------------------------------
+You agree not to:
+- Violate applicable laws, regulations, or third‑party rights.
+- Upload or share unlawful, harmful, discriminatory, or infringing content.
+- Attempt to gain unauthorized access to the Service or other users’ data.
+- Interfere with the security, integrity, or availability of the Service.
+- Misrepresent your identity or affiliation.
+
+We may suspend or terminate access for violations of these Terms or as required by law.
+
+------------------------------------------------------------
+5) Accounts, Authentication, and Sessions
+------------------------------------------------------------
+- You are responsible for keeping your credentials confidential.
+- Session and authentication tokens may be used to maintain login. Tokens can be revoked on logout.
+- For security, tokens expire periodically and may be refreshed as allowed by the Service.
+- If you suspect unauthorized access, you should change your password (if applicable) and contact support.
+
+------------------------------------------------------------
+6) Communications (Transactional/Service Only)
+------------------------------------------------------------
+- We use an email service to send transactional or service‑related communications (e.g., account notices, job/application notifications, status updates). We do not send marketing emails without separate consent where required by law.
+
+------------------------------------------------------------
+7) Cookies, Tracking, and Analytics
+------------------------------------------------------------
+- We rely on strictly necessary cookies or equivalent mechanisms required to operate the Service (e.g., session management, security).
+- We do not conduct behavior‑tracking analytics or advertising profiling across the platform.
+- Role‑specific pages may describe additional disclosures if any feature requires it.
+
+------------------------------------------------------------
+8) Privacy: Roles and Responsibilities
+------------------------------------------------------------
+- For KU‑operated components of KU Work, KU (Kasetsart University) is the data controller under GDPR/PDPA.
+- We may engage third‑party processors (e.g., hosting, email delivery) under appropriate data processing agreements and safeguards.
+
+Contact (Data Protection/Privacy): [Insert privacy/DPO contact email/office/phone]
+Postal Address: [Insert official KU address]
+
+------------------------------------------------------------
+9) Personal Data We Process (categories)
+------------------------------------------------------------
+Depending on your role and usage:
+- Identification/profile data (e.g., name, email/username, role, contact details).
+- Account/security data (e.g., authentication identifiers, tokens, timestamps, role/permissions, necessary logs).
+- User‑submitted content/data (e.g., profile details, uploaded files).
+- Communications (e.g., service/transactional emails, support requests).
+
+We do not request your third‑party passwords (e.g., Google). If you choose OAuth sign‑in, we receive selected profile information as authorized by you for authentication.
+
+------------------------------------------------------------
+10) Purposes and Legal Bases (GDPR Art. 6; PDPA lawful bases)
+------------------------------------------------------------
+We process personal data to:
+- Provide and operate the Service, including account setup and access.
+  Legal bases: Contract necessity (GDPR Art. 6(1)(b)); PDPA: contractual necessity.
+- Send transactional/service communications (via an email service).
+  Legal bases: Contract necessity and/or Legitimate interests (GDPR Art. 6(1)(b)/(f)); PDPA: contractual necessity/legitimate interest.
+- Security, fraud prevention, and compliance (e.g., logging, rate limits, abuse prevention).
+  Legal bases: Legitimate interests (GDPR Art. 6(1)(f)) and/or Legal obligation (GDPR Art. 6(1)(c)); PDPA: legitimate interest/legal obligation.
+- Content moderation and AI‑assisted decision support (see Section 11).
+  Legal bases: Contract necessity and Legitimate interests (GDPR Art. 6(1)(b)/(f)); PDPA: contractual necessity/legitimate interest.
+- Improvements and service administration (not marketing analytics).
+  Legal bases: Legitimate interests (GDPR Art. 6(1)(f)); PDPA: legitimate interest.
+
+Where consent is the legal basis for any processing, you can withdraw it at any time (withdrawal does not affect processing carried out before withdrawal).
+
+------------------------------------------------------------
+11) AI‑Assisted Features (Decision Support)
+------------------------------------------------------------
+We may use AI tools to assist with content quality checks, moderation, fraud prevention, or decision support (e.g., highlighting incomplete fields).
+- We do not rely solely on automated decision‑making for decisions with legal or similarly significant effects without appropriate human review or any additional consents required by law.
+- Role‑specific documents may include more details relevant to that user group.
+
+------------------------------------------------------------
+12) Data Sharing and International Transfers
+------------------------------------------------------------
+We may share personal data with:
+- Service providers/processors (e.g., hosting, email delivery) under contracts with appropriate safeguards.
+- KU internal departments or authorized personnel for support, compliance, and service administration.
+
+If data is transferred outside Thailand or the EEA, we implement appropriate safeguards (e.g., standard contractual clauses, PDPA‑compliant mechanisms) to ensure an adequate level of protection.
+
+------------------------------------------------------------
+13) Data Retention and Anonymization
+------------------------------------------------------------
+- We retain personal data as long as necessary to fulfill the purposes described above and as required by law.
+- When an account is deactivated and passes any applicable grace period, we may anonymize personal data instead of permanently deleting it, retaining anonymized data for analytics, security, and compliance where allowed by law.
+- Role‑specific terms provide additional details on account lifecycle options and the consequences of deactivation or deletion requests.
+
+------------------------------------------------------------
+14) Your Rights (GDPR/PDPA)
+------------------------------------------------------------
+Subject to conditions and applicable law, you may have rights to:
+- Access and obtain a copy of your personal data.
+- Rectify inaccurate or incomplete data.
+- Erase personal data in certain circumstances.
+- Restrict or object to specific processing.
+- Data portability (where applicable).
+- Withdraw consent for consent‑based processing.
+- Lodge a complaint with a supervisory authority (GDPR) or the PDPC (PDPA).
+
+To exercise rights, contact us at: [Insert privacy/DPO contact]. We may need to verify your identity before responding.
+
+------------------------------------------------------------
+15) Children and Sensitive Data
+------------------------------------------------------------
+- The Service is intended for KU students, staff, and authorized company representatives. We do not require special categories of personal data. If you voluntarily provide any sensitive data, we will handle it with heightened safeguards and appropriate legal bases.
+
+------------------------------------------------------------
+16) Security
+------------------------------------------------------------
+We implement technical and organizational measures appropriate to the risk, including access controls, least‑privilege practices where feasible, encryption in transit where applicable, monitoring, and periodic reviews. No method is 100% secure; you should also protect your credentials and devices.
+
+------------------------------------------------------------
+17) Changes to these Terms and Notices
+------------------------------------------------------------
+We may update these Core Terms. If changes are material, we will provide appropriate notice and, where required, obtain consent again. Continued use of the Service after notice indicates acceptance of the updated terms.
+
+------------------------------------------------------------
+18) Contact
+------------------------------------------------------------
+Data Protection/Privacy Contact: [Insert contact email/office/phone]
+Postal Address: [Insert official KU address]
+For GDPR complaints: Contact your local supervisory authority.
+For PDPA complaints: Contact the Personal Data Protection Committee (PDPC).
+
+------------------------------------------------------------
+19) Acceptance
+------------------------------------------------------------
+By using the Service, you confirm that:
+- You have read and agree to these Core Terms of Use.
+- You have read and understood the Core Privacy Notice, including that:
+  (i) We use an email service to send transactional/service‑related communications,
+  (ii) We do not use behavior‑tracking analytics, and
+  (iii) We may use AI to assist certain decisions without relying solely on automated decision‑making for legally or similarly significant effects without appropriate human review or required consents.
+- You will review and accept, where presented, any role‑specific terms applicable to your activities (e.g., Student/KU Terms or Company Terms).
+
+If you do not agree, do not proceed with registration or use of KU Work.
+End of document.
