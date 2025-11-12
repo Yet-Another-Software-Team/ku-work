@@ -92,8 +92,28 @@
                     class="max-h-[60vh] overflow-y-auto"
                     @scroll="onViewerScroll"
                 >
+                    <!-- PDF support -->
+                    <div v-if="isPdfCurrent" class="w-full h-[60vh] flex flex-col gap-3">
+                        <object
+                            :data="pdfUrl"
+                            type="application/pdf"
+                            class="flex-1 w-full h-full border rounded"
+                        >
+                            <iframe
+                                :src="pdfUrl"
+                                class="flex-1 w-full h-full"
+                                title="PDF Viewer"
+                            ></iframe>
+                        </object>
+                        <p class="text-xs text-gray-500">
+                            If the PDF does not display, you can
+                            <a :href="pdfUrl" target="_blank" class="text-primary-600 underline"
+                                >open it in a new tab</a
+                            >.
+                        </p>
+                    </div>
                     <pre
-                        v-if="currentContent !== null"
+                        v-else-if="currentContent !== null"
                         class="whitespace-pre-wrap break-words text-sm text-gray-900 dark:text-white"
                         >{{ currentContent }}</pre
                     >
@@ -123,7 +143,7 @@ import { reactive, ref, computed, onMounted, watch, nextTick } from "vue";
 type DocDef = {
     key: string; // unique key for the document, e.g., 'ku-terms' or 'company-terms'
     title: string; // human readable title shown in UI
-    src: string; // public path to the text file (e.g., '/terms/ku.txt'); must be accessible via HTTP
+    src: string; // public path to the document (e.g., '/terms/ku.txt' or '/terms/ku.pdf')
     required?: boolean; // whether acceptance is required for "allAccepted"; default true
 };
 
@@ -200,6 +220,16 @@ const currentTitle = computed(() => {
 const currentContent = computed(() =>
     currentKey.value ? (contents[currentKey.value] ?? null) : null
 );
+const isPdfCurrent = computed(
+    () => !!currentContent.value && currentContent.value.startsWith("__PDF__:")
+);
+const pdfUrl = computed(() => {
+    if (!isPdfCurrent.value) return null;
+    const url = currentContent.value!.replace("__PDF__:", "");
+    const hasHash = url.includes("#");
+    // Hide built-in PDF toolbar/nav panes via URL fragment
+    return hasHash ? `${url}&toolbar=0&navpanes=0` : `${url}#toolbar=0&navpanes=0`;
+});
 
 function initializeState() {
     // initialize acceptance map and content placeholders
@@ -215,17 +245,87 @@ async function loadDocIfNeeded(key: string) {
     const doc = props.docs.find((d) => d.key === key);
     if (!doc) return;
     loadStates[key] = { loading: true, error: false };
+
+    const src = doc.src;
+    const lower = src.toLowerCase();
+
     try {
-        // Ensure client-side fetch
-        const res = await fetch(doc.src, { method: "GET" });
-        if (!res.ok) throw new Error(`Failed to fetch ${doc.src}: ${res.status}`);
-        const text = await res.text();
-        contents[key] = text;
-        loadStates[key] = { loading: false, error: false };
+        if (lower.endsWith(".pdf")) {
+            // Verify PDF exists; if not, fallback to .txt
+            let pdfOk = false;
+            try {
+                const head = await fetch(src, { method: "HEAD" });
+                pdfOk = head.ok;
+            } catch {
+                // Some servers may not support HEAD; try GET without consuming body
+                try {
+                    const getRes = await fetch(src, { method: "GET" });
+                    pdfOk = getRes.ok;
+                } catch {
+                    pdfOk = false;
+                }
+            }
+
+            if (pdfOk) {
+                contents[key] = `__PDF__:${src}`;
+                loadStates[key] = { loading: false, error: false };
+                return;
+            }
+
+            // Fallback to TXT if PDF not available
+            const txtSrc = src.replace(/\.pdf$/i, ".txt");
+            try {
+                const res = await fetch(txtSrc, { method: "GET" });
+                if (!res.ok) throw new Error(`Failed to fetch ${txtSrc}: ${res.status}`);
+                const text = await res.text();
+                contents[key] = text;
+                loadStates[key] = { loading: false, error: false };
+                return;
+            } catch {
+                // no-op, let outer catch handle error
+            }
+        } else {
+            // Try TXT first
+            try {
+                const res = await fetch(src, { method: "GET" });
+                if (!res.ok) throw new Error(`Failed to fetch ${src}: ${res.status}`);
+                const text = await res.text();
+                contents[key] = text;
+                loadStates[key] = { loading: false, error: false };
+                return;
+            } catch {
+                // Fallback to PDF if TXT fetch fails
+                const pdfSrc = src.replace(/\.txt$/i, ".pdf");
+                try {
+                    // Verify PDF exists
+                    let pdfOk = false;
+                    try {
+                        const head = await fetch(pdfSrc, { method: "HEAD" });
+                        pdfOk = head.ok;
+                    } catch {
+                        try {
+                            const getRes = await fetch(pdfSrc, { method: "GET" });
+                            pdfOk = getRes.ok;
+                        } catch {
+                            pdfOk = false;
+                        }
+                    }
+                    if (pdfOk) {
+                        contents[key] = `__PDF__:${pdfSrc}`;
+                        loadStates[key] = { loading: false, error: false };
+                        return;
+                    }
+                } catch {
+                    // ignore, fall through to error
+                }
+            }
+        }
+
+        // If we reach here, both preferred and fallback failed
+        throw new Error("No available document source");
     } catch {
         loadStates[key] = { loading: false, error: true };
         contents[key] = null;
-        // non-fatal; UI shows error text
     }
 }
 

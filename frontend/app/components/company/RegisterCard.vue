@@ -107,6 +107,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from "vue";
 import { useApi, type AuthResponse } from "~/composables/useApi";
+import { getRequiredDocumentsForRole, buildDocumentSrc } from "@/config/terms";
 
 const toast = useToast();
 const api = useApi();
@@ -122,23 +123,11 @@ const stepTwoRef = ref<{ isValid: boolean } | null>(null);
 
 const token = ref<string>("");
 const termsAccepted = ref(false);
-const termsDocs = [
-    {
-        key: "ku-work-core-terms",
-        title: "KU Work Core Terms of Use and Privacy Notice",
-        src: "/terms/ku_work_core_terms.txt",
-    },
-    {
-        key: "privacy-policy",
-        title: "KU Work Privacy Policy (Summary)",
-        src: "/terms/privacy_policy.txt",
-    },
-    {
-        key: "company-terms",
-        title: "Company Terms of Use and Privacy Notice",
-        src: "/terms/company_terms.txt",
-    },
-];
+const termsDocs = getRequiredDocumentsForRole("company").map((d) => ({
+    key: d.key,
+    title: d.title,
+    src: buildDocumentSrc(d),
+}));
 
 const form = reactive({
     companyName: "",
