@@ -5,7 +5,6 @@ import (
 
 	docs "ku-work/backend/docs"
 	"ku-work/backend/middlewares"
-	gormrepo "ku-work/backend/repository/gorm"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -72,7 +71,7 @@ func registerRoutes(router *gin.Engine, d RouterDeps) {
 	// Company routes
 	company := protectedActive.Group("/company")
 	company.GET("/:id", d.Handlers.Company.GetCompanyProfileHandler)
-	companyAdmin := company.Group("", middlewares.AdminPermissionMiddleware(gormrepo.NewGormIdentityRepository(d.DB)))
+	companyAdmin := company.Group("", middlewares.AdminPermissionMiddleware(d.Services.Permission))
 	companyAdmin.GET("", d.Handlers.Company.GetCompanyListHandler)
 
 	// Job routes
@@ -87,7 +86,7 @@ func registerRoutes(router *gin.Engine, d RouterDeps) {
 	job.GET("/:id/applications/:email", d.Handlers.Application.GetJobApplicationHandler)
 	job.PATCH("/:id/applications/:studentUserId/status", d.Handlers.Application.UpdateJobApplicationStatusHandler)
 
-	jobAdmin := job.Group("", middlewares.AdminPermissionMiddleware(gormrepo.NewGormIdentityRepository(d.DB)))
+	jobAdmin := job.Group("", middlewares.AdminPermissionMiddleware(d.Services.Permission))
 	jobAdmin.POST("/:id/approval", d.Handlers.Job.JobApprovalHandler)
 
 	// Application routes
@@ -98,11 +97,11 @@ func registerRoutes(router *gin.Engine, d RouterDeps) {
 	student := protectedActive.Group("/students")
 	student.GET("", d.Handlers.Student.GetProfileHandler)
 
-	studentAdmin := student.Group("", middlewares.AdminPermissionMiddleware(gormrepo.NewGormIdentityRepository(d.DB)))
+	studentAdmin := student.Group("", middlewares.AdminPermissionMiddleware(d.Services.Permission))
 	studentAdmin.POST("/:id/approval", d.Handlers.Student.ApproveHandler)
 
 	// Admin routes
-	admin := protectedActive.Group("/admin", middlewares.AdminPermissionMiddleware(gormrepo.NewGormIdentityRepository(d.DB)))
+	admin := protectedActive.Group("/admin", middlewares.AdminPermissionMiddleware(d.Services.Permission))
 	admin.GET("/audits", d.Handlers.Admin.FetchAuditLog)
 	admin.GET("/emaillog", d.Handlers.Admin.FetchEmailLog)
 }

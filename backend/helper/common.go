@@ -18,7 +18,8 @@ const (
 	Unknown Role = "unknown"
 )
 
-// Helper function to get the role of a user based on their ID and database connection.
+// DEPRECATED: GetRole - Database operations moved to IdentityService.ResolveRole
+// This function is kept for backward compatibility but should not be used in new code.
 func GetRole(userID string, db *gorm.DB) Role {
 	if userID == "" {
 		return Unknown
@@ -38,7 +39,8 @@ func GetRole(userID string, db *gorm.DB) Role {
 	return Unknown
 }
 
-// Helper function to get username of user based on their ID, role and database connection.
+// DEPRECATED: GetUsername - Database operations moved to IdentityService.GetUsername
+// This function is kept for backward compatibility but should not be used in new code.
 func GetUsername(userID string, role Role, db *gorm.DB) string {
 	if userID == "" {
 		return "unknown"

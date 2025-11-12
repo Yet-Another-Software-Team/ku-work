@@ -1,5 +1,3 @@
-// TODO: migrate to layered architecture
-
 package services
 
 import (

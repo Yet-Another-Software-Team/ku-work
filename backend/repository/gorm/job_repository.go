@@ -80,12 +80,6 @@ func (r *GormJobRepository) ApproveOrRejectJob(ctx context.Context, jobID uint, 
 	})
 }
 
-// GetRole returns the Role for the given user id by delegating to helper.GetRole.
-func (r *GormJobRepository) GetRole(ctx context.Context, userID string) (helper.Role, error) {
-	role := helper.GetRole(userID, r.db)
-	return role, nil
-}
-
 // internal projection for job response (non-company)
 type jobResp struct {
 	ID                  uint      `gorm:"column:id" json:"id"`

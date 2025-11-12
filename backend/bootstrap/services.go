@@ -3,7 +3,6 @@ package bootstrap
 import (
 	"context"
 	"fmt"
-	"html/template"
 	"log"
 	"os"
 	"strings"
@@ -38,6 +37,7 @@ type ServicesBundle struct {
 	Company       *services.CompanyService
 	Admin         services.AdminService
 	AccountStatus *services.AccountStatusService
+	Permission    *services.PermissionService
 }
 
 // BuildServices constructs and wires all services from repositories and environment configuration.
@@ -65,6 +65,7 @@ func BuildServices(ctx context.Context, _ any, repos *Repositories) (*ServicesBu
 		rateLimiter   *services.RateLimiterService
 		oauthSvc      *services.OAuthService
 		accountStatus *services.AccountStatusService
+		permissionSvc *services.PermissionService
 	)
 
 	// -------------------------
@@ -170,10 +171,15 @@ func BuildServices(ctx context.Context, _ any, repos *Repositories) (*ServicesBu
 	}
 
 	// -------------------------
+	// Identity Service (must be initialized before job service)
+	// -------------------------
+	identity = services.NewIdentityService(repos.Identity, fileSvc)
+
+	// -------------------------
 	// Initialize Job Service now that EventBus (and possibly AI) are configured
 	// -------------------------
 	if repos.Job != nil {
-		jobSvc = services.NewJobService(repos.Job, eventBus)
+		jobSvc = services.NewJobService(repos.Job, eventBus, identity)
 	}
 
 	// -------------------------
@@ -187,11 +193,6 @@ func BuildServices(ctx context.Context, _ any, repos *Repositories) (*ServicesBu
 		fileSvc,
 		eventBus,
 	)
-
-	// -------------------------
-	// Identity Service
-	// -------------------------
-	identity = services.NewIdentityService(repos.Identity, fileSvc)
 
 	// -------------------------
 	// Student Service (EventBus wiring)
@@ -209,6 +210,7 @@ func BuildServices(ctx context.Context, _ any, repos *Repositories) (*ServicesBu
 	company = services.NewCompanyService(repos.Company)
 	adminSvc = services.NewAdminService(repos.Audit)
 	accountStatus = services.NewAccountStatusService(repos.Identity)
+	permissionSvc = services.NewPermissionService(repos.Identity)
 
 	// Rate Limiter (repository-backed, fail-open on errors)
 	if repos.RateLimit != nil {
@@ -246,6 +248,7 @@ func BuildServices(ctx context.Context, _ any, repos *Repositories) (*ServicesBu
 		Company:       company,
 		Admin:         adminSvc,
 		AccountStatus: accountStatus,
+		Permission:    permissionSvc,
 	}, nil
 }
 
@@ -272,18 +275,4 @@ func buildFileProvider(ctx context.Context) (filehandling.FileHandlingProvider, 
 	default:
 		return nil, fmt.Errorf("unsupported FILE_PROVIDER: %s", providerType)
 	}
-}
-
-// parseTemplateIfExists attempts to parse a template file if it exists.
-// Returns nil when the file does not exist or fails to parse.
-func parseTemplateIfExists(path string, name string) *template.Template {
-	if _, err := os.Stat(path); err == nil {
-		tpl, err := template.New(name).ParseFiles(path)
-		if err != nil {
-			log.Printf("Failed to parse template %s: %v", path, err)
-			return nil
-		}
-		return tpl
-	}
-	return nil
 }

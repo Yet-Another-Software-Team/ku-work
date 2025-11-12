@@ -3,7 +3,6 @@ package gormrepo
 import (
 	"context"
 
-	"ku-work/backend/helper"
 	"ku-work/backend/model"
 	repo "ku-work/backend/repository"
 
@@ -95,46 +94,6 @@ func (r *GormCompanyRepository) ListCompanyProjections(ctx context.Context) ([]r
 	}
 
 	return out, nil
-}
-
-func (r *GormCompanyRepository) GetRole(ctx context.Context, userID string) (helper.Role, error) {
-	if userID == "" {
-		return helper.Unknown, nil
-	}
-
-	var count int64
-
-	if err := r.db.WithContext(ctx).Model(&model.Admin{}).Where("user_id = ?", userID).Count(&count).Error; err != nil {
-		return helper.Unknown, err
-	}
-	if count > 0 {
-		return helper.Admin, nil
-	}
-
-	if err := r.db.WithContext(ctx).Model(&model.Company{}).Where("user_id = ?", userID).Count(&count).Error; err != nil {
-		return helper.Unknown, err
-	}
-	if count > 0 {
-		return helper.Company, nil
-	}
-
-	if err := r.db.WithContext(ctx).Model(&model.Student{}).
-		Where("user_id = ? AND approval_status = ?", userID, model.StudentApprovalAccepted).
-		Count(&count).Error; err != nil {
-		return helper.Unknown, err
-	}
-	if count > 0 {
-		return helper.Student, nil
-	}
-
-	if err := r.db.WithContext(ctx).Model(&model.GoogleOAuthDetails{}).Where("user_id = ?", userID).Count(&count).Error; err != nil {
-		return helper.Unknown, err
-	}
-	if count > 0 {
-		return helper.Viewer, nil
-	}
-
-	return helper.Unknown, nil
 }
 
 func (r *GormCompanyRepository) IsUserDeactivated(ctx context.Context, userID string) (bool, error) {

@@ -5,15 +5,11 @@ import (
 	"log"
 	"net/http"
 
-	repo "ku-work/backend/repository"
-
 	"github.com/gin-gonic/gin"
 )
 
 // AdminPermissionMiddleware checks if the user has admin permissions.
-func AdminPermissionMiddleware(identityRepo repo.IdentityRepository) gin.HandlerFunc {
-	permSvc := services.NewPermissionService(identityRepo)
-
+func AdminPermissionMiddleware(permSvc *services.PermissionService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		userIDVal, exist := ctx.Get("userID")
 		if !exist {

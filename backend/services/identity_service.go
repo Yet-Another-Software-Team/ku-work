@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -255,12 +257,12 @@ func (s *IdentityService) AnonymizeAccount(ctx context.Context, userID string) e
 
 	// If student, anonymize student data + job applications
 	if student, err := s.repo.FindStudentByUserID(ctx, userID, true); err == nil {
-		if err := s.anonymizeStudentData(ctx, student, anon); err != nil {
+		if err := s.anonymizeStudentData(ctx, student, anon.(string)); err != nil {
 			return fmt.Errorf("%w: anonymize student failed: %v", ErrAnonymizationFailed, err)
 		}
 		log.Printf("Anonymized student record for user: %s", userID)
 
-		if err := s.anonymizeJobApplicationsForStudent(ctx, userID, anon); err != nil {
+		if err := s.anonymizeJobApplicationsForStudent(ctx, userID, anon.(string)); err != nil {
 			return fmt.Errorf("%w: anonymize job applications failed: %v", ErrAnonymizationFailed, err)
 		}
 		log.Printf("Anonymized job applications for student: %s", userID)
@@ -268,7 +270,7 @@ func (s *IdentityService) AnonymizeAccount(ctx context.Context, userID string) e
 
 	// If company, anonymize company data
 	if company, err := s.repo.FindCompanyByUserID(ctx, userID, true); err == nil {
-		if err := s.anonymizeCompanyData(ctx, company, anon); err != nil {
+		if err := s.anonymizeCompanyData(ctx, company, anon.(string)); err != nil {
 			return fmt.Errorf("%w: anonymize company failed: %v", ErrAnonymizationFailed, err)
 		}
 		log.Printf("Anonymized company record for user: %s", userID)
@@ -276,7 +278,7 @@ func (s *IdentityService) AnonymizeAccount(ctx context.Context, userID string) e
 
 	// If OAuth record exists, anonymize it
 	if oauth, err := s.repo.FindGoogleOAuthByUserID(ctx, userID, true); err == nil {
-		if err := s.anonymizeGoogleOAuthData(ctx, oauth, anon); err != nil {
+		if err := s.anonymizeGoogleOAuthData(ctx, oauth, anon.(string)); err != nil {
 			return fmt.Errorf("%w: anonymize oauth failed: %v", ErrAnonymizationFailed, err)
 		}
 		log.Printf("Anonymized OAuth details for user: %s", userID)
@@ -284,6 +286,11 @@ func (s *IdentityService) AnonymizeAccount(ctx context.Context, userID string) e
 
 	log.Printf("Successfully anonymized account: %s", userID)
 	return nil
+}
+
+func generateAnonymousID(userID string) any {
+	hash := sha256.Sum256([]byte(userID + time.Now().String()))
+	return "ANON-" + hex.EncodeToString(hash[:])[:12]
 }
 
 // anonymizeJobApplicationsForStudent anonymizes and deletes files from all job applications for a student.

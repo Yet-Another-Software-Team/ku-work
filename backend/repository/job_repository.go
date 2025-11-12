@@ -59,5 +59,4 @@ type JobRepository interface {
 	GetJobDetail(ctx context.Context, jobID uint) (*JobDetail, error)
 	FindCompanyByUserID(ctx context.Context, userID string) (*model.Company, error)
 	AcceptOrRejectJobApplication(ctx context.Context, userId string, appID uint, accept bool) error
-	GetRole(ctx context.Context, userID string) (helper.Role, error)
 }

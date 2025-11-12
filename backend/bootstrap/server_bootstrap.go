@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"ku-work/backend/database"
@@ -99,7 +100,7 @@ func BuildApp() (*App, error) {
 
 // getListenAddress returns the server listen address from environment or default.
 func getListenAddress() string {
-	if addr := stringsTrim(os.Getenv("LISTEN_ADDRESS")); addr != "" {
+	if addr := strings.TrimSpace(os.Getenv("LISTEN_ADDRESS")); addr != "" {
 		return addr
 	}
 	return ":8000"
@@ -108,7 +109,7 @@ func getListenAddress() string {
 // getEmailRetryInterval reads the email retry interval from environment or returns default (5m).
 func getEmailRetryInterval() time.Duration {
 	const def = 5 * time.Minute
-	if s := stringsTrim(os.Getenv("EMAIL_RETRY_INTERVAL_MINUTES")); s != "" {
+	if s := strings.TrimSpace(os.Getenv("EMAIL_RETRY_INTERVAL_MINUTES")); s != "" {
 		if n, err := strconv.Atoi(s); err == nil && n > 0 {
 			return time.Duration(n) * time.Minute
 		}
@@ -119,25 +120,10 @@ func getEmailRetryInterval() time.Duration {
 // getAccountDeletionInterval reads the account anonymization check interval from environment or returns default (24h).
 func getAccountDeletionInterval() time.Duration {
 	const def = 24 * time.Hour
-	if s := stringsTrim(os.Getenv("ACCOUNT_DELETION_CHECK_INTERVAL_HOURS")); s != "" {
+	if s := strings.TrimSpace(os.Getenv("ACCOUNT_DELETION_CHECK_INTERVAL_HOURS")); s != "" {
 		if n, err := strconv.Atoi(s); err == nil && n > 0 {
 			return time.Duration(n) * time.Hour
 		}
 	}
 	return def
-}
-
-// stringsTrim is a tiny helper that trims spaces around a string.
-func stringsTrim(s string) string {
-	i := 0
-	j := len(s)
-	// left trim
-	for i < j && (s[i] == ' ' || s[i] == '\t' || s[i] == '\n' || s[i] == '\r') {
-		i++
-	}
-	// right trim
-	for j > i && (s[j-1] == ' ' || s[j-1] == '\t' || s[j-1] == '\n' || s[j-1] == '\r') {
-		j--
-	}
-	return s[i:j]
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"ku-work/backend/helper"
 	"ku-work/backend/model"
 )
 
@@ -43,9 +42,6 @@ type CompanyRepository interface {
 
 	// ListCompanyProjections returns projections for all companies (owner username included).
 	ListCompanyProjections(ctx context.Context) ([]CompanyProjection, error)
-
-	// GetRole resolves the role for a given user id using repository-backed checks.
-	GetRole(ctx context.Context, userID string) (helper.Role, error)
 
 	// IsUserDeactivated returns whether the specified user account is soft-deleted.
 	IsUserDeactivated(ctx context.Context, userID string) (bool, error)

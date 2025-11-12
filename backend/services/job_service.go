@@ -15,17 +15,21 @@ import (
 
 // JobService encapsulates all database operations related to jobs.
 type JobService struct {
-	jobRepo  repo.JobRepository
-	eventBus *infraService.EventBus
+	jobRepo         repo.JobRepository
+	eventBus        *infraService.EventBus
+	identityService *IdentityService
 }
 
-// NewJobService creates a new JobService instance wired with a JobRepository and EventBus.
-func NewJobService(jobRepo repo.JobRepository, eventBus *infraService.EventBus) *JobService {
+// NewJobService creates a new JobService instance wired with a JobRepository, EventBus, and IdentityService.
+func NewJobService(jobRepo repo.JobRepository, eventBus *infraService.EventBus, identityService *IdentityService) *JobService {
 	if jobRepo == nil {
 		log.Fatal("job repository cannot be nil")
 	}
+	if identityService == nil {
+		log.Fatal("identity service cannot be nil")
+	}
 	// EventBus is optional; when nil, notification/AI events are simply skipped.
-	return &JobService{jobRepo: jobRepo, eventBus: eventBus}
+	return &JobService{jobRepo: jobRepo, eventBus: eventBus, identityService: identityService}
 }
 
 // FetchJobsParams contains the filtering & pagination options used when fetching jobs.
@@ -253,18 +257,14 @@ func (s *JobService) FindCompanyByUserID(ctx context.Context, userID string) (*m
 	return s.jobRepo.FindCompanyByUserID(ctx, userID)
 }
 
-// ResolveRole asks the underlying repository for the role of a given user.
+// ResolveRole delegates to the identity service for proper role resolution.
 // This keeps role resolution behind the service abstraction so handlers don't touch DB.
 func (s *JobService) ResolveRole(ctx context.Context, userID string) (helper.Role, error) {
-	// If the repository implementation exposes GetRole, delegate to it.
-	type roleResolver interface {
-		GetRole(ctx context.Context, userID string) (helper.Role, error)
+	if s.identityService == nil {
+		return helper.Unknown, fmt.Errorf("identity service not available")
 	}
-	if rr, ok := s.jobRepo.(roleResolver); ok {
-		return rr.GetRole(ctx, userID)
-	}
-	// Otherwise return Unknown as a safe default.
-	return helper.Unknown, nil
+	role := s.identityService.ResolveRole(ctx, userID)
+	return role, nil
 }
 
 // AcceptOrRejectJobApplication updates a job application's status ensuring the company owns the job.
