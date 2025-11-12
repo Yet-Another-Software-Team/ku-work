@@ -82,7 +82,7 @@ func BuildHandlers(db *gorm.DB, svc *ServicesBundle) (*HandlersBundle, error) {
 	fileHandlers := handlers.NewFileHandlers(svc.File)
 
 	// Job handlers (uses AI service optionally for auto-approve)
-	jobHandlers, err := handlers.NewJobHandlers(svc.AI, svc.Job)
+	jobHandlers, err := handlers.NewJobHandlers(svc.Job)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build job handlers: %w", err)
 	}

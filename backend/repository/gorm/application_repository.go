@@ -152,6 +152,43 @@ func (r *GormApplicationRepository) GetApplicationByJobAndEmail(ctx context.Cont
 	return &out, nil
 }
 
+func (r *GormApplicationRepository) GetApplicationByJobIDandUserID(ctx context.Context, jobID uint, userID string) (*repo.FullApplicantDetail, error) {
+	var out repo.FullApplicantDetail
+
+	q := r.db.WithContext(ctx).
+		Model(&model.JobApplication{}).
+		Joins("INNER JOIN users ON users.id = job_applications.user_id").
+		Joins("INNER JOIN students ON students.user_id = job_applications.user_id").
+		Joins("INNER JOIN google_o_auth_details ON google_o_auth_details.user_id = job_applications.user_id").
+		Select(`
+			job_applications.*,
+		 	CONCAT(google_o_auth_details.first_name, ' ', google_o_auth_details.last_name) AS username,
+			users.username AS email,
+			students.phone AS phone,
+			students.photo_id AS photo_id,
+			students.birth_date AS birth_date,
+			students.about_me AS about_me,
+			students.git_hub AS github,
+			students.linked_in AS linked_in,
+			students.student_id AS student_id,
+			students.major AS major`).
+		Where("job_applications.job_id = ? AND job_applications.user_id = ?", jobID, userID).
+		Where("users.deleted_at IS NULL").
+		Where("users.username NOT LIKE 'ANON-%'")
+
+	if err := q.First(&out).Error; err != nil {
+		return nil, err
+	}
+
+	files, err := r.loadApplicationFiles(ctx, out.JobID, out.UserID)
+	if err != nil {
+		return nil, err
+	}
+	out.Files = files
+
+	return &out, nil
+}
+
 func (r *GormApplicationRepository) GetAllApplicationsForUser(ctx context.Context, userID string, params *repo.FetchAllApplicationsParams) ([]repo.ApplicationWithJobDetails, int64, error) {
 	if params == nil {
 		params = &repo.FetchAllApplicationsParams{}

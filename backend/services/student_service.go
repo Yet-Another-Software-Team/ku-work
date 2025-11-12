@@ -10,7 +10,7 @@ import (
 	"ku-work/backend/model"
 	filehandling "ku-work/backend/providers/file_handling"
 	repo "ku-work/backend/repository"
-	"ku-work/backend/services/internal"
+	"ku-work/backend/services/infraService"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/datatypes"
@@ -26,7 +26,7 @@ type StudentService struct {
 	repo         repo.StudentRepository
 	identityRepo repo.IdentityRepository
 	fileService  *FileService
-	eventBus     *internal.EventBus
+	eventBus     *infraService.EventBus
 }
 
 // StudentRegistrationInput represents the payload required to register a user as a student.
@@ -48,7 +48,7 @@ func NewStudentService(
 	repo repo.StudentRepository,
 	identityRepo repo.IdentityRepository,
 	fileService *FileService,
-	eventBus *internal.EventBus,
+	eventBus *infraService.EventBus,
 ) *StudentService {
 	if repo == nil {
 		log.Fatal("student repository cannot be nil")
@@ -237,7 +237,7 @@ func (s *StudentService) ApproveOrRejectStudent(ctx context.Context, targetUserI
 		status = string(model.StudentApprovalRejected)
 	}
 
-	event := internal.EmailStudentApprovalEvent{
+	event := infraService.EmailStudentApprovalEvent{
 		Email:     oauth.Email,
 		FirstName: oauth.FirstName,
 		LastName:  oauth.LastName,

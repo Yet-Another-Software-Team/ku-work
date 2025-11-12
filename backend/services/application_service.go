@@ -10,7 +10,7 @@ import (
 
 	"ku-work/backend/model"
 	repo "ku-work/backend/repository"
-	"ku-work/backend/services/internal"
+	"ku-work/backend/services/infraService"
 )
 
 // ApplicationService handles job application flows.
@@ -21,7 +21,7 @@ type ApplicationService struct {
 	identityRepo    repo.IdentityRepository
 
 	fileService *FileService
-	eventBus    *internal.EventBus
+	eventBus    *infraService.EventBus
 }
 
 // NewApplicationService constructs an ApplicationService.
@@ -31,7 +31,7 @@ func NewApplicationService(
 	studentRepo repo.StudentRepository,
 	identityRepo repo.IdentityRepository,
 	fileSvc *FileService,
-	eventBus *internal.EventBus,
+	eventBus *infraService.EventBus,
 ) *ApplicationService {
 	// Check nil
 	if appRepo == nil || jobRepo == nil || studentRepo == nil || identityRepo == nil || fileSvc == nil {
@@ -143,7 +143,7 @@ func (s *ApplicationService) ApplyToJob(ctx context.Context, p ApplyToJobParams)
 			return nil
 		}
 
-		event := internal.EmailJobNewApplicantEvent{
+		event := infraService.EmailJobNewApplicantEvent{
 			CompanyEmail:       company.Email,
 			CompanyUsername:    user.Username,
 			JobName:            job.Name,
@@ -234,7 +234,7 @@ func (s *ApplicationService) UpdateJobApplicationStatus(ctx context.Context, p U
 		if oauth == nil {
 			return nil // Silent failure
 		}
-		event := internal.EmailJobApplicationStatusEvent{
+		event := infraService.EmailJobApplicationStatusEvent{
 			Email:       oauth.Email,
 			FirstName:   oauth.FirstName,
 			LastName:    oauth.LastName,

@@ -12,20 +12,19 @@ import (
 	provideremail "ku-work/backend/providers/email"
 	filehandling "ku-work/backend/providers/file_handling"
 	"ku-work/backend/services"
+	"ku-work/backend/services/infraService"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
 
-// NOTE: gorm import removed because the refactored services no longer directly need *gorm.DB here.
-
 // ServicesBundle groups all application services wired from repositories and infra.
 type ServicesBundle struct {
 	// Infra services
-	Email       *services.EmailService
 	File        *services.FileService
-	AI          *services.AIService
-	EventBus    *services.EventBus
+	Email       *infraService.EmailService
+	AI          *infraService.AIService
+	EventBus    *infraService.EventBus
 	RateLimiter *services.RateLimiterService
 	OAuth       *services.OAuthService
 
@@ -49,9 +48,9 @@ func BuildServices(ctx context.Context, _ any, repos *Repositories) (*ServicesBu
 
 	var (
 		err         error
-		emailSvc    *services.EmailService
-		eventBus    *services.EventBus
-		aiSvc       *services.AIService
+		emailSvc    *infraService.EmailService
+		eventBus    *infraService.EventBus
+		aiSvc       *infraService.AIService
 		aiEngine    ai.ApprovalAI
 		jobSvc      *services.JobService
 		fileSvc     *services.FileService
@@ -93,7 +92,7 @@ func BuildServices(ctx context.Context, _ any, repos *Repositories) (*ServicesBu
 			log.Printf("Unknown EMAIL_PROVIDER '%s' -> email disabled", emailProviderName)
 		}
 		if ep != nil {
-			if emailSvc, err = services.NewEmailService(ep, repos.Audit); err != nil {
+			if emailSvc, err = infraService.NewEmailService(ep, repos.Audit); err != nil {
 				log.Printf("Email service init failed: %v", err)
 				emailSvc = nil
 			}
@@ -145,7 +144,7 @@ func BuildServices(ctx context.Context, _ any, repos *Repositories) (*ServicesBu
 
 		if aiEngine != nil {
 			// EventBus (loads templates itself if not provided)
-			eventBus, err = services.NewEventBus(services.EventBusOptions{
+			eventBus, err = infraService.NewEventBus(infraService.EventBusOptions{
 				AI:          aiEngine,
 				JobRepo:     repos.Job,
 				StudentRepo: repos.Student,
@@ -158,7 +157,7 @@ func BuildServices(ctx context.Context, _ any, repos *Repositories) (*ServicesBu
 
 			// AI Service (wraps AI + repos + Bus)
 			if eventBus != nil {
-				aiSvc, err = services.NewAIService(aiEngine, repos.Job, repos.Student, eventBus)
+				aiSvc, err = infraService.NewAIService(aiEngine, repos.Job, repos.Student, eventBus)
 				if err != nil {
 					log.Printf("AI service init failed: %v", err)
 					aiSvc = nil

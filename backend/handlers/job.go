@@ -14,13 +14,11 @@ import (
 )
 
 type JobHandlers struct {
-	aiService  *services.AIService
 	jobService *services.JobService
 }
 
-func NewJobHandlers(aiService *services.AIService, jobService *services.JobService) (*JobHandlers, error) {
+func NewJobHandlers(jobService *services.JobService) (*JobHandlers, error) {
 	return &JobHandlers{
-		aiService:  aiService,
 		jobService: jobService,
 	}, nil
 }
@@ -149,11 +147,6 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 	if err := h.jobService.CreateJob(ctx.Request.Context(), &job); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
-	}
-
-	// Trigger AI auto-approval if configured (best-effort)
-	if h.aiService != nil {
-		_ = h.aiService.PublishAsyncJobCheck(job.ID)
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"id": job.ID})

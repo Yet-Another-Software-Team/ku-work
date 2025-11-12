@@ -10,22 +10,22 @@ import (
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
 	repo "ku-work/backend/repository"
-	"ku-work/backend/services/internal"
+	"ku-work/backend/services/infraService"
 )
 
 // JobService encapsulates all database operations related to jobs.
 type JobService struct {
 	jobRepo  repo.JobRepository
-	eventBus *internal.EventBus
+	eventBus *infraService.EventBus
 }
 
 // NewJobService creates a new JobService instance wired with a JobRepository and EventBus.
-func NewJobService(r repo.JobRepository, bus *internal.EventBus) *JobService {
-	if r == nil {
+func NewJobService(jobRepo repo.JobRepository, eventBus *infraService.EventBus) *JobService {
+	if jobRepo == nil {
 		log.Fatal("job repository cannot be nil")
 	}
 	// EventBus is optional; when nil, notification/AI events are simply skipped.
-	return &JobService{jobRepo: r, eventBus: bus}
+	return &JobService{jobRepo: jobRepo, eventBus: eventBus}
 }
 
 // FetchJobsParams contains the filtering & pagination options used when fetching jobs.
@@ -85,7 +85,9 @@ func (s *JobService) CreateJob(ctx context.Context, job *model.Job) error {
 	if job == nil {
 		return fmt.Errorf("job is nil")
 	}
-	return s.jobRepo.CreateJob(ctx, job)
+	err := s.jobRepo.CreateJob(ctx, job)
+	s.eventBus.PublishAIJobCheck(job.ID)
+	return err
 }
 
 // FindJobByID retrieves a job by ID via repository.
@@ -121,7 +123,7 @@ func (s *JobService) ApproveOrRejectJob(ctx context.Context, jobID uint, approve
 				if approve {
 					status = string(model.JobApprovalAccepted)
 				}
-				ev := internal.EmailJobApprovalEvent{
+				ev := infraService.EmailJobApprovalEvent{
 					CompanyEmail:    company.Email,
 					CompanyUsername: jobDetail.CompanyName,
 					JobName:         jobDetail.Name,
