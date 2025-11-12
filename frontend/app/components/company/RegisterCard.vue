@@ -41,6 +41,13 @@
                 v-model:company-logo="form.companyLogo"
                 v-model:banner="form.banner"
             />
+            <div v-if="currentStep === 2" class="my-4">
+                <TermsConsent
+                    v-model:accepted="termsAccepted"
+                    :docs="termsDocs"
+                    :disabled="isSubmitting"
+                />
+            </div>
             <div v-if="currentStep === 3" class="text-center py-8">
                 <icon name="hugeicons:checkmark-circle-03" class="text-[15em] text-primary mb-4" />
                 <h2 class="text-4xl font-bold text-primary mb-2">You’re All Set</h2>
@@ -114,6 +121,19 @@ const stepOneRef = ref<{ isValid: boolean } | null>(null);
 const stepTwoRef = ref<{ isValid: boolean } | null>(null);
 
 const token = ref<string>("");
+const termsAccepted = ref(false);
+const termsDocs = [
+    {
+        key: "ku-work-terms",
+        title: "KU-Work Terms of Use and Privacy Notice",
+        src: "/terms/ku_work_terms.txt",
+    },
+    {
+        key: "company-terms",
+        title: "Company Terms of Use and Privacy Notice",
+        src: "/terms/company_terms.txt",
+    },
+];
 
 const form = reactive({
     companyName: "",
@@ -142,7 +162,7 @@ const canProceedToNext = computed(() => {
 
 const canSubmit = computed(() => {
     if (currentStep.value === 2 && stepTwoRef.value) {
-        return stepTwoRef.value.isValid;
+        return stepTwoRef.value.isValid && termsAccepted.value;
     }
     return false;
 });

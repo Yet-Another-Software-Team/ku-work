@@ -61,8 +61,15 @@
                 </p>
             </div>
         </div>
-        <div v-if="currentStep === 2" class="flex justify-center">
-            <TurnstileWidget @callback="(tk) => (cfToken = tk)" />
+        <div v-if="currentStep === 2" class="flex flex-col items-stretch gap-4">
+            <TermsConsent
+                v-model:accepted="termsAccepted"
+                :docs="termsDocs"
+                :disabled="isSubmitting"
+            />
+            <div class="flex justify-center">
+                <TurnstileWidget @callback="(tk) => (cfToken = tk)" />
+            </div>
         </div>
         <div class="flex justify-center gap-x-2 py-4">
             <UButton
@@ -126,6 +133,14 @@ const stepOneRef = ref<{ isValid: boolean } | null>(null);
 const stepTwoRef = ref<{ isValid: boolean } | null>(null);
 
 const cfToken = ref<string>("");
+const termsAccepted = ref(false);
+const termsDocs = [
+    {
+        key: "ku-work-terms",
+        title: "KU-Work Terms of Use and Privacy Notice",
+        src: "/terms/ku_work_terms.txt",
+    },
+];
 
 const form = reactive({
     fullName: "",
@@ -177,7 +192,7 @@ const canProceedToNext = computed(() => {
 
 const canSubmit = computed(() => {
     if (currentStep.value === 2 && stepTwoRef.value) {
-        return stepTwoRef.value.isValid;
+        return stepTwoRef.value.isValid && termsAccepted.value;
     }
     return false;
 });

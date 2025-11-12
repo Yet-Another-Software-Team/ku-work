@@ -1,0 +1,127 @@
+KU Work – Google Sign‑In (OAuth 2.0) Notice and Consent
+Effective date: TBD
+
+IMPORTANT: By selecting “Continue with Google,” you authorize Google to share certain basic account information with KU Work for authentication and account setup. This notice explains what we receive, how we use it, and your choices. This notice works together with our broader KU Work Terms of Use and Privacy Notices and is designed to align with GDPR and Thailand’s PDPA.
+
+------------------------------------------------------------
+1) What is Google Sign‑In and why we use it
+------------------------------------------------------------
+Google Sign‑In lets you use your Google account to securely log in to KU Work. We use it to:
+- Verify your identity and create/log you into an account;
+- Prefill your KU Work profile with basic details (e.g., display name, email);
+- Maintain session security and prevent abuse.
+
+We do not receive your Google password. Google only shares selected profile data you consent to share.
+
+------------------------------------------------------------
+2) Data we request from Google (Scopes)
+------------------------------------------------------------
+We request the following Google OAuth scopes:
+- openid
+- https://www.googleapis.com/auth/userinfo.profile
+- https://www.googleapis.com/auth/userinfo.email
+
+From these scopes, Google may provide the following fields:
+- Unique Google account ID (sub/id)
+- Email address
+- Full name
+- Given name
+- Family name
+
+Notes:
+- We do not request access to Gmail content, Drive files, or your contacts.
+- We do not request calendar, location, or other unrelated scopes.
+- We do not receive your Google password or second-factor details.
+- We use a short‑lived authorization code and access token to fetch your basic profile, and we do not retain Google’s access token longer than necessary for this exchange.
+
+------------------------------------------------------------
+3) How we use your Google‑provided data
+------------------------------------------------------------
+We use the data for:
+- Account creation or login to KU Work (contract necessity);
+- Security and fraud prevention (legitimate interests and/or legal obligations);
+- Prefilling or updating basic profile details (contract necessity/legitimate interests);
+- Transactional/service emails (e.g., account, registration, or application notifications).
+
+No analytics: We do not use behavior‑tracking analytics. We may use strictly necessary technical logs for security and reliable operation.
+
+AI‑assisted decisions: We may use AI to assist evaluators or automate non‑deterministic checks (e.g., profile completeness or quality hints). We do not make solely automated decisions that produce legal or similarly significant effects without appropriate human review or required consent.
+
+------------------------------------------------------------
+4) Legal bases for processing (GDPR) and lawful bases (PDPA)
+------------------------------------------------------------
+- Contract necessity (GDPR Art. 6(1)(b); PDPA: contractual necessity): authentication, account creation, core service operation, and essential notifications.
+- Legitimate interests (GDPR Art. 6(1)(f); PDPA: legitimate interests): platform security, fraud prevention, service integrity, limited AI‑assisted support for moderation/quality.
+- Legal obligation (GDPR Art. 6(1)(c); PDPA equivalent): responding to lawful requests, compliance, or recordkeeping where applicable.
+- Consent: You consent to Google sharing the specified data with us by proceeding with Google Sign‑In. Where we rely on consent for any practices, you can withdraw it at any time (see Section 8).
+
+------------------------------------------------------------
+5) Sharing and processors
+------------------------------------------------------------
+We may share personal data with:
+- Email service provider, to send transactional/service emails;
+- Hosting/infrastructure and security providers, to operate the platform securely;
+- Limited, vetted AI/middleware tools (if used) for moderation/decision support;
+- Authorized KU administrators for support, compliance, and operations.
+
+All third parties act under contracts with appropriate safeguards.
+
+------------------------------------------------------------
+6) International transfers
+------------------------------------------------------------
+If data is transferred outside Thailand or the EEA (if applicable), we implement appropriate safeguards (e.g., standard contractual clauses for GDPR and PDPA‑compliant mechanisms) to ensure an adequate level of protection.
+
+------------------------------------------------------------
+7) Data retention
+------------------------------------------------------------
+We retain account identifiers and essential records for as long as your account is active and/or as necessary for the purposes in this notice. We delete or anonymize data when it is no longer required, subject to legal or regulatory retention obligations or for establishing, exercising, or defending legal claims.
+
+------------------------------------------------------------
+8) Your choices and controls
+------------------------------------------------------------
+- Proceeding with Google: By clicking “Continue with Google,” you consent to Google sharing the described basic profile and email information with KU Work for authentication and account setup.
+- Alternative sign‑in routes: If you prefer not to use Google, you may use any available non‑Google sign‑in or registration routes in KU Work (e.g., local/company login where provided).
+- Withdrawing Google access: You can revoke KU Work’s access to your Google account via your Google Account settings (Security → Third‑party access). This does not automatically delete data already stored in KU Work (see below).
+- Delete or update your KU Work data: You can request deletion or correction of your stored personal data by contacting us (see Section 11). We may need to verify your identity.
+- Objection/restriction: Where applicable, you may object to or request restriction of certain processing, subject to legal limitations.
+
+------------------------------------------------------------
+9) No behavior analytics tracking
+------------------------------------------------------------
+We do not use behavior‑tracking analytics for advertising or profiling. We rely on strictly necessary technical data for security, performance, and session management.
+
+------------------------------------------------------------
+10) Children and eligibility
+------------------------------------------------------------
+Google Sign‑In on KU Work is intended for eligible KU students/staffs and authorized users. We do not target children below the age permitted by law. If you become aware that an ineligible user has provided us data via Google Sign‑In, please contact us (Section 11).
+
+------------------------------------------------------------
+11) Your rights (GDPR/PDPA) and contact
+------------------------------------------------------------
+Depending on your jurisdiction, you may have rights to access, rectify, erase, port, or restrict/object to certain processing, and to withdraw consent (without affecting lawful processing before withdrawal). You may also lodge a complaint with a supervisory authority (GDPR) or the PDPC (PDPA).
+
+Data Controller (KU‑operated components):
+- Organization: Kasetsart University (KU)
+- Data Protection/Privacy Contact: [Insert contact email/office/phone]
+- Postal Address: [Insert official KU address]
+
+We will respond to reasonable requests in accordance with applicable law and may need to verify your identity.
+
+------------------------------------------------------------
+12) Updates to this notice
+------------------------------------------------------------
+We may update this notice to reflect changes in law or our practices. If changes are material, we will provide appropriate notice and, where required, seek your renewed consent.
+
+------------------------------------------------------------
+13) Acceptance
+------------------------------------------------------------
+By choosing “Continue with Google,” you confirm that:
+- You authorize Google to share your basic account information (as described above) with KU Work for authentication and account setup;
+- You understand we use an email service for transactional/service communications;
+- You understand we do not conduct behavior‑tracking analytics;
+- You understand we may use AI to assist certain decisions with appropriate human oversight;
+- You acknowledge that KU Work is operated in alignment with GDPR and Thailand’s PDPA and that you can exercise your rights as described in this notice.
+
+If you do not agree, please use an alternative sign‑in option (if available) or do not proceed with Google Sign‑In.
+
+End of document.

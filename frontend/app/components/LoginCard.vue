@@ -25,6 +25,15 @@
             <div v-if="!isCompany" class="flex flex-col h-full w-full">
                 <h2 class="text-xl font-semibold mx-auto mb-5">KU Students/Staffs Login</h2>
                 <GoogleOauthButton class="mx-auto text-white" />
+                <p class="mt-2 text-xs text-gray-500 text-center">
+                    By continuing, you acknowledge our
+                    <a
+                        href="/terms/google_oauth_notice.txt"
+                        target="_blank"
+                        class="text-primary-600 underline hover:text-primary-800"
+                        >Google Sign‑In Notice</a
+                    >.
+                </p>
             </div>
             <div v-else class="flex flex-col h-full w-full">
                 <h2 class="text-xl font-semibold mx-auto mb-5">Company Login</h2>

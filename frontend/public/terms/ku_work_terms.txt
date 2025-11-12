@@ -1,0 +1,122 @@
+KU Work – KU Work Terms of Use and Privacy Notice (Students and KU Accounts)
+Effective date: TBD
+
+IMPORTANT: By creating or using an account on KU Work, you acknowledge that you have read and agree to these KU Work Terms of Use and Privacy Notice. Where the platform also presents “Company Terms,” you must review and accept those separately when interacting with a specific company’s content or opportunities.
+
+----------------------------------------
+1) What this document covers
+----------------------------------------
+This document sets out:
+- The Terms of Use that apply to your access and use of KU Work (the “Service”).
+- The Privacy Notice describing how we process your personal data in compliance with the EU General Data Protection Regulation (GDPR) and Thailand’s Personal Data Protection Act (PDPA).
+
+“KU Work,” “we,” “us,” or “our” refers to the KU-operated parts of the system. “You” refers to the student or KU user accessing the Service.
+
+----------------------------------------
+2) Terms of Use
+----------------------------------------
+2.1 Eligibility
+- You must be a KU student or an authorized KU user to register and use the KU-controlled parts of the Service.
+
+2.2 Your Account
+- You are responsible for maintaining the confidentiality of your login credentials and for all activities that occur under your account.
+
+2.3 Acceptable Use
+You agree not to:
+- Violate any applicable laws, regulations, or third-party rights.
+- Upload or share unlawful, harmful, discriminatory, or infringing content.
+- Interfere with the security, integrity, or availability of the Service.
+- Attempt to reverse engineer or access data in ways not explicitly permitted.
+
+2.4 Content You Provide
+- You are responsible for the accuracy and lawfulness of the information you provide.
+- You grant KU a limited, non-exclusive license to store and process your content for the purpose of operating and improving the Service, including compliance, security, and support.
+
+2.5 Service Emails (Transactional)
+- We use an email service to send you transactional or service-related messages (e.g., registration confirmations, notifications about your submissions or account status). See the Privacy Notice for more.
+
+2.6 Changes to the Service
+- We may improve or update features over time. Where changes affect these Terms or the Privacy Notice, we will provide notice as required by law.
+
+2.7 Suspension/Termination
+- We may suspend or terminate access if you violate these Terms, pose a security risk, or as required by law.
+
+----------------------------------------
+3) Privacy Notice
+----------------------------------------
+3.1 Data Controller
+- For the KU-operated components of KU Work, KU (Kasetsart University) is the data controller under GDPR and PDPA.
+- Contact (Data Protection/Privacy): [Insert contact email/office/phone here]
+- Postal address: [Insert official KU address here]
+
+3.2 What Data We Collect
+Depending on how you use the Service, we may process:
+- Identification and profile data: name, student ID, KU email, contact details, academic information (e.g., major, student status), and optional links (GitHub, LinkedIn).
+- Account and usage data: account identifiers, authentication tokens, role/permissions, timestamps (e.g., registration date), and essential technical logs for security and operations.
+- Uploaded content/files: profile photo, documents supporting your student status, and any information you submit as part of your profile or applications.
+- Communications: emails sent or received through the Service (via our email provider), support requests, and system notifications.
+
+We do not collect or use behavioral analytics for tracking your activities across the platform or third-party sites (“no analytics” for behavior tracking).
+
+3.3 Purposes and Legal Bases (GDPR Art. 6; PDPA lawful bases)
+We process your data for:
+- Account creation and service delivery
+  Legal bases: Contract necessity (GDPR Art. 6(1)(b)); PDPA: contractual necessity.
+- Communications via email service (transactional/service emails only)
+  Legal bases: Contract necessity and/or Legitimate interests (GDPR Art. 6(1)(b)/(f)); PDPA: contractual necessity/legitimate interest. We do not send marketing emails without separate consent.
+- Security, fraud prevention, and compliance
+  Legal bases: Legitimate interests (GDPR Art. 6(1)(f)) and Legal obligation (GDPR Art. 6(1)(c)); PDPA: legitimate interest/legal obligation.
+- Document and profile review, including AI-assisted decision support
+  Legal bases: Contract necessity and Legitimate interests (GDPR Art. 6(1)(b)/(f)); PDPA: contractual necessity/legitimate interest.
+  Note on AI: We may use AI to assist reviewers in evaluating completeness, consistency, or eligibility indicators. Decisions with legal or similarly significant effects are not made solely by automated means without appropriate human review, and we will seek explicit consent where required by law.
+
+3.4 No Analytics
+- We do not perform behavioral analytics or tracking for advertising or profiling. We may utilize strictly necessary technical logs/cookies to operate the Service (e.g., session management, security).
+
+3.5 Data Sharing and Processors
+We may share data with:
+- Email service provider: to deliver service/transactional communications.
+- Cloud hosting/infrastructure providers: to securely host and operate the Service.
+- KU internal departments or authorized personnel: for support, compliance, and service administration.
+All third-party providers act under data processing agreements with appropriate safeguards.
+
+3.6 International Transfers
+- If personal data is transferred outside Thailand or the EEA (if applicable), we use appropriate safeguards (e.g., standard contractual clauses, PDPA-compliant transfer mechanisms) and take steps to ensure an adequate level of protection.
+
+3.7 Data Retention
+- We retain personal data for as long as necessary to fulfill the purposes above, including while your account is active. After that, we will delete or anonymize data, unless longer retention is required by law or to establish, exercise, or defend legal claims.
+
+3.8 Your Rights
+Under GDPR (if applicable) and PDPA, you may have rights to:
+- Access and obtain a copy of your personal data.
+- Rectify inaccurate or incomplete data.
+- Erase (delete) personal data in certain circumstances.
+- Restrict or object to certain processing.
+- Data portability, where applicable.
+- Withdraw consent where processing is based on consent (withdrawal does not affect processing performed before withdrawal).
+- Lodge a complaint with a supervisory authority (for GDPR) or the PDPC (for PDPA) if you believe your rights have been infringed.
+
+To exercise your rights, contact us at: [Insert contact email/office]. We may need to verify your identity before responding.
+
+3.9 Children and Sensitive Data
+- The Service is intended for KU students and authorized users. We do not require special categories of personal data. If you choose to provide any sensitive data, we will handle it with appropriate safeguards and legal bases.
+
+3.10 Security
+- We implement technical and organizational measures proportionate to the risks, including access controls, encryption in transit where applicable, and periodic security reviews.
+
+3.11 Updates to this Notice
+- We may revise this Notice. If changes are material, we will provide appropriate notice and, where required, obtain your consent again.
+
+----------------------------------------
+4) Acceptance
+----------------------------------------
+By checking the acceptance box and proceeding, you confirm that:
+- You have read and agree to the KU Work Terms of Use above.
+- You have read and understood the Privacy Notice, including that:
+  (i) We use an email service to send transactional/service-related communications,
+  (ii) We do not use analytics to track your behavior, and
+  (iii) We may use AI to assist certain decisions, but we do not rely solely on automated decision-making for legally or similarly significant effects without appropriate human review or required consent.
+- You acknowledge the Service’s compliance commitments under GDPR and Thailand’s PDPA, and understand how to exercise your rights.
+
+If you do not agree, do not proceed with registration or use of KU Work.
+End of document.
