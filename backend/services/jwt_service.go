@@ -298,7 +298,7 @@ func (s *JWTService) RefreshTokenHandler(ctx *gin.Context) {
 	}
 
 	// Resolve role using UserRepository (prefer explicit counts to avoid leaking DB access into helper).
-	var role helper.Role = helper.Unknown
+	var role helper.Role
 	if cnt, err := s.identityRepo.CountAdminByUserID(rt.UserID); err == nil && cnt > 0 {
 		role = helper.Admin
 	} else if cnt, err := s.identityRepo.CountCompanyByUserID(rt.UserID); err == nil && cnt > 0 {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -79,7 +80,11 @@ func (s *OAuthService) FetchUserInfo(token *oauth2.Token) (UserInfo, int, error)
 	if err != nil {
 		return ui, http.StatusInternalServerError, err
 	}
-	defer res.Body.Close()
+	defer func() {
+		if err := res.Body.Close(); err != nil {
+			log.Printf("Failed to close response body")
+		}
+	}()
 
 	if res.StatusCode != http.StatusOK {
 		return ui, http.StatusUnauthorized, fmt.Errorf("access token invalid or expired")

@@ -60,7 +60,7 @@ func NewStudentService(
 		log.Fatal("file service cannot be nil")
 	}
 	if eventBus == nil {
-		// EventBus is optional; when nil, email/AI events are skipped.
+		log.Fatal("event bus cannot be nil")
 	}
 	return &StudentService{
 		repo:         repo,
@@ -160,8 +160,8 @@ func (s *StudentService) RegisterStudent(ctx *gin.Context, userID string, input 
 		return err
 	}
 
-	if s.eventBus != nil {
-		s.eventBus.PublishAIStudentCheck(student.UserID)
+	if err := s.eventBus.PublishAIStudentCheck(student.UserID); err != nil {
+		log.Printf("Error Publish Student AI Check: %s", err)
 	}
 
 	return nil
@@ -245,8 +245,8 @@ func (s *StudentService) ApproveOrRejectStudent(ctx context.Context, targetUserI
 		Status:    status,
 	}
 
-	if s.eventBus != nil {
-		s.eventBus.PublishEmailStudentApproval(event)
+	if err := s.eventBus.PublishEmailStudentApproval(event); err != nil {
+		log.Printf("failed to publish email student approval event: %v", err)
 	}
 
 	return nil

@@ -55,12 +55,12 @@ func (r *GormAuditRepository) CreateAuditLog(logEntry *model.Audit) error {
 	return r.db.Create(logEntry).Error
 }
 
-// CreateMailLog create entry of mail log on database from mail log entity
-func (r *GormAuditRepository) CreateMailLog(logEntry *model.MailLog) error {
-	return r.db.Create(logEntry).Error
+// CreateOrUpdateMailLog create entry of mail log on database from mail log entity or update it if it already exists.
+func (r *GormAuditRepository) CreateOrUpdateMailLog(logEntry *model.MailLog) error {
+	return r.db.Save(logEntry).Error
 }
 
-// Find mails that are eligable for retry
+// Find mails that are eligible for retry
 func (r *GormAuditRepository) FindMailToRetry(retryAfter time.Time, maxAge time.Time, maxAttempts int) ([]model.MailLog, error) {
 	var failedEmails []model.MailLog
 	r.db.Where(

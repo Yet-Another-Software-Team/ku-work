@@ -126,7 +126,7 @@ func (s *EmailService) SendTo(target string, subject string, content string) err
 	}
 
 	// Save log to database
-	err = s.auditRepo.CreateMailLog(&mailLog)
+	err = s.auditRepo.CreateOrUpdateMailLog(&mailLog)
 
 	return err
 }
@@ -191,7 +191,10 @@ func (s *EmailService) RetryFailedEmails() error {
 			mailLog.ErrorDescription = fmt.Sprintf("Max retry attempts (%d) exceeded. Last error: %s",
 				s.maxAttempts, mailLog.ErrorDescription)
 			mailLog.UpdatedAt = time.Now()
-			s.auditRepo.CreateMailLog(&mailLog)
+
+			if err := s.auditRepo.CreateOrUpdateMailLog(&mailLog); err != nil {
+				log.Printf("Cannot Create Mail Log: %v", err)
+			}
 			permanentFailCount++
 			log.Printf("Email ID %d marked as permanent error after %d attempts", mailLog.ID, mailLog.RetryCount)
 			continue
@@ -229,7 +232,10 @@ func (s *EmailService) RetryFailedEmails() error {
 			log.Printf("Email ID %d successfully resent", mailLog.ID)
 		}
 
-		s.auditRepo.CreateMailLog(&mailLog)
+		err = s.auditRepo.CreateOrUpdateMailLog(&mailLog)
+		if err != nil {
+			log.Printf("Error Create MailLog")
+		}
 	}
 
 	log.Printf("Retry summary - Success: %d, Temporary Fail: %d, Permanent Fail: %d",

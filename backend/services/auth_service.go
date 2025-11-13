@@ -5,6 +5,7 @@ import (
 	"errors"
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
+	"log"
 	"mime/multipart"
 	"net/url"
 
@@ -85,6 +86,14 @@ func (s *AuthService) RegisterCompany(ctx *gin.Context, input RegisterCompanyInp
 
 	// Use a repository instance bound to the transaction for all repo calls within the tx.
 	repoTx, err := s.identityRepo.BeginTx()
+	defer func() {
+		if err := repoTx.RollbackTx(); err != nil {
+			log.Printf("Error rolling back transaction: %v", err)
+		}
+	}()
+	if err != nil {
+		return zeroUser, zeroCompany, "", "", err
+	}
 
 	if err := repoTx.CreateUser(&newUser); err != nil {
 		return zeroUser, zeroCompany, "", "", err

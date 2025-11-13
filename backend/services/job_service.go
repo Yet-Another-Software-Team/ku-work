@@ -90,8 +90,14 @@ func (s *JobService) CreateJob(ctx context.Context, job *model.Job) error {
 		return fmt.Errorf("job is nil")
 	}
 	err := s.jobRepo.CreateJob(ctx, job)
-	s.eventBus.PublishAIJobCheck(job.ID)
-	return err
+	if err != nil {
+		return err
+	}
+	if err := s.eventBus.PublishAIJobCheck(job.ID); err != nil {
+		// Log non critical error
+		log.Printf("Failed to publish AI job check event: %v", err)
+	}
+	return nil // No critical error occurred
 }
 
 // FindJobByID retrieves a job by ID via repository.
