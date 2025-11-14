@@ -1,6 +1,7 @@
 <template>
     <div>
         <!-- Selector -->
+         <h1 class="text-5xl text-primary-800 dark:text-primary font-bold mt-6 mb-6">Dashboard</h1>
         <section class="h-[3em] overflow-hidden border-b-1 my-5">
             <div v-if="isLoading">
                 <USkeleton class="h-[6em] w-[28em] left-0 top-0" />
@@ -18,7 +19,7 @@
                     :class="setTailwindClasses(true)"
                     @click="selectCompany"
                 >
-                    <p class="font-bold px-5 py-1 text-2xl">Company</p>
+                    <p class="font-bold px-5 py-1 text-2xl">Companies</p>
                 </div>
             </div>
         </section>
