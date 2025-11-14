@@ -62,7 +62,7 @@
                     v-for="student in sortedStudents"
                     v-else
                     :key="student.userId"
-                    class="r-card text-left"
+                    class="text-left p-4 rounded-md bg-[#fdfdfd] dark:bg-[#1f2937] shadow-[0_4px_6px_-1px_rgba(0,0,0,0.2),0_2px_4px_-2px_rgba(0,0,0,0.2)]"
                 >
                     <div class="flex items-center gap-3">
                         <div class="flex-shrink-0">
@@ -100,7 +100,7 @@
                     v-for="company in sortedCompanies"
                     v-else
                     :key="company.userId"
-                    class="r-card text-left"
+                    class="text-left p-4 rounded-md bg-[#fdfdfd] dark:bg-[#1f2937] shadow-[0_4px_6px_-1px_rgba(0,0,0,0.2),0_2px_4px_-2px_rgba(0,0,0,0.2)]"
                 >
                     <div class="flex items-center gap-3">
                         <div class="flex-shrink-0">
@@ -132,7 +132,12 @@
                     <Icon name="ic:baseline-inbox" class="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <p>No staff entries found.</p>
                 </div>
-                <div v-for="a in sortedStaff" v-else :key="a.actorId" class="r-card text-left">
+                <div
+                    v-for="a in sortedStaff"
+                    v-else
+                    :key="a.actorId"
+                    class="text-left p-4 rounded-md bg-[#fdfdfd] dark:bg-[#1f2937] shadow-[0_4px_6px_-1px_rgba(0,0,0,0.2),0_2px_4px_-2px_rgba(0,0,0,0.2)]"
+                >
                     <div class="flex items-center gap-3">
                         <Icon name="ic:baseline-badge" class="w-12 h-12 text-gray-400" />
                         <div class="flex-1 min-w-0">
