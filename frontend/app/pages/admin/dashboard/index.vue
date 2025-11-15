@@ -47,20 +47,31 @@
         </section>
         <!-- Request list -->
         <section class="flex flex-wrap w-full h-full place-content-start gap-5">
-            <!-- User acc req -->
-            <template v-if="!isCompany && studentData">
-                <StudentRequestDashboardComponent
-                    v-for="(data, index) in studentData"
-                    :key="index"
-                    :request-id="data.id"
-                    :data="data"
-                    @student-approval-status="selectStudent"
-                />
+            <!-- Student registration requests -->
+            <template v-if="!isCompany">
+                <template v-if="studentData.length">
+                    <StudentRequestDashboardComponent
+                        v-for="(data, index) in studentData"
+                        :key="index"
+                        :request-id="data.id"
+                        :data="data"
+                        @student-approval-status="selectStudent"
+                    />
+                </template>
+                <template v-else>
+                    <div class="w-full text-center py-10">
+                        <Icon
+                            name="ic:baseline-inbox"
+                            class="w-16 h-16 text-gray-400 mx-auto mb-4"
+                        />
+                        <p class="text-gray-500 text-lg">No pending student registrations.</p>
+                    </div>
+                </template>
             </template>
-            <!-- Company acc req -->
+            <!-- Company post requests -->
             <template v-else>
                 <template v-if="companyRequests.length">
-                    <RequestedJobPost
+                    <JobRequestJobPostCard
                         v-for="job in companyRequests"
                         :key="job.id"
                         :request-id="String(job.id)"
@@ -69,7 +80,13 @@
                     />
                 </template>
                 <template v-else>
-                    <h1 class="h-full justify-center items-center">No pending company posts</h1>
+                    <div class="w-full text-center py-10">
+                        <Icon
+                            name="ic:baseline-inbox"
+                            class="w-16 h-16 text-gray-400 mx-auto mb-4"
+                        />
+                        <p class="text-gray-500 text-lg">No pending company posts.</p>
+                    </div>
                 </template>
             </template>
         </section>
@@ -77,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import RequestedJobPost from "~/components/job/request/JobPostReview.vue";
+import JobRequestJobPostCard from "~/components/job/request/JobPostCard.vue";
 import type { ProfileInformation, JobPost } from "~/data/datatypes";
 
 definePageMeta({
@@ -119,9 +136,9 @@ onMounted(fetchStudents);
 
 function setTailwindClasses(activeCondition: boolean) {
     if (isCompany.value == activeCondition) {
-        return "bg-primary-200 flex flex-col border-1 rounded-3xl w-1/2 text-primary-800 hover:bg-primary-300";
+        return "bg-primary-200 flex flex-col border rounded-3xl w-1/2 text-primary-800 hover:bg-primary-300";
     } else {
-        return "bg-gray-200 flex flex-col border-1 rounded-3xl w-1/2 text-gray-500 hover:bg-gray-300";
+        return "bg-gray-200 flex flex-col border rounded-3xl w-1/2 text-gray-500 hover:bg-gray-300";
     }
 }
 

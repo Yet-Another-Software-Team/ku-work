@@ -157,6 +157,10 @@
                 </div>
             </div>
 
+            <div class="flex justify-center w-full">
+                <TurnstileWidget @callback="(tk) => (cfToken = tk)" />
+            </div>
+
             <!-- Post & Cancel -->
             <div class="grid grid-cols-12 w-full">
                 <div class="col-span-12 md:col-start-9 md:col-span-4 flex justify-end gap-x-3">
@@ -194,6 +198,7 @@ const showDiscardConfirm = ref(false);
 
 const api = useApi();
 const isSubmitting = ref(false);
+const cfToken = ref("");
 
 const form = ref<CreateJobPost>({
     name: "",
@@ -360,6 +365,7 @@ async function onSubmit() {
         await api.post("/jobs", result.data, {
             headers: {
                 Authorization: `Bearer ${token}`,
+                "X-Turnstile-Token": cfToken.value,
             },
         });
         console.log("Job submitted:", result.data);

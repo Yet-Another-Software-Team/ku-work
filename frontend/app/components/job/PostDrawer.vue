@@ -39,7 +39,7 @@
                             <NuxtLink :to="`/jobs/${data.companyId}`">
                                 <UTooltip :text="data.companyName">
                                     <h2
-                                        class="text-primary-700 text-sm sm:text-md font-semibold truncate max-w-full sm:max-w-[200px]"
+                                        class="text-primary-700 text-sm sm:text-base font-semibold truncate max-w-full sm:max-w-[200px] capitalize"
                                     >
                                         {{ data.companyName }}
                                     </h2>
