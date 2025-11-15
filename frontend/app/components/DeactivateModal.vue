@@ -19,7 +19,12 @@
                     To confirm, type
                     <strong class="text-red-600">DEACTIVATE</strong> below.
                 </p>
-                <UInput v-model="confirmDeactivate" class="mt-4 w-full" />
+                <UInput
+                    v-model="confirmDeactivate"
+                    class="mt-4 w-full"
+                    placeholder="Type DEACTIVATE to confirm"
+                    aria-label="Confirmation input: type DEACTIVATE to confirm"
+                />
                 <div class="flex justify-center md:col-span-2">
                     <TurnstileWidget @callback="(tk) => (cfToken = tk)" />
                 </div>
@@ -78,7 +83,6 @@ const toast = useToast();
 
 // Handle Deactivation
 async function onDeactivated() {
-    openDeactivateModal.value = false;
     try {
         // send headers as the request config (third argument) and use the ref's value
         const response = await api.post("/me/deactivate", null, {
@@ -101,6 +105,11 @@ async function onDeactivated() {
             description: (error as { message: string }).message,
             color: "error",
         });
+    } finally {
+        openDeactivateModal.value = false;
+        confirmDeactivate.value = "";
+        cfToken.value = "";
+        emit("update:close", false);
     }
 }
 </script>

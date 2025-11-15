@@ -62,7 +62,10 @@
                 }"
             >
                 <template #header>
-                    <p>Are you sure you want to clear all {{ isSelected }} applications?</p>
+                    <p>
+                        Are you sure you want to clear all
+                        {{ mapStatusToLabel(isSelected) }} applications?
+                    </p>
                 </template>
                 <template #body>
                     <div class="flex justify-end gap-2">
@@ -87,6 +90,7 @@
                         color="neutral"
                         variant="ghost"
                         :label="clearLabel"
+                        :disabled="countedApplication <= 0"
                         @mouseenter="hover(true)"
                         @mouseleave="hover(false)"
                         @click="openClearModal = true"
@@ -208,6 +212,8 @@ const sortOptions = ref([
     { label: "Name Z-A", id: "name_za" },
 ]);
 
+const toast = useToast();
+
 const selectSortOption = ref("latest");
 const showAppConfirm = ref(false);
 const confirmAction = ref<"accept" | "reject">("accept");
@@ -309,10 +315,8 @@ const fetchApplication = async (token: string | null, jobId: number) => {
 
 async function clearApplicationsHandler() {
     if (!job.value) return;
-    console.log("Clearing applications for job ID:", job.value.id);
-    console.log("Selected status to clear:", isSelected.value);
     try {
-        const response = await api.delete(`/jobs/${job.value.id}/applications`, {
+        await api.delete(`/jobs/${job.value.id}/applications`, {
             data: {
                 accepted: isSelected.value === "accepted",
                 pending: isSelected.value === "inprogress",
@@ -320,12 +324,20 @@ async function clearApplicationsHandler() {
             },
             withCredentials: true,
         });
-        console.log("Clear applications response:", response);
+        toast.add({
+            title: "Success to clear applications",
+            description: "All selected applications have been cleared.",
+            color: "success",
+        });
         currentJobOffset = 0;
         applications.value = undefined;
         await loadContents();
     } catch (error) {
-        console.error("Error clearing applications:", error);
+        toast.add({
+            title: "Failed to clear applications",
+            description: (error as { message: string }).message,
+            color: "error",
+        });
     } finally {
         openClearModal.value = false;
     }
@@ -347,6 +359,17 @@ function setTailwindClasses(activeCondition: string) {
     } else {
         return "bg-gray-200 flex flex-col border rounded-3xl w-1/3 text-gray-500 hover:bg-gray-300";
     }
+}
+
+function mapStatusToLabel(status: string) {
+    if (status === "inprogress") {
+        return "pending";
+    } else if (status === "accepted") {
+        return "accepted";
+    } else if (status === "rejected") {
+        return "rejected";
+    }
+    return "";
 }
 
 function selectInProgress() {
