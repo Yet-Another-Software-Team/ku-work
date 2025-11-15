@@ -118,7 +118,6 @@
 
 <script setup lang="ts">
 import type { DropdownMenuItem } from "@nuxt/ui";
-import EditProfileCard from "./EditProfileCard.vue";
 const toast = useToast();
 
 const openDeactivateModal = ref(false);
