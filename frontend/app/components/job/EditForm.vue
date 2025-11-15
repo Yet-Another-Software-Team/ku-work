@@ -151,8 +151,10 @@
                         color="neutral"
                         variant="outline"
                         label="Discard"
-                        :disabled="!cfToken"
-                        @click="showDiscardConfirm = true"
+                        @click="
+                            showDiscardConfirm = true;
+                            cfToken = '';
+                        "
                     />
 
                     <!-- Confirm Discard Modal -->

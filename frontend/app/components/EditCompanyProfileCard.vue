@@ -190,7 +190,6 @@
                         color="primary"
                         :disabled="!cfToken"
                         class="rounded-md px-5 cursor-pointer"
-                        @click="cfToken = ''"
                     >
                         Save
                     </UButton>
@@ -479,6 +478,8 @@ function handleSubmit() {
         },
         cfToken.value
     );
+
+    cfToken.value = "";
 
     emit("close");
 }

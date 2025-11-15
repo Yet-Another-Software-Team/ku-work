@@ -71,7 +71,6 @@
                 color="neutral"
                 variant="outline"
                 label="Previous"
-                :disabled="!cfToken"
                 :ui="{
                     base: 'justify-center bg-white text-black hover:bg-gray-200 hover:text-black',
                 }"
@@ -177,7 +176,7 @@ const canProceedToNext = computed(() => {
 });
 
 const canSubmit = computed(() => {
-    if (currentStep.value === 2 && stepTwoRef.value) {
+    if (currentStep.value === 2 && stepTwoRef.value && cfToken.value) {
         return stepTwoRef.value.isValid;
     }
     return false;

@@ -170,10 +170,7 @@
                         color="neutral"
                         variant="outline"
                         label="Cancel"
-                        @click="
-                            cancel;
-                            cfToken = '';
-                        "
+                        @click="cancel"
                     />
 
                     <!-- Post -->
@@ -306,6 +303,7 @@ function validateSalaryCross() {
 
 function cancel() {
     showDiscardConfirm.value = false;
+    cfToken.value = "";
     emit("close");
 }
 
