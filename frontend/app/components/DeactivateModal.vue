@@ -36,7 +36,6 @@
                         @click="
                             openDeactivateModal = false;
                             confirmDeactivate = '';
-                            cfToken = '';
                             emit('update:close', false);
                         "
                     >

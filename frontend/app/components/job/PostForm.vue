@@ -179,7 +179,6 @@
                         type="submit"
                         label="Post"
                         :disabled="!cfToken"
-                        @click="cfToken = ''"
                     />
                 </div>
             </div>
