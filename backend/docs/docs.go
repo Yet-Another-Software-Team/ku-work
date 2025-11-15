@@ -1407,7 +1407,7 @@ const docTemplate = `{
             }
         },
         "/jobs/{id}/applications": {
-            "get": {
+            "delete": {
                 "security": [
                     {
                         "BearerAuth": []

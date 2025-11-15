@@ -185,9 +185,14 @@
                     >
                         Discard
                     </UButton>
-                    <UButton type="submit" color="primary" class="rounded-md px-5 cursor-pointer"
-                        >Save</UButton
+                    <UButton
+                        type="submit"
+                        color="primary"
+                        :disabled="!cfToken"
+                        class="rounded-md px-5 cursor-pointer"
                     >
+                        Save
+                    </UButton>
                 </div>
             </form>
         </div>
@@ -199,7 +204,6 @@
         :dismissible="false"
         :ui="{
             title: 'text-xl font-semibold text-primary-800 dark:text-primary',
-            container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
             overlay: 'fixed inset-0 bg-black/50',
         }"
     >
@@ -474,6 +478,8 @@ function handleSubmit() {
         },
         cfToken.value
     );
+
+    cfToken.value = "";
 
     emit("close");
 }

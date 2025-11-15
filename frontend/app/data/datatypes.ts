@@ -102,6 +102,7 @@ interface JobPost {
     rejected?: number;
     pending?: number;
     applied?: boolean;
+    notifyOnApplication?: boolean;
 }
 
 interface Job {

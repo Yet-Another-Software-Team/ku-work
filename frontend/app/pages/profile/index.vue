@@ -11,7 +11,7 @@
         </div>
 
         <!-- Content -->
-        <ProfileCard v-if="userRole === 'student'" />
+        <StudentProfileCard v-if="userRole === 'student'" />
         <CompanyProfileCard v-if="userRole === 'company'" />
         <div v-if="userRole === 'viewer'" class="text-center items-center py-8">
             <h1 class="text-3xl font-semibold text-gray-600 dark:text-gray-400 mb-4">

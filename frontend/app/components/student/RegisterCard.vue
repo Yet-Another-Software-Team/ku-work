@@ -176,7 +176,7 @@ const canProceedToNext = computed(() => {
 });
 
 const canSubmit = computed(() => {
-    if (currentStep.value === 2 && stepTwoRef.value) {
+    if (currentStep.value === 2 && stepTwoRef.value && cfToken.value) {
         return stepTwoRef.value.isValid;
     }
     return false;

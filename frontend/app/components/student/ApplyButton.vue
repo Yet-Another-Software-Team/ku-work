@@ -145,6 +145,8 @@
             <UButton
                 label="Done"
                 class="w-full text-xl justify-center px-4 py-2 font-semibold text-white bg-primary-500 hover:bg-primary-700 transition"
+                :disabled="!cfToken"
+                :loading="!cfToken"
                 @click="handleDone(close)"
             />
         </template>
@@ -350,6 +352,7 @@ function handleDone(close: () => void) {
     errors.contactMail = "";
     errors.resumeFile = "";
     currentStep.value = 1;
+    cfToken.value = "";
     close();
 }
 </script>

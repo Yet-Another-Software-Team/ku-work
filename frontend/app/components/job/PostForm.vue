@@ -178,6 +178,7 @@
                         class="size-fit text-xl text-white rounded-md px-15 font-medium bg-primary-500 hover:bg-primary-700 hover:cursor-pointer active:bg-primary-800"
                         type="submit"
                         label="Post"
+                        :disabled="!cfToken"
                     />
                 </div>
             </div>
@@ -301,6 +302,7 @@ function validateSalaryCross() {
 
 function cancel() {
     showDiscardConfirm.value = false;
+    cfToken.value = "";
     emit("close");
 }
 

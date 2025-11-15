@@ -33,17 +33,15 @@
                 </p>
             </div>
 
-            <!-- Edit Button -->
-            <UButton
+            <!-- Edit Option -->
+            <UDropdownMenu
                 v-if="canEdit"
-                variant="outline"
-                color="neutral"
-                class="px-4 py-2 text-sm hover:cursor-pointer flex items-center mt-4 ml-auto mb-auto"
-                @click="openEditModal = true"
+                :items="items"
+                :content="{ align: 'end' }"
+                class="p-1 text-sm hover:cursor-pointer flex items-center mt-4 ml-auto mb-auto"
             >
-                <Icon name="material-symbols:edit-square-outline-rounded" class="size-[1.5em]" />
-                Edit Profile
-            </UButton>
+                <UButton color="neutral" variant="ghost" icon="ic:baseline-more-vert" />
+            </UDropdownMenu>
         </div>
 
         <!-- Divider -->
@@ -104,10 +102,10 @@
             </div>
         </div>
 
+        <!-- Edit Modal -->
         <UModal
             v-model:open="openEditModal"
             :ui="{
-                container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
                 overlay: 'fixed inset-0 bg-black/50',
                 content: 'w-full max-w-6xl',
             }"
@@ -120,11 +118,17 @@
                 />
             </template>
         </UModal>
+        <!-- Deactivate Modal -->
+        <DeactivateModal
+            v-model:open="openDeactivateModal"
+            @update:close="(value) => (openDeactivateModal = value)"
+        />
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import type { DropdownMenuItem } from "@nuxt/ui";
 import EditCompanyProfileCard from "~/components/EditCompanyProfileCard.vue";
 
 const props = withDefaults(
@@ -152,6 +156,8 @@ const profile = ref({
 });
 
 const openEditModal = ref(false);
+const openDeactivateModal = ref(false);
+
 const api = useApi();
 const config = useRuntimeConfig();
 const toast = useToast();
@@ -161,6 +167,8 @@ const canEdit = computed(() => {
     const uid = import.meta.client ? localStorage.getItem("userId") : null;
     return props.isOwner || (!!props.companyId && props.companyId === uid);
 });
+
+// Fetch company profile
 async function fetchCompanyProfile() {
     try {
         let idToFetch: string | null = props.companyId;
@@ -184,6 +192,25 @@ async function fetchCompanyProfile() {
     }
 }
 
+// Dropdown menu items
+const items: DropdownMenuItem[] = [
+    {
+        label: "Edit Profile",
+        icon: "material-symbols:edit-square-outline-rounded",
+        onClick: () => {
+            openEditModal.value = true;
+        },
+    },
+    {
+        label: "Deactivate Profile",
+        icon: "material-symbols:delete-outline",
+        onClick: () => {
+            openDeactivateModal.value = true;
+        },
+    },
+];
+
+// Handle Saves, Deactivation, and Deletion
 async function onSaved(
     updated: {
         name?: string;

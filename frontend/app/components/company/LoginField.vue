@@ -40,6 +40,8 @@
         <TurnstileWidget @callback="(tk) => (token = tk)" />
         <UButton
             class="size-fit text-xl text-white rounded-md px-15 font-medium bg-primary-500 hover:bg-primary-700 hover:cursor-pointer active:bg-primary-800"
+            :loading="isLoggingIn || token === ''"
+            :disabled="isLoggingIn || token === ''"
             type="submit"
             label="Log In"
         />
