@@ -135,11 +135,22 @@
                     variant="outline"
                     color="neutral"
                     class="rounded-md px-4"
-                    @click="tryDiscard"
+                    @click="
+                        tryDiscard;
+                        cfToken = '';
+                    "
                 >
                     Discard
                 </UButton>
-                <UButton type="submit" color="primary" class="rounded-md px-5"> Save </UButton>
+                <UButton
+                    type="submit"
+                    color="primary"
+                    :disabled="!cfToken"
+                    class="rounded-md px-5"
+                    @click="cfToken = ''"
+                >
+                    Save
+                </UButton>
             </div>
         </form>
 

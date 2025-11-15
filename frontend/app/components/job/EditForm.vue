@@ -151,6 +151,7 @@
                         color="neutral"
                         variant="outline"
                         label="Discard"
+                        :disabled="!cfToken"
                         @click="showDiscardConfirm = true"
                     />
 

@@ -71,6 +71,7 @@
                 color="neutral"
                 variant="outline"
                 label="Previous"
+                :disabled="!cfToken"
                 :ui="{
                     base: 'justify-center bg-white text-black hover:bg-gray-200 hover:text-black',
                 }"

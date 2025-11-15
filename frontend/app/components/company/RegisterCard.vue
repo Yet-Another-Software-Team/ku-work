@@ -56,6 +56,7 @@
                 color="neutral"
                 variant="outline"
                 label="Previous"
+                :disabled="!token"
                 :ui="{
                     base: 'justify-center bg-white text-black hover:bg-gray-200 hover:text-black',
                 }"

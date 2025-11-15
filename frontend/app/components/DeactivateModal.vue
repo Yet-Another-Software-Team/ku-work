@@ -27,9 +27,11 @@
                     <UButton
                         variant="outline"
                         color="neutral"
+                        :disabled="!cfToken"
                         @click="
                             openDeactivateModal = false;
                             confirmDeactivate = '';
+                            cfToken = '';
                             emit('update:close', false);
                         "
                     >

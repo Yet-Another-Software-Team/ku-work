@@ -185,9 +185,15 @@
                     >
                         Discard
                     </UButton>
-                    <UButton type="submit" color="primary" class="rounded-md px-5 cursor-pointer"
-                        >Save</UButton
+                    <UButton
+                        type="submit"
+                        color="primary"
+                        :disabled="!cfToken"
+                        class="rounded-md px-5 cursor-pointer"
+                        @click="cfToken = ''"
                     >
+                        Save
+                    </UButton>
                 </div>
             </form>
         </div>
