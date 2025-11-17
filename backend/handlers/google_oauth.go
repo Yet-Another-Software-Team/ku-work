@@ -134,7 +134,7 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 
 	// Check if this user already exists on the DB via their external ID.
 	var userCount int64
-	h.DB.Model(&model.GoogleOAuthDetails{}).Where("external_id = ?", userInfo.ID).Count(&userCount)
+	h.DB.Model(&model.GoogleOAuthDetails{}).Unscoped().Where("external_id = ?", userInfo.ID).Count(&userCount)
 
 	var oauthDetail model.GoogleOAuthDetails
 
@@ -143,7 +143,7 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 
 	if userCount == 0 {
 		var newUser model.User
-		h.DB.FirstOrCreate(&newUser, model.User{
+		h.DB.Unscoped().FirstOrCreate(&newUser, model.User{
 			Username: userInfo.Email,
 			UserType: "oauth",
 		})
@@ -169,11 +169,11 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 	}
 
 	// Get updated oauthDetail
-	h.DB.Model(&model.GoogleOAuthDetails{}).Where("external_id = ?", userInfo.ID).First(&oauthDetail)
+	h.DB.Model(&model.GoogleOAuthDetails{}).Unscoped().Where("external_id = ?", userInfo.ID).First(&oauthDetail)
 
 	// getUser model and return JWT Token to frontend.
 	var user model.User
-	h.DB.Model(&user).Where("id = ?", oauthDetail.UserID).First(&user)
+	h.DB.Model(&user).Unscoped().Where("id = ?", oauthDetail.UserID).First(&user)
 
 	//Return JWT Token to context
 	jwtToken, refreshToken, err := h.JWTHandlers.HandleToken(user)
@@ -209,5 +209,6 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 		"role":         role,
 		"userId":       user.ID,
 		"isRegistered": isRegistered, // To tell frontend whether user is registered or not
+		"isDeactivated": user.DeletedAt.Valid,
 	})
 }
