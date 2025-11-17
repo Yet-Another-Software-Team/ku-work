@@ -75,7 +75,7 @@
                         }}
                     </p>
                 </div>
-                <JobCardCompany
+                <JobPostDashboard
                     v-for="job in filteredJobs"
                     v-else
                     :key="job.id"
@@ -110,16 +110,16 @@
             <div
                 class="bg-primary-500 p-2 rounded-full size-[4em] fixed bottom-5 right-[6vw] hover:bg-primary-700 transition-all duration-200"
             >
-                <UModal v-model:open="openJobPostForm">
+                <UModal v-model:open="openJobPostCreateForm">
                     <Icon
                         name="ic:baseline-plus"
                         size="4em"
                         mode="svg"
                         class="absolute top-0 bottom-0 left-0 right-0 text-white cursor-pointer"
-                        @click="openJobPostForm = true"
+                        @click="openJobPostCreateForm = true"
                     />
                     <template #content>
-                        <JobPostForm @close="handleJobFormClose" />
+                        <JobPostCreateForm @close="handleJobFormClose" />
                     </template>
                 </UModal>
             </div>
@@ -266,7 +266,7 @@ definePageMeta({
     middleware: "auth",
 });
 
-const openJobPostForm = ref(false);
+const openJobPostCreateForm = ref(false);
 
 const data = ref<JobPost[]>([]);
 const studentApplications = ref<JobApplicationResponse[]>([]);
@@ -506,7 +506,7 @@ onMounted(async () => {
 const updateJobNotify = (id: number, value: boolean) => {
     const job = data.value.find((job) => job.id === id);
     if (!job) return;
-    const oldValue = job.notifyOnApplication;
+    const oldValue: boolean = job.notifyOnApplication || false;
     job.notifyOnApplication = value;
     api.patch(
         `/jobs/${job.id}`,
@@ -546,7 +546,7 @@ const updateJobOpen = (id: number, value: boolean) => {
 };
 
 const handleJobFormClose = () => {
-    openJobPostForm.value = false;
+    openJobPostCreateForm.value = false;
     // Refresh jobs list after posting (only for companies)
     if (userRole.value === "company") {
         fetchJobs();

@@ -1,3 +1,4 @@
+<!-- Job Post component that shows on company dashboard -->
 <template>
     <UCard class="bg-white dark:bg-[#1f2937]">
         <template #header>
