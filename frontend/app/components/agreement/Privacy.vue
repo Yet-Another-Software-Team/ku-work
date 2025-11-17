@@ -237,8 +237,45 @@
                 </li>
                 <li><strong>Phone:</strong> [Your Company Phone Number]</li>
             </ul>
+            <div ref="endSentinel" aria-hidden="true" class="h-px w-full"></div>
         </section>
     </div>
 </template>
-<script setup lang="ts"></script>
-<style scoped></style>
+
+<script setup lang="ts">
+import { ref, onMounted, onBeforeUnmount } from "vue";
+
+const emit = defineEmits<{
+    (e: "reached-end"): void;
+}>();
+
+const endSentinel = ref<HTMLElement | null>(null);
+const hasEmitted = ref(false);
+let observer: IntersectionObserver | null = null;
+
+onMounted(() => {
+    observer = new IntersectionObserver(
+        (entries) => {
+            const entry = entries[0];
+            if (entry && entry.isIntersecting && !hasEmitted.value) {
+                hasEmitted.value = true;
+                emit("reached-end");
+            }
+        },
+        {
+            root: null,
+            threshold: 1.0,
+        }
+    );
+    if (endSentinel.value) {
+        observer.observe(endSentinel.value);
+    }
+});
+
+onBeforeUnmount(() => {
+    if (observer) {
+        observer.disconnect();
+        observer = null;
+    }
+});
+</script>

@@ -89,6 +89,95 @@
                 </div>
             </div>
         </div>
+
+        <!--Terms and Policy Agreement -->
+        <div class="w-full">
+            <div class="text-sm text-gray-600">
+                <div class="mt-3 space-y-2">
+                    <label class="flex items-start gap-2">
+                        <input
+                            :checked="acceptedTerms"
+                            type="checkbox"
+                            class="mt-1.5"
+                            @click.prevent="openTerms"
+                        />
+                        <span>
+                            I have read and accept the
+                            <UModal
+                                v-model:open="termsModalOpen"
+                                title="Terms of Service"
+                                :ui="{ content: 'min-w-[76vw]' }"
+                            >
+                                <a
+                                    class="text-primary-600 font-semibold underline hover:text-primary-800 hover:cursor-pointer"
+                                    @click="openTerms"
+                                    >Terms of Service</a
+                                >
+                                <template #body>
+                                    <div class="max-h-[70vh] overflow-y-auto pr-2">
+                                        <AgreementTermsOfService
+                                            @reached-end="hasReadTerms = true"
+                                        />
+                                    </div>
+                                    <div class="flex justify-end gap-2 mt-4">
+                                        <UButton variant="outline" @click="termsModalOpen = false"
+                                            >Close</UButton
+                                        >
+                                        <UButton
+                                            color="primary"
+                                            :disabled="!hasReadTerms"
+                                            @click="acceptTerms"
+                                            >Accept</UButton
+                                        >
+                                    </div>
+                                </template>
+                            </UModal>
+                            .
+                        </span>
+                    </label>
+
+                    <label class="flex items-start gap-2">
+                        <input
+                            :checked="acceptedPrivacy"
+                            type="checkbox"
+                            class="mt-1.5"
+                            @click.prevent="openPrivacy"
+                        />
+                        <span>
+                            I have read and accept the
+                            <UModal
+                                v-model:open="privacyModalOpen"
+                                title="Privacy Policy"
+                                :ui="{ content: 'min-w-[76vw]' }"
+                            >
+                                <a
+                                    class="text-primary-600 font-semibold underline hover:text-primary-800 hover:cursor-pointer"
+                                    @click="openPrivacy"
+                                    >Privacy Policy</a
+                                >
+                                <template #body>
+                                    <div class="max-h-[70vh] overflow-y-auto pr-2">
+                                        <AgreementPrivacy @reached-end="hasReadPrivacy = true" />
+                                    </div>
+                                    <div class="flex justify-end gap-2 mt-4">
+                                        <UButton variant="outline" @click="privacyModalOpen = false"
+                                            >Close</UButton
+                                        >
+                                        <UButton
+                                            color="primary"
+                                            :disabled="!hasReadPrivacy"
+                                            @click="acceptPrivacy"
+                                            >Accept</UButton
+                                        >
+                                    </div>
+                                </template>
+                            </UModal>
+                            .
+                        </span>
+                    </label>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -119,6 +208,15 @@ const previewLogoUrl = ref(null);
 const previewBannerUrl = ref(null);
 const logoFileInputRef = ref(null);
 const bannerFileInputRef = ref(null);
+
+// Agreements modal and acceptance state
+const termsModalOpen = ref(false);
+const privacyModalOpen = ref(false);
+const anyModalOpen = computed(() => termsModalOpen.value || privacyModalOpen.value);
+const hasReadTerms = ref(false);
+const hasReadPrivacy = ref(false);
+const acceptedTerms = ref(false);
+const acceptedPrivacy = ref(false);
 
 const errors = reactive({
     about: "",
@@ -183,12 +281,35 @@ const validateField = (fieldName, value) => {
 const isValid = computed(() => {
     const hasRequiredValues = props.companyLogo && props.banner;
     const hasNoErrors = !Object.values(errors).some((error) => error);
-    return hasRequiredValues && hasNoErrors;
+    const hasAcceptedAgreements = acceptedTerms.value && acceptedPrivacy.value;
+    return hasRequiredValues && hasNoErrors && hasAcceptedAgreements;
 });
 
 const updateAbout = (value) => {
     emit("update:about", value);
     validateField("about", value);
+};
+
+// Agreements modal handlers
+const openTerms = () => {
+    if (anyModalOpen.value) return;
+    if (!acceptedTerms.value) hasReadTerms.value = false;
+    termsModalOpen.value = true;
+};
+const openPrivacy = () => {
+    if (anyModalOpen.value) return;
+    if (!acceptedPrivacy.value) hasReadPrivacy.value = false;
+    privacyModalOpen.value = true;
+};
+const acceptTerms = () => {
+    if (!hasReadTerms.value) return;
+    acceptedTerms.value = true;
+    termsModalOpen.value = false;
+};
+const acceptPrivacy = () => {
+    if (!hasReadPrivacy.value) return;
+    acceptedPrivacy.value = true;
+    privacyModalOpen.value = false;
 };
 
 const onLogoFileChange = (event) => {
