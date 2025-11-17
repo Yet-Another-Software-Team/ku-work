@@ -61,15 +61,8 @@
                 </p>
             </div>
         </div>
-        <div v-if="currentStep === 2" class="flex flex-col items-stretch gap-4">
-            <TermsConsent
-                v-model:accepted="termsAccepted"
-                :docs="termsDocs"
-                :disabled="isSubmitting"
-            />
-            <div class="flex justify-center">
-                <TurnstileWidget @callback="(tk) => (cfToken = tk)" />
-            </div>
+        <div v-if="currentStep === 2" class="flex justify-center">
+            <TurnstileWidget @callback="(tk) => (cfToken = tk)" />
         </div>
         <div class="flex justify-center gap-x-2 py-4">
             <UButton
@@ -121,7 +114,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from "vue";
 import { useApi } from "@/composables/useApi";
-import { getRequiredDocumentsForRole, buildDocumentSrc } from "@/config/terms";
 
 const api = useApi();
 const toast = useToast();
@@ -134,12 +126,6 @@ const stepOneRef = ref<{ isValid: boolean } | null>(null);
 const stepTwoRef = ref<{ isValid: boolean } | null>(null);
 
 const cfToken = ref<string>("");
-const termsAccepted = ref(false);
-const termsDocs = getRequiredDocumentsForRole("student").map((d) => ({
-    key: d.key,
-    title: d.title,
-    src: buildDocumentSrc(d),
-}));
 
 const form = reactive({
     fullName: "",
@@ -191,7 +177,7 @@ const canProceedToNext = computed(() => {
 
 const canSubmit = computed(() => {
     if (currentStep.value === 2 && stepTwoRef.value) {
-        return stepTwoRef.value.isValid && termsAccepted.value;
+        return stepTwoRef.value.isValid;
     }
     return false;
 });

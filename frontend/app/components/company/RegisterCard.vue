@@ -41,13 +41,6 @@
                 v-model:company-logo="form.companyLogo"
                 v-model:banner="form.banner"
             />
-            <div v-if="currentStep === 2" class="my-4">
-                <TermsConsent
-                    v-model:accepted="termsAccepted"
-                    :docs="termsDocs"
-                    :disabled="isSubmitting"
-                />
-            </div>
             <div v-if="currentStep === 3" class="text-center py-8">
                 <icon name="hugeicons:checkmark-circle-03" class="text-[15em] text-primary mb-4" />
                 <h2 class="text-4xl font-bold text-primary mb-2">You’re All Set</h2>
@@ -107,7 +100,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from "vue";
 import { useApi, type AuthResponse } from "~/composables/useApi";
-import { getRequiredDocumentsForRole, buildDocumentSrc } from "@/config/terms";
 
 const toast = useToast();
 const api = useApi();
@@ -122,12 +114,6 @@ const stepOneRef = ref<{ isValid: boolean } | null>(null);
 const stepTwoRef = ref<{ isValid: boolean } | null>(null);
 
 const token = ref<string>("");
-const termsAccepted = ref(false);
-const termsDocs = getRequiredDocumentsForRole("company").map((d) => ({
-    key: d.key,
-    title: d.title,
-    src: buildDocumentSrc(d),
-}));
 
 const form = reactive({
     companyName: "",
@@ -156,7 +142,7 @@ const canProceedToNext = computed(() => {
 
 const canSubmit = computed(() => {
     if (currentStep.value === 2 && stepTwoRef.value) {
-        return stepTwoRef.value.isValid && termsAccepted.value;
+        return stepTwoRef.value.isValid;
     }
     return false;
 });
