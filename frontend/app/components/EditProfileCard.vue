@@ -1,5 +1,5 @@
 <template>
-    <div class="rounded-xl dark:bg-[#001F26] max-h-[90vh] overflow-y-auto p-5 w-full max-w-2xl">
+    <div class="rounded-xl max-h-[90vh] overflow-y-auto p-5 w-full max-w-2xl">
         <div class="w-full flex justify-center mb-10">
             <div class="relative">
                 <div
@@ -37,16 +37,13 @@
 
         <form class="grid grid-cols-1 md:grid-cols-2 gap-4" @submit.prevent="handleSubmit">
             <div class="md:col-span-2">
-                <label class="block text-primary-800 dark:text-primary font-semibold mb-1"
-                    >Name</label
-                >
-                <div
-                    class="rounded-lg border border-primary-700/50 bg-gray-100 px-4 py-2 text-gray-900 dark:border-primary-700/40 dark:bg-[#013B49] dark:text-white"
-                >
-                    {{ `${profile.firstName} ${profile.lastName}` }}
-                </div>
+                <label class="block font-semibold text-primary-800 dark:text-primary">Name</label>
+                <UInput
+                    disabled
+                    :placeholder="`${profile.firstName || 'Not Exists'} ${profile.lastName}`"
+                    class="mt-1 w-full rounded-md bg-white text-gray-900 dark:bg-[#013B49] dark:text-white"
+                />
             </div>
-
             <div class="col-span-1">
                 <label for="dob" class="block text-primary-800 dark:text-primary font-semibold mb-1"
                     >Date of Birth</label
