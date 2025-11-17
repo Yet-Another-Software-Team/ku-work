@@ -104,7 +104,7 @@
             }"
         >
             <template #content>
-                <EditProfileCard
+                <EditStudentProfileCard
                     :profile="profile"
                     @close="isEditModalOpen = false"
                     @saved="handleProfileSaved"
@@ -115,7 +115,6 @@
 </template>
 
 <script setup lang="ts">
-import EditProfileCard from "./EditProfileCard.vue";
 const toast = useToast();
 
 const isEditModalOpen = ref(false);

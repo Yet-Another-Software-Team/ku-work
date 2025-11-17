@@ -1,383 +1,166 @@
 <template>
-    <div class="rounded-lg">
-        <!-- Header -->
-        <a href="/admin/dashboard">
-            <h1
-                class="flex items-center text-5xl text-primary-800 dark:text-primary font-bold mb-6 gap-2 cursor-pointer"
+    <div :id="'Component-' + requestId" class="flex justify-center items-center w-[20em] h-full">
+        <!-- card container is clickable -->
+        <div
+            class="flex w-full h-[7em] m-2 shadow-md bg-[#fdfdfd] dark:bg-[#1f2937] rounded-md cursor-pointer"
+            @click="() => navigateToProfile(requestId)"
+        >
+            <!-- profile pic -->
+            <div
+                v-if="data.photoId"
+                class="flex items-center justify-center w-20 h-full flex-shrink-0"
             >
-                <Icon name="iconoir:nav-arrow-left" class="items-center" />
-                <span>Back</span>
-            </h1>
-        </a>
-        <section v-if="data && !isLoading" class="flex flex-col sm:flex-row">
-            <!-- First Section -->
-            <section class="w-full sm:w-[20em] flex flex-col gap-5 m-3">
-                <!-- First Card -->
-                <div class="r-card">
-                    <!-- Profile Image -->
-                    <div class="h-fit flex flex-col items-center">
-                        <!-- photo -->
-                        <div v-if="photo" class="size-[16em] flex-shrink-0">
-                            <img
-                                :src="photo"
-                                alt="Profile photo"
-                                class="size-full object-cover rounded-full p-5"
-                            />
-                        </div>
+                <img
+                    :src="photo"
+                    alt="Profile photo"
+                    class="w-16 h-16 object-cover rounded-full justify-center items-center m-2"
+                />
+            </div>
+            <div v-else class="flex items-center justify-center w-20 h-full flex-shrink-0">
+                <Icon name="ic:baseline-account-circle" class="size-full" />
+            </div>
 
-                        <!-- icon -->
-                        <div
-                            v-else
-                            class="flex items-center justify-center w-[16em] h-[16em] flex-shrink-0"
-                        >
-                            <Icon
-                                name="ic:baseline-account-circle"
-                                class="size-full text-gray-400"
-                            />
-                        </div>
+            <!-- user data -->
+            <div class="flex flex-col justify-center flex-1 p-2">
+                <!-- name -->
+                <p class="overflow-hidden truncate max-w-[12em]">
+                    {{ data.firstName }} {{ data.lastName }}
+                </p>
+                <p class="text-xs">{{ data.major }}</p>
 
-                        <!-- Info -->
-                        <div class="text-xl mt-5">
-                            <h2 class="text-2xl font-semibold text-gray-900 dark:text-[#FDFDFD]">
-                                {{ data.profile.name }}
-                            </h2>
-                            <p class="text-gray-600 dark:text-gray-300">
-                                {{ data.profile.major }}
-                            </p>
-                        </div>
-
-                        <!-- Divider (only if there are connections) -->
-                        <template v-if="hasAnyConnection">
-                            <hr class="border-gray-500 dark:border-gray-600 m-5 w-full" />
-
-                            <!-- Connections -->
-                            <ul>
-                                <li v-if="hasLinkedIn">
-                                    <a
-                                        :href="data.profile.linkedIn"
-                                        target="_blank"
-                                        class="flex hover:underline items-center justify-center gap-2 my-5"
-                                    >
-                                        <Icon name="devicon:linkedin" class="size-[2em]" />
-                                        <span class="truncate w-[12em]">{{ linkedInLabel }}</span>
-                                    </a>
-                                </li>
-                                <li v-if="hasGitHub">
-                                    <a
-                                        :href="data.profile.github"
-                                        target="_blank"
-                                        class="flex hover:underline items-center justify-center gap-2 my-5"
-                                    >
-                                        <Icon
-                                            name="devicon:github"
-                                            class="size-[2em] bg-[#FDFDFD] rounded-full"
-                                        />
-                                        <span class="truncate w-[12em]">{{ githubLabel }}</span>
-                                    </a>
-                                </li>
-                            </ul>
-                        </template>
-                    </div>
-                </div>
-
-                <!-- Second Card -->
-                <div class="r-card flex items-center justify-between">
-                    <!-- File Download -->
-                    <span class="text-xl">Submitted File</span>
-                    <a
-                        :href="file"
-                        :download="suggestedFileName"
-                        target="_blank"
-                        aria-label="Download submitted file"
-                        class="flex items-center gap-2"
+                <!-- buttons -->
+                <div class="flex gap-2 mt-2 w-full">
+                    <UButton
+                        class="font-bold p-1 rounded flex items-center gap-1 w-full flex-1 px-2"
+                        variant="outline"
+                        color="error"
+                        label="Decline"
+                        :icon="'iconoir:xmark'"
+                        @click.stop="showRejectModal = true"
+                    />
+                    <UModal
+                        v-model:open="showRejectModal"
+                        :ui="{
+                            title: 'text-xl font-semibold text-primary-800 dark:text-primary',
+                            container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
+                            overlay: 'fixed inset-0 bg-black/50',
+                        }"
                     >
-                        <Icon
-                            name="ic:outline-file-download"
-                            class="size-[2em] hover:text-primary transition-colors duration-200"
-                        />
-                    </a>
+                        <template #header>
+                            <p>
+                                Are you sure you want to <strong>decline</strong>
+                                {{ data.firstName }} {{ data.lastName }}?
+                            </p>
+                        </template>
+                        <template #body>
+                            <div class="flex justify-end gap-2">
+                                <UButton
+                                    variant="outline"
+                                    color="neutral"
+                                    label="Cancel"
+                                    @click="showRejectModal = false"
+                                />
+                                <UButton
+                                    color="error"
+                                    label="Decline"
+                                    :loading="actionLoading === 'decline'"
+                                    @click="
+                                        () => {
+                                            actionLoading = 'decline';
+                                            declineRequest();
+                                            showRejectModal = false;
+                                            actionLoading = null;
+                                        }
+                                    "
+                                />
+                            </div>
+                        </template>
+                    </UModal>
+
+                    <UButton
+                        class="font-bold p-1 rounded flex items-center gap-1 w-full flex-1 px-2"
+                        variant="outline"
+                        color="primary"
+                        label="Accept"
+                        :icon="'iconoir:check'"
+                        @click.stop="showAcceptModal = true"
+                    />
+                    <UModal
+                        v-model:open="showAcceptModal"
+                        :ui="{
+                            title: 'text-xl font-semibold text-primary-800 dark:text-primary',
+                            container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
+                            overlay: 'fixed inset-0 bg-black/50',
+                        }"
+                    >
+                        <template #header>
+                            <p>
+                                Are you sure you want to <strong>accept</strong>
+                                {{ data.firstName }} {{ data.lastName }}?
+                            </p>
+                        </template>
+                        <template #body>
+                            <div class="flex justify-end gap-2">
+                                <UButton
+                                    variant="outline"
+                                    color="neutral"
+                                    label="Cancel"
+                                    @click="showAcceptModal = false"
+                                />
+                                <UButton
+                                    color="primary"
+                                    label="Accept"
+                                    :loading="actionLoading === 'accept'"
+                                    @click="
+                                        () => {
+                                            actionLoading = 'accept';
+                                            acceptRequest();
+                                            showAcceptModal = false;
+                                            actionLoading = null;
+                                        }
+                                    "
+                                />
+                            </div>
+                        </template>
+                    </UModal>
                 </div>
-            </section>
-
-            <!-- Second Section -->
-            <section class="flex flex-col gap-5 m-3 w-full">
-                <!-- First Card -->
-                <div class="r-card">
-                    <div class="flex flex-col text-xl text-left whitespace-normal">
-                        <p
-                            v-if="hasBirthDate"
-                            class="mt-2 text-gray-800 dark:text-gray-200 font-semibold"
-                        >
-                            Age: <span class="font-normal">{{ age }}</span>
-                        </p>
-                        <p class="text-gray-800 dark:text-gray-200 font-semibold">
-                            Phone: <span class="font-normal">{{ data.profile.phone }}</span>
-                        </p>
-                        <p class="text-gray-800 dark:text-gray-200 font-semibold">
-                            Email: <span class="font-normal">{{ email }}</span>
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Second Card -->
-                <div
-                    v-if="data.profile.aboutMe && data.profile.aboutMe.trim() !== ''"
-                    class="r-card"
-                >
-                    <div class="flex flex-col text-xl text-left">
-                        <p
-                            class="text-gray-800 dark:text-gray-200 font-semibold whitespace-pre-wrap break-words overflow-x-hidden"
-                        >
-                            <span class="font-normal break-words">{{ data.profile.aboutMe }}</span>
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Decision Button -->
-                <div class="flex gap-5 w-full">
-                    <span class="c-ubutton w-full flex-1">
-                        <UButton
-                            class="font-bold p-1 rounded flex items-center gap-1 w-full flex-1 px-2"
-                            variant="outline"
-                            color="error"
-                            label="Decline"
-                            :icon="'iconoir:xmark'"
-                            @click.stop="showRejectModal = true"
-                        />
-                        <UModal
-                            v-model:open="showRejectModal"
-                            :ui="{
-                                title: 'text-xl font-semibold text-primary-800 dark:text-primary',
-                                container:
-                                    'fixed inset-0 z-[100] flex items-center justify-center p-4',
-                                overlay: 'fixed inset-0 bg-black/50',
-                            }"
-                        >
-                            <template #header>
-                                <p>
-                                    Are you sure you want to <strong>decline</strong>
-                                    {{ data?.profile.name }}?
-                                </p>
-                            </template>
-                            <template #body>
-                                <div class="flex justify-end gap-2">
-                                    <UButton
-                                        variant="outline"
-                                        color="neutral"
-                                        label="Cancel"
-                                        @click="showRejectModal = false"
-                                    />
-                                    <UButton
-                                        color="error"
-                                        label="Decline"
-                                        @click="
-                                            () => {
-                                                declineRequest();
-                                                showRejectModal = false;
-                                            }
-                                        "
-                                    />
-                                </div>
-                            </template>
-                        </UModal>
-                    </span>
-                    <span class="c-ubutton w-full flex-1">
-                        <UButton
-                            class="font-bold p-1 rounded flex items-center gap-1 w-full flex-1 px-2"
-                            variant="outline"
-                            color="primary"
-                            label="Accept"
-                            :icon="'iconoir:check'"
-                            @click.stop="showAcceptModal = true"
-                        />
-                        <UModal
-                            v-model:open="showAcceptModal"
-                            :ui="{
-                                title: 'text-xl font-semibold text-primary-800 dark:text-primary',
-                                container:
-                                    'fixed inset-0 z-[100] flex items-center justify-center p-4',
-                                overlay: 'fixed inset-0 bg-black/50',
-                            }"
-                        >
-                            <template #header>
-                                <p>
-                                    Are you sure you want to <strong>accept</strong>
-                                    {{ data?.profile.name }}?
-                                </p>
-                            </template>
-                            <template #body>
-                                <div class="flex justify-end gap-2">
-                                    <UButton
-                                        variant="outline"
-                                        color="neutral"
-                                        label="Cancel"
-                                        @click="showAcceptModal = false"
-                                    />
-                                    <UButton
-                                        color="primary"
-                                        label="Accept"
-                                        @click="
-                                            () => {
-                                                acceptRequest();
-                                                showAcceptModal = false;
-                                            }
-                                        "
-                                    />
-                                </div>
-                            </template>
-                        </UModal>
-                    </span>
-                </div>
-            </section>
-        </section>
-
-        <!-- Loading State (USkeleton) -->
-        <section v-else class="flex justify-center">
-            <!-- First Section -->
-            <section class="w-full sm:w-[20em] flex flex-col gap-5 m-3">
-                <!-- First Card -->
-                <div class="r-card">
-                    <div class="h-fit flex flex-col items-center">
-                        <!-- Profile Image Skeleton -->
-                        <USkeleton class="size-[16em] rounded-full p-5" />
-
-                        <!-- Info Skeleton -->
-                        <div class="text-xl mt-5 flex flex-col items-center gap-2">
-                            <USkeleton class="h-6 w-3/4 rounded-md" />
-                            <USkeleton class="h-5 w-1/2 rounded-md" />
-                        </div>
-
-                        <!-- Divider -->
-                        <hr class="border-gray-500 dark:border-gray-600 m-5 w-full" />
-
-                        <!-- Connections Skeleton -->
-                        <ul class="w-full flex flex-col items-center">
-                            <li class="flex items-center justify-center gap-2 my-5 w-full px-10">
-                                <USkeleton class="size-[2em] rounded-full" />
-                                <USkeleton class="h-5 w-[12em] rounded-md" />
-                            </li>
-                            <li class="flex items-center justify-center gap-2 my-5 w-full px-10">
-                                <USkeleton class="size-[2em] rounded-full" />
-                                <USkeleton class="h-5 w-[12em] rounded-md" />
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- Second Card -->
-                <div class="r-card flex justify-between items-center">
-                    <USkeleton class="h-6 w-1/2 rounded-md" />
-                    <USkeleton class="size-[2em] rounded-md" />
-                </div>
-            </section>
-
-            <!-- Second Section -->
-            <section class="flex flex-col gap-5 m-3 w-full">
-                <!-- First Card -->
-                <div class="r-card flex flex-col text-xl text-left gap-3">
-                    <USkeleton class="h-5 w-1/3 rounded-md" />
-                    <USkeleton class="h-5 w-2/3 rounded-md" />
-                    <USkeleton class="h-5 w-1/2 rounded-md" />
-                </div>
-
-                <!-- Second Card -->
-                <div class="r-card">
-                    <USkeleton class="h-20 w-full rounded-md" />
-                </div>
-
-                <!-- Decision Buttons -->
-                <div class="flex gap-5">
-                    <USkeleton class="h-12 w-full sm:w-1/2 rounded-md" />
-                    <USkeleton class="h-12 w-full sm:w-1/2 rounded-md" />
-                </div>
-            </section>
-        </section>
-
-        <!-- Divider -->
-        <hr class="my-6 border-gray-300 dark:border-gray-600" />
+            </div>
+        </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import type { Profile } from "~/data/datatypes";
+import type { ProfileInformation } from "~/data/datatypes";
 
 const props = defineProps<{
     requestId: string;
+    data?: ProfileInformation;
 }>();
 
-const data = ref<Profile>();
-const toast = useToast();
+const emit = defineEmits<{
+    (e: "studentApprovalStatus", id: string): void;
+}>();
 
+const data = props.data as ProfileInformation;
 const api = useApi();
-const config = useRuntimeConfig();
-const isLoading = ref(true);
 
-const photo = ref("");
-const file = ref("");
+const toast = useToast();
+const photo = ref<string>("");
 const showAcceptModal = ref(false);
 const showRejectModal = ref(false);
-const email = computed(() => {
-    if (!data.value) return "";
-    return data.value.profile.email || "No email provided";
-});
+const actionLoading = ref<null | "accept" | "decline">(null);
 
-// Social connections visibility and labels
-const hasLinkedIn = computed(
-    () => !!data.value?.profile.linkedIn && data.value.profile.linkedIn.trim() !== ""
-);
-const hasGitHub = computed(
-    () => !!data.value?.profile.github && data.value.profile.github.trim() !== ""
-);
-const hasAnyConnection = computed(() => hasLinkedIn.value || hasGitHub.value);
-
-function extractLabel(url?: string) {
-    if (!url) return "";
-    try {
-        const u = new URL(url);
-        const parts = u.pathname.split("/").filter(Boolean);
-        // Prefer last non-empty path segment, else host
-        return parts[parts.length - 1] || u.hostname;
-    } catch {
-        return url;
-    }
+function navigateToProfile(id: string) {
+    console.log("Navigating to profile of request:", props.requestId);
+    navigateTo(`/admin/dashboard/profile/${id}`, { replace: true });
 }
-const linkedInLabel = computed(() => extractLabel(data.value?.profile.linkedIn));
-const githubLabel = computed(() => extractLabel(data.value?.profile.github));
-
-// Suggested filename for submitted document
-const suggestedFileName = computed(() => {
-    const ext = (data.value?.profile.statusFile?.fileType || "").toString();
-    const suffix = ext ? `.${ext}` : "";
-    return `student-status${suffix}`;
-});
-
-// Birthdate helpers
-const hasBirthDate = computed(() => {
-    const bd = data.value?.profile.birthDate;
-    if (!bd) return false;
-    const d = new Date(bd);
-    return !isNaN(d.getTime());
-});
-// Compute age (only if valid birthdate)
-const age = computed(() => {
-    if (!hasBirthDate.value) return "";
-    const birth = new Date(data.value!.profile.birthDate);
-    const today = new Date();
-    let years = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-        years--;
-    }
-    return years;
-});
 
 // Accept request
 async function acceptRequest() {
     console.log("Accepted request:", props.requestId);
     toast.add({
         title: "Request accepted!",
-        description: data.value.profile.name,
+        description: data.name,
         color: "success",
     });
     await api.post(
@@ -385,7 +168,7 @@ async function acceptRequest() {
         { approve: true },
         { withCredentials: true }
     );
-    navigateTo("/admin/dashboard", { replace: true });
+    emit("studentApprovalStatus", props.requestId);
 }
 
 // Decline request
@@ -393,7 +176,7 @@ async function declineRequest() {
     console.log("Declined request:", props.requestId);
     toast.add({
         title: "Request declined!",
-        description: data.value.profile.name,
+        description: data.name,
         color: "error",
     });
     await api.post(
@@ -401,69 +184,23 @@ async function declineRequest() {
         { approve: false },
         { withCredentials: true }
     );
-    navigateTo("/admin/dashboard", { replace: true });
+    emit("studentApprovalStatus", props.requestId);
 }
-// Extracted data fetching logic into a reusable function
-async function fetchProfileData(requestId: string) {
-    if (requestId) {
-        isLoading.value = true;
-        try {
-            const response = await api.get(`/students`, {
-                params: { id: requestId },
-                withCredentials: true,
-            });
-            data.value = response.data as Profile;
-            data.value.profile.name = `${data.value.profile.firstName} ${data.value.profile.lastName}`;
-            photo.value = `${config.public.apiBaseUrl}/files/${data.value.profile.photoId}`;
-            file.value = `${config.public.apiBaseUrl}/files/${data.value.profile.statusFileId}`;
-            console.log("Fetched profile data:", data.value);
-        } catch (error) {
-            console.error("Error fetching profile data:", error);
-            toast.add({
-                title: "Error fetching profile data",
-                description: String(error),
-                color: "error",
-            });
-        } finally {
-            console.log("Loading finished");
-            isLoading.value = false;
-        }
-    }
-}
-
-onMounted(async () => {
-    await fetchProfileData(props.requestId);
-});
 
 watch(
-    () => props.requestId,
-    (newId) => {
-        fetchProfileData(newId);
+    () => props.data,
+    (newData) => {
+        if (newData) {
+            data.name = newData.name;
+            data.major = newData.major;
+            data.photoId = newData.photoId;
+            data.phone = newData.phone;
+            data.email = newData.email;
+            photo.value = newData.photoId
+                ? `${useRuntimeConfig().public.apiBaseUrl}/files/${newData.photoId}`
+                : "";
+        }
     },
     { immediate: true }
 );
 </script>
-
-<style>
-.r-card {
-    box-shadow:
-        0 4px 6px -1px rgba(0, 0, 0, 0.2),
-        0 2px 4px -2px rgba(0, 0, 0, 0.2);
-    text-align: center;
-    padding: 1.25rem;
-    border-radius: 0.5rem;
-    background-color: #fdfdfd;
-}
-
-.dark .r-card {
-    background-color: #1f2937;
-}
-
-.c-ubutton {
-    background-color: #fdfdfd;
-}
-
-.dark .c-ubutton {
-    background-color: #1f2937;
-}
-</style>

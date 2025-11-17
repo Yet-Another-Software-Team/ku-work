@@ -49,7 +49,7 @@
             <!-- Student registration requests -->
             <template v-if="!isCompany">
                 <template v-if="studentData.length">
-                    <StudentRequestDashboardComponent
+                    <StudentRequestProfileCard
                         v-for="(data, index) in studentData"
                         :key="index"
                         :request-id="data.id"
