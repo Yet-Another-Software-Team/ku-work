@@ -18,7 +18,7 @@
 
                     <!-- More options -->
                     <div>
-                        <SearchMoreButton
+                        <JobSearchMoreButton
                             @update:salary-range="salaryRange = $event"
                             @update:job-type="jobType = $event"
                             @update:exp-type="expType = $event"
