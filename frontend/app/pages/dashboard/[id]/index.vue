@@ -16,7 +16,7 @@
                 <USkeleton class="h-[10em] w-full mb-5" />
                 <div class="flex"></div>
             </div>
-            <CompanyPostComponent
+            <CompanyJobPostDetail
                 v-else-if="job"
                 :data="job"
                 :open="job.open ?? false"
