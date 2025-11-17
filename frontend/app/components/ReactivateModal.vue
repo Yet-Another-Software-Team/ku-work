@@ -1,7 +1,7 @@
 <template>
-    <!-- Deactivate Modal -->
+    <!-- Reactivate Modal -->
     <UModal
-        v-model:open="openDeactivateModal"
+        v-model:open="openReactivateModal"
         :ui="{
             overlay: 'fixed inset-0 bg-black/50',
             content: 'w-full max-w-md',
@@ -10,20 +10,20 @@
         <template #content>
             <div class="p-6">
                 <h3 class="font-semibold text-gray-800 dark:text-white mb-2">
-                    Confirm Deactivation
+                    Confirm Reactivation
                 </h3>
                 <p class="text-gray-700 dark:text-gray-300">
-                    Are you sure you want to deactivate your profile?
+                    Are you sure you want to reactivate your profile?
                 </p>
                 <p class="mt-2">
                     To confirm, type
-                    <strong class="text-red-600">DEACTIVATE</strong> below.
+                    <strong class="text-green-600">REACTIVATE</strong> below.
                 </p>
                 <UInput
-                    v-model="confirmDeactivate"
+                    v-model="confirmReactivate"
                     class="mt-4 w-full"
-                    placeholder="Type DEACTIVATE to confirm"
-                    aria-label="Confirmation input: type DEACTIVATE to confirm"
+                    placeholder="Type REACTIVATE to confirm"
+                    aria-label="Confirmation input: type REACTIVATE to confirm"
                 />
                 <div class="flex justify-center md:col-span-2 mt-6">
                     <TurnstileWidget @callback="(tk) => (cfToken = tk)" />
@@ -33,21 +33,21 @@
                         variant="outline"
                         color="neutral"
                         @click="
-                            openDeactivateModal = false;
-                            confirmDeactivate = '';
+                            openReactivateModal = false;
+                            confirmReactivate = '';
                             emit('update:close', false);
                         "
                     >
                         Cancel
                     </UButton>
                     <UButton
-                        :disabled="confirmDeactivate !== 'DEACTIVATE' || !cfToken"
+                        :disabled="confirmReactivate !== 'REACTIVATE' || !cfToken"
                         variant="solid"
-                        color="error"
+                        color="primary"
                         class="ml-2"
-                        @click="onDeactivated"
+                        @click="onReactivated"
                     >
-                        Deactivate
+                        Reactivate
                     </UButton>
                 </div>
             </div>
@@ -56,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-const openDeactivateModal = ref(false);
+const openReactivateModal = ref(false);
 
 const props = defineProps<{
     open: boolean;
@@ -65,7 +65,7 @@ const props = defineProps<{
 watch(
     () => props.open,
     (newVal) => {
-        openDeactivateModal.value = newVal;
+        openReactivateModal.value = newVal;
     }
 );
 
@@ -73,17 +73,16 @@ const emit = defineEmits<{
     (e: "update:close", value: boolean): void;
 }>();
 
-const confirmDeactivate = ref<string>("");
+const confirmReactivate = ref<string>("");
 const cfToken = ref<string>("");
 
 const api = useApi();
 const toast = useToast();
 
-// Handle Deactivation
-async function onDeactivated() {
+// Handle Reactivation
+async function onReactivated() {
     try {
-        // send headers as the request config (third argument) and use the ref's value
-        const response = await api.post("/me/deactivate", null, {
+        const response = await api.post("/me/reactivate", null, {
             headers: {
                 "X-Turnstile-Token": cfToken.value,
             },
@@ -91,21 +90,21 @@ async function onDeactivated() {
         });
         console.log(response);
         toast.add({
-            title: "Account Deactivated",
-            description: "Your account has been deactivated.",
+            title: "Account Reactivated",
+            description: "Your account has been reactivated.",
             color: "success",
         });
         navigateTo("/", { replace: true });
     } catch (error) {
         console.log(error);
         toast.add({
-            title: "Failed to deactivate profile",
+            title: "Failed to reactivate profile",
             description: (error as { message: string }).message,
             color: "error",
         });
     } finally {
-        openDeactivateModal.value = false;
-        confirmDeactivate.value = "";
+        openReactivateModal.value = false;
+        confirmReactivate.value = "";
         cfToken.value = "";
         emit("update:close", false);
     }
