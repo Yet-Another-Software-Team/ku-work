@@ -227,9 +227,9 @@ function getSidebarItems(
                 disable: false,
             },
             {
-                label: "logs",
+                label: "log",
                 icon: "ic:baseline-history",
-                to: "/admin/logs",
+                to: "/admin/log",
                 disable: false,
             },
         ];
