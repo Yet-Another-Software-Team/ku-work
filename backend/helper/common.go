@@ -23,7 +23,7 @@ func GetRole(userID string, db *gorm.DB) Role {
 	if userID == "" {
 		return Unknown
 	}
-	if result := db.Unscoped().Find(&model.Admin{UserID: userID}); result.Error == nil && result.RowsAffected > 0 {
+	if result := db.Find(&model.Admin{UserID: userID}); result.Error == nil && result.RowsAffected > 0 {
 		return Admin
 	}
 	if result := db.Unscoped().Find(&model.Company{UserID: userID}); result.Error == nil && result.RowsAffected > 0 {
