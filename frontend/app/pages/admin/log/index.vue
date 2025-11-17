@@ -26,7 +26,9 @@
                 <USkeleton class="h-[3em] w-full left-0 top-0 mb-5" />
             </div>
             <div v-else class="flex justify-between items-center">
-                <h2 class="text-2xl font-semibold mb-2">{{ currentCount }} {{ active === 'audit' ? 'Audit logs' : 'Email logs' }}</h2>
+                <h2 class="text-2xl font-semibold mb-2">
+                    {{ currentCount }} {{ active === "audit" ? "Audit logs" : "Email logs" }}
+                </h2>
                 <div class="flex items-center gap-3">
                     <span class="text-2xl font-semibold mb-2">Sort by:</span>
                     <USelectMenu
@@ -58,13 +60,19 @@
                         <div class="flex-1 min-w-0">
                             <p class="font-semibold truncate">
                                 {{ a.action }}
-                                <span v-if="a.objectName" class="font-normal text-gray-600">on {{ a.objectName }}</span>
-                                <span v-if="a.objectId" class="font-mono text-gray-500">#{{ a.objectId }}</span>
+                                <span v-if="a.objectName" class="font-normal text-gray-600"
+                                    >on {{ a.objectName }}</span
+                                >
+                                <span v-if="a.objectId" class="font-mono text-gray-500"
+                                    >#{{ a.objectId }}</span
+                                >
                             </p>
                             <p class="text-sm text-gray-500 truncate">
                                 by {{ a.actorId }} • {{ new Date(a.createdAt).toLocaleString() }}
                             </p>
-                            <p v-if="a.reason" class="text-sm text-gray-600 mt-1">Reason: {{ a.reason }}</p>
+                            <p v-if="a.reason" class="text-sm text-gray-600 mt-1">
+                                Reason: {{ a.reason }}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -82,14 +90,21 @@
                         <div class="flex-1 min-w-0">
                             <p class="font-semibold truncate">
                                 {{ e.subject }}
-                                <span class="ml-2 text-xs px-2 py-0.5 rounded-full"
-                                    :class="badgeClass(e.status)">
+                                <span
+                                    class="ml-2 text-xs px-2 py-0.5 rounded-full"
+                                    :class="badgeClass(e.status)"
+                                >
                                     {{ e.status }}
                                 </span>
                             </p>
                             <p class="text-sm text-gray-500 truncate">to {{ e.to }}</p>
-                            <p class="text-sm text-gray-500">{{ new Date(e.createdAt).toLocaleString() }}</p>
-                            <p v-if="e.status !== 'delivered' && (e.errorCode || e.errorDesc)" class="text-sm text-red-600 mt-1">
+                            <p class="text-sm text-gray-500">
+                                {{ new Date(e.createdAt).toLocaleString() }}
+                            </p>
+                            <p
+                                v-if="e.status !== 'delivered' && (e.errorCode || e.errorDesc)"
+                                class="text-sm text-red-600 mt-1"
+                            >
                                 {{ e.errorCode }} {{ e.errorDesc }}
                             </p>
                         </div>
@@ -102,7 +117,6 @@
             </div>
         </div>
     </section>
-    
 </template>
 
 <script setup lang="ts">
@@ -124,82 +138,92 @@ type EmailItem = {
     subject: string;
     body: string;
     createdAt: string;
-    status: 'delivered' | 'temporary_error' | 'permanent_error' | string;
+    status: "delivered" | "temporary_error" | "permanent_error" | string;
     errorCode?: string;
     errorDesc?: string;
 };
 
 const api = useApi();
 
-const active = ref<'audit' | 'email'>('audit');
+const active = ref<"audit" | "email">("audit");
 const isLoading = ref(true);
 
 const audits = ref<AuditItem[]>([]);
 const emails = ref<EmailItem[]>([]);
 
 const sortOptions = ref([
-    { label: 'Latest', id: 'latest' },
-    { label: 'Oldest', id: 'oldest' },
-    { label: 'Name A-Z', id: 'name_az' },
-    { label: 'Name Z-A', id: 'name_za' },
+    { label: "Latest", id: "latest" },
+    { label: "Oldest", id: "oldest" },
+    { label: "Name A-Z", id: "name_az" },
+    { label: "Name Z-A", id: "name_za" },
 ]);
-const selectSortOption = ref('latest');
+const selectSortOption = ref("latest");
 
-const currentCount = computed(() => active.value === 'audit' ? audits.value.length : emails.value.length);
+const currentCount = computed(() =>
+    active.value === "audit" ? audits.value.length : emails.value.length
+);
 
 const sortedAudits = computed(() => {
     const list = [...audits.value];
     switch (selectSortOption.value) {
-        case 'oldest':
-            return list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-        case 'name_az':
-            return list.sort((a, b) => (a.actorId || '').localeCompare(b.actorId || ''));
-        case 'name_za':
-            return list.sort((a, b) => (b.actorId || '').localeCompare(a.actorId || ''));
-        case 'latest':
+        case "oldest":
+            return list.sort(
+                (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            );
+        case "name_az":
+            return list.sort((a, b) => (a.actorId || "").localeCompare(b.actorId || ""));
+        case "name_za":
+            return list.sort((a, b) => (b.actorId || "").localeCompare(a.actorId || ""));
+        case "latest":
         default:
-            return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            return list.sort(
+                (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
     }
 });
 
 const sortedEmails = computed(() => {
     const list = [...emails.value];
     switch (selectSortOption.value) {
-        case 'oldest':
-            return list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-        case 'name_az':
-            return list.sort((a, b) => (a.subject || '').localeCompare(b.subject || ''));
-        case 'name_za':
-            return list.sort((a, b) => (b.subject || '').localeCompare(a.subject || ''));
-        case 'latest':
+        case "oldest":
+            return list.sort(
+                (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            );
+        case "name_az":
+            return list.sort((a, b) => (a.subject || "").localeCompare(b.subject || ""));
+        case "name_za":
+            return list.sort((a, b) => (b.subject || "").localeCompare(a.subject || ""));
+        case "latest":
         default:
-            return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            return list.sort(
+                (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
     }
 });
 
-function tabClass(tab: 'audit' | 'email') {
+function tabClass(tab: "audit" | "email") {
     return active.value === tab
-        ? 'bg-primary-200 flex flex-col border rounded-3xl w-1/3 text-primary-800 hover:bg-primary-300'
-        : 'bg-gray-200 flex flex-col border rounded-3xl w-1/3 text-gray-500 hover:bg-gray-300';
+        ? "bg-primary-200 flex flex-col border rounded-3xl w-1/3 text-primary-800 hover:bg-primary-300"
+        : "bg-gray-200 flex flex-col border rounded-3xl w-1/3 text-gray-500 hover:bg-gray-300";
 }
 
 function badgeClass(status: string) {
     switch (status) {
-        case 'delivered':
-            return 'bg-green-100 text-green-700';
-        case 'temporary_error':
-            return 'bg-yellow-100 text-yellow-700';
-        case 'permanent_error':
-            return 'bg-red-100 text-red-700';
+        case "delivered":
+            return "bg-green-100 text-green-700";
+        case "temporary_error":
+            return "bg-yellow-100 text-yellow-700";
+        case "permanent_error":
+            return "bg-red-100 text-red-700";
         default:
-            return 'bg-gray-100 text-gray-700';
+            return "bg-gray-100 text-gray-700";
     }
 }
 
 async function loadAudits() {
-    const res = await api.get('/admin/audits', { withCredentials: true });
-    const arr = Array.isArray(res.data) ? (res.data as unknown[]) : [];
-    audits.value = arr.map((x: any) => ({
+    const res = await api.get("/admin/audits", { withCredentials: true });
+    const arr: AuditItem[] = Array.isArray(res.data) ? (res.data as AuditItem[]) : [];
+    audits.value = arr.map((x) => ({
         id: x.id,
         actorId: x.actorId,
         createdAt: x.createdAt,
@@ -211,9 +235,9 @@ async function loadAudits() {
 }
 
 async function loadEmails() {
-    const res = await api.get('/admin/emaillog', { withCredentials: true });
-    const arr = Array.isArray(res.data) ? (res.data as unknown[]) : [];
-    emails.value = arr.map((x: any) => ({
+    const res = await api.get("/admin/emaillog", { withCredentials: true });
+    const arr: EmailItem[] = Array.isArray(res.data) ? (res.data as EmailItem[]) : [];
+    emails.value = arr.map((x) => ({
         id: x.id,
         to: x.to,
         subject: x.subject,
