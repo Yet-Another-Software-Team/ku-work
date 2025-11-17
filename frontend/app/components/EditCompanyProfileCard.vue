@@ -199,7 +199,6 @@
         :dismissible="false"
         :ui="{
             title: 'text-xl font-semibold text-primary-800 dark:text-primary',
-            container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
             overlay: 'fixed inset-0 bg-black/50',
         }"
     >
