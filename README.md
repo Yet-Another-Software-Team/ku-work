@@ -56,6 +56,11 @@ docker-compose exec -it <container-name> /app/create_admin <username>
 - Replace `<container-name>` with the name of the container you want to run the command in.
 - Replace `<username>` with your desired username.
 
+## Privacy Policy and Terms of Service
+
+The [Privacy Policy](./frontend/agreement/Privacy.vue), [Google OAuth Privacy Notice](./frontend/agreement/GoogleOAuth.vue) and [Terms of Service](./frontend/agreement/TermsOfService.vue) are available inside the application. Before deployment of the application please review and fill in missing values i.e., Contact Address, Email, Phone Number.
+
 ---
+
 
 **Built with Go, Nuxt, and PostgreSQL**
