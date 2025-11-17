@@ -105,14 +105,14 @@
             </div>
         </div>
         <!-- Reactivate button -->
-        <div v-else class="flex">
+        <div v-else>
             <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
                 Reactivate Profile
             </h2>
             <UButton
-                variant="solid"
+                variant="subtle"
                 color="primary"
-                class="ml-4 h-10 self-center"
+                class="h-10 self-center font-semibold"
                 @click="openReactivateModal = true"
             >
                 Reactivate
