@@ -209,9 +209,27 @@ function getSidebarItems(
     if (isAdmin) {
         return [
             {
-                label: "Admin",
-                icon: "ic:baseline-person",
+                label: "dashboard",
+                icon: "ic:baseline-dashboard",
                 to: "/admin/dashboard",
+                disable: false,
+            },
+            {
+                label: "accounts",
+                icon: "ic:baseline-people",
+                to: "/admin/accounts",
+                disable: false,
+            },
+            {
+                label: "posts",
+                icon: "ic:baseline-work",
+                to: "/admin/posts",
+                disable: false,
+            },
+            {
+                label: "log",
+                icon: "ic:baseline-history",
+                to: "/admin/log",
                 disable: false,
             },
         ];
