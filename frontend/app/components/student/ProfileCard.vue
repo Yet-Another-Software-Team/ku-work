@@ -41,16 +41,14 @@
                 </p>
             </div>
 
-            <!-- Edit Button -->
-            <UButton
-                variant="outline"
-                color="neutral"
-                class="px-4 py-2 rounded-md text-sm hover:bg-gray-100 hover:cursor-pointer dark:text-white dark:hover:bg-gray-700 flex items-center mt-4 ml-auto mb-auto"
-                @click="isEditModalOpen = true"
+            <!-- Edit Option -->
+            <UDropdownMenu
+                :items="items"
+                :content="{ align: 'end' }"
+                class="p-1 text-sm hover:cursor-pointer flex items-center mt-4 ml-auto mb-auto"
             >
-                <Icon name="material-symbols:edit-square-outline-rounded" class="size-[1.5em]" />
-                Edit Profile
-            </UButton>
+                <UButton color="neutral" variant="ghost" icon="ic:baseline-more-vert" />
+            </UDropdownMenu>
         </div>
 
         <!-- Divider -->
@@ -97,7 +95,7 @@
         </div>
 
         <UModal
-            v-model:open="isEditModalOpen"
+            v-model:open="openEditModal"
             :ui="{
                 overlay: 'fixed inset-0 bg-black/50',
                 content: 'w-full max-w-2xl',
@@ -106,19 +104,24 @@
             <template #content>
                 <EditProfileCard
                     :profile="profile"
-                    @close="isEditModalOpen = false"
+                    @close="openEditModal = false"
                     @saved="handleProfileSaved"
                 />
             </template>
         </UModal>
+        <DeactivateModal
+            v-model:open="openDeactivateModal"
+            @update:close="(value) => (openDeactivateModal = value)"
+        />
     </div>
 </template>
 
 <script setup lang="ts">
-import EditProfileCard from "./EditProfileCard.vue";
+import type { DropdownMenuItem } from "@nuxt/ui";
 const toast = useToast();
 
-const isEditModalOpen = ref(false);
+const openDeactivateModal = ref(false);
+const openEditModal = ref(false);
 
 interface StudentProfile {
     name?: string;
@@ -134,7 +137,7 @@ type StudentProfileUpdate = StudentProfile & { _avatarFile?: File | null };
 
 const handleProfileSaved = async (updated: StudentProfileUpdate, cfToken: string) => {
     const { _avatarFile, ...newProfile } = updated;
-    isEditModalOpen.value = false;
+    openEditModal.value = false;
     const formData = new FormData();
     if (profile.value.phone !== updated.phone) formData.append("phone", updated.phone!);
     if (profile.value.birthDate !== updated.birthDate)
@@ -194,6 +197,24 @@ async function fetchStudentProfile() {
         console.error("Error fetching student profile:", error);
     }
 }
+
+// Dropdown menu items
+const items: DropdownMenuItem[] = [
+    {
+        label: "Edit Profile",
+        icon: "material-symbols:edit-square-outline-rounded",
+        onClick: () => {
+            openEditModal.value = true;
+        },
+    },
+    {
+        label: "Deactivate Profile",
+        icon: "material-symbols:delete-outline",
+        onClick: () => {
+            openDeactivateModal.value = true;
+        },
+    },
+];
 
 onMounted(async () => {
     await fetchStudentProfile();

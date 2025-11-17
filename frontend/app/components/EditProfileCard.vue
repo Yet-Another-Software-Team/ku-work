@@ -139,7 +139,9 @@
                 >
                     Discard
                 </UButton>
-                <UButton type="submit" color="primary" class="rounded-md px-5"> Save </UButton>
+                <UButton type="submit" color="primary" :disabled="!cfToken" class="rounded-md px-5">
+                    Save
+                </UButton>
             </div>
         </form>
 
@@ -346,6 +348,7 @@ function tryDiscard() {
         avatarFile.value != null
     ) {
         showDiscardConfirm.value = true;
+        cfToken.value = "";
         return;
     }
     confirmDiscard();
@@ -391,6 +394,8 @@ function handleSubmit() {
         },
         cfToken.value
     );
+
+    cfToken.value = "";
 
     emit("close");
 }
