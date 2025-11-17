@@ -204,11 +204,11 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 	}
 
 	ctx.JSON(status, gin.H{
-		"token":        jwtToken,
-		"username":     username,
-		"role":         role,
-		"userId":       user.ID,
-		"isRegistered": isRegistered, // To tell frontend whether user is registered or not
+		"token":         jwtToken,
+		"username":      username,
+		"role":          role,
+		"userId":        user.ID,
+		"isRegistered":  isRegistered, // To tell frontend whether user is registered or not
 		"isDeactivated": user.DeletedAt.Valid,
 	})
 }

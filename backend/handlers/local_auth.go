@@ -222,10 +222,10 @@ func (h *LocalAuthHandlers) CompanyLoginHandler(ctx *gin.Context) {
 	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", helper.GetCookieSecure(), true)
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"token":    jwtToken,
-		"username": user.Username,
-		"role":     helper.Company,
-		"userId":   user.ID,
+		"token":         jwtToken,
+		"username":      user.Username,
+		"role":          helper.Company,
+		"userId":        user.ID,
 		"isDeactivated": user.DeletedAt.Valid,
 	})
 }
