@@ -26,13 +26,13 @@ func GetRole(userID string, db *gorm.DB) Role {
 	if result := db.Find(&model.Admin{UserID: userID}); result.Error == nil && result.RowsAffected > 0 {
 		return Admin
 	}
-	if result := db.Find(&model.Company{UserID: userID}); result.Error == nil && result.RowsAffected > 0 {
+	if result := db.Unscoped().Find(&model.Company{UserID: userID}); result.Error == nil && result.RowsAffected > 0 {
 		return Company
 	}
-	if result := db.Find(&model.Student{UserID: userID, ApprovalStatus: model.StudentApprovalAccepted}); result.Error == nil && result.RowsAffected > 0 {
+	if result := db.Unscoped().Find(&model.Student{UserID: userID, ApprovalStatus: model.StudentApprovalAccepted}); result.Error == nil && result.RowsAffected > 0 {
 		return Student
 	}
-	if result := db.Find(&model.GoogleOAuthDetails{UserID: userID}); result.Error == nil && result.RowsAffected > 0 {
+	if result := db.Unscoped().Find(&model.GoogleOAuthDetails{UserID: userID}); result.Error == nil && result.RowsAffected > 0 {
 		return Viewer
 	}
 	return Unknown

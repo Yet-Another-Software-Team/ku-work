@@ -28,7 +28,7 @@ func IsDeactivated(db *gorm.DB, userId string) bool {
 	user := model.User{
 		ID: userId,
 	}
-	err := db.First(&user).Error
+	err := db.Unscoped().First(&user).Error
 	if err != nil {
 		return false
 	}
