@@ -9,7 +9,7 @@ import (
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
 	"ku-work/backend/services"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"strconv"
@@ -35,14 +35,17 @@ func NewJWTHandlers(db *gorm.DB, redisClient *redis.Client) *JWTHandlers {
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 
 	if len(jwtSecret) == 0 {
-		log.Fatal("JWT_SECRET environment variable is not set")
+		slog.Error("JWT_SECRET environment variable is not set")
+		os.Exit(1)
 	}
 	if len(jwtSecret) < 32 {
-		log.Fatal("JWT_SECRET must be at least 32 bytes long for security")
+		slog.Error("JWT_SECRET must be at least 32 bytes long for security")
+		os.Exit(1)
 	}
 
 	if redisClient == nil {
-		log.Fatal("Redis client is required for JWT revocation")
+		slog.Error("Redis client is required for JWT revocation")
+		os.Exit(1)
 	}
 
 	revocationService := services.NewJWTRevocationService(redisClient)
@@ -178,7 +181,7 @@ func (h *JWTHandlers) GenerateTokens(userID string) (string, string, error) {
 			h.DB.Model(&model.RefreshToken{}).
 				Where("id IN ?", tokenIDs).
 				Update("revoked_at", now)
-			log.Printf("INFO: Revoked %d oldest tokens for user %s (session limit: %d)", len(oldestTokens), userID, maxSessions)
+			slog.Info("Revoked oldest tokens for user", "tokens", len(oldestTokens), "user_id", userID, "session_limit", maxSessions)
 		}
 	}
 
@@ -215,7 +218,7 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 
 	refreshToken, err := ctx.Cookie("refresh_token")
 	if err != nil {
-		log.Printf("SECURITY: Missing refresh token from IP: %s", clientIP)
+		slog.Warn("SECURITY: Missing refresh token", "ip", clientIP)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
 		return
 	}
@@ -223,7 +226,7 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	// Split token into selector and validator
 	parts := strings.SplitN(refreshToken, ":", 2)
 	if len(parts) != 2 {
-		log.Printf("SECURITY: Invalid refresh token format from IP: %s", clientIP)
+		slog.Warn("SECURITY: Invalid refresh token format", "ip", clientIP)
 		ctx.SetSameSite(helper.GetCookieSameSite())
 		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
@@ -235,7 +238,7 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 
 	var refreshTokenDB model.RefreshToken
 	if err := h.DB.Where("token_selector = ?", selector).First(&refreshTokenDB).Error; err != nil {
-		log.Printf("SECURITY: Invalid refresh token from IP: %s", clientIP)
+		slog.Warn("SECURITY: Invalid refresh token", "ip", clientIP)
 		ctx.SetSameSite(helper.GetCookieSameSite())
 		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
@@ -245,7 +248,7 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	// Verify the validator against stored hash
 	match, err := verifyToken(validator, refreshTokenDB.Token)
 	if err != nil || !match {
-		log.Printf("SECURITY: Invalid refresh token from IP: %s", clientIP)
+		slog.Warn("SECURITY: Invalid refresh token", "ip", clientIP)
 		ctx.SetSameSite(helper.GetCookieSameSite())
 		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
@@ -254,8 +257,8 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 
 	// Check if token was revoked (reuse detection)
 	if refreshTokenDB.RevokedAt != nil {
-		log.Printf("SECURITY ALERT: Revoked token reuse detected! User: %s, IP: %s - Revoking all tokens",
-			refreshTokenDB.UserID, clientIP)
+		slog.Warn("SECURITY ALERT: Revoked token reuse detected! Revoking all tokens",
+			"user_id", refreshTokenDB.UserID, "ip", clientIP)
 
 		// Token reuse detected - revoke ALL tokens for this user
 		now := time.Now()
@@ -271,7 +274,7 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 
 	// Check if token is expired
 	if refreshTokenDB.ExpiresAt.Before(time.Now()) {
-		log.Printf("SECURITY: Expired refresh token from IP: %s, User: %s", clientIP, refreshTokenDB.UserID)
+		slog.Warn("SECURITY: Expired refresh token", "ip", clientIP, "user_id", refreshTokenDB.UserID)
 		now := time.Now()
 		h.DB.Model(&refreshTokenDB).Update("revoked_at", now)
 		ctx.SetSameSite(helper.GetCookieSameSite())
@@ -283,8 +286,7 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	// Token is valid - generate new tokens
 	jwtToken, newRefreshToken, err := h.GenerateTokens(refreshTokenDB.UserID)
 	if err != nil {
-		log.Printf("ERROR: Failed to generate new tokens for user: %s, IP: %s - %v",
-			refreshTokenDB.UserID, clientIP, err)
+		slog.Error("Failed to generate new tokens", "user_id", refreshTokenDB.UserID, "ip", clientIP, "error", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate new tokens"})
 		return
 	}
@@ -295,7 +297,7 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	ctx.SetSameSite(helper.GetCookieSameSite())
 	ctx.SetCookie("refresh_token", newRefreshToken, int(time.Hour*24*30/time.Second), "/", "", helper.GetCookieSecure(), true)
 
-	log.Printf("INFO: Token refreshed successfully for user: %s, IP: %s", refreshTokenDB.UserID, clientIP)
+	slog.Info("Token refreshed successfully", "user", refreshTokenDB.UserID, "ip", clientIP)
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"token":    jwtToken,
@@ -334,9 +336,9 @@ func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
 					// Add JWT to Redis blacklist with automatic TTL expiration
 					err := h.RevocationService.RevokeJWT(context.Background(), claims.ID, claims.UserID, claims.ExpiresAt.Time)
 					if err != nil {
-						log.Printf("ERROR: Failed to blacklist JWT in Redis for user %s: %v", claims.UserID, err)
+						slog.Error("Failed to blacklist JWT in Redis", "user_id", claims.UserID, "error", err)
 					} else {
-						log.Printf("INFO: JWT blacklisted in Redis for user: %s, JTI: %s, IP: %s", claims.UserID, claims.ID, clientIP)
+						slog.Info("JWT blacklisted in Redis", "user_id", claims.UserID, "jti", claims.ID, "ip", clientIP)
 					}
 				}
 			}
@@ -360,7 +362,7 @@ func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
 				if err == nil && match {
 					now := time.Now()
 					h.DB.Model(&tokenDB).Update("revoked_at", now)
-					log.Printf("INFO: Refresh token revoked for user: %s, IP: %s", tokenDB.UserID, clientIP)
+					slog.Info("Refresh token revoked", "user_id", tokenDB.UserID, "ip", clientIP)
 				}
 			}
 		}
@@ -371,7 +373,7 @@ func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
 	ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
 
 	if userID != nil {
-		log.Printf("INFO: User logged out successfully: %s, IP: %s", userID, clientIP)
+		slog.Info("User logged out successfully", "user_id", userID, "ip", clientIP)
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})

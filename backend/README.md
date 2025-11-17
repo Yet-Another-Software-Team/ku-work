@@ -121,6 +121,11 @@ The backend offers a pluggable file storage provider. Configure the provider usi
 
 For Cloudflare Turnstile to work correctly, make sure to add `X-Turnstile-Token` to `CORS_ALLOWED_HEADERS`
 
+### Logger Configuration
+- `LOGGER_TYPE`: The logger type you want to use
+
+Currently supports `TEXT` for Logfmt format and `JSON` for JSON format.  
+
 ### Email Configuration
 - `EMAIL_PROVIDER`: Choose what email provider to use (dummy, SMTP, gmail, ...)
 - `EMAIL_TIMEOUT_SECONDS`: Specify the timeout duration of email sending attempt in seconds

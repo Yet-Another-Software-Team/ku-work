@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"time"
@@ -156,7 +156,7 @@ func (p *GCSProvider) ServeFile(ctx *gin.Context, db *gorm.DB) {
 
 	// Stream the rest of the object content.
 	if _, err := io.Copy(ctx.Writer, r); err != nil {
-		log.Printf("Failed to copy file to response: %v", err)
+		slog.Warn("Failed to copy file to response", "error", err)
 	}
 }
 

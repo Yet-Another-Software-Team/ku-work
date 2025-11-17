@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"ku-work/backend/model"
 	"ku-work/backend/services/email"
-	"log"
+	"log/slog"
 	"os"
 	"strconv"
 	"strings"
@@ -195,11 +195,11 @@ func (cur *EmailService) RetryFailedEmails() error {
 	}
 
 	if len(failedEmails) == 0 {
-		log.Println("No failed emails to retry")
+		slog.Info("No failed emails to retry")
 		return nil
 	}
 
-	log.Printf("Found %d failed emails to retry", len(failedEmails))
+	slog.Info("Found failed emails to retry", "count", len(failedEmails))
 
 	successCount := 0
 	permanentFailCount := 0
@@ -215,7 +215,7 @@ func (cur *EmailService) RetryFailedEmails() error {
 			mailLog.UpdatedAt = time.Now()
 			cur.db.Save(&mailLog)
 			permanentFailCount++
-			log.Printf("Email ID %d marked as permanent error after %d attempts", mailLog.ID, mailLog.RetryCount)
+			slog.Error("Email marked as permanent error", "id", mailLog.ID, "attempt", mailLog.RetryCount)
 			continue
 		}
 
@@ -237,25 +237,23 @@ func (cur *EmailService) RetryFailedEmails() error {
 				mailLog.Status = model.MailLogStatusTemporaryError
 				mailLog.ErrorDescription = errorMsg
 				temporaryFailCount++
-				log.Printf("Email ID %d retry failed with temporary error: %s", mailLog.ID, errorMsg)
+				slog.Warn("Email retry failed with temporary error", "id", mailLog.ID, "message", errorMsg)
 			} else {
 				mailLog.Status = model.MailLogStatusPermanentError
 				mailLog.ErrorDescription = errorMsg
 				permanentFailCount++
-				log.Printf("Email ID %d retry failed with permanent error: %s", mailLog.ID, errorMsg)
+				slog.Error("Email retry failed with permanent error", "id", mailLog.ID, "message", errorMsg)
 			}
 		} else {
 			mailLog.Status = model.MailLogStatusDelivered
 			mailLog.ErrorDescription = ""
 			successCount++
-			log.Printf("Email ID %d successfully resent", mailLog.ID)
+			slog.Info("Email successfully resent", "id", mailLog.ID)
 		}
 
 		cur.db.Save(&mailLog)
 	}
 
-	log.Printf("Retry summary - Success: %d, Temporary Fail: %d, Permanent Fail: %d",
-		successCount, temporaryFailCount, permanentFailCount)
-
+	slog.Info("Retry summary", "success_count", successCount, "temporary_fail_count", temporaryFailCount, "permanent_fail_count", permanentFailCount)
 	return nil
 }
