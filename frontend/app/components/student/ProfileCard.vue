@@ -20,7 +20,7 @@
             </div>
 
             <!-- Info -->
-            <div class="text-xl">
+            <div v-if="isActive" class="text-xl">
                 <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">
                     {{ `${profile.firstName} ${profile.lastName}` }}
                 </h2>
@@ -41,21 +41,32 @@
                 </p>
             </div>
 
-            <!-- Edit Option -->
+            <!-- User Options -->
             <UDropdownMenu
+                v-if="isActive"
                 :items="items"
                 :content="{ align: 'end' }"
                 class="p-1 text-sm hover:cursor-pointer flex items-center mt-4 ml-auto mb-auto"
             >
                 <UButton color="neutral" variant="ghost" icon="ic:baseline-more-vert" />
             </UDropdownMenu>
+
+            <div v-else class="text-xl">
+                <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+                    Profile Inactive
+                </h2>
+                <p class="text-gray-600 dark:text-gray-300">
+                    Your profile is currently deactivated. Please reactivate your profile to access
+                    all features.
+                </p>
+            </div>
         </div>
 
         <!-- Divider -->
         <hr class="my-6 border-gray-300 dark:border-gray-600" />
 
         <!-- Bottom Section -->
-        <div class="flex flex-wrap md:flex-nowrap text-xl">
+        <div v-if="isActive" class="flex flex-wrap md:flex-nowrap text-xl">
             <!-- Connections -->
             <div v-if="hasAnyConnection" class="w-[12rem] mr-5 mb-5">
                 <h3 class="font-semibold text-gray-800 dark:text-white mb-2">Connections</h3>
@@ -93,7 +104,23 @@
                 </p>
             </div>
         </div>
+        <!-- Reactivate button -->
+        <div v-else>
+            <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+                Reactivate Profile
+            </h2>
+            <UButton
+                variant="subtle"
+                color="primary"
+                class="h-10 self-center font-semibold"
+                @click="openReactivateModal = true"
+            >
+                Reactivate
+            </UButton>
+        </div>
 
+        <!-- Modals -->
+        <!-- Edit Modal -->
         <UModal
             v-model:open="openEditModal"
             :ui="{
@@ -110,9 +137,15 @@
                 />
             </template>
         </UModal>
+        <!-- Deactivate Modal -->
         <DeactivateModal
             v-model:open="openDeactivateModal"
             @update:close="(value) => (openDeactivateModal = value)"
+        />
+        <!-- Reactivate Modal -->
+        <ReactivateModal
+            v-model:open="openReactivateModal"
+            @update:close="(value) => (openReactivateModal = value)"
         />
     </div>
 </template>
@@ -124,7 +157,9 @@ const toast = useToast();
 const isEditModalOpen = ref(false);
 const isSaving = ref(false);
 const openDeactivateModal = ref(false);
+const openReactivateModal = ref(false);
 const openEditModal = ref(false);
+const isActive = ref(true);
 
 interface StudentProfile {
     name?: string;
@@ -206,6 +241,7 @@ async function fetchStudentProfile() {
         }
     } catch (error) {
         console.error("Error fetching student profile:", error);
+        isActive.value = false;
     }
 }
 
