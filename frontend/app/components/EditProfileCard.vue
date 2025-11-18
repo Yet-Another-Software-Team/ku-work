@@ -144,7 +144,7 @@
                     color="primary"
                     class="rounded-md px-5"
                     :loading="saving"
-                    :disabled="saving"
+                    :disabled="saving || !cfToken"
                 >
                     Save
                 </UButton>
@@ -355,6 +355,7 @@ function tryDiscard() {
         avatarFile.value != null
     ) {
         showDiscardConfirm.value = true;
+        cfToken.value = "";
         return;
     }
     confirmDiscard();
@@ -401,7 +402,7 @@ function handleSubmit() {
         cfToken.value
     );
 
-    // Removed premature close; parent should close modal after backend confirms
+    cfToken.value = "";
 }
 
 function isHost(url: string, expectedHost: string) {

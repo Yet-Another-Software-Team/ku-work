@@ -141,7 +141,7 @@ const canProceedToNext = computed(() => {
 });
 
 const canSubmit = computed(() => {
-    if (currentStep.value === 2 && stepTwoRef.value) {
+    if (currentStep.value === 2 && stepTwoRef.value && token.value) {
         return stepTwoRef.value.isValid;
     }
     return false;
@@ -194,6 +194,7 @@ const handlePrevious = () => {
 
 const onSubmit = async () => {
     if (!canSubmit.value) {
+        token.value = "";
         toast.add({
             title: "Validation Error",
             description: "Please fix all validation errors before submitting",

@@ -1,5 +1,5 @@
 <template>
-    <div class="mt-5 container mx-auto max-w-7xl px-4">
+    <div class="w-full overflow-x-hidden">
         <ApplicantCard
             v-if="applicantData"
             :data="applicantData"
