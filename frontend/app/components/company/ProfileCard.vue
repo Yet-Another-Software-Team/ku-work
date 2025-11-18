@@ -137,6 +137,7 @@
             <template #content>
                 <EditCompanyProfileCard
                     :profile="profile"
+                    :saving="isSaving"
                     @close="openEditModal = false"
                     @saved="onSaved"
                 />
@@ -185,6 +186,7 @@ const profile = ref({
 });
 
 const openEditModal = ref(false);
+const isSaving = ref(false);
 const openDeactivateModal = ref(false);
 const openReactivateModal = ref(false);
 const isActive = ref(true);
@@ -260,7 +262,7 @@ async function onSaved(
     },
     cfToken: string
 ) {
-    openEditModal.value = false;
+    isSaving.value = true;
     const formData = new FormData();
     if (profile.value.name !== updated.name) formData.append("username", updated.name!);
     if (profile.value.address !== updated.address) formData.append("address", updated.address!);
@@ -272,7 +274,7 @@ async function onSaved(
     if (profile.value.phone !== updated.phone) formData.append("phone", updated.phone!);
     if (updated._logoFile) formData.append("photo", updated._logoFile!);
     if (updated._bannerFile) formData.append("banner", updated._bannerFile!);
-    Object.assign(profile.value, updated);
+    // wait for backend confirmation before updating local state
     try {
         await api.patch("/me", formData, {
             headers: {
@@ -281,6 +283,12 @@ async function onSaved(
             },
         });
         await fetchCompanyProfile();
+        toast.add({
+            title: "Saved",
+            description: "Company profile updated successfully.",
+            color: "success",
+        });
+        openEditModal.value = false;
     } catch (error) {
         console.log(error);
         toast.add({
@@ -288,6 +296,8 @@ async function onSaved(
             description: (error as { message: string }).message,
             color: "error",
         });
+    } finally {
+        isSaving.value = false;
     }
 }
 

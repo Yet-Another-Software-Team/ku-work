@@ -28,6 +28,7 @@
                 v-model:company-email="form.companyEmail"
                 v-model:company-website="form.companyWebsite"
                 v-model:password="form.password"
+                v-model:r-password="form.rPassword"
                 v-model:phone="form.phone"
                 v-model:address="form.address"
                 v-model:city="form.city"
@@ -119,6 +120,7 @@ const form = reactive({
     companyEmail: "",
     companyWebsite: "",
     password: "",
+    rPassword: "",
     phone: "",
     address: "",
     city: "",
