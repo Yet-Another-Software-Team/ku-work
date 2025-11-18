@@ -96,7 +96,6 @@ async function onReactivated() {
         });
         navigateTo("/", { replace: true });
     } catch (error) {
-        console.log(error);
         toast.add({
             title: "Failed to reactivate profile",
             description: (error as { message: string }).message,
