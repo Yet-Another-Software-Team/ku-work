@@ -129,8 +129,11 @@
                     />
                     <ThemeToggle />
                 </header>
+                <!-- Menu -->
                 <SidebarMenu :items="getSidebarItems(isViewer, isAdmin, isCompany)" />
+                <!-- Footer -->
                 <div class="mt-auto">
+                    <!-- Register -->
                     <UButton
                         v-if="!isRegistered && isViewer && !isAdmin && !isCompany"
                         label="Register"
@@ -140,6 +143,24 @@
                         :ui="{ base: 'justify-start text-left text-white hover:bg-white/10' }"
                         @click="navigateRegister"
                     />
+                    <!-- Deactivate -->
+                    <UButton
+                        v-if="isViewer && !isCompany && !isAdmin"
+                        label="Deactivate Profile"
+                        variant="ghost"
+                        size="xl"
+                        icon="ic:baseline-delete-forever"
+                        :ui="{ base: 'justify-start text-left text-white hover:bg-white/10' }"
+                        class="mt-2"
+                        @click="openDeactivateModal = true"
+                    />
+                    <DeactivateModal
+                        v-if="isViewer && !isCompany && !isAdmin"
+                        v-model:open="openDeactivateModal"
+                        class="mt-2"
+                        @update:close="(value) => (openDeactivateModal = value)"
+                    />
+                    <!-- Logout -->
                     <LogoutButton />
                 </div>
             </template>
@@ -153,6 +174,8 @@ import { useNuxtApp } from "#app";
 const logout = useNuxtApp().$logout as () => void;
 
 const username = ref<string | null>(null);
+
+const openDeactivateModal = ref(false);
 
 const isViewer = ref(true);
 const isCompany = ref(false);
