@@ -104,7 +104,8 @@
             <template #content>
                 <EditProfileCard
                     :profile="profile"
-                    @close="openEditModal = false"
+                    :saving="isSaving"
+                    @close="isEditModalOpen = false"
                     @saved="handleProfileSaved"
                 />
             </template>
@@ -120,6 +121,8 @@
 import type { DropdownMenuItem } from "@nuxt/ui";
 const toast = useToast();
 
+const isEditModalOpen = ref(false);
+const isSaving = ref(false);
 const openDeactivateModal = ref(false);
 const openEditModal = ref(false);
 
@@ -156,6 +159,12 @@ const handleProfileSaved = async (updated: StudentProfileUpdate, cfToken: string
             },
         });
         await fetchStudentProfile();
+        toast.add({
+            title: "Saved",
+            description: "Profile updated successfully.",
+            color: "success",
+        });
+        isEditModalOpen.value = false;
     } catch (error) {
         console.log(error);
         toast.add({
@@ -163,6 +172,8 @@ const handleProfileSaved = async (updated: StudentProfileUpdate, cfToken: string
             description: (error as { message: string }).message,
             color: "error",
         });
+    } finally {
+        isSaving.value = false;
     }
 };
 

@@ -91,7 +91,7 @@
                 <label class="text-gray-800 font-semibold">Repeat Password *</label>
                 <div class="relative">
                     <input
-                        :value="rPassword"
+                        :value="props.rPassword"
                         :type="showRepeatPassword ? 'text' : 'password'"
                         placeholder="Repeat your Password"
                         class="w-full px-4 py-3 pr-12 text-black bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -196,7 +196,7 @@
 import { reactive, computed, ref } from "vue";
 import * as z from "zod";
 
-const rPassword = ref("");
+// rPassword is now managed by parent via v-model
 const showPassword = ref(false);
 const showRepeatPassword = ref(false);
 
@@ -214,6 +214,10 @@ const props = defineProps({
         default: "",
     },
     password: {
+        type: String,
+        default: "",
+    },
+    rPassword: {
         type: String,
         default: "",
     },
@@ -305,7 +309,7 @@ const isValid = computed(() => {
         props.companyName &&
         props.companyEmail &&
         props.password &&
-        rPassword.value &&
+        props.rPassword &&
         props.phone &&
         props.address &&
         props.city &&
@@ -336,12 +340,12 @@ const updatePassword = (event: Event) => {
     const value = (event.target as HTMLInputElement).value;
     emit("update:password", value);
     validateField("password", value);
-    validateRPassword(rPassword.value, value);
+    validateRPassword(props.rPassword, value);
 };
 
 const updateRPassword = (event: Event) => {
     const value = (event.target as HTMLInputElement).value;
-    rPassword.value = value;
+    emit("update:rPassword", value);
     validateRPassword(value, props.password);
 };
 
