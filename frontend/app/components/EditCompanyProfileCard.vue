@@ -340,7 +340,7 @@ function clearErrors() {
 }
 
 function validateField(field: FormKey, value: string) {
-    const result = (sc`he`ma.shape[field] as z.ZodTypeAny).safeParse(value);
+    const result = (schema.shape[field] as z.ZodTypeAny).safeParse(value);
     errors[field] = result.success ? "" : (result.error.issues[0]?.message ?? "Invalid value");
     return result.success;
 }
