@@ -66,6 +66,7 @@
                         <SidebarMenu :items="getSidebarItems(isViewer, isAdmin, isCompany)" />
                         <!-- bottom -->
                         <div class="mt-auto">
+                            <!-- Register -->
                             <UButton
                                 v-if="!isRegistered && isViewer && !isAdmin && !isCompany"
                                 label="Register"
@@ -77,6 +78,46 @@
                                 }"
                                 @click="navigateStudentRegister"
                             />
+                            <!-- Deactivate -->
+                            <UButton
+                                v-if="isViewer && !isCompany && !isAdmin && !isDeactivated"
+                                label="Deactivate Profile"
+                                variant="ghost"
+                                size="xl"
+                                icon="ic:baseline-delete-forever"
+                                :ui="{
+                                    base: 'justify-start text-left text-white hover:bg-white/10',
+                                }"
+                                class="mt-2"
+                                @click="openDeactivateModal = true"
+                            />
+                            <DeactivateModal
+                                v-if="isViewer && !isCompany && !isAdmin && !isDeactivated"
+                                v-model:open="openDeactivateModal"
+                                class="mt-2"
+                                @update:close="(value) => (openDeactivateModal = value)"
+                            />
+                            <!-- Reactivate -->
+                            <!-- Reactivate -->
+                            <UButton
+                                v-if="isViewer && !isCompany && !isAdmin && isDeactivated"
+                                label="Reactivate Profile"
+                                variant="ghost"
+                                size="xl"
+                                icon="ic:baseline-refresh"
+                                :ui="{
+                                    base: 'justify-start text-left text-white hover:bg-white/10',
+                                }"
+                                class="mt-2"
+                                @click="openReactivateModal = true"
+                            />
+                            <ReactivateModal
+                                v-if="isViewer && !isCompany && !isAdmin && isDeactivated"
+                                v-model:open="openReactivateModal"
+                                class="mt-2"
+                                @update:close="(value) => (openReactivateModal = value)"
+                            />
+                            <!-- Logout -->
                             <LogoutButton />
                         </div>
                     </template>
@@ -145,7 +186,7 @@
                     />
                     <!-- Deactivate -->
                     <UButton
-                        v-if="isViewer && !isCompany && !isAdmin"
+                        v-if="isViewer && !isCompany && !isAdmin && !isDeactivated"
                         label="Deactivate Profile"
                         variant="ghost"
                         size="xl"
@@ -155,10 +196,27 @@
                         @click="openDeactivateModal = true"
                     />
                     <DeactivateModal
-                        v-if="isViewer && !isCompany && !isAdmin"
+                        v-if="isViewer && !isCompany && !isAdmin && !isDeactivated"
                         v-model:open="openDeactivateModal"
                         class="mt-2"
                         @update:close="(value) => (openDeactivateModal = value)"
+                    />
+                    <!-- Reactivate -->
+                    <UButton
+                        v-if="isViewer && !isCompany && !isAdmin && isDeactivated"
+                        label="Reactivate Profile"
+                        variant="ghost"
+                        size="xl"
+                        icon="ic:baseline-refresh"
+                        :ui="{ base: 'justify-start text-left text-white hover:bg-white/10' }"
+                        class="mt-2"
+                        @click="openReactivateModal = true"
+                    />
+                    <ReactivateModal
+                        v-if="isViewer && !isCompany && !isAdmin && isDeactivated"
+                        v-model:open="openReactivateModal"
+                        class="mt-2"
+                        @update:close="(value) => (openReactivateModal = value)"
                     />
                     <!-- Logout -->
                     <LogoutButton />
@@ -176,6 +234,8 @@ const logout = useNuxtApp().$logout as () => void;
 const username = ref<string | null>(null);
 
 const openDeactivateModal = ref(false);
+const openReactivateModal = ref(false);
+const isDeactivated = ref(false);
 
 const isViewer = ref(true);
 const isCompany = ref(false);
@@ -183,11 +243,10 @@ const isAdmin = ref(false);
 const isRegistered = ref(false);
 const loading = ref(true);
 
-onMounted(() => {
+onMounted(async () => {
     const role = localStorage.getItem("role");
     username.value = localStorage.getItem("username");
     isRegistered.value = localStorage.getItem("isRegistered") === "true";
-
     if (!role || !username.value) {
         // Data is wrong --> logout
         logout();
@@ -213,6 +272,33 @@ onMounted(() => {
         // Data is wrong --> logout
         logout();
     }
+
+    // Determine if the account is deactivated by calling the /me endpoint.
+    // Backend returns 403 with { message: "account deactivated" } when deactivated.
+    try {
+        const api = useApi();
+        await api.get("/me", {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+        });
+        isDeactivated.value = false;
+    } catch (err) {
+        // Normalize unknown error to an axios-like shape without using `any` in the catch param
+        type Response = {
+            response?: { status?: number; data?: { message?: string } };
+            status?: number;
+            message?: string;
+        };
+        const e = err as Response;
+        const status = e?.response?.status || e?.status;
+        const message = e?.response?.data?.message || e?.message || null;
+        if (status === 403 && message === "account deactivated") {
+            isDeactivated.value = true;
+            console.log("Account is deactivated.");
+        }
+    }
+
     loading.value = false;
 });
 
