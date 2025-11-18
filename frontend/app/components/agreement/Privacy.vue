@@ -54,7 +54,7 @@
                 </li>
                 <li>
                     <strong>Students:</strong> We may collect your name, email address, phone
-                    number, educational history, Student ID, resume/CV details, profile picture,and
+                    number, educational history, Student ID, resume/CV details, profile picture, and
                     any documents or information you provide for verification We may also collect
                     information you voluntarily provide for your public profile, such as an "About
                     Me" description and links to external sites (e.g., LinkedIn, GitHub).
@@ -62,8 +62,8 @@
                 <li>
                     <strong>Companies:</strong> We may collect your company name, business email
                     address, phone number, official website, profile picture, profile banner,and
-                    details related to job postings. We may also collect information you voluntirily
-                    provide for your public profile, such as "About Us" decription
+                    details related to job postings. We may also collect information you voluntarily
+                    provide for your public profile, such as "About Us" description
                 </li>
             </ul>
             <p class="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
