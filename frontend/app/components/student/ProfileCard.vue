@@ -230,7 +230,12 @@ async function fetchStudentProfile() {
         }
     } catch (error) {
         console.error("Error fetching student profile:", error);
-        isActive.value = false;
+        // Only set isActive to false if the error indicates the profile is deactivated
+        // For example, 403 Forbidden or 404 Not Found
+        const status = error?.response?.status;
+        if (status === 403 || status === 404) {
+            isActive.value = false;
+        }
     }
 }
 
