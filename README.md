@@ -58,7 +58,7 @@ docker-compose exec -it <container-name> /app/create_admin <username>
 
 ## Privacy Policy and Terms of Service
 
-The [Privacy Policy](./frontend/agreement/Privacy.vue), [Google OAuth Privacy Notice](./frontend/agreement/GoogleOAuth.vue) and [Terms of Service](./frontend/agreement/TermsOfService.vue) are available inside the application. Before deployment of the application please review and fill in missing values i.e., Contact Address, Email, Phone Number.
+The [Privacy Policy](./frontend/app/components/agreement/Privacy.vue), [Google OAuth Privacy Notice](./frontend/app/components/agreement/GoogleOAuth.vue) and [Terms of Service](./frontend/app/components/agreement/TermsOfService.vue) are available inside the application. Before deployment of the application please review and fill in missing values i.e., Contact Address, Email, Phone Number.
 
 ---
 
