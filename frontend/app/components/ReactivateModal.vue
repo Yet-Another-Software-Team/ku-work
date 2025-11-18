@@ -82,7 +82,7 @@ const toast = useToast();
 // Handle Reactivation
 async function onReactivated() {
     try {
-        const response = await api.post("/me/reactivate", null, {
+        await api.post("/me/reactivate", null, {
             headers: {
                 "X-Turnstile-Token": cfToken.value,
             },
