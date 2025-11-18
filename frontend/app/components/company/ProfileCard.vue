@@ -282,9 +282,6 @@ async function onSaved(
         });
         await fetchCompanyProfile();
     } catch (error) {
-        if (!isActive.value) {
-            return;
-        }
         console.log(error);
         toast.add({
             title: "Failed to update profile",
