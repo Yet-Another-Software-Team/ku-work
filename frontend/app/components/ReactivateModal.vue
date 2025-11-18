@@ -88,7 +88,6 @@ async function onReactivated() {
             },
             withCredentials: true,
         });
-        console.log(response);
         toast.add({
             title: "Account Reactivated",
             description: "Your account has been reactivated.",
