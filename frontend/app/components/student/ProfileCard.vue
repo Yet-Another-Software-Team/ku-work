@@ -139,8 +139,7 @@ interface StudentProfile {
 type StudentProfileUpdate = StudentProfile & { _avatarFile?: File | null };
 
 const handleProfileSaved = async (updated: StudentProfileUpdate, cfToken: string) => {
-    isSaving.value = true;
-    const { _avatarFile, ..._ } = updated;
+    const { _avatarFile, ...newProfile } = updated;
     openEditModal.value = false;
     const formData = new FormData();
     if (profile.value.phone !== updated.phone) formData.append("phone", updated.phone!);
@@ -151,6 +150,7 @@ const handleProfileSaved = async (updated: StudentProfileUpdate, cfToken: string
     if (profile.value.linkedIn !== updated.linkedIn) formData.append("linkedIn", updated.linkedIn!);
     if (_avatarFile) formData.append("photo", _avatarFile!);
     formData.append("studentStatus", profile.value.status);
+    Object.assign(profile.value, newProfile);
     try {
         await api.patch("/me", formData, {
             headers: {
