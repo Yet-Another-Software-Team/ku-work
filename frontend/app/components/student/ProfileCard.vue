@@ -129,7 +129,7 @@
             }"
         >
             <template #content>
-                <EditProfileCard
+                <EditStudentProfileCard
                     :profile="profile"
                     :saving="isSaving"
                     @close="isEditModalOpen = false"
@@ -152,6 +152,7 @@
 
 <script setup lang="ts">
 import type { DropdownMenuItem } from "@nuxt/ui";
+
 const toast = useToast();
 
 const isEditModalOpen = ref(false);

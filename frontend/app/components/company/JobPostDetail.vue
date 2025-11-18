@@ -68,12 +68,12 @@
                     >
                 </span>
                 <!-- Edit Button -->
-                <UModal v-model:open="openJobEditForm">
+                <UModal v-model:open="openJobPostEditForm">
                     <UButton
                         class="px-4 py-2 rounded-md text-sm hover:bg-gray-200 hover:cursor-pointer dark:hover:bg-primary-700 flex items-center mt-4 gap-2"
                         color="neutral"
                         variant="outline"
-                        @click="openJobEditForm = true"
+                        @click="openJobPostEditForm = true"
                     >
                         <Icon
                             name="material-symbols:edit-square-outline-rounded"
@@ -82,7 +82,7 @@
                         Edit Post
                     </UButton>
                     <template #content>
-                        <JobEditForm :data="data" @close="handleCloseEditForm" />
+                        <JobPostEditForm :data="data" @close="handleCloseEditForm" />
                     </template>
                 </UModal>
             </div>
@@ -121,7 +121,7 @@ const props = defineProps<{
     open: boolean;
 }>();
 
-const openJobEditForm = ref(false);
+const openJobPostEditForm = ref(false);
 const logo = ref("");
 const data = ref<JobPost>(props.data);
 
@@ -206,7 +206,7 @@ async function handleToggle() {
 }
 
 function handleCloseEditForm() {
-    openJobEditForm.value = false;
+    openJobPostEditForm.value = false;
     emit("close");
 }
 

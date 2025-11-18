@@ -16,7 +16,7 @@
                 <USkeleton class="h-[10em] w-full mb-5" />
                 <div class="flex"></div>
             </div>
-            <CompanyPostComponent
+            <CompanyJobPostDetail
                 v-else-if="job"
                 :data="job"
                 :open="job.open ?? false"
@@ -112,7 +112,7 @@
                 <USkeleton v-for="n in 10" :key="n" class="h-[20em] w-full mb-5" />
             </div>
             <div v-else class="flex flex-wrap gap-5 mb-10">
-                <JobApplicationComponent
+                <JobApplicationDetail
                     v-for="app in filteredApplications()"
                     :key="app.id"
                     :application-data="app"

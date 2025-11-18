@@ -50,7 +50,7 @@
             <!-- Student registration requests -->
             <template v-if="!isCompany">
                 <template v-if="studentData.length">
-                    <StudentRequestDashboardComponent
+                    <StudentRequestProfileCard
                         v-for="(data, index) in studentData"
                         :key="index"
                         :request-id="data.id"
@@ -71,7 +71,7 @@
             <!-- Company post requests -->
             <template v-else>
                 <template v-if="companyRequests.length">
-                    <JobRequestJobPostCard
+                    <JobPostRequestCard
                         v-for="job in companyRequests"
                         :key="job.id"
                         :request-id="String(job.id)"
@@ -94,7 +94,6 @@
 </template>
 
 <script setup lang="ts">
-import JobRequestJobPostCard from "~/components/job/request/JobPostCard.vue";
 import type { ProfileInformation, JobPost } from "~/data/datatypes";
 
 definePageMeta({

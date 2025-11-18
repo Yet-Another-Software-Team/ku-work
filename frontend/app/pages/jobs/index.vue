@@ -10,7 +10,7 @@
                 </h1>
                 <!-- Search component -->
                 <div class="my-5">
-                    <JobSearchComponents
+                    <JobSearchComponent
                         :locations="jobs.map((job) => job.location)"
                         @update:search="search = $event"
                         @update:location="location = $event"
@@ -18,7 +18,7 @@
 
                     <!-- More options -->
                     <div>
-                        <SearchMoreButton
+                        <JobSearchMoreButton
                             @update:salary-range="salaryRange = $event"
                             @update:job-type="jobType = $event"
                             @update:exp-type="expType = $event"

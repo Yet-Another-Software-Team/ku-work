@@ -1,6 +1,6 @@
 <template>
-    <div class="w-full overflow-x-hidden">
-        <ApplicantCard
+    <div class="mt-5 container mx-auto max-w-7xl px-4">
+        <JobApplicationCard
             v-if="applicantData"
             :data="applicantData"
             :loading="isLoading"
@@ -11,7 +11,6 @@
 
 <script lang="ts" setup>
 import { ref, onMounted } from "vue";
-import ApplicantCard from "~/components/job/ApplicantCard.vue";
 
 const api = useApi();
 

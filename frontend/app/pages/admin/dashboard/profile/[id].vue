@@ -1,6 +1,6 @@
 <template>
     <div class="relative">
-        <StudentRequestProfileCard :request-id="id" />
+        <StudentRequestProfileDetail :request-id="id" />
     </div>
 </template>
 
