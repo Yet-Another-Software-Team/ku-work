@@ -24,7 +24,7 @@
             </div>
 
             <!-- Info -->
-            <div class="text-xl">
+            <div v-if="isActive" class="text-xl">
                 <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">
                     {{ profile.name }}
                 </h2>
@@ -33,24 +33,32 @@
                 </p>
             </div>
 
-            <!-- Edit Button -->
-            <UButton
-                v-if="canEdit"
-                variant="outline"
-                color="neutral"
-                class="px-4 py-2 text-sm hover:cursor-pointer flex items-center mt-4 ml-auto mb-auto"
-                @click="openEditModal = true"
+            <!-- User Options -->
+            <UDropdownMenu
+                v-if="canEdit && isActive"
+                :items="items"
+                :content="{ align: 'end' }"
+                class="p-1 text-sm hover:cursor-pointer flex items-center mt-4 ml-auto mb-auto"
             >
-                <Icon name="material-symbols:edit-square-outline-rounded" class="size-[1.5em]" />
-                Edit Profile
-            </UButton>
+                <UButton color="neutral" variant="ghost" icon="ic:baseline-more-vert" />
+            </UDropdownMenu>
+
+            <div v-else-if="!isActive" class="text-xl">
+                <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+                    Profile Inactive
+                </h2>
+                <p class="text-gray-600 dark:text-gray-300">
+                    Your profile is currently deactivated. Please reactivate your profile to access
+                    all features.
+                </p>
+            </div>
         </div>
 
         <!-- Divider -->
         <hr class="my-6 border-gray-300 dark:border-gray-600" />
 
         <!-- Bottom Section -->
-        <div class="flex flex-wrap md:flex-nowrap text-xl overflow-x-hidden">
+        <div v-if="isActive" class="flex flex-wrap md:flex-nowrap text-xl overflow-x-hidden">
             <!-- Connections -->
             <div class="w-[12rem] mr-5 mb-5">
                 <h3 class="font-semibold text-gray-800 dark:text-white mb-2">Connections</h3>
@@ -103,11 +111,25 @@
                 </p>
             </div>
         </div>
+        <!-- Reactivate button -->
+        <div v-else>
+            <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+                Reactivate Profile
+            </h2>
+            <UButton
+                variant="subtle"
+                color="primary"
+                class="h-10 self-center font-semibold"
+                @click="openReactivateModal = true"
+            >
+                Reactivate
+            </UButton>
+        </div>
 
+        <!-- Edit Modal -->
         <UModal
             v-model:open="openEditModal"
             :ui="{
-                container: 'fixed inset-0 z-[100] flex items-center justify-center p-4',
                 overlay: 'fixed inset-0 bg-black/50',
                 content: 'w-full max-w-6xl',
             }"
@@ -115,16 +137,28 @@
             <template #content>
                 <EditCompanyProfileCard
                     :profile="profile"
+                    :saving="isSaving"
                     @close="openEditModal = false"
                     @saved="onSaved"
                 />
             </template>
         </UModal>
+        <!-- Deactivate Modal -->
+        <DeactivateModal
+            v-model:open="openDeactivateModal"
+            @update:close="(value) => (openDeactivateModal = value)"
+        />
+        <!-- Reactivate Modal -->
+        <ReactivateModal
+            v-model:open="openReactivateModal"
+            @update:close="(value) => (openReactivateModal = value)"
+        />
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import type { DropdownMenuItem } from "@nuxt/ui";
 import EditCompanyProfileCard from "~/components/EditCompanyProfileCard.vue";
 
 const props = withDefaults(
@@ -152,6 +186,11 @@ const profile = ref({
 });
 
 const openEditModal = ref(false);
+const isSaving = ref(false);
+const openDeactivateModal = ref(false);
+const openReactivateModal = ref(false);
+const isActive = ref(true);
+
 const api = useApi();
 const config = useRuntimeConfig();
 const toast = useToast();
@@ -161,6 +200,8 @@ const canEdit = computed(() => {
     const uid = import.meta.client ? localStorage.getItem("userId") : null;
     return props.isOwner || (!!props.companyId && props.companyId === uid);
 });
+
+// Fetch company profile
 async function fetchCompanyProfile() {
     try {
         let idToFetch: string | null = props.companyId;
@@ -181,9 +222,29 @@ async function fetchCompanyProfile() {
         }
     } catch (error) {
         console.error("Error fetching company profile:", error);
+        isActive.value = false;
     }
 }
 
+// Dropdown menu items
+const items: DropdownMenuItem[] = [
+    {
+        label: "Edit Profile",
+        icon: "material-symbols:edit-square-outline-rounded",
+        onClick: () => {
+            openEditModal.value = true;
+        },
+    },
+    {
+        label: "Deactivate Profile",
+        icon: "material-symbols:delete-outline",
+        onClick: () => {
+            openDeactivateModal.value = true;
+        },
+    },
+];
+
+// Handle Saves, Deactivation, and Deletion
 async function onSaved(
     updated: {
         name?: string;
@@ -201,7 +262,7 @@ async function onSaved(
     },
     cfToken: string
 ) {
-    openEditModal.value = false;
+    isSaving.value = true;
     const formData = new FormData();
     if (profile.value.name !== updated.name) formData.append("username", updated.name!);
     if (profile.value.address !== updated.address) formData.append("address", updated.address!);
@@ -213,7 +274,7 @@ async function onSaved(
     if (profile.value.phone !== updated.phone) formData.append("phone", updated.phone!);
     if (updated._logoFile) formData.append("photo", updated._logoFile!);
     if (updated._bannerFile) formData.append("banner", updated._bannerFile!);
-    Object.assign(profile.value, updated);
+    // wait for backend confirmation before updating local state
     try {
         await api.patch("/me", formData, {
             headers: {
@@ -222,6 +283,12 @@ async function onSaved(
             },
         });
         await fetchCompanyProfile();
+        toast.add({
+            title: "Saved",
+            description: "Company profile updated successfully.",
+            color: "success",
+        });
+        openEditModal.value = false;
     } catch (error) {
         console.log(error);
         toast.add({
@@ -229,6 +296,8 @@ async function onSaved(
             description: (error as { message: string }).message,
             color: "error",
         });
+    } finally {
+        isSaving.value = false;
     }
 }
 

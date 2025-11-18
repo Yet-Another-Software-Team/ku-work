@@ -192,7 +192,7 @@ func (h *LocalAuthHandlers) CompanyLoginHandler(ctx *gin.Context) {
 	}
 
 	var user model.User
-	if err := h.DB.Model(&model.User{}).Where("username = ? AND user_type = ?", req.Username, "company").First(&user).Error; err != nil {
+	if err := h.DB.Model(&model.User{}).Unscoped().Where("username = ? AND user_type = ?", req.Username, "company").First(&user).Error; err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
@@ -222,10 +222,11 @@ func (h *LocalAuthHandlers) CompanyLoginHandler(ctx *gin.Context) {
 	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", helper.GetCookieSecure(), true)
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"token":    jwtToken,
-		"username": user.Username,
-		"role":     helper.Company,
-		"userId":   user.ID,
+		"token":         jwtToken,
+		"username":      user.Username,
+		"role":          helper.Company,
+		"userId":        user.ID,
+		"isDeactivated": user.DeletedAt.Valid,
 	})
 }
 

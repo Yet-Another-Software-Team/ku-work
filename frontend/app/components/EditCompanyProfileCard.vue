@@ -185,9 +185,15 @@
                     >
                         Discard
                     </UButton>
-                    <UButton type="submit" color="primary" class="rounded-md px-5 cursor-pointer"
-                        >Save</UButton
+                    <UButton
+                        type="submit"
+                        color="primary"
+                        class="rounded-md px-5 cursor-pointer"
+                        :loading="props.saving"
+                        :disabled="props.saving || !cfToken"
                     >
+                        Save
+                    </UButton>
                 </div>
             </form>
         </div>
@@ -199,6 +205,7 @@
         :dismissible="false"
         :ui="{
             title: 'text-xl font-semibold text-primary-800 dark:text-primary',
+
             overlay: 'fixed inset-0 bg-black/50',
         }"
     >
@@ -252,7 +259,7 @@ type SavedPayload = Profile & {
     _bannerFile?: File | null;
 };
 
-const props = defineProps<{ profile: Profile }>();
+const props = defineProps<{ profile: Profile; saving?: boolean }>();
 const emit = defineEmits<{
     (e: "close"): void;
     (e: "saved", val: SavedPayload, cfToken: string): void;
@@ -449,12 +456,6 @@ function handleSubmit() {
         return;
     }
 
-    addToast({
-        title: "Saved",
-        description: "Company profile has been updated.",
-        color: "success",
-    });
-
     emit(
         "saved",
         {
@@ -474,7 +475,7 @@ function handleSubmit() {
         cfToken.value
     );
 
-    emit("close");
+    cfToken.value = "";
 }
 
 onBeforeUnmount(() => {

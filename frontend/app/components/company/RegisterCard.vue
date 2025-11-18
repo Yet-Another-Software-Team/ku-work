@@ -28,6 +28,7 @@
                 v-model:company-email="form.companyEmail"
                 v-model:company-website="form.companyWebsite"
                 v-model:password="form.password"
+                v-model:r-password="form.rPassword"
                 v-model:phone="form.phone"
                 v-model:address="form.address"
                 v-model:city="form.city"
@@ -119,6 +120,7 @@ const form = reactive({
     companyEmail: "",
     companyWebsite: "",
     password: "",
+    rPassword: "",
     phone: "",
     address: "",
     city: "",
@@ -139,7 +141,7 @@ const canProceedToNext = computed(() => {
 });
 
 const canSubmit = computed(() => {
-    if (currentStep.value === 2 && stepTwoRef.value) {
+    if (currentStep.value === 2 && stepTwoRef.value && token.value) {
         return stepTwoRef.value.isValid;
     }
     return false;
@@ -192,6 +194,7 @@ const handlePrevious = () => {
 
 const onSubmit = async () => {
     if (!canSubmit.value) {
+        token.value = "";
         toast.add({
             title: "Validation Error",
             description: "Please fix all validation errors before submitting",

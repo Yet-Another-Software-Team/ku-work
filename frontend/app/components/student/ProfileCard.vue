@@ -20,7 +20,7 @@
             </div>
 
             <!-- Info -->
-            <div class="text-xl">
+            <div v-if="isActive" class="text-xl">
                 <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">
                     {{ `${profile.firstName} ${profile.lastName}` }}
                 </h2>
@@ -41,23 +41,32 @@
                 </p>
             </div>
 
-            <!-- Edit Button -->
-            <UButton
-                variant="outline"
-                color="neutral"
-                class="px-4 py-2 rounded-md text-sm hover:bg-gray-100 hover:cursor-pointer dark:text-white dark:hover:bg-gray-700 flex items-center mt-4 ml-auto mb-auto"
-                @click="isEditModalOpen = true"
+            <!-- User Options -->
+            <UDropdownMenu
+                v-if="isActive"
+                :items="items"
+                :content="{ align: 'end' }"
+                class="p-1 text-sm hover:cursor-pointer flex items-center mt-4 ml-auto mb-auto"
             >
-                <Icon name="material-symbols:edit-square-outline-rounded" class="size-[1.5em]" />
-                Edit Profile
-            </UButton>
+                <UButton color="neutral" variant="ghost" icon="ic:baseline-more-vert" />
+            </UDropdownMenu>
+
+            <div v-else class="text-xl">
+                <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+                    Profile Inactive
+                </h2>
+                <p class="text-gray-600 dark:text-gray-300">
+                    Your profile is currently deactivated. Please reactivate your profile to access
+                    all features.
+                </p>
+            </div>
         </div>
 
         <!-- Divider -->
         <hr class="my-6 border-gray-300 dark:border-gray-600" />
 
         <!-- Bottom Section -->
-        <div class="flex flex-wrap md:flex-nowrap text-xl">
+        <div v-if="isActive" class="flex flex-wrap md:flex-nowrap text-xl">
             <!-- Connections -->
             <div v-if="hasAnyConnection" class="w-[12rem] mr-5 mb-5">
                 <h3 class="font-semibold text-gray-800 dark:text-white mb-2">Connections</h3>
@@ -95,9 +104,25 @@
                 </p>
             </div>
         </div>
+        <!-- Reactivate button -->
+        <div v-else>
+            <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+                Reactivate Profile
+            </h2>
+            <UButton
+                variant="subtle"
+                color="primary"
+                class="h-10 self-center font-semibold"
+                @click="openReactivateModal = true"
+            >
+                Reactivate
+            </UButton>
+        </div>
 
+        <!-- Modals -->
+        <!-- Edit Modal -->
         <UModal
-            v-model:open="isEditModalOpen"
+            v-model:open="openEditModal"
             :ui="{
                 overlay: 'fixed inset-0 bg-black/50',
                 content: 'w-full max-w-2xl',
@@ -106,18 +131,36 @@
             <template #content>
                 <EditStudentProfileCard
                     :profile="profile"
+                    :saving="isSaving"
                     @close="isEditModalOpen = false"
                     @saved="handleProfileSaved"
                 />
             </template>
         </UModal>
+        <!-- Deactivate Modal -->
+        <DeactivateModal
+            v-model:open="openDeactivateModal"
+            @update:close="(value) => (openDeactivateModal = value)"
+        />
+        <!-- Reactivate Modal -->
+        <ReactivateModal
+            v-model:open="openReactivateModal"
+            @update:close="(value) => (openReactivateModal = value)"
+        />
     </div>
 </template>
 
 <script setup lang="ts">
+import type { DropdownMenuItem } from "@nuxt/ui";
+
 const toast = useToast();
 
 const isEditModalOpen = ref(false);
+const isSaving = ref(false);
+const openDeactivateModal = ref(false);
+const openReactivateModal = ref(false);
+const openEditModal = ref(false);
+const isActive = ref(true);
 
 interface StudentProfile {
     name?: string;
@@ -133,7 +176,7 @@ type StudentProfileUpdate = StudentProfile & { _avatarFile?: File | null };
 
 const handleProfileSaved = async (updated: StudentProfileUpdate, cfToken: string) => {
     const { _avatarFile, ...newProfile } = updated;
-    isEditModalOpen.value = false;
+    openEditModal.value = false;
     const formData = new FormData();
     if (profile.value.phone !== updated.phone) formData.append("phone", updated.phone!);
     if (profile.value.birthDate !== updated.birthDate)
@@ -152,6 +195,12 @@ const handleProfileSaved = async (updated: StudentProfileUpdate, cfToken: string
             },
         });
         await fetchStudentProfile();
+        toast.add({
+            title: "Saved",
+            description: "Profile updated successfully.",
+            color: "success",
+        });
+        isEditModalOpen.value = false;
     } catch (error) {
         console.log(error);
         toast.add({
@@ -159,6 +208,8 @@ const handleProfileSaved = async (updated: StudentProfileUpdate, cfToken: string
             description: (error as { message: string }).message,
             color: "error",
         });
+    } finally {
+        isSaving.value = false;
     }
 };
 
@@ -191,8 +242,27 @@ async function fetchStudentProfile() {
         }
     } catch (error) {
         console.error("Error fetching student profile:", error);
+        isActive.value = false;
     }
 }
+
+// Dropdown menu items
+const items: DropdownMenuItem[] = [
+    {
+        label: "Edit Profile",
+        icon: "material-symbols:edit-square-outline-rounded",
+        onClick: () => {
+            openEditModal.value = true;
+        },
+    },
+    {
+        label: "Deactivate Profile",
+        icon: "material-symbols:delete-outline",
+        onClick: () => {
+            openDeactivateModal.value = true;
+        },
+    },
+];
 
 onMounted(async () => {
     await fetchStudentProfile();
