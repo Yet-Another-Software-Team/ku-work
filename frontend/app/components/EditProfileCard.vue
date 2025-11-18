@@ -40,7 +40,7 @@
                 <label class="block font-semibold text-primary-800 dark:text-primary">Name</label>
                 <UInput
                     disabled
-                    :placeholder="`${profile.firstName || 'Not Exists'} ${profile.lastName}`"
+                    :placeholder="`${profile.firstName || 'Not provided'} ${profile.lastName}`"
                     class="mt-1 w-full rounded-md bg-white text-gray-900 dark:bg-[#013B49] dark:text-white"
                 />
             </div>
