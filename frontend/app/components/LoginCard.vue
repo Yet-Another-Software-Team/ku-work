@@ -44,7 +44,7 @@
                         </UModal>
                         ,
                         <UModal
-                            v-model="openOAuthPrivacy"
+                            v-model="oauthPrivacyModalOpen"
                             title="Google OAuth Privacy"
                             :ui="{ content: 'min-w-[72vw]' }"
                         >
