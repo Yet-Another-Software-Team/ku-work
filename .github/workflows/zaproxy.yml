@@ -109,6 +109,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           target: http://localhost:3000/
           cmd_options: -a
+          artifact_name: 'zap-scan-frontend-report'
 
       - name: ZAP API Scan Backend (OpenAPI)
         uses: zaproxy/action-api-scan@v0.10.0
@@ -117,6 +118,7 @@ jobs:
           target: http://localhost:8000/swagger/doc.json
           format: openapi
           cmd_options: -a
+          artifact_name: 'zap-scan-backend-report'
 
       - name: Teardown
         if: always()
