@@ -51,8 +51,8 @@ jobs:
         working-directory: .
         run: |
           set -euo pipefail
-          echo "Waiting for backend readiness on http://localhost:8000 ..."
-          urls=(http://localhost:8000/health http://localhost:8000/ready http://localhost:8000/ http://localhost:8000/api/health)
+          echo "Waiting for backend readiness on http://localhost:3000 ..."
+          urls=(http://localhost:3000/)
           end=$((SECONDS+180))
           ready=0
           while [ $SECONDS -lt $end ]; do
@@ -79,7 +79,7 @@ jobs:
         uses: zaproxy/action-full-scan@v0.13.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          target: http://localhost:8000/
+          target: http://localhost:3000/
           cmd_options: -a
 
       - name: Teardown
