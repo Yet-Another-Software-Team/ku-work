@@ -110,6 +110,7 @@ jobs:
           target: http://localhost:3000/
           cmd_options: -a
           artifact_name: 'zap-scan-frontend-report'
+          allow_issue_writing: false
 
       - name: ZAP API Scan Backend (OpenAPI)
         uses: zaproxy/action-api-scan@v0.10.0
@@ -119,6 +120,7 @@ jobs:
           format: openapi
           cmd_options: -a
           artifact_name: 'zap-scan-backend-report'
+          allow_issue_writing: false
 
       - name: Teardown
         if: always()
