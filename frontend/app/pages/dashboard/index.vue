@@ -62,22 +62,25 @@
             <hr class="w-full my-5" />
 
             <div class="flex flex-wrap gap-10">
-                <div v-if="filteredJobs.length === 0" class="w-full text-center py-10">
-                    <Icon name="ic:baseline-inbox" class="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <p class="text-gray-500 text-lg">No jobs found.</p>
-                    <p class="text-gray-400 text-sm mt-2">
-                        {{
-                            companyActiveTab === "accepted"
-                                ? "You don't have any accepted jobs yet."
-                                : companyActiveTab === "pending"
-                                  ? "You don't have any pending jobs."
-                                  : "You don't have any rejected jobs."
-                        }}
-                    </p>
-                </div>
+                <UModal v-model:open="openJobPostCreateForm">
+                    <div
+                        class="text-white cursor-pointer h-[18em] w-full lg:w-[25em] drop-shadow-md border-primary-700 hover:bg-primary-600/10 border-dashed border-3 rounded-xl flex items-center justify-center flex-col transition-all duration-150"
+                    >
+                        <Icon
+                            name="ic:baseline-plus"
+                            size="4em"
+                            mode="svg"
+                            @click="openJobPostCreateForm = true"
+                        />
+                        <p class="text-xl font-semibold">Create new job post</p>
+                    </div>
+                    <template #content>
+                        <JobPostCreateForm @close="handleJobFormClose" />
+                    </template>
+                </UModal>
+
                 <JobPostDashboard
                     v-for="job in filteredJobs"
-                    v-else
                     :key="job.id"
                     :data="job"
                     class="h-[18em] w-full lg:w-[25em] drop-shadow-md"
@@ -105,23 +108,6 @@
                     show-edges
                     :sibling-count="1"
                 />
-            </div>
-
-            <div
-                class="bg-primary-500 p-2 rounded-full size-[4em] fixed bottom-5 right-[6vw] hover:bg-primary-700 transition-all duration-200"
-            >
-                <UModal v-model:open="openJobPostCreateForm">
-                    <Icon
-                        name="ic:baseline-plus"
-                        size="4em"
-                        mode="svg"
-                        class="absolute top-0 bottom-0 left-0 right-0 text-white cursor-pointer"
-                        @click="openJobPostCreateForm = true"
-                    />
-                    <template #content>
-                        <JobPostCreateForm @close="handleJobFormClose" />
-                    </template>
-                </UModal>
             </div>
         </div>
 
