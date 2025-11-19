@@ -23,7 +23,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Prepare environment from secret (DOTENV_B64 required)
-        working-directory: ku-work
+        working-directory: .
         env:
           DOTENV_B64: ${{ secrets.DOTENV_B64 }}
         run: |
@@ -36,19 +36,19 @@ jobs:
           sed -i 's/\r$//' .env
 
       - name: Ensure optional files exist for volume mounts
-        working-directory: ku-work
+        working-directory: .
         run: |
           mkdir -p backend
           [ -f backend/gcs-key.json ] || echo '{}' > backend/gcs-key.json
 
       - name: Build and start application with Docker Compose
-        working-directory: ku-work
+        working-directory: .
         run: |
           docker compose pull || true
           docker compose up -d --build
 
       - name: Wait for backend to be ready
-        working-directory: ku-work
+        working-directory: .
         run: |
           set -euo pipefail
           echo "Waiting for backend readiness on http://localhost:8000 ..."
@@ -84,7 +84,7 @@ jobs:
 
       - name: Teardown
         if: always()
-        working-directory: ku-work
+        working-directory: .
         run: |
           docker compose logs backend || true
           docker compose down -v --remove-orphans
