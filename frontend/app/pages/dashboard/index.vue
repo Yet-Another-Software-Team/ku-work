@@ -64,14 +64,9 @@
             <div class="flex flex-wrap gap-10">
                 <UModal v-model:open="openJobPostCreateForm">
                     <div
-                        class="text-white cursor-pointer h-[18em] w-full lg:w-[25em] drop-shadow-md border-primary-700 hover:bg-primary-600/10 border-dashed border-3 rounded-xl flex items-center justify-center flex-col transition-all duration-150"
+                        class="cursor-pointer h-[18em] w-full lg:w-[25em] drop-shadow-md border-primary-700 hover:bg-primary-600/10 border-dashed border-3 rounded-xl flex items-center justify-center flex-col transition-all duration-150"
                     >
-                        <Icon
-                            name="ic:baseline-plus"
-                            size="4em"
-                            mode="svg"
-                            @click="openJobPostCreateForm = true"
-                        />
+                        <Icon name="ic:baseline-plus" size="4em" mode="svg" />
                         <p class="text-xl font-semibold">Create new job post</p>
                     </div>
                     <template #content>
