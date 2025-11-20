@@ -2,7 +2,7 @@ package helper
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"sync"
 	"time"
 )
@@ -43,7 +43,7 @@ func (s *Scheduler) AddTask(name string, interval time.Duration, fn func() error
 		Interval: interval,
 		Fn:       fn,
 	})
-	log.Printf("Scheduled task added: %s (interval: %v)", name, interval)
+	slog.Info("Scheduled task added", "name", name, "interval", interval)
 }
 
 // Start begins executing all scheduled tasks
@@ -54,7 +54,7 @@ func (s *Scheduler) Start() {
 	copy(tasksCopy, s.tasks)
 	s.mutex.Unlock()
 
-	log.Printf("Starting scheduler with %d task(s)", len(tasksCopy))
+	slog.Info("Starting scheduler", "tasks", len(tasksCopy))
 
 	for _, task := range tasksCopy {
 		s.wg.Add(1)
@@ -77,10 +77,10 @@ func (s *Scheduler) runTask(task ScheduledTask) {
 		case <-ticker.C:
 			s.executeTask(task)
 		case <-s.ctx.Done():
-			log.Printf("Task stopped: %s", task.Name)
+			slog.Info("Task stopped", "name", task.Name)
 			return
 		case <-s.stopCh:
-			log.Printf("Task stopped: %s", task.Name)
+			slog.Info("Task stopped", "name", task.Name)
 			return
 		}
 	}
@@ -90,21 +90,21 @@ func (s *Scheduler) runTask(task ScheduledTask) {
 func (s *Scheduler) executeTask(task ScheduledTask) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("Task %s panicked: %v", task.Name, r)
+			slog.Error("Task panicked", "name", task.Name, "reason", r)
 		}
 	}()
 
 	if err := task.Fn(); err != nil {
-		log.Printf("Task %s failed: %v", task.Name, err)
+		slog.Error("Task failed", "name", task.Name, "error", err)
 	}
 }
 
 // Stop gracefully stops all scheduled tasks
 func (s *Scheduler) Stop() {
-	log.Println("Stopping scheduler...")
+	slog.Info("Stopping scheduler...")
 	close(s.stopCh)
 	s.wg.Wait()
-	log.Println("Scheduler stopped")
+	slog.Info("Scheduler stopped")
 }
 
 // Wait blocks until all tasks have stopped

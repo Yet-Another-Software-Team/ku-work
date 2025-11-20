@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"log"
+	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -66,7 +66,7 @@ type RegisterRequest struct {
 func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 	var req RegisterRequest
 	if err := ctx.MustBindWith(&req, binding.FormMultipart); err != nil {
-		log.Printf("Error binding request: %v", err)
+		slog.Error("Failed to bind company registration request", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
@@ -193,6 +193,7 @@ func (h *LocalAuthHandlers) CompanyLoginHandler(ctx *gin.Context) {
 
 	var user model.User
 	if err := h.DB.Model(&model.User{}).Unscoped().Where("username = ? AND user_type = ?", req.Username, "company").First(&user).Error; err != nil {
+		slog.Warn("Company attempted to login", "username", req.Username, "ip", ctx.ClientIP())
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
@@ -200,6 +201,7 @@ func (h *LocalAuthHandlers) CompanyLoginHandler(ctx *gin.Context) {
 	// Compare the provided password with the stored hashed password.
 	match, err := helper.VerifyPassword(req.Password, user.PasswordHash)
 	if err != nil || !match {
+		slog.Warn("Company attempted to login", "username", req.Username, "ip", ctx.ClientIP())
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
@@ -207,6 +209,7 @@ func (h *LocalAuthHandlers) CompanyLoginHandler(ctx *gin.Context) {
 	var companyCount int64
 	h.DB.Model(&model.Company{}).Where("user_id = ?", user.ID).Count(&companyCount)
 	if companyCount == 0 {
+		slog.Warn("Company attempted to login", "username", req.Username, "ip", ctx.ClientIP())
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
@@ -220,6 +223,8 @@ func (h *LocalAuthHandlers) CompanyLoginHandler(ctx *gin.Context) {
 	maxAge := int(time.Hour * 24 * 30 / time.Second)
 	ctx.SetSameSite(helper.GetCookieSameSite())
 	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", helper.GetCookieSecure(), true)
+
+	slog.Info("Company logged in", "user_id", user.ID, "ip", ctx.ClientIP())
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"token":         jwtToken,
@@ -250,6 +255,7 @@ func (h *LocalAuthHandlers) AdminLoginHandler(ctx *gin.Context) {
 
 	var user model.User
 	if err := h.DB.Model(&model.User{}).Where("username = ? AND user_type = ?", req.Username, "admin").First(&user).Error; err != nil {
+		slog.Warn("Admin attempted to login", "username", req.Username, "ip", ctx.ClientIP())
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
@@ -257,6 +263,7 @@ func (h *LocalAuthHandlers) AdminLoginHandler(ctx *gin.Context) {
 	// Compare the provided password with the stored hashed password.
 	match, err := helper.VerifyPassword(req.Password, user.PasswordHash)
 	if err != nil || !match {
+		slog.Warn("Admin attempted to login", "username", req.Username, "ip", ctx.ClientIP())
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
@@ -264,6 +271,7 @@ func (h *LocalAuthHandlers) AdminLoginHandler(ctx *gin.Context) {
 	var adminCount int64
 	h.DB.Model(&model.Admin{}).Where("user_id = ?", user.ID).Count(&adminCount)
 	if adminCount == 0 {
+		slog.Warn("Admin attempted to login", "username", req.Username, "ip", ctx.ClientIP())
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
@@ -277,6 +285,8 @@ func (h *LocalAuthHandlers) AdminLoginHandler(ctx *gin.Context) {
 	maxAge := int(time.Hour * 24 * 30 / time.Second)
 	ctx.SetSameSite(helper.GetCookieSameSite())
 	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", helper.GetCookieSecure(), true)
+
+	slog.Info("Admin logged in", "user_id", user.ID, "ip", ctx.ClientIP())
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"token":    jwtToken,

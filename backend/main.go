@@ -7,7 +7,7 @@ import (
 	"ku-work/backend/helper"
 	"ku-work/backend/middlewares"
 	"ku-work/backend/services"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -39,13 +39,20 @@ import (
 func main() {
 	_ = godotenv.Load()
 
+	if err := services.InitializeLoggingService(); err != nil {
+		slog.Error("Logging initialization failed", "error", err)
+	}
+
 	db, err := database.LoadDB()
 	if err != nil {
-		log.Printf("Database initialization failed: %v", err)
+		slog.Error("Database initialization failed", "error", err)
 		return
 	}
 
 	redisClient := initializeRedis()
+	if redisClient == nil {
+		return
+	}
 	emailService, aiService, fileService := initializeServices(db)
 
 	// Setup background tasks
@@ -67,10 +74,10 @@ func main() {
 func initializeRedis() *redis.Client {
 	redisClient, redis_err := database.LoadRedis()
 	if redis_err != nil {
-		log.Fatalf("FATAL: Redis initialization failed: %v.", redis_err)
+		slog.Error("FATAL: Redis initialization failed", "error", redis_err)
 		return nil
 	}
-	log.Println("Redis connected successfully")
+	slog.Info("Redis connected successfully")
 	return redisClient
 }
 
@@ -78,13 +85,13 @@ func initializeRedis() *redis.Client {
 func initializeServices(db *gorm.DB) (*services.EmailService, *services.AIService, *services.FileService) {
 	emailService, err := services.NewEmailService(db)
 	if err != nil {
-		log.Printf("Warning: Email service initialization failed: %v", err)
+		slog.Warn("Email service initialization failed", "error", err)
 		return nil, nil, nil
 	}
 
 	aiService, err := services.NewAIService(db, emailService)
 	if err != nil {
-		log.Printf("Warning: AI service initialization failed: %v", err)
+		slog.Warn("AI service initialization failed", "error", err)
 		return emailService, nil, nil
 	}
 
@@ -165,7 +172,8 @@ func setupRouter(db *gorm.DB, redisClient *redis.Client, emailService *services.
 
 	// Application routes
 	if err := handlers.SetupRoutes(router, db, redisClient, emailService, aiService, fileService); err != nil {
-		log.Fatal("Failed to setup routes:", err)
+		slog.Error("Fatal: Failed to setup routes", "error", err)
+		return nil
 	}
 
 	// Swagger documentation
@@ -197,9 +205,10 @@ func startServer(router *gin.Engine) *http.Server {
 	}
 
 	go func() {
-		log.Printf("Starting server on %s", listenAddress)
+		slog.Info("Starting server", "listen_address", listenAddress)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Server failed to start: %v", err)
+			slog.Error("Server failed to start", "error", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -220,7 +229,7 @@ func waitForShutdownSignal() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	<-sigChan
-	log.Println("Shutdown signal received, starting graceful shutdown...")
+	slog.Info("Shutdown signal received, starting graceful shutdown...")
 }
 
 // performGracefulShutdown gracefully shuts down all services
@@ -231,7 +240,7 @@ func performGracefulShutdown(srv *http.Server, cancel context.CancelFunc, schedu
 
 	// Shutdown HTTP server
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		log.Printf("Server forced to shutdown: %v", err)
+		slog.Warn("Server forced to shutdown", "error", err)
 	}
 
 	// Stop scheduler
@@ -241,9 +250,9 @@ func performGracefulShutdown(srv *http.Server, cancel context.CancelFunc, schedu
 	// Close Redis connection
 	if redisClient != nil {
 		if err := redisClient.Close(); err != nil {
-			log.Printf("Error closing Redis connection: %v", err)
+			slog.Error("Error closing Redis connection", "error", err)
 		}
 	}
 
-	log.Println("Server stopped gracefully")
+	slog.Info("Server stopped gracefully")
 }

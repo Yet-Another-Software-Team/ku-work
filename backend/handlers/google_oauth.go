@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
@@ -31,7 +31,8 @@ func NewOAuthHandlers(db *gorm.DB, jwtHandlers *JWTHandlers) *OauthHandlers {
 	b := make([]byte, 16)
 	_, rand_err := rand.Read(b)
 	if rand_err != nil {
-		log.Fatalf("Failed to generate random oauth state %v", rand_err)
+		slog.Error("Failed to generate random oauth state", "message", rand_err)
+		os.Exit(1)
 	}
 	oauthStateString := base64.URLEncoding.EncodeToString(b)
 
@@ -44,7 +45,8 @@ func NewOAuthHandlers(db *gorm.DB, jwtHandlers *JWTHandlers) *OauthHandlers {
 	}
 
 	if googleOauthConfig.ClientID == "" || googleOauthConfig.ClientSecret == "" {
-		log.Fatal("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables are not set")
+		slog.Error("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables are not set")
+		os.Exit(1)
 	}
 
 	return &OauthHandlers{
@@ -113,6 +115,7 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 
 	// Check if API request was successful
 	if api_res.StatusCode != http.StatusOK {
+		slog.Warn("User attempt to login using OAuth", "ip", ctx.ClientIP())
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Access Token is invalid, expired or insufficient"})
 		return
 	}
@@ -202,6 +205,8 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 			}
 		}
 	}
+
+	slog.Info("User logged in using OAuth", "user_id", user.ID, "ip", ctx.ClientIP())
 
 	ctx.JSON(status, gin.H{
 		"token":         jwtToken,

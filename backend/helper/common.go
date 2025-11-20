@@ -2,7 +2,7 @@ package helper
 
 import (
 	"ku-work/backend/model"
-	"log"
+	"log/slog"
 	"time"
 
 	"gorm.io/gorm"
@@ -76,7 +76,7 @@ func CleanupExpiredTokens(db *gorm.DB) error {
 		return result.Error
 	}
 	if result.RowsAffected > 0 {
-		log.Printf("Cleaned up %d expired refresh tokens", result.RowsAffected)
+		slog.Info("Cleaned up expired refresh tokens", "count", result.RowsAffected)
 	}
 	return nil
 }

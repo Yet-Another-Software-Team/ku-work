@@ -3,7 +3,7 @@ package handlers
 import (
 	"ku-work/backend/model"
 	"ku-work/backend/services"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -47,7 +47,7 @@ func (h *UserHandlers) DeactivateAccount(ctx *gin.Context) {
 	if err := h.DB.Where("user_id = ?", userID).First(&company).Error; err == nil {
 		// User is a company - disable all their job posts
 		if err := services.DisableCompanyJobPosts(h.DB, userID); err != nil {
-			log.Printf("Warning: Failed to disable job posts for company %s: %v", userID, err)
+			slog.Warn("Failed to disable job posts for company", "user_id", userID, "message", err)
 			// Don't fail the deactivation, just log the warning
 		}
 	}

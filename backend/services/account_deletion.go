@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"ku-work/backend/model"
-	"log"
+	"log/slog"
 	"time"
 
 	"gorm.io/gorm"
@@ -23,7 +23,7 @@ func AnonymizeExpiredAccounts(db *gorm.DB, gracePeriodDay int) error {
 	gracePeriodDuration := time.Duration(gracePeriodDay) * 24 * time.Hour
 	cutoffTime := time.Now().Add(-gracePeriodDuration)
 
-	log.Printf("Starting expired accounts anonymization (grace period: %d days)", gracePeriodDay)
+	slog.Info("Starting expired accounts anonymization", "grace_period_days", gracePeriodDay)
 
 	// Find all users that were soft-deleted before the cutoff time
 	var users []model.User
@@ -31,16 +31,16 @@ func AnonymizeExpiredAccounts(db *gorm.DB, gracePeriodDay int) error {
 		Where("deleted_at IS NOT NULL").
 		Where("deleted_at < ?", cutoffTime).
 		Find(&users).Error; err != nil {
-		log.Printf("Error finding expired accounts: %v", err)
+		slog.Error("Failed to find expired accounts", "error", err)
 		return err
 	}
 
 	if len(users) == 0 {
-		log.Println("No expired accounts found for anonymization")
+		slog.Info("No expired accounts found for anonymization")
 		return nil
 	}
 
-	log.Printf("Found %d expired accounts to anonymize", len(users))
+	slog.Info("Found expired accounts to anonymize", "count", len(users))
 
 	// Anonymize each user
 	anonymizedCount := 0
@@ -49,22 +49,22 @@ func AnonymizeExpiredAccounts(db *gorm.DB, gracePeriodDay int) error {
 	for _, user := range users {
 		// Check if already anonymized
 		if len(user.Username) > 5 && user.Username[:5] == "ANON-" {
-			log.Printf("Account %s already anonymized, skipping", user.ID)
+			slog.Info("Account already anonymized, skipping", "user_id", user.ID)
 			continue
 		}
 
 		if err := AnonymizeAccount(db, user.ID); err != nil {
-			log.Printf("Error anonymizing account %s: %v", user.ID, err)
+			slog.Info("Error anonymizing account", "user_id", user.ID, "error", err)
 			errorCount++
 			continue
 		}
 		anonymizedCount++
 	}
 
-	log.Printf("Account anonymization completed: %d anonymized, %d errors", anonymizedCount, errorCount)
+	slog.Info("Account anonymization completed", "count", anonymizedCount, "error_count", errorCount)
 
 	if errorCount > 0 {
-		log.Printf("Warning: Some accounts failed to anonymize. See errors above.")
+		slog.Warn("Some accounts failed to anonymize. See errors above.")
 	}
 
 	return nil
@@ -72,7 +72,7 @@ func AnonymizeExpiredAccounts(db *gorm.DB, gracePeriodDay int) error {
 
 // DisableCompanyJobPosts disables all job posts for a deactivated company
 func DisableCompanyJobPosts(db *gorm.DB, companyUserID string) error {
-	log.Printf("Disabling job posts for company: %s", companyUserID)
+	slog.Info("Disabling job posts for company", "company_id", companyUserID)
 
 	// Update all jobs for this company to set is_open = false
 	result := db.Model(&model.Job{}).
@@ -80,17 +80,17 @@ func DisableCompanyJobPosts(db *gorm.DB, companyUserID string) error {
 		Update("is_open", false)
 
 	if result.Error != nil {
-		log.Printf("Error disabling job posts for company %s: %v", companyUserID, result.Error)
+		slog.Error("Failed to disable job posts for company", "user_id", companyUserID, "error", result.Error)
 		return fmt.Errorf("failed to disable job posts: %w", result.Error)
 	}
 
-	log.Printf("Disabled %d job posts for company: %s", result.RowsAffected, companyUserID)
+	slog.Info("Disabled job posts for company", "count", result.RowsAffected, "user_id", companyUserID)
 	return nil
 }
 
 // AnonymizeJobApplicationsForStudent anonymizes and deletes files from all job applications for a student
 func AnonymizeJobApplicationsForStudent(tx *gorm.DB, studentUserID string) error {
-	log.Printf("Anonymizing job applications for student: %s", studentUserID)
+	slog.Info("Anonymizing job applications for student", "user_id", studentUserID)
 
 	// Find all job applications for this student
 	var applications []model.JobApplication
@@ -102,11 +102,11 @@ func AnonymizeJobApplicationsForStudent(tx *gorm.DB, studentUserID string) error
 	}
 
 	if len(applications) == 0 {
-		log.Printf("No job applications found for student: %s", studentUserID)
+		slog.Info("No job applications found for student", "user_id", studentUserID)
 		return nil
 	}
 
-	log.Printf("Found %d job applications to anonymize for student: %s", len(applications), studentUserID)
+	slog.Info("Found job applications to anonymize for student", "count", len(applications), "user_id", studentUserID)
 
 	anonymousID := generateAnonymousID(studentUserID)
 
@@ -115,11 +115,11 @@ func AnonymizeJobApplicationsForStudent(tx *gorm.DB, studentUserID string) error
 		for _, file := range app.Files {
 			// Delete the physical file using the registered storage delete hook
 			if err := model.CallStorageDeleteHook(tx.Statement.Context, file.ID); err != nil {
-				log.Printf("Warning: Failed to delete file %s: %v", file.ID, err)
+				slog.Warn("Failed to delete file", "id", file.ID, "error", err)
 			}
 			// Delete the file record from database
 			if err := tx.Unscoped().Delete(&file).Error; err != nil {
-				log.Printf("Warning: Failed to delete file record %s: %v", file.ID, err)
+				slog.Warn("Failed to delete file record", "id", file.ID, "error", err)
 			}
 		}
 
@@ -132,18 +132,18 @@ func AnonymizeJobApplicationsForStudent(tx *gorm.DB, studentUserID string) error
 		if err := tx.Unscoped().Model(&model.JobApplication{}).
 			Where("job_id = ? AND user_id = ?", app.JobID, studentUserID).
 			Updates(updates).Error; err != nil {
-			log.Printf("Warning: Failed to anonymize application for job %d: %v", app.JobID, err)
+			slog.Warn("Failed to anonymize application for job", "id", app.JobID, "error", err)
 		}
 	}
 
-	log.Printf("Successfully anonymized %d job applications for student: %s", len(applications), studentUserID)
+	slog.Info("Successfully anonymized job applications for student", "count", len(applications), "user_id", studentUserID)
 	return nil
 }
 
 // AnonymizeAccount anonymizes a user account and all associated personal data
 // This complies with Thailand's PDPA while retaining data for analytics
 func AnonymizeAccount(db *gorm.DB, userID string) error {
-	log.Printf("Anonymizing account: %s", userID)
+	slog.Info("Anonymizing account", "user_id", userID)
 
 	return db.Transaction(func(tx *gorm.DB) error {
 		var user model.User
@@ -157,10 +157,10 @@ func AnonymizeAccount(db *gorm.DB, userID string) error {
 			"username":      anonymousID,
 			"password_hash": "",
 		}).Error; err != nil {
-			log.Printf("Error anonymizing user record for user %s: %v", userID, err)
+			slog.Error("Failed to anonymize user record", "user_id", userID, "error", err)
 			return fmt.Errorf("failed to anonymize user: %w", err)
 		}
-		log.Printf("Anonymized user record for: %s", userID)
+		slog.Info("Anonymized user record", "user_id", userID)
 
 		// Check if user is a student
 		var student model.Student
@@ -175,13 +175,13 @@ func AnonymizeAccount(db *gorm.DB, userID string) error {
 			if err := AnonymizeStudentData(tx, &student); err != nil {
 				return fmt.Errorf("failed to anonymize student data: %w", err)
 			}
-			log.Printf("Anonymized student record for user: %s", userID)
+			slog.Info("Anonymized student record", "user_id", userID)
 
 			// Anonymize job applications if student
 			if err := AnonymizeJobApplicationsForStudent(tx, userID); err != nil {
 				return fmt.Errorf("failed to anonymize job applications: %w", err)
 			}
-			log.Printf("Anonymized job applications for student: %s", userID)
+			slog.Info("Anonymized job applications for student", "user_id", userID)
 		}
 
 		// Anonymize Company record if exists
@@ -189,7 +189,7 @@ func AnonymizeAccount(db *gorm.DB, userID string) error {
 			if err := AnonymizeCompanyData(tx, &company); err != nil {
 				return fmt.Errorf("failed to anonymize company data: %w", err)
 			}
-			log.Printf("Anonymized company record for user: %s", userID)
+			slog.Info("Anonymized company record", "user_id", userID)
 		}
 
 		// Anonymize Google OAuth details if exists
@@ -198,10 +198,10 @@ func AnonymizeAccount(db *gorm.DB, userID string) error {
 			if err := AnonymizeGoogleOAuthData(tx, &googleOAuth); err != nil {
 				return fmt.Errorf("failed to anonymize OAuth data: %w", err)
 			}
-			log.Printf("Anonymized OAuth details for user: %s", userID)
+			slog.Info("Anonymized OAuth details", "user_id", userID)
 		}
 
-		log.Printf("Successfully anonymized account: %s", userID)
+		slog.Info("Successfully anonymized account", "user_id", userID)
 		return nil
 	})
 }
@@ -231,10 +231,10 @@ func AnonymizeStudentData(tx *gorm.DB, student *model.Student) error {
 		var photo model.File
 		if err := tx.Where("id = ?", student.PhotoID).First(&photo).Error; err == nil {
 			if err := model.CallStorageDeleteHook(tx.Statement.Context, photo.ID); err != nil {
-				log.Printf("Warning: Failed to delete file %s: %v", photo.ID, err)
+				slog.Warn("Failed to delete file", "id", photo.ID, "message", err)
 			}
 			if err := tx.Unscoped().Delete(&photo).Error; err != nil {
-				log.Printf("Warning: Failed to delete file record %s: %v", photo.ID, err)
+				slog.Warn("Failed to delete file record", "id", photo.ID, "message", err)
 			}
 		}
 	}
@@ -243,10 +243,10 @@ func AnonymizeStudentData(tx *gorm.DB, student *model.Student) error {
 		var statusFile model.File
 		if err := tx.Where("id = ?", student.StudentStatusFileID).First(&statusFile).Error; err == nil {
 			if err := model.CallStorageDeleteHook(tx.Statement.Context, statusFile.ID); err != nil {
-				log.Printf("Warning: Failed to delete status file %s: %v", statusFile.ID, err)
+				slog.Warn("Failed to delete status file", "id", statusFile.ID, "message", err)
 			}
 			if err := tx.Unscoped().Delete(&statusFile).Error; err != nil {
-				log.Printf("Warning: Failed to delete status file record %s: %v", statusFile.ID, err)
+				slog.Warn("Failed to delete status file record", "id", statusFile.ID, "message", err)
 			}
 		}
 	}
@@ -279,10 +279,10 @@ func AnonymizeCompanyData(tx *gorm.DB, company *model.Company) error {
 		var photo model.File
 		if err := tx.Where("id = ?", company.PhotoID).First(&photo).Error; err == nil {
 			if err := model.CallStorageDeleteHook(tx.Statement.Context, photo.ID); err != nil {
-				log.Printf("Warning: Failed to delete file %s: %v", photo.ID, err)
+				slog.Warn("Failed to delete file", "id", photo.ID, "message", err)
 			}
 			if err := tx.Unscoped().Delete(&photo).Error; err != nil {
-				log.Printf("Warning: Failed to delete file record %s: %v", photo.ID, err)
+				slog.Warn("Failed to delete file record", "id", photo.ID, "message", err)
 			}
 		}
 	}
@@ -291,10 +291,10 @@ func AnonymizeCompanyData(tx *gorm.DB, company *model.Company) error {
 		var banner model.File
 		if err := tx.Where("id = ?", company.BannerID).First(&banner).Error; err == nil {
 			if err := model.CallStorageDeleteHook(tx.Statement.Context, banner.ID); err != nil {
-				log.Printf("Warning: Failed to delete banner file %s: %v", banner.ID, err)
+				slog.Warn("Failed to delete banner file", "id", banner.ID, "message", err)
 			}
 			if err := tx.Unscoped().Delete(&banner).Error; err != nil {
-				log.Printf("Warning: Failed to delete banner file record %s: %v", banner.ID, err)
+				slog.Warn("Failed to delete banner file record", "id", banner.ID, "message", err)
 			}
 		}
 	}

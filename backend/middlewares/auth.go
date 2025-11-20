@@ -2,8 +2,9 @@ package middlewares
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"strings"
 
 	"ku-work/backend/model"
@@ -19,7 +20,8 @@ import (
 // IMPORTANT: Redis client MUST not be nil. This middleware will fail if Redis is unavailable.
 func AuthMiddleware(jwtSecret []byte, redisClient *redis.Client) gin.HandlerFunc {
 	if redisClient == nil {
-		log.Fatal("FATAL: Redis client is nil. JWT revocation requires Redis to be available.")
+		slog.Error("FATAL: Redis client is nil. JWT revocation requires Redis to be available.")
+		os.Exit(1)
 	}
 
 	revocationService := services.NewJWTRevocationService(redisClient)
@@ -63,7 +65,7 @@ func AuthMiddleware(jwtSecret []byte, redisClient *redis.Client) gin.HandlerFunc
 			// Using Redis for O(1) lookup performance
 			isRevoked, err := revocationService.IsJWTRevoked(context.Background(), claims.ID)
 			if err != nil {
-				log.Printf("ERROR: Failed to check JWT revocation status for user %s: %v. Denying request.", claims.UserID, err)
+				slog.Error("Failed to check JWT revocation status, denying request.", "user_id", claims.UserID, "error", err)
 				// Fail closed: deny request if Redis check fails
 				// This ensures security is maintained even during Redis issues
 				ctx.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{"error": "Authentication service temporarily unavailable"})
@@ -72,8 +74,7 @@ func AuthMiddleware(jwtSecret []byte, redisClient *redis.Client) gin.HandlerFunc
 
 			if isRevoked {
 				// Token found in blacklist - it was revoked
-				log.Printf("SECURITY: Blocked revoked JWT usage. User: %s, JTI: %s, IP: %s",
-					claims.UserID, claims.ID, ctx.ClientIP())
+				slog.Warn("SECURITY: Blocked revoked JWT usage.", "user_id", claims.UserID, "jti", claims.ID, "ip", ctx.ClientIP())
 				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token has been revoked"})
 				return
 			}

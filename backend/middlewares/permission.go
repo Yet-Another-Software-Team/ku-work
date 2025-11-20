@@ -2,7 +2,7 @@ package middlewares
 
 import (
 	"ku-work/backend/model"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -15,7 +15,7 @@ func AdminPermissionMiddleware(db *gorm.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		userID, exist := ctx.Get("userID")
 		if !exist {
-			log.Panic("User ID not found in context")
+			slog.Error("User ID not found in context in AdminPermissionMiddleware")
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 			return
 		}

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 
@@ -23,7 +23,7 @@ func TurnstileExceptionMiddleware() gin.HandlerFunc {
 func TurnstileMiddleware() gin.HandlerFunc {
 	secret, hasSecret := os.LookupEnv("TURNSTILE_SECRET")
 	if !hasSecret {
-		log.Print("TURNSTILE_SECRET is missing, not verifying turnstile")
+		slog.Warn("TURNSTILE_SECRET is missing, not verifying turnstile")
 	}
 	// Create http client to request cloudflare
 	client := &http.Client{}
