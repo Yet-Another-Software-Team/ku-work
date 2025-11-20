@@ -66,6 +66,7 @@ services:
       dockerfile: ./Dockerfile
       args:
         GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+        TURNSTILE_CLIENT_TOKEN: ${TURNSTILE_CLIENT_TOKEN}
         API_BASE_URL: http://backend:8000
     ports:
       - "3000:3000"

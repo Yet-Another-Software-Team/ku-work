@@ -1,19 +1,18 @@
 # use the official Bun image
 # see all versions at https://hub.docker.com/r/oven/bun/tags
-FROM oven/bun:1 AS build
+FROM oven/bun:1.3 AS build
 WORKDIR /app
 
 ARG GOOGLE_CLIENT_ID
-# ARG API_BASE_URL
+ARG TURNSTILE_CLIENT_TOKEN
 
 ENV GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
-# ENV API_BASE_URL=$API_BASE_URL
+ENV TURNSTILE_CLIENT_TOKEN=$TURNSTILE_CLIENT_TOKEN
 
 COPY package.json bun.lock ./
 
-
-# use ignore-scripts to avoid building node modules like better-sqlite3
-RUN bun install --frozen-lockfile --ignore-scripts
+# Re-install only production dependencies, ensuring they are correctly resolved
+RUN bun install --frozen-lockfile --production --ignore-scripts
 
 # Copy the entire project
 COPY . .
@@ -22,7 +21,7 @@ COPY . .
 RUN bun --bun run build
 
 # copy production dependencies and source code into final image
-FROM oven/bun:1 AS production
+FROM oven/bun:1.3 AS production
 WORKDIR /app
 
 COPY package.json bun.lock ./
