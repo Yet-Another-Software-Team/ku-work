@@ -33,7 +33,17 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	companyHandlers := NewCompanyHandlers(db)
 	userHandlers := NewUserHandlers(db, helper.GetGracePeriodDays())
 	adminHandlers := NewAdminHandlers(db)
+	
+	// Middlewares
 	turnstileMiddleware := middlewares.TurnstileMiddleware()
+	authedMiddleware := middlewares.AuthMiddleware(jwtHandlers.JWTSecret, redisClient)
+	activeMiddleware := middlewares.AccountActiveMiddleware(db)
+	adminMiddleware := middlewares.AdminPermissionMiddleware(db)
+
+	// Rate Limiter
+	trustedRateLimiter := middlewares.RateLimiterWithLimits(redisClient, 100, 100*60)
+	loginRateLimiter := middlewares.RateLimiterWithLimits(redisClient, 5, 20)
+	authedRateLimiter := middlewares.RateLimiterWithLimits(redisClient, 60, 60*60)
 
 	if fileService == nil {
 		return fmt.Errorf("fileService must be provided")
@@ -41,32 +51,33 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	// Register the FileService with package-level handlers so handler functions
 	// such as SaveFile and ServeFileHandler can use the configured service.
 	SetFileService(fileService)
-
 	// File Routes
 	router.GET("/files/:fileID", fileHandlers.ServeFileHandler)
 
 	// Authentication Routes
-	auth := router.Group("/auth")
-	auth.POST("/admin/login", turnstileMiddleware, middlewares.RateLimiterWithLimits(redisClient, 5, 20), localAuthHandlers.AdminLoginHandler)
+	auth := router.Group("/auth", loginRateLimiter)
+	auth.POST("/admin/login", turnstileMiddleware, localAuthHandlers.AdminLoginHandler)
 	auth.POST("/company/register", turnstileMiddleware, localAuthHandlers.CompanyRegisterHandler)
-	auth.POST("/company/login", turnstileMiddleware, middlewares.RateLimiterWithLimits(redisClient, 5, 20), localAuthHandlers.CompanyLoginHandler)
-	auth.POST("/google/login", middlewares.RateLimiterWithLimits(redisClient, 5, 20), googleAuthHandlers.GoogleOauthHandler)
+	auth.POST("/company/login", turnstileMiddleware, localAuthHandlers.CompanyLoginHandler)
+	auth.POST("/google/login", googleAuthHandlers.GoogleOauthHandler)
 
-	// Protected Authentication Routes
-	authProtected := auth.Group("", middlewares.AuthMiddleware(jwtHandlers.JWTSecret, redisClient))
-	authProtected.POST("/refresh", middlewares.RateLimiterWithLimits(redisClient, 5, 20), jwtHandlers.RefreshTokenHandler)
-	authProtected.POST("/logout", jwtHandlers.LogoutHandler)
+	
+	// Logout and Student Register treated as normal API
+	authLooseProtected := router.Group("/auth", authedRateLimiter, authedMiddleware)
+	authLooseProtected.POST("/refresh", jwtHandlers.RefreshTokenHandler)
+	authLooseProtected.POST("/logout", jwtHandlers.LogoutHandler)
 	// Only active account can register
-	authProtectedActive := authProtected.Group("", middlewares.AccountActiveMiddleware(db))
+	authProtectedActive := authLooseProtected.Group("", activeMiddleware)
 	authProtectedActive.POST("/student/register", turnstileMiddleware, studentHandlers.RegisterHandler)
 
 	// User Routes
-	protectedRouter := router.Group("", middlewares.AuthMiddleware(jwtHandlers.JWTSecret, redisClient))
+	protectedRouter := router.Group("", authedMiddleware, authedRateLimiter)
 	// Keep reactivation available even for deactivated accounts
 	protectedRouter.POST("/me/reactivate", turnstileMiddleware, userHandlers.ReactivateAccount)
 
 	// Routes that require the account to be active
-	protectedActive := protectedRouter.Group("", middlewares.AccountActiveMiddleware(db))
+	protectedActive := protectedRouter.Group("", activeMiddleware)
+	trustedProtectedActive := router.Group("", authedMiddleware, adminMiddleware, activeMiddleware, trustedRateLimiter)
 	protectedActive.PATCH("/me", turnstileMiddleware, userHandlers.EditProfileHandler)
 	protectedActive.GET("/me", userHandlers.GetProfileHandler)
 	protectedActive.POST("/me/deactivate", turnstileMiddleware, userHandlers.DeactivateAccount)
@@ -75,7 +86,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	company := protectedActive.Group("/company")
 	company.GET("/:id", companyHandlers.GetCompanyProfileHandler)
 
-	companyAdmin := company.Group("", middlewares.AdminPermissionMiddleware(db))
+	companyAdmin := trustedProtectedActive.Group("/company")
 	companyAdmin.GET("", companyHandlers.GetCompanyListHandler)
 
 	// Job Routes
@@ -90,7 +101,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	job.POST("/:id/apply", turnstileMiddleware, applicationHandlers.CreateJobApplicationHandler)
 	job.PATCH("/:id", middlewares.TurnstileExceptionMiddleware(), jobHandlers.EditJobHandler, turnstileMiddleware, jobHandlers.EditJobHandler)
 
-	jobAdmin := job.Group("", middlewares.AdminPermissionMiddleware(db))
+	jobAdmin := trustedProtectedActive.Group("/jobs")
 	jobAdmin.POST("/:id/approval", jobHandlers.JobApprovalHandler)
 
 	// Application Routes
@@ -101,11 +112,11 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	student := protectedActive.Group("/students")
 	student.GET("", studentHandlers.GetProfileHandler)
 
-	studentAdmin := student.Group("", middlewares.AdminPermissionMiddleware(db))
+	studentAdmin := trustedProtectedActive.Group("/students")
 	studentAdmin.POST("/:id/approval", studentHandlers.ApproveHandler)
 
 	// Admin Routes
-	admin := protectedActive.Group("/admin", middlewares.AdminPermissionMiddleware(db))
+	admin := trustedProtectedActive.Group("/admin")
 	admin.GET("/audits", adminHandlers.FetchAuditLog)
 	admin.GET("/emaillog", adminHandlers.FetchEmailLog)
 	return nil
