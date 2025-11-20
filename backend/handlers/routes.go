@@ -33,7 +33,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	companyHandlers := NewCompanyHandlers(db)
 	userHandlers := NewUserHandlers(db, helper.GetGracePeriodDays())
 	adminHandlers := NewAdminHandlers(db)
-	
+
 	// Middlewares
 	turnstileMiddleware := middlewares.TurnstileMiddleware()
 	authedMiddleware := middlewares.AuthMiddleware(jwtHandlers.JWTSecret, redisClient)
@@ -61,7 +61,6 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	auth.POST("/company/login", turnstileMiddleware, localAuthHandlers.CompanyLoginHandler)
 	auth.POST("/google/login", googleAuthHandlers.GoogleOauthHandler)
 
-	
 	// Logout and Student Register treated as normal API
 	authLooseProtected := router.Group("/auth", authedRateLimiter, authedMiddleware)
 	authLooseProtected.POST("/refresh", jwtHandlers.RefreshTokenHandler)
