@@ -70,13 +70,13 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	authProtectedActive.POST("/student/register", turnstileMiddleware, studentHandlers.RegisterHandler)
 
 	// User Routes
-	protectedRouter := router.Group("", authedMiddleware, authedRateLimiter)
+	protectedRouter := router.Group("", authedRateLimiter, authedMiddleware)
 	// Keep reactivation available even for deactivated accounts
 	protectedRouter.POST("/me/reactivate", turnstileMiddleware, userHandlers.ReactivateAccount)
 
 	// Routes that require the account to be active
 	protectedActive := protectedRouter.Group("", activeMiddleware)
-	trustedProtectedActive := router.Group("", authedMiddleware, adminMiddleware, activeMiddleware, trustedRateLimiter)
+	trustedProtectedActive := router.Group("", trustedRateLimiter, authedMiddleware, adminMiddleware, activeMiddleware)
 	protectedActive.PATCH("/me", turnstileMiddleware, userHandlers.EditProfileHandler)
 	protectedActive.GET("/me", userHandlers.GetProfileHandler)
 	protectedActive.POST("/me/deactivate", turnstileMiddleware, userHandlers.DeactivateAccount)
