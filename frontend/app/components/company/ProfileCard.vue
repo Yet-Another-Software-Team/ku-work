@@ -160,6 +160,7 @@
 import { ref, computed } from "vue";
 import type { DropdownMenuItem } from "@nuxt/ui";
 import EditCompanyProfileCard from "~/components/EditCompanyProfileCard.vue";
+import { useAuthStore } from "~/stores/auth";
 
 const props = withDefaults(
     defineProps<{
@@ -197,7 +198,8 @@ const toast = useToast();
 
 // Allow editing when owner or when viewing own company ID
 const canEdit = computed(() => {
-    const uid = import.meta.client ? localStorage.getItem("userId") : null;
+    const authStore = useAuthStore();
+    const uid = import.meta.client ? authStore.userId : null;
     return props.isOwner || (!!props.companyId && props.companyId === uid);
 });
 
@@ -206,7 +208,8 @@ async function fetchCompanyProfile() {
     try {
         let idToFetch: string | null = props.companyId;
         if (props.isOwner && !idToFetch) {
-            idToFetch = localStorage.getItem("userId");
+            const authStore = useAuthStore();
+            idToFetch = authStore.userId;
         }
         if (!idToFetch) {
             console.error("No company ID provided or found");

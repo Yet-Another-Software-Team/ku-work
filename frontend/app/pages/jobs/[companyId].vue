@@ -202,6 +202,7 @@
 </template>
 
 <script setup lang="ts">
+import { useAuthStore } from "~/stores/auth";
 import type { JobPost } from "~/data/datatypes";
 
 const userRole = ref<string>("viewer");
@@ -328,7 +329,8 @@ const retryFetch = async () => {
 
 onMounted(async () => {
     if (import.meta.client) {
-        userRole.value = localStorage.getItem("role") || "viewer";
+        const authStore = useAuthStore();
+        userRole.value = authStore.role || "viewer";
 
         // Setup media query listener for responsive drawer/expanded view
         mq = window.matchMedia("(min-width: 768px)");

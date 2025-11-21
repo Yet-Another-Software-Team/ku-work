@@ -228,6 +228,7 @@
 
 <script setup lang="ts">
 import { useNuxtApp } from "#app";
+import { useAuthStore } from "~/stores/auth";
 
 const logout = useNuxtApp().$logout as () => void;
 
@@ -244,9 +245,10 @@ const isRegistered = ref(false);
 const loading = ref(true);
 
 onMounted(async () => {
-    const role = localStorage.getItem("role");
-    username.value = localStorage.getItem("username");
-    isRegistered.value = localStorage.getItem("isRegistered") === "true";
+    const authStore = useAuthStore();
+    const role = authStore.role;
+    username.value = authStore.username;
+    isRegistered.value = authStore.isRegistered;
     if (!role || !username.value) {
         // Data is wrong --> logout
         logout();
@@ -277,9 +279,10 @@ onMounted(async () => {
     // Backend returns 403 with { message: "account deactivated" } when deactivated.
     try {
         const api = useApi();
+        const token = authStore.token;
         await api.get("/me", {
             headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
+                Authorization: `Bearer ${token}`,
             },
         });
         isDeactivated.value = false;

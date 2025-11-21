@@ -1,4 +1,5 @@
 import { jwtDecode } from "jwt-decode";
+import { useAuthStore } from "~/stores/auth";
 
 export default defineNuxtPlugin({
     setup: (nuxtApp) => {
@@ -10,7 +11,9 @@ export default defineNuxtPlugin({
                 return;
             }
 
-            const token = localStorage.getItem("token");
+            const authStore = useAuthStore();
+            const token = authStore.token;
+
             if (!token) {
                 return;
             }
@@ -43,7 +46,7 @@ export default defineNuxtPlugin({
                         });
                         const newToken = response.data.token;
                         if (newToken) {
-                            localStorage.setItem("token", newToken);
+                            authStore.updateToken(newToken);
                             scheduleTokenRefresh(); // Schedule the next refresh
                         } else {
                             logout();
@@ -60,11 +63,11 @@ export default defineNuxtPlugin({
         };
 
         const logout = () => {
-            const role = localStorage.getItem("role");
+            const authStore = useAuthStore();
             if (import.meta.server) return;
-            localStorage.removeItem("token");
-            localStorage.removeItem("username");
-            localStorage.removeItem("role");
+
+            const role = authStore.role;
+            authStore.logout();
 
             if (refreshTimeoutId) {
                 clearTimeout(refreshTimeoutId);

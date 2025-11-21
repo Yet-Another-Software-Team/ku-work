@@ -218,6 +218,7 @@
 
 <script setup lang="ts">
 import type { JobPost } from "~/data/datatypes";
+import { useAuthStore } from "~/stores/auth";
 
 interface JobApplicationResponse {
     createdAt: string;
@@ -469,7 +470,8 @@ const isLoading = ref(true);
 onMounted(async () => {
     isLoading.value = true;
     if (import.meta.client) {
-        userRole.value = localStorage.getItem("role") || "viewer";
+        const authStore = useAuthStore();
+        userRole.value = authStore.role || "viewer";
     }
     try {
         if (userRole.value === "company") {

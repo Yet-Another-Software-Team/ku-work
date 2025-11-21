@@ -52,6 +52,7 @@
 import * as z from "zod";
 import type { FormSubmitEvent } from "@nuxt/ui";
 import { useApi, type LoginResponse } from "~/composables/useApi";
+import { useAuthStore } from "~/stores/auth";
 
 const toast = useToast();
 const api = useApi();
@@ -98,14 +99,13 @@ async function onSubmit(_: FormSubmitEvent<Schema>) {
             }
         );
 
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem("username", response.data.username);
-        localStorage.setItem("userId", response.data.userId);
-        if (response.data.role) {
-            localStorage.setItem("role", response.data.role);
-        } else {
-            localStorage.setItem("role", "company");
-        }
+        const authStore = useAuthStore();
+        authStore.setAuthData({
+            token: response.data.token,
+            username: response.data.username,
+            role: response.data.role || "company",
+            userId: response.data.userId,
+        });
 
         api.showSuccessToast("User logged in successfully!");
 

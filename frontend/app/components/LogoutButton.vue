@@ -11,6 +11,7 @@
 
 <script setup lang="ts">
 import { useApi } from "~/composables/useApi";
+import { useAuthStore } from "~/stores/auth";
 
 const toast = useToast();
 
@@ -25,10 +26,8 @@ const logout = async () => {
             }
         );
 
-        localStorage.removeItem("token");
-        localStorage.removeItem("username");
-        localStorage.removeItem("role");
-        localStorage.removeItem("userId");
+        const authStore = useAuthStore();
+        authStore.logout();
 
         toast.add({
             title: "Logged Out",

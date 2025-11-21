@@ -115,6 +115,7 @@ import { ref } from "vue";
 import type { JobPost } from "~/data/datatypes";
 import type { CheckboxGroupValue } from "@nuxt/ui";
 import { useMediaQuery, useInfiniteScroll, watchDebounced } from "@vueuse/core";
+import { useAuthStore } from "~/stores/auth";
 
 definePageMeta({
     layout: "viewer",
@@ -250,10 +251,11 @@ function setSelectedIndex(index: number | null) {
     }
 }
 
-// Get user role from localStorage
+// Get user role from Pinia store
 onMounted(() => {
     if (import.meta.client) {
-        userRole.value = localStorage.getItem("role") || "viewer";
+        const authStore = useAuthStore();
+        userRole.value = authStore.role || "viewer";
     }
 });
 
