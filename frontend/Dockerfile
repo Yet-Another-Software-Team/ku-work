@@ -4,14 +4,16 @@ FROM oven/bun:1 AS build
 WORKDIR /app
 
 ARG GOOGLE_CLIENT_ID
-# ARG API_BASE_URL
+ARG TURNSTILE_CLIENT_TOKEN
+ARG API_BASE_URL
 
 ENV GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
-# ENV API_BASE_URL=$API_BASE_URL
+ENV TURNSTILE_CLIENT_TOKEN=$TURNSTILE_CLIENT_TOKEN
+ENV API_BASE_URL=$API_BASE_URL
 
 COPY package.json bun.lock ./
 
-
+RUN bun pm cache rm
 # use ignore-scripts to avoid building node modules like better-sqlite3
 RUN bun install --frozen-lockfile --ignore-scripts
 
