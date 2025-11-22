@@ -1,3 +1,4 @@
+import type { Axios } from "axios";
 import { jwtDecode } from "jwt-decode";
 import { useAuthStore } from "~/stores/auth";
 
@@ -81,8 +82,45 @@ export default defineNuxtPlugin({
             }
         };
 
-        // Initial call to schedule refresh when the app loads
-        scheduleTokenRefresh();
+        const authenticateWithToken = async () => {
+            const authStore = useAuthStore();
+            try {
+                const response = await ($axios as Axios).get(
+                    `${useRuntimeConfig().public.apiBaseUrl}/me`,
+                    {
+                        withCredentials: true,
+                    }
+                );
+
+                if (response.data) {
+                    authStore.setAuthData({
+                        token: authStore.token as string,
+                        username: response.data.username,
+                        role: response.data.role,
+                        userId: response.data.userId,
+                        isRegistered: response.data.isRegistered,
+                    });
+                    scheduleTokenRefresh();
+
+                    // Successfully authenticated, redirect to dashboard
+                    if (authStore.isAdmin) {
+                        navigateTo("/admin", { replace: true });
+                    } else if (authStore.isStudent || authStore.isViewer) {
+                        navigateTo("/jobs", { replace: true });
+                    } else if (authStore.isCompany) {
+                        navigateTo("/dashboard", { replace: true });
+                    }
+                }
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            } catch (error) {
+                // To handle error if the token is invalid or expired
+                // so it can clear the store and redirect to login page
+                logout();
+            }
+        };
+
+        // Initial call to authenticate when the app loads
+        authenticateWithToken();
 
         return {
             provide: {
