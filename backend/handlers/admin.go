@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"ku-work/backend/model"
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -38,13 +39,15 @@ func (h *AdminHandlers) FetchAuditLog(ctx *gin.Context) {
 	}
 	err := ctx.Bind(&input)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Error("Failed to bind request", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 	var auditLogEntry []model.Audit
 	result := h.DB.Model(&model.Audit{}).Offset(int(input.Offset)).Limit(int(input.Limit)).Order(clause.OrderByColumn{Column: clause.Column{Name: "created_at"}, Desc: true}).Find(&auditLogEntry)
 	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		slog.Error("Failed to fetch audit log", "error", result.Error)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch audit log"})
 		return
 	}
 	ctx.JSON(http.StatusOK, auditLogEntry)
@@ -69,7 +72,8 @@ func (h *AdminHandlers) FetchEmailLog(ctx *gin.Context) {
 	}
 	err := ctx.Bind(&input)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Error("Failed to bind request", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 	var emailLogs []model.MailLog
@@ -79,7 +83,8 @@ func (h *AdminHandlers) FetchEmailLog(ctx *gin.Context) {
 		Order(clause.OrderByColumn{Column: clause.Column{Name: "created_at"}, Desc: true}).
 		Find(&emailLogs)
 	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		slog.Error("Failed to fetch email log", "error", result.Error)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch email log"})
 		return
 	}
 	ctx.JSON(http.StatusOK, emailLogs)

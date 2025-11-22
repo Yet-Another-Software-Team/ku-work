@@ -51,7 +51,7 @@ func SaveFile(ctx *gin.Context, db *gorm.DB, userId string, file *multipart.File
 	}
 
 	// Delegate saving to the file service.
-	return fileService.SaveFile(ctx, userId, file, fileCategory)
+	return fileService.SaveFile(ctx, db, userId, file, fileCategory)
 }
 
 // @Summary Get a file

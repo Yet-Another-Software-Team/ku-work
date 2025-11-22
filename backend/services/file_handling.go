@@ -64,8 +64,12 @@ func (s *FileService) RegisterGlobal() {
 
 // SaveFile delegates saving the uploaded file to the configured provider.
 // It returns the created file record or an error.
-func (s *FileService) SaveFile(ctx *gin.Context, userId string, file *multipart.FileHeader, category model.FileCategory) (*model.File, error) {
-	return s.provider.SaveFile(ctx, s.db, userId, file, category)
+func (s *FileService) SaveFile(ctx *gin.Context, db *gorm.DB, userId string, file *multipart.FileHeader, category model.FileCategory) (*model.File, error) {
+	tx := s.db
+	if db != nil {
+		tx = db
+	}
+	return s.provider.SaveFile(ctx, tx, userId, file, category)
 }
 
 // ServeFile delegates serving a file to the configured provider.

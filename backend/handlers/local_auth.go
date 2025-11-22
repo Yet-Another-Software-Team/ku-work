@@ -107,13 +107,15 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 	// Create Company
 	photo, err := SaveFile(ctx, tx, newUser.ID, req.Photo, model.FileCategoryImage)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Error("Failed to save company photo", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save company photo"})
 		return
 	}
 
 	banner, err := SaveFile(ctx, tx, newUser.ID, req.Banner, model.FileCategoryImage)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Error("Failed to save company banner", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save company banner"})
 		return
 	}
 
