@@ -66,16 +66,22 @@ export default defineNuxtPlugin({
         const logout = () => {
             const authStore = useAuthStore();
             if (import.meta.server) return;
-
-            const role = authStore.role;
+            const isAdmin = authStore.isAdmin;
             authStore.logout();
 
             if (refreshTimeoutId) {
                 clearTimeout(refreshTimeoutId);
             }
 
+            const route = useRoute();
+
+            // Don't redirect on public routes or registration pages
+            if (route.path.startsWith("/register") && route.path.startsWith("/agreement")) {
+                return;
+            }
+
             // Redirect to login page
-            if (role === "admin") {
+            if (isAdmin) {
                 navigateTo("/admin", { replace: true });
             } else {
                 navigateTo("/", { replace: true });
@@ -119,7 +125,6 @@ export default defineNuxtPlugin({
             }
         };
 
-        // Initial call to authenticate when the app loads
         authenticateWithToken();
 
         return {
