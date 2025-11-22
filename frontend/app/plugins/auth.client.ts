@@ -88,8 +88,9 @@ export default defineNuxtPlugin({
             }
         };
 
+        const authStore = useAuthStore();
+
         const authenticateWithToken = async () => {
-            const authStore = useAuthStore();
             try {
                 const response = await ($axios as Axios).get(
                     `${useRuntimeConfig().public.apiBaseUrl}/me`,
@@ -100,7 +101,6 @@ export default defineNuxtPlugin({
 
                 if (response.data) {
                     authStore.setAuthData({
-                        token: authStore.token as string,
                         username: response.data.username,
                         role: response.data.role,
                         userId: response.data.userId,
@@ -125,7 +125,10 @@ export default defineNuxtPlugin({
             }
         };
 
-        authenticateWithToken();
+        // Only authenticate if there is no token stored in memory
+        if (!authStore.token) {
+            authenticateWithToken();
+        }
 
         return {
             provide: {

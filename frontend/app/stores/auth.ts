@@ -17,15 +17,21 @@ export const useAuthStore = defineStore("auth", () => {
 
     // Action to set auth data
     const setAuthData = (data: {
-        token: string;
-        username: string;
-        role: string;
+        token?: string;
+        username?: string;
+        role?: string;
         userId?: string;
         isRegistered?: boolean;
     }) => {
-        token.value = data.token;
-        username.value = data.username;
-        role.value = data.role;
+        if (data.token) {
+            token.value = data.token;
+        }
+        if (data.username) {
+            username.value = data.username;
+        }
+        if (data.role) {
+            role.value = data.role;
+        }
         if (data.userId) {
             userId.value = data.userId;
         }
