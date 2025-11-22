@@ -260,7 +260,7 @@ func (h *UserHandlers) editStudentProfile(ctx *gin.Context, userId string) {
 		parsedBirthDate, err := time.Parse(time.RFC3339, *input.BirthDate)
 		if err != nil {
 			msg := "Failed to parse birth date"
-			slog.Error(msg, "error", err)
+			slog.Debug(msg, "error", err)
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": msg})
 			return
 		}

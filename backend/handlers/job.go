@@ -618,7 +618,7 @@ func (h *JobHandlers) AcceptJobApplication(ctx *gin.Context) {
 	if err := ctx.Bind(&input); err != nil {
 		msg := "Failed to bind input"
 		slog.Debug(msg, "error", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": msg})
 		return
 	}
 

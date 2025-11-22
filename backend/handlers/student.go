@@ -132,7 +132,7 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 	var parsedBirthDate time.Time
 	parsedBirthDate, err = time.Parse(time.RFC3339, input.BirthDate)
 	if err != nil {
-		slog.Error("Failed to parse birth date", "error", err)
+		slog.Debug("Failed to parse birth date", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid birth date format"})
 		return
 	}
@@ -246,7 +246,7 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 	if input.BirthDate != nil {
 		parsedBirthDate, err := time.Parse(time.RFC3339, *input.BirthDate)
 		if err != nil {
-			slog.Error("Failed to parse birth date", "error", err)
+			slog.Debug("Failed to parse birth date", "error", err)
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid birth date format"})
 			return
 		}
