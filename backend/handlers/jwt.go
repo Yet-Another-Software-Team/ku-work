@@ -291,10 +291,9 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 		return
 	}
 
-	
 	role := helper.GetRole(refreshTokenDB.UserID, h.DB)
 	username := helper.GetUsername(refreshTokenDB.UserID, role, h.DB)
-	
+
 	isRegistered := true
 	if role == helper.Viewer {
 		var count int64
@@ -310,10 +309,10 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	slog.Info("Token refreshed successfully", "user", refreshTokenDB.UserID, "ip", clientIP)
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"token":    jwtToken,
-		"username": username,
-		"role":     role,
-		"userId":   refreshTokenDB.UserID,
+		"token":        jwtToken,
+		"username":     username,
+		"role":         role,
+		"userId":       refreshTokenDB.UserID,
 		"isRegistered": isRegistered,
 	})
 }

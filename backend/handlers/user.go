@@ -298,7 +298,7 @@ func (h *UserHandlers) GetProfileHandler(ctx *gin.Context) {
 	role := helper.GetRole(userId, h.DB)
 	username := helper.GetUsername(userId, role, h.DB)
 
-	isRegistered := true 
+	isRegistered := true
 	if role == helper.Viewer {
 		var count int64
 		h.DB.Model(&model.Student{}).Where("user_id = ?", userId).Count(&count)
@@ -308,9 +308,9 @@ func (h *UserHandlers) GetProfileHandler(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"username": username,
-		"role":     role,
-		"userId":   userId,
+		"username":     username,
+		"role":         role,
+		"userId":       userId,
 		"isRegistered": isRegistered,
 	})
 }
