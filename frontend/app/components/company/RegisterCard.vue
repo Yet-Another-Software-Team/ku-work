@@ -100,6 +100,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from "vue";
 import { useApi, type AuthResponse } from "~/composables/useApi";
+import { useAuthStore } from "~/stores/auth";
 
 const toast = useToast();
 const api = useApi();
@@ -149,8 +150,9 @@ const canSubmit = computed(() => {
 
 onMounted(() => {
     if (import.meta.client) {
-        const token = localStorage.getItem("token");
-        const role = localStorage.getItem("role");
+        const authStore = useAuthStore();
+        const token = authStore.token;
+        const role = authStore.role;
         if (token) {
             if (role === "company" || role === "student") {
                 navigateTo("/dashboard", { replace: true });
@@ -229,16 +231,13 @@ const onSubmit = async () => {
         });
 
         if (response.data.token) {
-            localStorage.setItem("token", response.data.token);
-            localStorage.setItem("username", response.data.username as string);
-            if (response.data.userId) {
-                localStorage.setItem("userId", response.data.userId);
-            }
-            if (response.data.role) {
-                localStorage.setItem("role", response.data.role);
-            } else {
-                localStorage.setItem("role", "company");
-            }
+            const authStore = useAuthStore();
+            authStore.setAuthData({
+                token: response.data.token,
+                username: response.data.username as string,
+                role: response.data.role || "company",
+                userId: response.data.userId,
+            });
         }
 
         currentStep.value++;

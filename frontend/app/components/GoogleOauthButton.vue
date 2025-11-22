@@ -38,6 +38,7 @@
 <script setup lang="ts">
 import { googleAuthCodeLogin } from "vue3-google-login";
 import { useApi, type LoginResponse } from "~/composables/useApi";
+import { useAuthStore } from "~/stores/auth";
 
 const isLoggingIn = ref(false);
 
@@ -68,16 +69,14 @@ const login = async () => {
                     withCredentials: true,
                 }
             );
-            localStorage.setItem("token", response.data.token);
-            localStorage.setItem("username", response.data.username);
-            localStorage.setItem("isRegistered", response.data.isRegistered.toString());
-            if (response.data.userId) {
-                localStorage.setItem("userId", response.data.userId);
-            }
-
-            // Use the role from the response, or default to viewer
-            const role = response.data.role;
-            localStorage.setItem("role", role);
+            const authStore = useAuthStore();
+            authStore.setAuthData({
+                token: response.data.token,
+                username: response.data.username,
+                role: response.data.role,
+                userId: response.data.userId,
+                isRegistered: response.data.isRegistered,
+            });
 
             if (response.status == 201) {
                 // Account is new, navigate to registration page

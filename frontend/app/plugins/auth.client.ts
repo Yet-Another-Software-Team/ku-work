@@ -1,4 +1,6 @@
+import type { Axios } from "axios";
 import { jwtDecode } from "jwt-decode";
+import { useAuthStore } from "~/stores/auth";
 
 export default defineNuxtPlugin({
     setup: (nuxtApp) => {
@@ -10,7 +12,9 @@ export default defineNuxtPlugin({
                 return;
             }
 
-            const token = localStorage.getItem("token");
+            const authStore = useAuthStore();
+            const token = authStore.token;
+
             if (!token) {
                 return;
             }
@@ -43,7 +47,7 @@ export default defineNuxtPlugin({
                         });
                         const newToken = response.data.token;
                         if (newToken) {
-                            localStorage.setItem("token", newToken);
+                            authStore.updateToken(newToken);
                             scheduleTokenRefresh(); // Schedule the next refresh
                         } else {
                             logout();
@@ -60,26 +64,71 @@ export default defineNuxtPlugin({
         };
 
         const logout = () => {
-            const role = localStorage.getItem("role");
+            const authStore = useAuthStore();
             if (import.meta.server) return;
-            localStorage.removeItem("token");
-            localStorage.removeItem("username");
-            localStorage.removeItem("role");
+            const isAdmin = authStore.isAdmin;
+            authStore.logout();
 
             if (refreshTimeoutId) {
                 clearTimeout(refreshTimeoutId);
             }
 
+            const route = useRoute();
+
+            // Don't redirect on public routes or registration pages
+            if (route.path.startsWith("/register") && route.path.startsWith("/agreement")) {
+                return;
+            }
+
             // Redirect to login page
-            if (role === "admin") {
+            if (isAdmin) {
                 navigateTo("/admin", { replace: true });
             } else {
                 navigateTo("/", { replace: true });
             }
         };
 
-        // Initial call to schedule refresh when the app loads
-        scheduleTokenRefresh();
+        const authStore = useAuthStore();
+
+        const authenticateWithToken = async () => {
+            try {
+                const response = await ($axios as Axios).get(
+                    `${useRuntimeConfig().public.apiBaseUrl}/me`,
+                    {
+                        withCredentials: true,
+                    }
+                );
+
+                if (response.data) {
+                    authStore.setAuthData({
+                        username: response.data.username,
+                        role: response.data.role,
+                        userId: response.data.userId,
+                        isRegistered: response.data.isRegistered,
+                    });
+                    scheduleTokenRefresh();
+
+                    // Successfully authenticated, redirect to dashboard
+                    if (authStore.isAdmin) {
+                        navigateTo("/admin", { replace: true });
+                    } else if (authStore.isStudent || authStore.isViewer) {
+                        navigateTo("/jobs", { replace: true });
+                    } else if (authStore.isCompany) {
+                        navigateTo("/dashboard", { replace: true });
+                    }
+                }
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            } catch (error) {
+                // To handle error if the token is invalid or expired
+                // so it can clear the store and redirect to login page
+                logout();
+            }
+        };
+
+        // Only authenticate if there is no token stored in memory
+        if (!authStore.token) {
+            authenticateWithToken();
+        }
 
         return {
             provide: {

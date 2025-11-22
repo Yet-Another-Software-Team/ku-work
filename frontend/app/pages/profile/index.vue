@@ -33,14 +33,17 @@
 </template>
 
 <script setup lang="ts">
+import { useAuthStore } from "~/stores/auth";
+
 const userRole = ref<string>("viewer");
 const isRegistered = ref(false);
 const loading = ref(true);
 
 onMounted(() => {
     if (import.meta.client) {
-        const role = localStorage.getItem("role") || "viewer";
-        const registered = localStorage.getItem("isRegistered") === "true";
+        const authStore = useAuthStore();
+        const role = authStore.role || "viewer";
+        const registered = authStore.isRegistered;
         if (role === "viewer") {
             const toast = useToast();
             toast.add({

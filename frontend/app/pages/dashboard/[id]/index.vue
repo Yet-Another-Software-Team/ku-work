@@ -167,6 +167,7 @@
 <script setup lang="ts">
 import { mockJobApplicationData } from "~/data/mockData";
 import type { JobPost, JobApplication } from "~/data/datatypes";
+import { useAuthStore } from "~/stores/auth";
 
 definePageMeta({
     layout: "viewer",
@@ -226,7 +227,8 @@ const loadContents = async () => {
         if (jobId === -1) {
             return;
         }
-        const token = localStorage.getItem("token");
+        const authStore = useAuthStore();
+        const token = authStore.token;
         await fetchJob(token, jobId);
         await fetchApplication(token, jobId);
         if (test.value) {
@@ -253,6 +255,7 @@ function openConfirm(app: JobApplication, action: "accept" | "reject") {
 
 const acceptApplication = async (jobApplication: JobApplication, accept: boolean) => {
     try {
+        const authStore = useAuthStore();
         await api.patch(
             `/jobs/${jobApplication.jobId}/applications/${jobApplication.userId}/status`,
             {
@@ -260,7 +263,7 @@ const acceptApplication = async (jobApplication: JobApplication, accept: boolean
             },
             {
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    Authorization: `Bearer ${authStore.token}`,
                 },
             }
         );

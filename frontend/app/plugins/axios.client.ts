@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios, { type AxiosInstance, type AxiosError, type InternalAxiosRequestConfig } from "axios";
+import { useAuthStore } from "~/stores/auth";
 
 interface ApiError extends AxiosError {
     status?: number;
@@ -63,9 +64,12 @@ export default defineNuxtPlugin({
         // Request interceptor to add auth token and start loading
         axiosInstance.interceptors.request.use(
             (config) => {
-                const token = import.meta.client ? localStorage.getItem("token") : null;
-                if (token) {
-                    config.headers.Authorization = `Bearer ${token}`;
+                if (import.meta.client) {
+                    const authStore = useAuthStore();
+                    const token = authStore.token;
+                    if (token) {
+                        config.headers.Authorization = `Bearer ${token}`;
+                    }
                 }
 
                 // Start tracking this request for loading state
@@ -137,15 +141,16 @@ export default defineNuxtPlugin({
                         endRequest(refreshRequestId);
 
                         if (import.meta.client) {
-                            localStorage.setItem("token", newToken);
+                            const authStore = useAuthStore();
+                            authStore.updateToken(newToken);
                             if (response.data.userId) {
-                                localStorage.setItem("userId", response.data.userId);
+                                authStore.userId = response.data.userId;
                             }
                             if (response.data.username) {
-                                localStorage.setItem("username", response.data.username);
+                                authStore.username = response.data.username;
                             }
                             if (response.data.role) {
-                                localStorage.setItem("role", response.data.role);
+                                authStore.role = response.data.role;
                             }
                         }
 
@@ -161,9 +166,8 @@ export default defineNuxtPlugin({
                         forceComplete();
 
                         if (import.meta.client) {
-                            localStorage.removeItem("token");
-                            localStorage.removeItem("username");
-                            localStorage.removeItem("role");
+                            const authStore = useAuthStore();
+                            authStore.logout();
                         }
                         return Promise.reject(refreshError);
                     } finally {

@@ -42,7 +42,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 
 	// Rate Limiter
 	trustedRateLimiter := middlewares.RateLimiterWithLimits(redisClient, 100, 100*60)
-	loginRateLimiter := middlewares.RateLimiterWithLimits(redisClient, 5, 20)
+	authRateLimiter := middlewares.AuthRateLimiter(redisClient, 5, 20)
 	authedRateLimiter := middlewares.RateLimiterWithLimits(redisClient, 60, 60*60)
 
 	if fileService == nil {
@@ -55,15 +55,18 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, ema
 	router.GET("/files/:fileID", fileHandlers.ServeFileHandler)
 
 	// Authentication Routes
-	auth := router.Group("/auth", loginRateLimiter)
+	auth := router.Group("/auth", authRateLimiter)
 	auth.POST("/admin/login", turnstileMiddleware, localAuthHandlers.AdminLoginHandler)
 	auth.POST("/company/register", turnstileMiddleware, localAuthHandlers.CompanyRegisterHandler)
 	auth.POST("/company/login", turnstileMiddleware, localAuthHandlers.CompanyLoginHandler)
 	auth.POST("/google/login", googleAuthHandlers.GoogleOauthHandler)
 
+	// Refresh does not require authentication
+	refreshRoute := router.Group("/auth", authedRateLimiter)
+	refreshRoute.POST("/refresh", jwtHandlers.RefreshTokenHandler)
+
 	// Logout and Student Register treated as normal API
 	authLooseProtected := router.Group("/auth", authedRateLimiter, authedMiddleware)
-	authLooseProtected.POST("/refresh", jwtHandlers.RefreshTokenHandler)
 	authLooseProtected.POST("/logout", jwtHandlers.LogoutHandler)
 	// Only active account can register
 	authProtectedActive := authLooseProtected.Group("", activeMiddleware)
