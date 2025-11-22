@@ -53,6 +53,7 @@ services:
     volumes:
       - ./backend/gcs-key.json:/app/gcs-key.json
     environment:
+      GIN_MODE: release
       DB_HOST: db
       DB_PORT: ${DB_PORT}
       DB_USERNAME: ${DB_USERNAME}

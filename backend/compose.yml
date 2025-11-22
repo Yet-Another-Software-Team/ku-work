@@ -59,8 +59,12 @@ services:
         condition: service_healthy
     env_file: ".env"
     environment:
+      GIN_MODE: release
       DB_HOST: db
       DB_PORT: ${DB_PORT}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
       REDIS_HOST: redis
       REDIS_PORT: ${REDIS_PORT}
 
