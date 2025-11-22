@@ -53,16 +53,22 @@ func TurnstileMiddleware() gin.HandlerFunc {
 			Response: turnstileToken,
 			RemoteIP: ctx.ClientIP(),
 		}
+
+		// Define generic error message
+		msg := "Failed to satisfy Turnstile challenge"
+
 		jsonDataBytes, err := json.Marshal(request)
 		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			slog.Error(msg, "error", err)
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": msg})
 			return
 		}
 
 		// Create request https://developers.cloudflare.com/turnstile/get-started/server-side-validation/
 		req, err := http.NewRequest("POST", "https://challenges.cloudflare.com/turnstile/v0/siteverify", bytes.NewReader(jsonDataBytes))
 		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			slog.Error(msg, "error", err)
+			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": msg})
 			return
 		}
 
@@ -72,7 +78,8 @@ func TurnstileMiddleware() gin.HandlerFunc {
 		// Execute the request
 		resp, err := client.Do(req)
 		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			slog.Error(msg, "error", err)
+			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": msg})
 			return
 		}
 		defer (func() {
@@ -81,14 +88,16 @@ func TurnstileMiddleware() gin.HandlerFunc {
 
 		// Check if the response is successful
 		if resp.StatusCode != http.StatusOK {
-			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": fmt.Sprintf("Unexpected status code: %d\n", resp.StatusCode)})
+			slog.Error(msg, "error", fmt.Sprintf("Cloudflare returned with status code: %d", resp.StatusCode))
+			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": msg})
 			return
 		}
 
 		// Read the response body
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			slog.Error(msg, "error", err)
+			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": msg})
 			return
 		}
 
@@ -104,7 +113,8 @@ func TurnstileMiddleware() gin.HandlerFunc {
 		var result ResultStruct
 		err = json.Unmarshal(body, &result)
 		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			slog.Error(msg, "error", err)
+			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": msg})
 			return
 		}
 		if !result.Success {

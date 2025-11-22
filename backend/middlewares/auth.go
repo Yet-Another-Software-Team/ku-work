@@ -54,7 +54,9 @@ func AuthMiddleware(jwtSecret []byte, redisClient *redis.Client) gin.HandlerFunc
 
 		// Check for errors in token parsing or validation
 		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token: " + err.Error()})
+			msg := "Invalid token"
+			slog.Error(msg, "error", err)
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": msg})
 			return
 		}
 

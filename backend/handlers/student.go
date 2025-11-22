@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"html/template"
+	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"time"
@@ -120,17 +121,19 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 		Photo             *multipart.FileHeader `form:"photo" binding:"required"`
 		StudentStatusFile *multipart.FileHeader `form:"statusPhoto" binding:"required"`
 	}
-	input := StudentRegistrationInput{}
+	var input StudentRegistrationInput
 	err := ctx.MustBindWith(&input, binding.FormMultipart)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		slog.Debug("Failed to bind student registration request", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 	// Parse Birth Date to RFC3339 format
 	var parsedBirthDate time.Time
 	parsedBirthDate, err = time.Parse(time.RFC3339, input.BirthDate)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		slog.Debug("Failed to parse birth date", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid birth date format"})
 		return
 	}
 
@@ -140,12 +143,14 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 	// Save Files
 	photo, err := SaveFile(ctx, tx, userId, input.Photo, model.FileCategoryImage)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Error("Failed to save student photo", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save student photo"})
 		return
 	}
 	statusDocument, err := SaveFile(ctx, tx, userId, input.StudentStatusFile, model.FileCategoryDocument)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Error("Failed to save student status document", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save student status document"})
 		return
 	}
 
@@ -169,12 +174,14 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 	// Create file Commit the transaction
 	result := tx.Create(&student)
 	if result.Error != nil {
-		ctx.String(http.StatusInternalServerError, result.Error.Error())
+		slog.Error("Failed to create student", "error", result.Error)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create student"})
 		return
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		ctx.String(http.StatusInternalServerError, err.Error())
+		slog.Error("Failed to commit transaction", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create student"})
 		return
 	}
 
@@ -221,7 +228,8 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 	input := StudentEditProfileInput{}
 	err := ctx.MustBindWith(&input, binding.FormMultipart)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		slog.Debug("Failed to bind student edit profile request", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
@@ -230,14 +238,16 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 		UserID: userId,
 	}
 	if err := h.DB.First(&student).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Error("Failed to get student profile", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get student profile"})
 		return
 	}
 	// Update student data according to input, maintain same data if not provided
 	if input.BirthDate != nil {
 		parsedBirthDate, err := time.Parse(time.RFC3339, *input.BirthDate)
 		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			slog.Debug("Failed to parse birth date", "error", err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid birth date format"})
 			return
 		}
 		student.BirthDate = datatypes.Date(parsedBirthDate)
@@ -261,7 +271,8 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 	if input.Photo != nil {
 		photo, err := SaveFile(ctx, h.DB, userId, input.Photo, model.FileCategoryImage)
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			slog.Error("Failed to save student photo", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save student photo"})
 			return
 		}
 		student.PhotoID = photo.ID
@@ -270,7 +281,8 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 	// Save data into database
 	result := h.DB.Save(&student)
 	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		slog.Error("Failed to save profile", "error", result.Error)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save profile"})
 		return
 	}
 
@@ -301,7 +313,8 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 	input := StudentRegistrationApprovalInput{}
 	err := ctx.Bind(&input)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		slog.Debug("Failed to bind student approval request", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
@@ -328,7 +341,8 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 
 	result = tx.Save(&student)
 	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		slog.Error("Failed to save student approval status", "error", result.Error)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save student approval status"})
 		return
 	}
 	if err := tx.Create(&model.Audit{
@@ -339,11 +353,13 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 		ObjectID:   student.UserID,
 	}).Error; err != nil {
 		tx.Rollback()
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Error("Failed to create audit log", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save student approval status"})
 		return
 	}
 	if err := tx.Commit().Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Error("Failed to commit transaction", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save student approval status"})
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{
@@ -407,7 +423,8 @@ func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 	}
 	err := ctx.MustBindWith(&input, binding.Form)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		slog.Debug("Failed to bind get student profile request", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
@@ -423,7 +440,8 @@ func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 			UserID: userId,
 		})
 		if result.Error != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+			slog.Error("Failed to check for admin privileges", "error", result.Error)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get student profiles"})
 			return
 		} else if result.RowsAffected != 0 {
 			var students []StudentInfo
@@ -444,7 +462,8 @@ func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 				}
 			}
 			if err := query.Offset(input.Offset).Limit(input.Limit).Find(&students).Error; err != nil {
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				slog.Error("Failed to get student profiles", "error", err)
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get student profiles"})
 				return
 			}
 
@@ -467,7 +486,8 @@ func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 	// Get Student Profile from database
 	var studentInfo StudentInfo
 	if err := query.Where("students.user_id = ?", userId).Take(&studentInfo).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Error("Failed to get student profile", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get student profile"})
 		return
 	}
 

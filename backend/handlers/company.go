@@ -3,6 +3,7 @@ package handlers
 import (
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -74,7 +75,8 @@ func (h *CompanyHandlers) GetCompanyProfileHandler(ctx *gin.Context) {
 		Joins("INNER JOIN users on users.id = companies.user_id").
 		Where("companies.user_id = ?", id).
 		Take(&company).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Error("Failed to get company profile", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get company profile"})
 		return
 	}
 
@@ -140,7 +142,8 @@ func (h *CompanyHandlers) GetCompanyListHandler(ctx *gin.Context) {
 		Select("companies.created_at, companies.updated_at, companies.user_id, companies.email, companies.phone, companies.photo_id, companies.banner_id, companies.address, companies.city, companies.country, companies.website, companies.about_us, users.username as name").
 		Joins("INNER JOIN users on users.id = companies.user_id").
 		Find(&rawResults).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Error("Failed to get company list", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get company list"})
 		return
 	}
 

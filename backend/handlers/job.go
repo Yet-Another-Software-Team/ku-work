@@ -8,6 +8,7 @@ import (
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
 	"ku-work/backend/services"
+	"log/slog"
 	"math"
 	"net/http"
 	"strconv"
@@ -125,7 +126,9 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 
 	input := CreateJobInput{}
 	if err := ctx.Bind(&input); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		msg := "Failed to bind job input"
+		slog.Debug(msg, "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": msg})
 		return
 	}
 
@@ -141,7 +144,9 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 
 	company := model.Company{UserID: userid}
 	if err := h.DB.First(&company).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		msg := "User is not found as a company"
+		slog.Error(msg, "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		return
 	}
 
@@ -167,7 +172,9 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 	}
 
 	if err := h.DB.Create(&job).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		msg := "Failed to create job"
+		slog.Error(msg, "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		return
 	}
 
@@ -223,7 +230,9 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 		Offset:    0,
 	}
 	if err := ctx.ShouldBind(&input); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		msg := "Failed to bind input"
+		slog.Debug(msg, "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": msg})
 		return
 	}
 
@@ -288,7 +297,9 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 
 	var totalCount int64
 	if err := query.Count(&totalCount).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		msg := "Failed to count jobs"
+		slog.Error(msg, "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		return
 	}
 
@@ -303,7 +314,9 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 			Find(&jobsWithStats)
 
 		if result.Error != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+			msg := "Failed to fetch jobs"
+			slog.Error(msg, "error", result.Error)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 			return
 		}
 		ctx.JSON(http.StatusOK, gin.H{
@@ -319,7 +332,8 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 		Select("jobs.*, users.username as company_name, companies.photo_id, companies.banner_id, EXISTS (SELECT 1 FROM job_applications WHERE job_applications.job_id = jobs.id AND job_applications.user_id = ?) AS applied", userId).
 		Find(&jobs)
 	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		slog.Error("Failed to fetch jobs", "error", result.Error)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch jobs"})
 		return
 	}
 
@@ -351,7 +365,9 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 
 	var input EditJobInput
 	if err := ctx.ShouldBindJSON(&input); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		msg := "Failed to bind input"
+		slog.Debug(msg, "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": msg})
 		return
 	}
 
@@ -377,7 +393,9 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "job not found"})
 		} else {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			msg := "Failed to fetch job"
+			slog.Error(msg, "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		}
 		return
 	}
@@ -432,7 +450,9 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 	}
 
 	if err := h.DB.Save(&job).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		msg := "Failed to update job"
+		slog.Error(msg, "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"message": "job updated successfully"})
@@ -454,7 +474,9 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 func (h *JobHandlers) JobApprovalHandler(ctx *gin.Context) {
 	input := ApproveJobInput{}
 	if err := ctx.Bind(&input); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		msg := "Failed to bind input"
+		slog.Debug(msg, "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": msg})
 		return
 	}
 
@@ -476,7 +498,9 @@ func (h *JobHandlers) JobApprovalHandler(ctx *gin.Context) {
 
 	if err := tx.Save(&job).Error; err != nil {
 		tx.Rollback()
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		msg := "Failed to update job"
+		slog.Error(msg, "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		return
 	}
 
@@ -488,12 +512,17 @@ func (h *JobHandlers) JobApprovalHandler(ctx *gin.Context) {
 		ObjectID:   strconv.FormatUint(uint64(job.ID), 10),
 	}).Error; err != nil {
 		tx.Rollback()
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		msg := "Failed to update job"
+		slog.Error(msg, "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		return
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		tx.Rollback()
+		msg := "Failed to update job"
+		slog.Error(msg, "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		return
 	}
 
@@ -554,7 +583,9 @@ func (h *JobHandlers) GetJobDetailHandler(ctx *gin.Context) {
 		Joins("INNER JOIN users ON users.id = jobs.company_id").
 		Joins("INNER JOIN companies ON companies.user_id = jobs.company_id").
 		First(&job, jobId).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		msg := "Failed to retrieve job details"
+		slog.Error(msg, "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		return
 	}
 
@@ -585,7 +616,9 @@ func (h *JobHandlers) AcceptJobApplication(ctx *gin.Context) {
 
 	input := AcceptJobApplicationInput{}
 	if err := ctx.Bind(&input); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		msg := "Failed to bind input"
+		slog.Debug(msg, "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": msg})
 		return
 	}
 
@@ -595,7 +628,9 @@ func (h *JobHandlers) AcceptJobApplication(ctx *gin.Context) {
 		Where("jobs.company_id = ?", userId).
 		Where("job_applications.id = ?", input.ID).
 		Take(&jobApplication).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		msg := "Failed to retrieve job application"
+		slog.Error(msg, "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		return
 	}
 
@@ -606,7 +641,9 @@ func (h *JobHandlers) AcceptJobApplication(ctx *gin.Context) {
 	}
 
 	if err := h.DB.Save(&jobApplication).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		msg := "Failed to update job application status"
+		slog.Error(msg, "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		return
 	}
 
