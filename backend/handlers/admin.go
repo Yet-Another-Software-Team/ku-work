@@ -39,7 +39,7 @@ func (h *AdminHandlers) FetchAuditLog(ctx *gin.Context) {
 	}
 	err := ctx.Bind(&input)
 	if err != nil {
-		slog.Error("Failed to bind request", "error", err)
+		slog.Debug("Failed to bind request", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
@@ -72,7 +72,7 @@ func (h *AdminHandlers) FetchEmailLog(ctx *gin.Context) {
 	}
 	err := ctx.Bind(&input)
 	if err != nil {
-		slog.Error("Failed to bind request", "error", err)
+		slog.Debug("Failed to bind request", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}

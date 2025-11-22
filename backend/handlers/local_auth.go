@@ -66,7 +66,7 @@ type RegisterRequest struct {
 func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 	var req RegisterRequest
 	if err := ctx.MustBindWith(&req, binding.FormMultipart); err != nil {
-		slog.Error("Failed to bind company registration request", "error", err)
+		slog.Debug("Failed to bind company registration request", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}

@@ -124,7 +124,7 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 	input := ApplyJobInput{}
 	err = ctx.Bind(&input)
 	if err != nil {
-		slog.Error("Failed to bind job application request", "error", err)
+		slog.Debug("Failed to bind job application request", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
@@ -335,7 +335,7 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 	input := FetchJobApplicationsInput{}
 	err = ctx.Bind(&input)
 	if err != nil {
-		slog.Error("Failed to bind get job applications request", "error", err)
+		slog.Debug("Failed to bind get job applications request", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
@@ -387,7 +387,7 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 	for i := range jobApplications {
 		var files []model.File
 		err := h.DB.Table("job_application_has_file").
-			Select("files.*”).
+			Select("files.*").
 			Joins("INNER JOIN files ON files.id = job_application_has_file.file_id").
 			Where("job_application_has_file.job_application_job_id = ? AND job_application_has_file.job_application_user_id = ?",
 				jobApplications[i].JobID, jobApplications[i].UserID).
@@ -439,7 +439,7 @@ func (h *ApplicationHandlers) ClearJobApplicationsHandler(ctx *gin.Context) {
 	}
 	var input ClearJobApplicationsInput
 	if err := ctx.ShouldBind(&input); err != nil {
-		slog.Error("Failed to bind clear job applications request", "error", err)
+		slog.Debug("Failed to bind clear job applications request", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
@@ -571,7 +571,7 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 	input := FetchJobApplicationsInput{}
 	err := ctx.Bind(&input)
 	if err != nil {
-		slog.Error("Failed to bind get all job applications request", "error", err)
+		slog.Debug("Failed to bind get all job applications request", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
@@ -774,7 +774,7 @@ func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context
 	}
 	input := UpdateStatusInput{}
 	if err := ctx.BindJSON(&input); err != nil {
-		slog.Error("Failed to bind update job application status request", "error", err)
+		slog.Debug("Failed to bind update job application status request", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}

@@ -127,7 +127,7 @@ func (h *JobHandlers) CreateJobHandler(ctx *gin.Context) {
 	input := CreateJobInput{}
 	if err := ctx.Bind(&input); err != nil {
 		msg := "Failed to bind job input"
-		slog.Error(msg, "error", err)
+		slog.Debug(msg, "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": msg})
 		return
 	}
@@ -231,7 +231,7 @@ func (h *JobHandlers) FetchJobsHandler(ctx *gin.Context) {
 	}
 	if err := ctx.ShouldBind(&input); err != nil {
 		msg := "Failed to bind input"
-		slog.Error(msg, "error", err)
+		slog.Debug(msg, "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": msg})
 		return
 	}
@@ -366,7 +366,7 @@ func (h *JobHandlers) EditJobHandler(ctx *gin.Context) {
 	var input EditJobInput
 	if err := ctx.ShouldBindJSON(&input); err != nil {
 		msg := "Failed to bind input"
-		slog.Error(msg, "error", err)
+		slog.Debug(msg, "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": msg})
 		return
 	}
@@ -475,7 +475,7 @@ func (h *JobHandlers) JobApprovalHandler(ctx *gin.Context) {
 	input := ApproveJobInput{}
 	if err := ctx.Bind(&input); err != nil {
 		msg := "Failed to bind input"
-		slog.Error(msg, "error", err)
+		slog.Debug(msg, "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": msg})
 		return
 	}
@@ -617,7 +617,7 @@ func (h *JobHandlers) AcceptJobApplication(ctx *gin.Context) {
 	input := AcceptJobApplicationInput{}
 	if err := ctx.Bind(&input); err != nil {
 		msg := "Failed to bind input"
-		slog.Error(msg, "error", err)
+		slog.Debug(msg, "error", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		return
 	}

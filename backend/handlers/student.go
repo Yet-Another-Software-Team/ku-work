@@ -121,9 +121,10 @@ func (h *StudentHandler) RegisterHandler(ctx *gin.Context) {
 		Photo             *multipart.FileHeader `form:"photo" binding:"required"`
 		StudentStatusFile *multipart.FileHeader `form:"statusPhoto" binding:"required"`
 	}
+	var input StudentRegistrationInput
 	err := ctx.MustBindWith(&input, binding.FormMultipart)
 	if err != nil {
-		slog.Error("Failed to bind student registration request", "error", err)
+		slog.Debug("Failed to bind student registration request", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
@@ -227,7 +228,7 @@ func (h *StudentHandler) EditProfileHandler(ctx *gin.Context) {
 	input := StudentEditProfileInput{}
 	err := ctx.MustBindWith(&input, binding.FormMultipart)
 	if err != nil {
-		slog.Error("Failed to bind student edit profile request", "error", err)
+		slog.Debug("Failed to bind student edit profile request", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
@@ -312,7 +313,7 @@ func (h *StudentHandler) ApproveHandler(ctx *gin.Context) {
 	input := StudentRegistrationApprovalInput{}
 	err := ctx.Bind(&input)
 	if err != nil {
-		slog.Error("Failed to bind student approval request", "error", err)
+		slog.Debug("Failed to bind student approval request", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
@@ -422,7 +423,7 @@ func (h *StudentHandler) GetProfileHandler(ctx *gin.Context) {
 	}
 	err := ctx.MustBindWith(&input, binding.Form)
 	if err != nil {
-		slog.Error("Failed to bind get student profile request", "error", err)
+		slog.Debug("Failed to bind get student profile request", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}

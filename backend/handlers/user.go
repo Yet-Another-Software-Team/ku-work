@@ -92,7 +92,7 @@ func (h *UserHandlers) editCompanyProfile(ctx *gin.Context, userId string) {
 
 	err := ctx.MustBindWith(&input, binding.FormMultipart)
 	if err != nil {
-		slog.Error("Failed to bind company edit profile request", "error", err)
+		slog.Debug("Failed to bind company edit profile request", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
@@ -240,7 +240,7 @@ func (h *UserHandlers) editStudentProfile(ctx *gin.Context, userId string) {
 	err := ctx.MustBindWith(&input, binding.FormMultipart)
 	if err != nil {
 		msg := "Failed to bind input data"
-		slog.Error(msg, "error", err)
+		slog.Debug(msg, "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": msg})
 		return
 	}
