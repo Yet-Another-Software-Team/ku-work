@@ -6,10 +6,6 @@ setup("authenticate as student", async ({ page }) => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
-    // Navigate to student login
-    await page.getByText("Student").click();
-    await page.waitForTimeout(500);
-
     // Click login with Google
     const [popup] = await Promise.all([
         page.waitForEvent("popup"),

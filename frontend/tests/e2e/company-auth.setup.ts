@@ -2,6 +2,19 @@ import { test as setup, expect } from "@playwright/test";
 
 const authFile = "./playwright/.auth/company.json";
 
+function generateRandomString(length: number): string {
+    const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let result = "";
+
+    for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * characters.length);
+        result += characters.charAt(randomIndex);
+    }
+
+    return result;
+}
+const uniqueEmail = `testcompany+${generateRandomString(8)}@kuwork.com`;
+
 setup("authenticate as company", async ({ page }) => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
@@ -10,31 +23,20 @@ setup("authenticate as company", async ({ page }) => {
     await page.getByText("Company").click();
     await page.waitForTimeout(500);
 
-    // Click login with Google
-    const [popup] = await Promise.all([
-        page.waitForEvent("popup"),
-        page.getByRole("button", { name: /continue with google/i }).click(),
-    ]);
+    // Click sign up
+    page.getByRole("link", { name: /Sign Up/i }).click();
 
-    // Handle Google OAuth popup
-    await popup.waitForLoadState("domcontentloaded");
-
-    // Fill in Google credentials
-    const emailInput = popup.getByRole("textbox", { name: /email or phone/i });
+    // Fill in Account Signup
+    const emailInput = page.getByRole("textbox", { name: /Username/i });
     await emailInput.waitFor({ state: "visible" });
-    await emailInput.fill("testcompany@kuwork.com");
+    await emailInput.fill(uniqueEmail);
     await emailInput.press("Enter");
 
     // Wait for password field and fill
-    const passwordInput = popup.getByRole("textbox", { name: /enter your password/i });
+    const passwordInput = page.getByRole("textbox", { name: /Password/i });
     await passwordInput.waitFor({ state: "visible", timeout: 10000 });
-    await passwordInput.fill(process.env.TEST_COMPANY_PASSWORD || "TestPassword123");
+    await passwordInput.fill("TestPassword123");
     await passwordInput.press("Enter");
-
-    // Wait for the popup to close (auth complete)
-    await popup.waitForEvent("close", { timeout: 15000 }).catch(() => {
-        // If it doesn't close automatically, that's okay
-    });
 
     // Wait for successful login and redirect
     await page.waitForURL(/dashboard|home/, { timeout: 15000 });
