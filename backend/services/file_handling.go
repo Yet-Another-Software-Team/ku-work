@@ -29,7 +29,8 @@ func NewFileService(db *gorm.DB) *FileService {
 			baseDir = "./files"
 		}
 		// Ensure directory exists
-		if err := os.MkdirAll(baseDir, 0755); err != nil {
+		// #nosec G301
+		if err := os.MkdirAll(baseDir, 0750); err != nil {
 			panic(fmt.Errorf("failed to create local files directory %s: %w", baseDir, err))
 		}
 		p := filehandling.NewLocalProvider(baseDir)
