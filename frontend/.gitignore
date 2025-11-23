@@ -9,6 +9,10 @@ dist
 # Test results
 test-results
 
+# Playwright auth states
+playwright/.auth/
+playwright-report
+
 # Node dependencies
 node_modules
 
