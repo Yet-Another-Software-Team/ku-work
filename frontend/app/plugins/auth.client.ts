@@ -60,6 +60,7 @@ export default defineNuxtPlugin({
         };
 
         const logout = () => {
+            const role = localStorage.getItem("role");
             if (import.meta.server) return;
             localStorage.removeItem("token");
             localStorage.removeItem("username");
@@ -70,7 +71,11 @@ export default defineNuxtPlugin({
             }
 
             // Redirect to login page
-            navigateTo("/", { replace: true });
+            if (role === "admin") {
+                navigateTo("/admin", { replace: true });
+            } else {
+                navigateTo("/", { replace: true });
+            }
         };
 
         // Initial call to schedule refresh when the app loads

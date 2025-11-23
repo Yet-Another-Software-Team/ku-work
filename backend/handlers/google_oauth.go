@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
@@ -31,7 +31,8 @@ func NewOAuthHandlers(db *gorm.DB, jwtHandlers *JWTHandlers) *OauthHandlers {
 	b := make([]byte, 16)
 	_, rand_err := rand.Read(b)
 	if rand_err != nil {
-		log.Fatalf("Failed to generate random oauth state %v", rand_err)
+		slog.Error("Failed to generate random oauth state", "message", rand_err)
+		os.Exit(1)
 	}
 	oauthStateString := base64.URLEncoding.EncodeToString(b)
 
@@ -44,7 +45,8 @@ func NewOAuthHandlers(db *gorm.DB, jwtHandlers *JWTHandlers) *OauthHandlers {
 	}
 
 	if googleOauthConfig.ClientID == "" || googleOauthConfig.ClientSecret == "" {
-		log.Fatal("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables are not set")
+		slog.Error("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables are not set")
+		os.Exit(1)
 	}
 
 	return &OauthHandlers{
@@ -113,6 +115,7 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 
 	// Check if API request was successful
 	if api_res.StatusCode != http.StatusOK {
+		slog.Warn("User attempt to login using OAuth", "ip", ctx.ClientIP())
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Access Token is invalid, expired or insufficient"})
 		return
 	}
@@ -134,7 +137,7 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 
 	// Check if this user already exists on the DB via their external ID.
 	var userCount int64
-	h.DB.Model(&model.GoogleOAuthDetails{}).Where("external_id = ?", userInfo.ID).Count(&userCount)
+	h.DB.Model(&model.GoogleOAuthDetails{}).Unscoped().Where("external_id = ?", userInfo.ID).Count(&userCount)
 
 	var oauthDetail model.GoogleOAuthDetails
 
@@ -143,7 +146,7 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 
 	if userCount == 0 {
 		var newUser model.User
-		h.DB.FirstOrCreate(&newUser, model.User{
+		h.DB.Unscoped().FirstOrCreate(&newUser, model.User{
 			Username: userInfo.Email,
 			UserType: "oauth",
 		})
@@ -169,11 +172,11 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 	}
 
 	// Get updated oauthDetail
-	h.DB.Model(&model.GoogleOAuthDetails{}).Where("external_id = ?", userInfo.ID).First(&oauthDetail)
+	h.DB.Model(&model.GoogleOAuthDetails{}).Unscoped().Where("external_id = ?", userInfo.ID).First(&oauthDetail)
 
 	// getUser model and return JWT Token to frontend.
 	var user model.User
-	h.DB.Model(&user).Where("id = ?", oauthDetail.UserID).First(&user)
+	h.DB.Model(&user).Unscoped().Where("id = ?", oauthDetail.UserID).First(&user)
 
 	//Return JWT Token to context
 	jwtToken, refreshToken, err := h.JWTHandlers.HandleToken(user)
@@ -203,11 +206,14 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 		}
 	}
 
+	slog.Info("User logged in using OAuth", "user_id", user.ID, "ip", ctx.ClientIP())
+
 	ctx.JSON(status, gin.H{
-		"token":        jwtToken,
-		"username":     username,
-		"role":         role,
-		"userId":       user.ID,
-		"isRegistered": isRegistered, // To tell frontend whether user is registered or not
+		"token":         jwtToken,
+		"username":      username,
+		"role":          role,
+		"userId":        user.ID,
+		"isRegistered":  isRegistered, // To tell frontend whether user is registered or not
+		"isDeactivated": user.DeletedAt.Valid,
 	})
 }

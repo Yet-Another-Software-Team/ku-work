@@ -1,6 +1,6 @@
 <template>
     <div
-        class="flex items-center shadow-md rounded-xl px-4 py-1 h-[10em] w-[25em] border border-gray-300 dark:border-gray-700 hover:shadow-lg transition-all gap-5"
+        class="flex bg-white dark:bg-[#1f2937] items-center shadow-md rounded-xl px-4 py-1 h-[10em] w-[25em] border border-gray-300 dark:border-gray-700 hover:shadow-lg transition-all gap-5"
     >
         <!-- Left Section -->
         <div class="flex">
@@ -26,7 +26,7 @@
                     name: 'dashboard-id-beforeEmail',
                     params: {
                         id: applicationData.jobId,
-                        beforeEmail: applicationData.email.split('@')[0],
+                        beforeEmail: beforeEmail,
                     },
                 }"
             >
@@ -34,7 +34,7 @@
                     {{ applicationData.username }}
                 </h2>
             </NuxtLink>
-            <p class="text-sm">{{ profile.profile.major }}</p>
+            <p class="text-sm">{{ major }}</p>
             <!-- Buttons -->
             <div class="flex items-center gap-2">
                 <UButton
@@ -59,19 +59,29 @@
 </template>
 
 <script setup lang="ts">
-import { mockUserData } from "~/data/mockData";
-import type { JobApplication, Profile } from "~/data/mockData";
+import type { JobApplication, Profile, ProfileInformation } from "~/data/datatypes";
+import { computed } from "vue";
 
 const props = defineProps<{
     applicationData: JobApplication;
 }>();
 
-// console.log("Application Data:", props.applicationData);
-
 const api = useApi();
 const config = useRuntimeConfig();
-const profile = ref<Profile>(mockUserData);
+
+// Normalize and store profile in a consistent shape: { profile: ProfileInformation }
+const profile = ref<Profile | undefined>(undefined);
 const avatar = ref("");
+
+// Computed helpers to avoid template runtime errors when data is missing
+const major = computed(() => {
+    return profile.value?.profile?.major ?? "";
+});
+
+const beforeEmail = computed(() => {
+    const email = props.applicationData?.email ?? "";
+    return email.split("@")[0];
+});
 
 onMounted(async () => {
     if (props.applicationData.userId) {
@@ -79,11 +89,16 @@ onMounted(async () => {
             const response = await api.get(`/students`, {
                 params: { id: props.applicationData.userId },
             });
-            if (response && response.data && response.data.photoId) {
-                avatar.value = `${config.public.apiBaseUrl}/files/${response.data.photoId}`;
+            const data = response && response.data ? response.data : null;
+            if (data) {
+                // API sometimes returns the profile directly or wrapped as { profile: ... }
+                const student: ProfileInformation = data.profile ?? data;
+                if (student?.photoId) {
+                    avatar.value = `${config.public.apiBaseUrl}/files/${student.photoId}`;
+                }
+                // Ensure callers can always access profile.profile.*
+                profile.value = { profile: student };
             }
-            profile.value = response.data;
-            // console.log("Fetched profile data:", profile.value);
         } catch (error) {
             console.error("Error fetching user data:", error);
         }

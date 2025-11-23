@@ -1,5 +1,5 @@
 <template>
-    <div class="rounded-xl dark:bg-[#001F26] max-h-[90vh] overflow-y-auto p-5 w-full max-w-2xl">
+    <div class="rounded-xl max-h-[90vh] overflow-y-auto p-5 w-full max-w-2xl">
         <div class="w-full flex justify-center mb-10">
             <div class="relative">
                 <div
@@ -19,7 +19,7 @@
                 </div>
                 <button
                     type="button"
-                    class="absolute -right-1 bottom-0 translate-y-1 inline-flex items-center justify-center w-9 h-9 rounded-full bg-primary-500 text-white shadow hover:bg- primary-600 ring-4 ring-white/60"
+                    class="absolute -right-1 bottom-0 translate-y-1 inline-flex items-center justify-center w-9 h-9 rounded-full bg-primary-500 text-white shadow hover:bg-primary-600 ring-4 ring-white/60"
                     aria-label="Change avatar"
                     @click="triggerAvatarPicker"
                 >
@@ -37,16 +37,13 @@
 
         <form class="grid grid-cols-1 md:grid-cols-2 gap-4" @submit.prevent="handleSubmit">
             <div class="md:col-span-2">
-                <label class="block text-primary-800 dark:text-primary font-semibold mb-1"
-                    >Name</label
-                >
-                <div
-                    class="rounded-lg border border- primary-700/50 bg-gray-100 px-4 py-2 text-gray-900 dark:border- primary-700/40 dark:bg-[#013B49] dark:text-white"
-                >
-                    {{ `${profile.firstName} ${profile.lastName}` }}
-                </div>
+                <label class="block font-semibold text-primary-800 dark:text-primary">Name</label>
+                <UInput
+                    disabled
+                    :placeholder="`${profile.firstName || 'Not provided'} ${profile.lastName}`"
+                    class="mt-1 w-full rounded-md bg-white text-gray-900 dark:bg-[#013B49] dark:text-white"
+                />
             </div>
-
             <div class="col-span-1">
                 <label for="dob" class="block text-primary-800 dark:text-primary font-semibold mb-1"
                     >Date of Birth</label
@@ -125,6 +122,9 @@
                     />
                 </div>
             </div>
+            <div class="flex justify-center md:col-span-2">
+                <TurnstileWidget @callback="(tk) => (cfToken = tk)" />
+            </div>
 
             <div class="md:col-span-2 flex flex-wrap justify-end gap-3 pt-2 w-full">
                 <UButton
@@ -136,7 +136,15 @@
                 >
                     Discard
                 </UButton>
-                <UButton type="submit" color="primary" class="rounded-md px-5"> Save </UButton>
+                <UButton
+                    type="submit"
+                    color="primary"
+                    class="rounded-md px-5"
+                    :loading="saving"
+                    :disabled="saving || !cfToken"
+                >
+                    Save
+                </UButton>
             </div>
         </form>
 
@@ -178,6 +186,7 @@ interface StudentProfile {
     linkedIn?: string;
     aboutMe?: string;
     photo?: string;
+    approvalStatus?: string;
 }
 
 interface FormState {
@@ -204,12 +213,14 @@ const props = defineProps<{
         firstName: string;
         lastName: string;
         email: string;
+        approvalStatus?: string;
     };
+    saving?: boolean;
 }>();
 
 const emit = defineEmits<{
     (e: "close"): void;
-    (e: "saved", payload: SavedPayload): SavedPayload;
+    (e: "saved", payload: SavedPayload, token: string): void;
 }>();
 
 const form = reactive<FormState>({
@@ -254,6 +265,7 @@ const avatarInput = ref<HTMLInputElement | null>(null);
 const avatarPreview = ref<string>("");
 const avatarFile = ref<File | null>(null);
 const showDiscardConfirm = ref(false);
+const cfToken = ref("");
 
 watch(
     () => props.profile,
@@ -303,6 +315,7 @@ function triggerAvatarPicker() {
 function onAvatarSelected(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
+    // Restrict GIFs (not supported)
     const isGif = file.type === "image/gif" || file.name.toLowerCase().endsWith(".gif");
     if (isGif) {
         addToast({
@@ -313,8 +326,12 @@ function onAvatarSelected(event: Event) {
         (event.target as HTMLInputElement).value = "";
         return;
     }
-    updateAvatarPreview(URL.createObjectURL(file));
     avatarFile.value = file;
+    // Do not preview new picture when profile is rejected
+    if (props.profile?.approvalStatus === "rejected") {
+        return;
+    }
+    updateAvatarPreview(URL.createObjectURL(file));
 }
 
 function updateAvatarPreview(source: string) {
@@ -335,6 +352,7 @@ function tryDiscard() {
         avatarFile.value != null
     ) {
         showDiscardConfirm.value = true;
+        cfToken.value = "";
         return;
     }
     confirmDiscard();
@@ -364,20 +382,24 @@ function handleSubmit() {
         return;
     }
 
-    addToast({ title: "Saved", description: "Profile updated successfully.", color: "success" });
+    // Removed premature success toast; parent should toast after backend confirms
 
-    emit("saved", {
-        ...props.profile,
-        birthDate: result.data.dob,
-        phone: result.data.phone ?? "",
-        github: result.data.github ?? "",
-        linkedIn: result.data.linkedin ?? "",
-        aboutMe: result.data.aboutMe ?? "",
-        photo: avatarPreview.value || props.profile.photo || "",
-        _avatarFile: avatarFile.value,
-    });
+    emit(
+        "saved",
+        {
+            ...props.profile,
+            birthDate: result.data.dob,
+            phone: result.data.phone ?? "",
+            github: result.data.github ?? "",
+            linkedIn: result.data.linkedin ?? "",
+            aboutMe: result.data.aboutMe ?? "",
+            photo: avatarPreview.value || props.profile.photo || "",
+            _avatarFile: avatarFile.value,
+        },
+        cfToken.value
+    );
 
-    emit("close");
+    cfToken.value = "";
 }
 
 function isHost(url: string, expectedHost: string) {

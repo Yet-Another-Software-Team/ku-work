@@ -1,6 +1,6 @@
 <template>
-    <div class="mt-5">
-        <ApplicantCard
+    <div class="mt-5 container mx-auto max-w-7xl px-4">
+        <JobApplicationCard
             v-if="applicantData"
             :data="applicantData"
             :loading="isLoading"
@@ -11,7 +11,6 @@
 
 <script lang="ts" setup>
 import { ref, onMounted } from "vue";
-import ApplicantCard from "~/components/job/ApplicantCard.vue";
 
 const api = useApi();
 
@@ -44,12 +43,7 @@ const statusChanged = async (status: string) => {
 
 const fetchData = async () => {
     try {
-        const response = await api.get(
-            `/jobs/${jobId}/application?${new URLSearchParams({
-                email: `${beforeEmailParam}@ku.th`,
-            })}`
-        );
-        console.log(response.data);
+        const response = await api.get(`/jobs/${jobId}/applications/${beforeEmailParam}@ku.th`);
         applicantData.value = response.data;
     } catch (error) {
         console.error("Failed to fetch applicant data:", error);

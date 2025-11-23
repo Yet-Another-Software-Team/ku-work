@@ -30,7 +30,6 @@ export default defineNuxtPlugin({
     name: "axios-client",
     setup: () => {
         const config = useRuntimeConfig();
-        const toast = useToast();
         const { startRequest, endRequest, forceComplete } = useApiLoading();
 
         // Create axios instance
@@ -165,17 +164,6 @@ export default defineNuxtPlugin({
                             localStorage.removeItem("token");
                             localStorage.removeItem("username");
                             localStorage.removeItem("role");
-
-                            toast.add({
-                                title: "Session Expired",
-                                description: "Please log in again.",
-                                color: "error",
-                            });
-
-                            // Use timeout to allow toast to be seen
-                            setTimeout(() => {
-                                window.location.href = "/";
-                            }, 500);
                         }
                         return Promise.reject(refreshError);
                     } finally {

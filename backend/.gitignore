@@ -4,3 +4,4 @@ tests/files/**
 .air.toml
 tmp/**
 .dbonly-compose.yml
+gcs-key.json

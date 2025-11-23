@@ -3,7 +3,7 @@
         <!-- Loading screen -->
         <div
             v-if="loading"
-            class="fixed inset-0 flex items-center light:bg-[#F7F8F4] dark:bg-neutral-700 justify-center z-50"
+            class="fixed inset-0 flex items-center bg-[#F7F8F4] dark:bg-neutral-700 justify-center z-50"
         >
             <div
                 class="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-primary"
@@ -11,7 +11,7 @@
         </div>
 
         <!-- Content -->
-        <ProfileCard v-if="userRole === 'student'" />
+        <StudentProfileCard v-if="userRole === 'student'" />
         <CompanyProfileCard v-if="userRole === 'company'" />
         <div v-if="userRole === 'viewer'" class="text-center items-center py-8">
             <h1 class="text-3xl font-semibold text-gray-600 dark:text-gray-400 mb-4">

@@ -138,6 +138,10 @@
                 </div>
             </div>
 
+            <div class="flex justify-center w-full">
+                <TurnstileWidget @callback="(tk) => (cfToken = tk)" />
+            </div>
+
             <!-- Save & Discard -->
             <div class="grid grid-cols-12 w-full">
                 <div class="col-span-12 md:col-start-9 md:col-span-4 flex justify-end gap-x-3">
@@ -191,7 +195,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch } from "vue";
-import type { EditJobPost, JobPost } from "~/data/mockData";
+import type { EditJobPost, JobPost } from "~/data/datatypes";
 import * as z from "zod";
 
 const props = defineProps<{
@@ -203,6 +207,7 @@ const emit = defineEmits(["close"]);
 const { add: addToast } = useToast();
 
 const showDiscardConfirm = ref(false);
+const cfToken = ref("");
 
 const api = useApi();
 
@@ -380,6 +385,7 @@ async function onSubmit() {
         await api.patch(`/jobs/${props.data.id}`, result.data, {
             headers: {
                 Authorization: `Bearer ${token}`,
+                "X-Turnstile-Token": cfToken.value,
             },
         });
         addToast({

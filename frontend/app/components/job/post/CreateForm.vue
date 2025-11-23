@@ -157,6 +157,10 @@
                 </div>
             </div>
 
+            <div class="flex justify-center w-full">
+                <TurnstileWidget @callback="(tk) => (cfToken = tk)" />
+            </div>
+
             <!-- Post & Cancel -->
             <div class="grid grid-cols-12 w-full">
                 <div class="col-span-12 md:col-start-9 md:col-span-4 flex justify-end gap-x-3">
@@ -174,6 +178,7 @@
                         class="size-fit text-xl text-white rounded-md px-15 font-medium bg-primary-500 hover:bg-primary-700 hover:cursor-pointer active:bg-primary-800"
                         type="submit"
                         label="Post"
+                        :disabled="!cfToken"
                     />
                 </div>
             </div>
@@ -183,7 +188,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch } from "vue";
-import type { CreateJobPost } from "~/data/mockData";
+import type { CreateJobPost } from "~/data/datatypes";
 import * as z from "zod";
 
 const emit = defineEmits(["close"]);
@@ -194,6 +199,7 @@ const showDiscardConfirm = ref(false);
 
 const api = useApi();
 const isSubmitting = ref(false);
+const cfToken = ref("");
 
 const form = ref<CreateJobPost>({
     name: "",
@@ -296,6 +302,7 @@ function validateSalaryCross() {
 
 function cancel() {
     showDiscardConfirm.value = false;
+    cfToken.value = "";
     emit("close");
 }
 
@@ -360,6 +367,7 @@ async function onSubmit() {
         await api.post("/jobs", result.data, {
             headers: {
                 Authorization: `Bearer ${token}`,
+                "X-Turnstile-Token": cfToken.value,
             },
         });
         console.log("Job submitted:", result.data);

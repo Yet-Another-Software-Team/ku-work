@@ -1,5 +1,6 @@
+<!-- Job Post component that shows on company dashboard -->
 <template>
-    <UCard class="dark:bg-[#1f2937]">
+    <UCard class="bg-white dark:bg-[#1f2937]">
         <template #header>
             <div class="flex justify-between">
                 <div class="flex gap-x-4 items-center">
@@ -37,13 +38,13 @@
                             class="hover:text-primary transition-colors duration-300"
                         />
                     </UButton>
-                    <UModal v-model:open="openJobEditForm">
+                    <UModal v-model:open="openJobPostEditForm">
                         <UButton
                             variant="ghost"
                             color="neutral"
                             class="cursor-pointer"
                             aria-label="Edit job"
-                            @click.stop.prevent="openJobEditForm = true"
+                            @click.stop.prevent="openJobPostEditForm = true"
                         >
                             <Icon
                                 name="fluent:edit-24-regular"
@@ -52,7 +53,7 @@
                             />
                         </UButton>
                         <template #content>
-                            <JobEditForm :data="data" @close="handleCloseEditForm" />
+                            <JobPostEditForm :data="data" @close="handleCloseEditForm" />
                         </template>
                     </UModal>
                 </div>
@@ -107,7 +108,7 @@
 </template>
 
 <script setup lang="ts">
-import type { JobPost } from "~/data/mockData";
+import type { JobPost } from "~/data/datatypes";
 
 const emit = defineEmits<{
     "update:open": [value: boolean];
@@ -115,7 +116,7 @@ const emit = defineEmits<{
     close: [];
 }>();
 
-const openJobEditForm = ref(false);
+const openJobPostEditForm = ref(false);
 
 const props = defineProps<{
     data: JobPost;
@@ -144,7 +145,7 @@ function selectJob() {
 }
 
 function handleCloseEditForm() {
-    openJobEditForm.value = false;
+    openJobPostEditForm.value = false;
     emit("close");
 }
 

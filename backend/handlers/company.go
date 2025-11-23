@@ -20,9 +20,8 @@ func NewCompanyHandlers(db *gorm.DB) *CompanyHandlers {
 	}
 }
 
-// CompanyResponse defines the API response for company data, excluding GORM-specific types like DeletedAt.
+// CompanyResponse defines the API response for company data, aligned with model.Company.
 type CompanyResponse struct {
-	ID        uint      `json:"id"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 	UserID    string    `json:"userId"`
@@ -36,6 +35,20 @@ type CompanyResponse struct {
 	Website   string    `json:"website"`
 	AboutUs   string    `json:"about"`
 	Name      string    `json:"name"`
+}
+
+// anonymizeCompany zeros or replaces personally-identifying fields for deactivated accounts.
+func anonymizeCompany(c *CompanyResponse) {
+	c.Email = ""
+	c.Phone = ""
+	c.PhotoID = ""
+	c.BannerID = ""
+	c.Address = ""
+	c.City = ""
+	c.Country = ""
+	c.Website = ""
+	c.AboutUs = ""
+	c.Name = "Deactivated Account"
 }
 
 // @Summary Get a company's profile
@@ -56,12 +69,38 @@ func (h *CompanyHandlers) GetCompanyProfileHandler(ctx *gin.Context) {
 		Name string `json:"name"`
 	}
 	var company CompanyInfo
-	if err := h.DB.Model(&model.Company{}).Select("companies.*, users.username as name").Joins("INNER JOIN users on users.id = companies.user_id").Where("companies.user_id = ?", id).Take(&company).Error; err != nil {
+	if err := h.DB.Model(&model.Company{}).
+		Select("companies.*, users.username as name").
+		Joins("INNER JOIN users on users.id = companies.user_id").
+		Where("companies.user_id = ?", id).
+		Take(&company).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, company)
+	// Map to response type to avoid leaking GORM internals and to make anonymization straightforward.
+	resp := CompanyResponse{
+		CreatedAt: company.CreatedAt,
+		UpdatedAt: company.UpdatedAt,
+		UserID:    company.UserID,
+		Email:     company.Email,
+		Phone:     company.Phone,
+		PhotoID:   company.PhotoID,
+		BannerID:  company.BannerID,
+		Address:   company.Address,
+		City:      company.City,
+		Country:   company.Country,
+		Website:   company.Website,
+		AboutUs:   company.AboutUs,
+		Name:      company.Name,
+	}
+
+	// If the user is deactivated, anonymize sensitive fields.
+	if helper.IsDeactivated(h.DB, id) {
+		anonymizeCompany(&resp)
+	}
+
+	ctx.JSON(http.StatusOK, resp)
 }
 
 // @Summary Get a list of all companies (Admin only)
@@ -80,13 +119,56 @@ func (h *CompanyHandlers) GetCompanyListHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
 		return
 	}
-	var companies []CompanyResponse
+
+	var rawResults []struct {
+		CreatedAt time.Time
+		UpdatedAt time.Time
+		UserID    string
+		Email     string
+		Phone     string
+		PhotoID   string
+		BannerID  string
+		Address   string
+		City      string
+		Country   string
+		Website   string
+		AboutUs   string
+		Name      string
+	}
+
 	if err := h.DB.Model(&model.Company{}).
 		Select("companies.created_at, companies.updated_at, companies.user_id, companies.email, companies.phone, companies.photo_id, companies.banner_id, companies.address, companies.city, companies.country, companies.website, companies.about_us, users.username as name").
 		Joins("INNER JOIN users on users.id = companies.user_id").
-		Find(&companies).Error; err != nil {
+		Find(&rawResults).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	companies := make([]CompanyResponse, 0, len(rawResults))
+	for _, r := range rawResults {
+		company := CompanyResponse{
+			CreatedAt: r.CreatedAt,
+			UpdatedAt: r.UpdatedAt,
+			UserID:    r.UserID,
+			Email:     r.Email,
+			Phone:     r.Phone,
+			PhotoID:   r.PhotoID,
+			BannerID:  r.BannerID,
+			Address:   r.Address,
+			City:      r.City,
+			Country:   r.Country,
+			Website:   r.Website,
+			AboutUs:   r.AboutUs,
+			Name:      r.Name,
+		}
+
+		// If the account is deactivated, anonymize the entry.
+		if helper.IsDeactivated(h.DB, r.UserID) {
+			anonymizeCompany(&company)
+		}
+
+		companies = append(companies, company)
+	}
+
 	ctx.JSON(http.StatusOK, companies)
 }

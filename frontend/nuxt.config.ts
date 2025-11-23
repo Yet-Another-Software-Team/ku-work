@@ -9,9 +9,21 @@ export default defineNuxtConfig({
         public: {
             apiBaseUrl: process.env.API_BASE_URL || "http://localhost:8000",
             googleClientId: process.env.GOOGLE_CLIENT_ID,
+            turnstileClientToken: process.env.TURNSTILE_CLIENT_TOKEN,
         },
     },
     nitro: {
         preset: "bun",
+    },
+    app: {
+        head: {
+            script: [
+                {
+                    src: "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit",
+                    async: true,
+                    defer: true,
+                },
+            ],
+        },
     },
 });

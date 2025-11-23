@@ -28,6 +28,7 @@
                 v-model:company-email="form.companyEmail"
                 v-model:company-website="form.companyWebsite"
                 v-model:password="form.password"
+                v-model:r-password="form.rPassword"
                 v-model:phone="form.phone"
                 v-model:address="form.address"
                 v-model:city="form.city"
@@ -45,6 +46,9 @@
                 <h2 class="text-4xl font-bold text-primary mb-2">You’re All Set</h2>
                 <p class="text-gray-600">You have successfully registered your account.</p>
             </div>
+        </div>
+        <div v-if="currentStep === 2" class="flex justify-center">
+            <TurnstileWidget @callback="(tk) => (token = tk)" />
         </div>
         <div class="flex justify-center gap-x-2 py-4">
             <UButton
@@ -109,11 +113,14 @@ const isSubmitting = ref(false);
 const stepOneRef = ref<{ isValid: boolean } | null>(null);
 const stepTwoRef = ref<{ isValid: boolean } | null>(null);
 
+const token = ref<string>("");
+
 const form = reactive({
     companyName: "",
     companyEmail: "",
     companyWebsite: "",
     password: "",
+    rPassword: "",
     phone: "",
     address: "",
     city: "",
@@ -134,7 +141,7 @@ const canProceedToNext = computed(() => {
 });
 
 const canSubmit = computed(() => {
-    if (currentStep.value === 2 && stepTwoRef.value) {
+    if (currentStep.value === 2 && stepTwoRef.value && token.value) {
         return stepTwoRef.value.isValid;
     }
     return false;
@@ -187,6 +194,7 @@ const handlePrevious = () => {
 
 const onSubmit = async () => {
     if (!canSubmit.value) {
+        token.value = "";
         toast.add({
             title: "Validation Error",
             description: "Please fix all validation errors before submitting",
@@ -214,7 +222,11 @@ const onSubmit = async () => {
         formData.append("photo", form.companyLogo);
         formData.append("banner", form.banner);
 
-        const response = await api.postFormData<AuthResponse>("/auth/company/register", formData);
+        const response = await api.postFormData<AuthResponse>("/auth/company/register", formData, {
+            headers: {
+                "X-Turnstile-Token": token.value,
+            },
+        });
 
         if (response.data.token) {
             localStorage.setItem("token", response.data.token);

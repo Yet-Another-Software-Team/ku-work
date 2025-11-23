@@ -1,5 +1,7 @@
 <template>
-    <div class="sticky top-0 overflow-y-auto max-h-dvh rounded-xl shadow-md/25 p-5">
+    <div
+        class="sticky top-0 bg-white dark:bg-black overflow-y-auto overflow-x-hidden max-h-dvh rounded-xl shadow-md p-5"
+    >
         <!-- First section -->
         <div class="flex mb-7 justify-between items-center">
             <!-- Top Left Side -->
@@ -9,13 +11,13 @@
                         v-if="logo"
                         :src="logo"
                         alt="Company Logo"
-                        class="rounded-full size-[6em]"
+                        class="rounded-full size-[6em] object-cover"
                     />
                     <img
                         v-else
                         src="/images/background.png"
                         alt="Company Logo"
-                        class="rounded-full size-[6em]"
+                        class="rounded-full size-[6em] object-cover"
                     />
                 </span>
                 <span class="px-10 space-y-1">
@@ -28,12 +30,12 @@
                         </NuxtLink>
                         <div class="flex space-x-2 mt-2">
                             <span
-                                class="px-2 py-1 text-md bg-green-100 text-green-700 rounded-full"
+                                class="px-2 py-1 text-base bg-green-100 text-green-700 rounded-full"
                             >
                                 {{ data.jobType }}
                             </span>
                             <span
-                                class="px-2 py-1 text-md bg-green-100 text-green-700 rounded-full"
+                                class="px-2 py-1 text-base bg-green-100 text-green-700 rounded-full"
                             >
                                 {{ data.experience }}
                             </span>
@@ -66,10 +68,12 @@
                     >
                 </span>
                 <!-- Edit Button -->
-                <UModal v-model:open="openJobEditForm">
+                <UModal v-model:open="openJobPostEditForm">
                     <UButton
-                        class="px-4 py-2 border border-gray-400 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center mt-4 gap-2"
-                        @click="openJobEditForm = true"
+                        class="px-4 py-2 rounded-md text-sm hover:bg-gray-200 hover:cursor-pointer dark:hover:bg-primary-700 flex items-center mt-4 gap-2"
+                        color="neutral"
+                        variant="outline"
+                        @click="openJobPostEditForm = true"
                     >
                         <Icon
                             name="material-symbols:edit-square-outline-rounded"
@@ -78,7 +82,7 @@
                         Edit Post
                     </UButton>
                     <template #content>
-                        <JobEditForm :data="data" @close="handleCloseEditForm" />
+                        <JobPostEditForm :data="data" @close="handleCloseEditForm" />
                     </template>
                 </UModal>
             </div>
@@ -86,7 +90,7 @@
 
         <USeparator class="mt-2" />
         <!-- Information -->
-        <div class="space-y-3">
+        <div class="space-y-3 overflow-x-hidden">
             <h2 class="text-[#15543A] text-xl font-bold">About This Job</h2>
             <p>
                 <span class="text-[#15543A] font-semibold">Position Title: </span>
@@ -100,24 +104,24 @@
                 <span class="text-[#15543A] font-semibold">Duration: </span>
                 {{ data.duration }}
             </p>
-            <p>
+            <p class="whitespace-pre-wrap break-words overflow-x-hidden">
                 <span class="text-[#15543A] font-semibold">Description:</span>
                 <br />
-                {{ data.description }}
+                <span class="break-words">{{ data.description }}</span>
             </p>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import type { JobPost } from "~/data/mockData";
+import type { JobPost } from "~/data/datatypes";
 
 const props = defineProps<{
     data: JobPost;
     open: boolean;
 }>();
 
-const openJobEditForm = ref(false);
+const openJobPostEditForm = ref(false);
 const logo = ref("");
 const data = ref<JobPost>(props.data);
 
@@ -202,7 +206,7 @@ async function handleToggle() {
 }
 
 function handleCloseEditForm() {
-    openJobEditForm.value = false;
+    openJobPostEditForm.value = false;
     emit("close");
 }
 

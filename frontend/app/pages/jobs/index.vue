@@ -1,6 +1,6 @@
 <template>
     <div class="flex">
-        <section class="w-full">
+        <section class="w-full h-dvh overflow-y-auto pr-2">
             <!-- Title -->
             <section class="sticky top-0 z-20 bg-[#F7F8F4] dark:bg-neutral-900 pt-5 pb-2">
                 <h1
@@ -10,7 +10,7 @@
                 </h1>
                 <!-- Search component -->
                 <div class="my-5">
-                    <JobSearchComponents
+                    <JobSearchComponent
                         :locations="jobs.map((job) => job.location)"
                         @update:search="search = $event"
                         @update:location="location = $event"
@@ -18,7 +18,7 @@
 
                     <!-- More options -->
                     <div>
-                        <SearchMoreButton
+                        <JobSearchMoreButton
                             @update:salary-range="salaryRange = $event"
                             @update:job-type="jobType = $event"
                             @update:exp-type="expType = $event"
@@ -93,6 +93,7 @@
                         :is-viewer="userRole === 'viewer'"
                         :is-selected="true"
                         :data="jobs[selectedIndex]!"
+                        @update:applied="() => updateApplied(true)"
                     />
                     <JobPostDrawer
                         v-if="jobs.length > 0 && !isTablet"
@@ -101,6 +102,7 @@
                         :is-selected="true"
                         :data="jobs[selectedIndex]!"
                         @close="setSelectedIndex(null)"
+                        @update:applied="() => updateApplied(true)"
                     />
                 </section>
             </section>
@@ -110,7 +112,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import type { JobPost } from "~/data/mockData";
+import type { JobPost } from "~/data/datatypes";
 import type { CheckboxGroupValue } from "@nuxt/ui";
 import { useMediaQuery, useInfiniteScroll, watchDebounced } from "@vueuse/core";
 
@@ -256,6 +258,23 @@ onMounted(() => {
 });
 
 await fetchJobs();
+
+const updateApplied = (value: boolean) => {
+    // Ensure a selection exists (0 is a valid index)
+    if (selectedIndex.value === null) {
+        return;
+    }
+
+    const idx = selectedIndex.value;
+    const job = jobs.value[idx];
+    if (!job) {
+        return;
+    }
+
+    (job as JobPost).applied = value;
+
+    jobs.value = jobs.value.slice();
+};
 </script>
 
 <style scoped>

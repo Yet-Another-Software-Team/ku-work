@@ -1,7 +1,7 @@
 <template>
     <div class="main-container px-[12vw] h-fit">
         <div
-            class="w-full flex flex-col lg:flex-row justify-center items-center gap-x-[5em] pb-5 pt-[3em]"
+            class="w-full flex flex-col lg:flex-row justify-center items-center gap-x-[5em] pb-5 pt-[1em]"
         >
             <div class="text-white w-fit">
                 <div>

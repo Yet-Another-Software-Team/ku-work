@@ -7,7 +7,7 @@ import (
 	"ku-work/backend/helper"
 	"ku-work/backend/middlewares"
 	"ku-work/backend/services"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -39,20 +39,21 @@ import (
 func main() {
 	_ = godotenv.Load()
 
-	// Initialize infrastructure
-	if err := initializeFilesDirectory(); err != nil {
-		log.Printf("Failed to create files directory: %v", err)
-		return
+	if err := services.InitializeLoggingService(); err != nil {
+		slog.Error("Logging initialization failed", "error", err)
 	}
 
 	db, err := database.LoadDB()
 	if err != nil {
-		log.Printf("Database initialization failed: %v", err)
+		slog.Error("Database initialization failed", "error", err)
 		return
 	}
 
 	redisClient := initializeRedis()
-	emailService, aiService := initializeServices(db)
+	if redisClient == nil {
+		return
+	}
+	emailService, aiService, fileService := initializeServices(db)
 
 	// Setup background tasks
 	ctx, cancel := context.WithCancel(context.Background())
@@ -61,8 +62,7 @@ func main() {
 	scheduler := setupScheduler(ctx, db, emailService)
 	scheduler.Start()
 
-	// Setup HTTP server
-	router := setupRouter(db, redisClient, emailService, aiService)
+	router := setupRouter(db, redisClient, emailService, aiService, fileService)
 	srv := startServer(router)
 
 	// Graceful shutdown
@@ -70,37 +70,35 @@ func main() {
 	performGracefulShutdown(srv, cancel, scheduler, redisClient)
 }
 
-// initializeFilesDirectory creates the files directory if it doesn't exist
-func initializeFilesDirectory() error {
-	return os.MkdirAll("./files", 0755)
-}
-
 // initializeRedis initializes Redis client with fail-open behavior
 func initializeRedis() *redis.Client {
 	redisClient, redis_err := database.LoadRedis()
 	if redis_err != nil {
-		log.Fatalf("FATAL: Redis initialization failed: %v.", redis_err)
+		slog.Error("FATAL: Redis initialization failed", "error", redis_err)
 		return nil
 	}
-	log.Println("Redis connected successfully")
+	slog.Info("Redis connected successfully")
 	return redisClient
 }
 
-// initializeServices initializes email and AI services with proper error handling
-func initializeServices(db *gorm.DB) (*services.EmailService, *services.AIService) {
+// initializeServices initializes email, AI, and File services with proper error handling
+func initializeServices(db *gorm.DB) (*services.EmailService, *services.AIService, *services.FileService) {
 	emailService, err := services.NewEmailService(db)
 	if err != nil {
-		log.Printf("Warning: Email service initialization failed: %v", err)
-		return nil, nil
+		slog.Warn("Email service initialization failed", "error", err)
+		return nil, nil, nil
 	}
 
 	aiService, err := services.NewAIService(db, emailService)
 	if err != nil {
-		log.Printf("Warning: AI service initialization failed: %v", err)
-		return emailService, nil
+		slog.Warn("AI service initialization failed", "error", err)
+		return emailService, nil, nil
 	}
 
-	return emailService, aiService
+	fileService := services.NewFileService(db)
+	fileService.RegisterGlobal() //Register file Services to be use on model-level
+
+	return emailService, aiService, fileService
 }
 
 // setupScheduler configures and returns the background task scheduler
@@ -119,6 +117,13 @@ func setupScheduler(ctx context.Context, db *gorm.DB, emailService *services.Ema
 			return emailService.RetryFailedEmails()
 		})
 	}
+
+	// Account anonymization task - runs daily to anonymize accounts past grace period
+	accountDeletionInterval := getAccountDeletionInterval()
+	gracePeriod := helper.GetGracePeriodDays()
+	scheduler.AddTask("account-deletion", accountDeletionInterval, func() error {
+		return services.AnonymizeExpiredAccounts(db, gracePeriod)
+	})
 
 	return scheduler
 }
@@ -140,8 +145,25 @@ func getEmailRetryInterval() time.Duration {
 	return time.Duration(minutes) * time.Minute
 }
 
+// getAccountDeletionInterval reads the account anonymization check interval from environment or returns default
+func getAccountDeletionInterval() time.Duration {
+	defaultInterval := 24 * time.Hour // Check once per day by default (PDPA compliant anonymization)
+
+	intervalStr, hasInterval := os.LookupEnv("ACCOUNT_DELETION_CHECK_INTERVAL_HOURS")
+	if !hasInterval {
+		return defaultInterval
+	}
+
+	hours, err := strconv.Atoi(intervalStr)
+	if err != nil || hours <= 0 {
+		return defaultInterval
+	}
+
+	return time.Duration(hours) * time.Hour
+}
+
 // setupRouter configures the Gin router with middleware and routes
-func setupRouter(db *gorm.DB, redisClient *redis.Client, emailService *services.EmailService, aiService *services.AIService) *gin.Engine {
+func setupRouter(db *gorm.DB, redisClient *redis.Client, emailService *services.EmailService, aiService *services.AIService, fileService *services.FileService) *gin.Engine {
 	router := gin.Default()
 
 	// CORS middleware
@@ -149,8 +171,9 @@ func setupRouter(db *gorm.DB, redisClient *redis.Client, emailService *services.
 	router.Use(cors.New(corsConfig))
 
 	// Application routes
-	if err := handlers.SetupRoutes(router, db, redisClient, emailService, aiService); err != nil {
-		log.Fatal("Failed to setup routes:", err)
+	if err := handlers.SetupRoutes(router, db, redisClient, emailService, aiService, fileService); err != nil {
+		slog.Error("Fatal: Failed to setup routes", "error", err)
+		return nil
 	}
 
 	// Swagger documentation
@@ -182,9 +205,10 @@ func startServer(router *gin.Engine) *http.Server {
 	}
 
 	go func() {
-		log.Printf("Starting server on %s", listenAddress)
+		slog.Info("Starting server", "listen_address", listenAddress)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Server failed to start: %v", err)
+			slog.Error("Server failed to start", "error", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -205,7 +229,7 @@ func waitForShutdownSignal() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	<-sigChan
-	log.Println("Shutdown signal received, starting graceful shutdown...")
+	slog.Info("Shutdown signal received, starting graceful shutdown...")
 }
 
 // performGracefulShutdown gracefully shuts down all services
@@ -216,7 +240,7 @@ func performGracefulShutdown(srv *http.Server, cancel context.CancelFunc, schedu
 
 	// Shutdown HTTP server
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		log.Printf("Server forced to shutdown: %v", err)
+		slog.Warn("Server forced to shutdown", "error", err)
 	}
 
 	// Stop scheduler
@@ -226,9 +250,9 @@ func performGracefulShutdown(srv *http.Server, cancel context.CancelFunc, schedu
 	// Close Redis connection
 	if redisClient != nil {
 		if err := redisClient.Close(); err != nil {
-			log.Printf("Error closing Redis connection: %v", err)
+			slog.Error("Error closing Redis connection", "error", err)
 		}
 	}
 
-	log.Println("Server stopped gracefully")
+	slog.Info("Server stopped gracefully")
 }

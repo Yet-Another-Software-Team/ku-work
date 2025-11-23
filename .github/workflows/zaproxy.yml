@@ -1,0 +1,131 @@
+name: ZAP Full Scan
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  zap_scan:
+    runs-on: ubuntu-latest
+    env:
+      # Helps isolate compose resources across runs
+      COMPOSE_PROJECT_NAME: kuwork-zap-${{ github.run_id }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Prepare environment from secret (DOTENV_B64 required)
+        working-directory: .
+        env:
+          DOTENV_B64: ${{ secrets.DOTENV_B64 }}
+        run: |
+          if [ -z "${DOTENV_B64}" ]; then
+            echo "Required secret DOTENV_B64 is not set"
+            exit 1
+          fi
+          echo "$DOTENV_B64" | base64 -d > .env
+          # Normalize CRLF just in case
+          sed -i 's/\r$//' .env
+
+      - name: Ensure optional files exist for volume mounts
+        working-directory: .
+        run: |
+          mkdir -p backend
+          [ -f backend/gcs-key.json ] || echo '{}' > backend/gcs-key.json
+
+      - name: Build and start application with Docker Compose
+        working-directory: .
+        run: |
+          docker compose pull || true
+          docker compose up -d --build
+
+      - name: Wait for backend to be ready
+        working-directory: .
+        run: |
+          set -euo pipefail
+          echo "Waiting for backend readiness on http://localhost:8000 ..."
+          urls=(http://localhost:8000/)
+          end=$((SECONDS+180))
+          ready=0
+          while [ $SECONDS -lt $end ]; do
+            for u in "${urls[@]}"; do
+              code=$(curl -k -sS -o /dev/null -w "%{http_code}" "$u" || true)
+              if [ "${code:-0}" -ge 200 ] && [ "${code:-0}" -lt 500 ]; then
+                echo "Backend ready at $u (HTTP $code)"
+                ready=1
+                break
+              fi
+            done
+            [ $ready -eq 1 ] && break
+            echo "Waiting for backend to be ready... ($(date))"
+            sleep 5
+          done
+          if [ $ready -ne 1 ]; then
+            echo "Backend did not become ready in time"
+            docker compose ps || true
+            docker compose logs backend || true
+            exit 1
+          fi
+
+      - name: Wait for frontend to be ready
+        working-directory: .
+        run: |
+          set -euo pipefail
+          echo "Waiting for frontend readiness on http://localhost:3000 ..."
+          urls=(http://localhost:3000/)
+          end=$((SECONDS+180))
+          ready=0
+          while [ $SECONDS -lt $end ]; do
+            for u in "${urls[@]}"; do
+              code=$(curl -k -sS -o /dev/null -w "%{http_code}" "$u" || true)
+              if [ "${code:-0}" -ge 200 ] && [ "${code:-0}" -lt 500 ]; then
+                echo "Frontend ready at $u (HTTP $code)"
+                ready=1
+                break
+              fi
+            done
+            [ $ready -eq 1 ] && break
+            echo "Waiting for frontend to be ready... ($(date))"
+            sleep 5
+          done
+          if [ $ready -ne 1 ]; then
+            echo "Frontend did not become ready in time"
+            docker compose ps || true
+            docker compose logs frontend || true
+            exit 1
+          fi
+
+      - name: ZAP Full Scan Frontend
+        uses: zaproxy/action-full-scan@v0.13.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target: http://localhost:3000/
+          cmd_options: -a
+          artifact_name: 'zap-scan-frontend-report'
+          allow_issue_writing: false
+
+      - name: ZAP API Scan Backend (OpenAPI)
+        uses: zaproxy/action-api-scan@v0.10.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target: http://localhost:8000/swagger/doc.json
+          format: openapi
+          cmd_options: -a
+          artifact_name: 'zap-scan-backend-report'
+          allow_issue_writing: false
+
+      - name: Teardown
+        if: always()
+        working-directory: .
+        run: |
+          docker compose logs backend || true
+          docker compose down -v --remove-orphans
+          rm -f .env

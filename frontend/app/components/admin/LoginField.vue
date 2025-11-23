@@ -37,9 +37,11 @@
                 </template>
             </UInput>
         </UFormField>
-
+        <TurnstileWidget @callback="(tk) => (token = tk)" />
         <UButton
             class="size-fit text-xl text-white rounded-md px-15 font-medium bg-primary-500 hover:bg-primary-700 hover:cursor-pointer active:bg-primary-800"
+            :loading="isLoggingIn || token === ''"
+            :disabled="isLoggingIn || token === ''"
             type="submit"
             label="Log In"
         />
@@ -67,6 +69,7 @@ const state = reactive<Partial<Schema>>({
     username: "",
     password: "",
 });
+const token = ref<string>("");
 
 async function onSubmit(_: FormSubmitEvent<Schema>) {
     if (!state.username || !state.password) {
@@ -88,6 +91,9 @@ async function onSubmit(_: FormSubmitEvent<Schema>) {
                 password: state.password,
             },
             {
+                headers: {
+                    "X-Turnstile-Token": token.value,
+                },
                 withCredentials: true,
             }
         );

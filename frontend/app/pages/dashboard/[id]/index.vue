@@ -1,22 +1,22 @@
 <template>
-    <section class="w-full">
+    <section class="w-full overflow-x-hidden">
         <!-- Back -->
         <NuxtLink to="/dashboard">
             <h1
-                class="flex items-center text-5xl text-primary-800 dark:text-primary font-bold mb-6 gap-2 cursor-pointer"
+                class="flex items-center text-5xl text-primary-800 dark:text-primary font-bold mt-6 mb-4 gap-1 cursor-pointer"
             >
                 <Icon name="iconoir:nav-arrow-left" class="items-center" />
                 <span>Back</span>
             </h1>
         </NuxtLink>
         <!-- Job Post detail -->
-        <section>
+        <section class="overflow-x-hidden">
             <div v-if="isLoading">
                 <USkeleton class="h-[20em] w-full mb-5" />
                 <USkeleton class="h-[10em] w-full mb-5" />
                 <div class="flex"></div>
             </div>
-            <CompanyPostComponent
+            <CompanyJobPostDetail
                 v-else-if="job"
                 :data="job"
                 :open="job.open ?? false"
@@ -31,32 +31,71 @@
         <section v-if="job" class="h-[3em] overflow-hidden border-b-1 my-5">
             <div class="flex flex-row gap-2 h-[6em] max-w-[40em] left-0 top-0">
                 <div
-                    class="hover:cursor-pointer transition-all duration-150 text-center"
+                    class="hover:cursor-pointer transition-all duration-150 text-center cursor-pointer"
                     :class="setTailwindClasses('inprogress')"
                     @click="selectInProgress"
                 >
                     <p class="font-bold px-5 py-1 text-2xl">In Progress</p>
                 </div>
                 <div
-                    class="hover:cursor-pointer transition-all duration-150 text-center"
+                    class="hover:cursor-pointer transition-all duration-150 text-center cursor-pointer"
                     :class="setTailwindClasses('accepted')"
                     @click="selectAccepted"
                 >
                     <p class="font-bold px-5 py-1 text-2xl">Accepted</p>
                 </div>
                 <div
-                    class="hover:cursor-pointer transition-all duration-150 text-center"
+                    class="hover:cursor-pointer transition-all duration-150 text-center cursor-pointer"
                     :class="setTailwindClasses('rejected')"
                     @click="selectRejected"
                 >
                     <p class="font-bold px-5 py-1 text-2xl">Rejected</p>
                 </div>
             </div>
+
+            <!-- Clear Modal -->
+            <UModal
+                v-model:open="openClearModal"
+                :ui="{
+                    title: 'text-xl font-semibold text-primary-800 dark:text-primary',
+                    overlay: 'fixed inset-0 bg-black/50',
+                }"
+            >
+                <template #header>
+                    <p>
+                        Are you sure you want to clear all
+                        {{ mapStatusToLabel(isSelected) }} applications?
+                    </p>
+                </template>
+                <template #body>
+                    <div class="flex justify-end gap-2">
+                        <UButton
+                            variant="outline"
+                            color="neutral"
+                            label="Cancel"
+                            @click="openClearModal = false"
+                        />
+                        <UButton color="error" label="Clear" @click="clearApplicationsHandler" />
+                    </div>
+                </template>
+            </UModal>
         </section>
         <!-- Job Applications List -->
         <section v-if="job">
             <div class="flex justify-between">
-                <h1 class="text-2xl font-semibold mb-2">{{ countedApplication }} Applicants</h1>
+                <div class="flex">
+                    <h1 class="text-lg font-semibold m-2">{{ countedApplication }} Applicants</h1>
+                    <!-- Clear Button -->
+                    <UButton
+                        color="neutral"
+                        variant="ghost"
+                        :label="clearLabel"
+                        :disabled="countedApplication <= 0"
+                        @mouseenter="hover(true)"
+                        @mouseleave="hover(false)"
+                        @click="openClearModal = true"
+                    />
+                </div>
                 <div class="flex gap-5">
                     <h1 class="text-2xl font-semibold mb-2">Sort by:</h1>
                     <USelectMenu
@@ -73,13 +112,53 @@
                 <USkeleton v-for="n in 10" :key="n" class="h-[20em] w-full mb-5" />
             </div>
             <div v-else class="flex flex-wrap gap-5 mb-10">
-                <JobApplicationComponent
+                <JobApplicationDetail
                     v-for="app in filteredApplications()"
                     :key="app.id"
                     :application-data="app"
-                    @approve="acceptApplication(app, true)"
-                    @reject="acceptApplication(app, false)"
+                    @approve="openConfirm(app, 'accept')"
+                    @reject="openConfirm(app, 'reject')"
                 />
+
+                <UModal
+                    v-model:open="showAppConfirm"
+                    :ui="{
+                        title: 'text-xl font-semibold text-primary-800 dark:text-primary',
+                        overlay: 'fixed inset-0 bg-black/50',
+                    }"
+                >
+                    <template #header>
+                        <p>
+                            Are you sure you want to
+                            <strong>{{ confirmAction === "accept" ? "accept" : "reject" }}</strong>
+                            {{ selectedApp?.username }}?
+                        </p>
+                    </template>
+                    <template #body>
+                        <div class="flex justify-end gap-2">
+                            <UButton
+                                variant="outline"
+                                color="neutral"
+                                label="Cancel"
+                                @click="showAppConfirm = false"
+                            />
+                            <UButton
+                                :color="confirmAction === 'accept' ? 'primary' : 'error'"
+                                :label="confirmAction === 'accept' ? 'Accept' : 'Reject'"
+                                @click="
+                                    () => {
+                                        if (selectedApp)
+                                            acceptApplication(
+                                                selectedApp,
+                                                confirmAction === 'accept'
+                                            );
+                                        showAppConfirm = false;
+                                    }
+                                "
+                            />
+                        </div>
+                    </template>
+                </UModal>
             </div>
         </section>
     </section>
@@ -87,7 +166,7 @@
 
 <script setup lang="ts">
 import { mockJobApplicationData } from "~/data/mockData";
-import type { JobPost, JobApplication } from "~/data/mockData";
+import type { JobPost, JobApplication } from "~/data/datatypes";
 
 definePageMeta({
     layout: "viewer",
@@ -106,6 +185,17 @@ const api = useApi();
 const route = useRoute();
 const isLoading = ref(true);
 const limit = 32;
+
+const openClearModal = ref<boolean>(false);
+const clearLabel = ref("Clear");
+const hover = (val: boolean) => {
+    if (val) {
+        clearLabel.value = "Clear?";
+    } else {
+        clearLabel.value = "Clear";
+    }
+};
+
 let currentJobOffset = 0;
 
 interface getApplicationForm {
@@ -122,7 +212,12 @@ const sortOptions = ref([
     { label: "Name Z-A", id: "name_za" },
 ]);
 
+const toast = useToast();
+
 const selectSortOption = ref("latest");
+const showAppConfirm = ref(false);
+const confirmAction = ref<"accept" | "reject">("accept");
+const selectedApp = ref<JobApplication | null>(null);
 
 const loadContents = async () => {
     isLoading.value = true;
@@ -149,6 +244,12 @@ const loadContents = async () => {
 };
 
 onMounted(loadContents);
+
+function openConfirm(app: JobApplication, action: "accept" | "reject") {
+    selectedApp.value = app;
+    confirmAction.value = action;
+    showAppConfirm.value = true;
+}
 
 const acceptApplication = async (jobApplication: JobApplication, accept: boolean) => {
     try {
@@ -212,6 +313,36 @@ const fetchApplication = async (token: string | null, jobId: number) => {
     }
 };
 
+async function clearApplicationsHandler() {
+    if (!job.value) return;
+    try {
+        await api.delete(`/jobs/${job.value.id}/applications`, {
+            data: {
+                accepted: isSelected.value === "accepted",
+                pending: isSelected.value === "inprogress",
+                rejected: isSelected.value === "rejected",
+            },
+            withCredentials: true,
+        });
+        toast.add({
+            title: "Success to clear applications",
+            description: "All selected applications have been cleared.",
+            color: "success",
+        });
+        currentJobOffset = 0;
+        applications.value = undefined;
+        await loadContents();
+    } catch (error) {
+        toast.add({
+            title: "Failed to clear applications",
+            description: (error as { message: string }).message,
+            color: "error",
+        });
+    } finally {
+        openClearModal.value = false;
+    }
+}
+
 // Toggle between inprogress, accepted, rejected
 const isSelected = ref("inprogress");
 
@@ -220,14 +351,25 @@ function setTailwindClasses(activeCondition: string) {
     const condition = isSelected.value;
     if (condition == activeCondition) {
         if (condition == "inprogress") {
-            return "bg-yellow-200 flex flex-col border-1 rounded-3xl w-1/3 text-yellow-800 hover:bg-yellow-300";
+            return "bg-yellow-200 flex flex-col border rounded-3xl w-1/3 text-yellow-800 hover:bg-yellow-300";
         } else if (condition == "accepted") {
-            return "bg-green-200 flex flex-col border-1 rounded-3xl w-1/3 text-primary-800 hover:bg-primary-300";
+            return "bg-green-200 flex flex-col border rounded-3xl w-1/3 text-primary-800 hover:bg-primary-300";
         }
-        return "bg-error-200 flex flex-col border-1 rounded-3xl w-1/3 text-error-800 hover:bg-error-300";
+        return "bg-error-200 flex flex-col border rounded-3xl w-1/3 text-error-800 hover:bg-error-300";
     } else {
-        return "bg-gray-200 flex flex-col border-1 rounded-3xl w-1/3 text-gray-500 hover:bg-gray-300";
+        return "bg-gray-200 flex flex-col border rounded-3xl w-1/3 text-gray-500 hover:bg-gray-300";
     }
+}
+
+function mapStatusToLabel(status: string) {
+    if (status === "inprogress") {
+        return "pending";
+    } else if (status === "accepted") {
+        return "accepted";
+    } else if (status === "rejected") {
+        return "rejected";
+    }
+    return "";
 }
 
 function selectInProgress() {
@@ -253,12 +395,14 @@ function filteredApplications() {
 }
 
 function applicationCount() {
+    // Prefer live data from loaded applications if available
+    const list = applications.value ?? [];
     if (isSelected.value === "inprogress") {
-        return job.value?.pending;
+        return list.filter((a) => a.status === "pending").length;
     } else if (isSelected.value === "accepted") {
-        return job.value?.accepted;
+        return list.filter((a) => a.status === "accepted").length;
     } else if (isSelected.value === "rejected") {
-        return job.value?.rejected;
+        return list.filter((a) => a.status === "rejected").length;
     }
     return 0;
 }

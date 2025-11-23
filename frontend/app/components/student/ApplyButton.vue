@@ -5,7 +5,11 @@
         :ui="{ content: 'w-[380px]', body: 'p-6', title: 'text-xl font-bold' }"
     >
         <!-- Button Trigger -->
-        <UButton class="w-full justify-center my-5 p-2 text-xl" label="Apply" />
+        <UButton
+            class="w-full justify-center my-5 p-2 text-xl"
+            label="Apply"
+            :disabled="appliedLocal"
+        />
 
         <template #body>
             <!-- Progress -->
@@ -22,7 +26,7 @@
             <div v-if="currentStep === 1">
                 <!-- Dropzone -->
                 <label
-                    class="mt-4 block rounded-md border-2 border-dashed border-neutral-500/50 bg-neutral-50 p-6 text-center cursor-pointer transition light:hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700"
+                    class="mt-4 block rounded-md border-2 border-dashed border-neutral-500/50 bg-neutral-50 p-6 text-center cursor-pointer transition hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700"
                     @dragover.prevent
                     @drop="onDrop"
                 >
@@ -103,6 +107,7 @@
                             errors.contactMail
                         }}</span>
                     </div>
+                    <TurnstileWidget @callback="(tk) => (cfToken = tk)" />
                 </div>
             </div>
 
@@ -123,7 +128,7 @@
                     label="Cancel"
                     color="neutral"
                     variant="outline"
-                    class="flex-1 rounded-md text-neutral-900 bg-white justify-center hover:bg-gray-200 hover:cursor-pointer border-1 border-gray-200 px-4 py-2 font-md transition"
+                    class="flex-1 rounded-md text-neutral-900 bg-white justify-center hover:bg-gray-200 hover:cursor-pointer border border-gray-200 px-4 py-2 font-medium transition"
                     @click="close"
                 />
                 <UButton
@@ -140,6 +145,8 @@
             <UButton
                 label="Done"
                 class="w-full text-xl justify-center px-4 py-2 font-semibold text-white bg-primary-500 hover:bg-primary-700 transition"
+                :disabled="!cfToken"
+                :loading="!cfToken"
                 @click="handleDone(close)"
             />
         </template>
@@ -154,10 +161,21 @@ const api = useApi();
 
 interface Props {
     jobId: number;
+    applied?: boolean;
 }
 
 const props = defineProps<Props>();
+const emit = defineEmits<{ (e: "update:applied", value: boolean): void }>();
 const toast = useToast();
+
+// Local mutable applied state synced with prop for v-model support
+const appliedLocal = ref<boolean>(props.applied);
+watch(
+    () => props.applied,
+    (v) => {
+        appliedLocal.value = v;
+    }
+);
 
 const totalSteps = 2;
 const currentStep = ref(1);
@@ -171,6 +189,7 @@ const isSubmitting = ref(false);
 
 const contactPhone = ref("");
 const contactMail = ref("");
+const cfToken = ref("");
 
 const errors = reactive({
     contactPhone: "",
@@ -297,9 +316,17 @@ async function onNext() {
             formData.append("files", file);
         });
 
-        await api.postFormData(`/jobs/${props.jobId}/apply`, formData, { withCredentials: true });
+        await api.postFormData(`/jobs/${props.jobId}/apply`, formData, {
+            withCredentials: true,
+            headers: {
+                "X-Turnstile-Token": cfToken.value,
+            },
+        });
 
         currentStep.value = 2;
+        // update local state and emit update for v-model:applied
+        appliedLocal.value = true;
+        emit("update:applied", true);
         toast.add({
             title: "Apply Successfully",
             description: "Your application has been submitted successfully",
@@ -325,6 +352,7 @@ function handleDone(close: () => void) {
     errors.contactMail = "";
     errors.resumeFile = "";
     currentStep.value = 1;
+    cfToken.value = "";
     close();
 }
 </script>
