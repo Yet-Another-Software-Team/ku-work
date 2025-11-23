@@ -85,7 +85,8 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 	exchange_ctx := context.Background()
 	token, err := h.GoogleOauthConfig.Exchange(exchange_ctx, req.Code)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Error("Failed to exchange authorization code", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to exchange authorization code"})
 		return
 	}
 
@@ -95,14 +96,16 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 	// Create API request to exchange access token for user info
 	api_req, err := http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo", nil)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Error("Failed to create user info request", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user info request"})
 		return
 	}
 	api_req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
 
 	api_res, err := client.Do(api_req)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Error("Failed to get user info", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
 		return
 	}
 
@@ -131,7 +134,8 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 
 	var userInfo UserInfo
 	if err := json.NewDecoder(api_res.Body).Decode(&userInfo); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Error("Failed to decode user info", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode user info"})
 		return
 	}
 

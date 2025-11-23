@@ -3,6 +3,7 @@ package handlers
 import (
 	"ku-work/backend/helper"
 	"ku-work/backend/model"
+	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"net/mail"
@@ -89,10 +90,10 @@ func (h *UserHandlers) editCompanyProfile(ctx *gin.Context, userId string) {
 	}
 	input := CompanyEditProfileInput{}
 
-	// Validate input data
 	err := ctx.MustBindWith(&input, binding.FormMultipart)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		slog.Debug("Failed to bind company edit profile request", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
@@ -102,7 +103,8 @@ func (h *UserHandlers) editCompanyProfile(ctx *gin.Context, userId string) {
 		if err := h.DB.Model(&model.User{}).Where(&model.User{
 			Username: *input.Username,
 		}).Count(&usernameCount).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			slog.Error("Failed to check username existence", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})
 			return
 		}
 		if usernameCount > 0 {
@@ -113,12 +115,14 @@ func (h *UserHandlers) editCompanyProfile(ctx *gin.Context, userId string) {
 			ID: userId,
 		}
 		if err := h.DB.Take(&user).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			slog.Error("Failed to get user profile", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})
 			return
 		}
 		user.Username = *input.Username
 		if err := h.DB.Save(&user).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			slog.Error("Failed to save username", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})
 			return
 		}
 	}
@@ -128,7 +132,9 @@ func (h *UserHandlers) editCompanyProfile(ctx *gin.Context, userId string) {
 		UserID: userId,
 	}
 	if err := h.DB.First(&company).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		msg := "Failed to get company data"
+		slog.Error(msg, "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		return
 	}
 
@@ -185,7 +191,9 @@ func (h *UserHandlers) editCompanyProfile(ctx *gin.Context, userId string) {
 	if input.Photo != nil {
 		photo, err := SaveFile(ctx, h.DB, userId, input.Photo, model.FileCategoryImage)
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			msg := "Failed to save photo"
+			slog.Error(msg, "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 			return
 		}
 		company.PhotoID = photo.ID
@@ -194,7 +202,9 @@ func (h *UserHandlers) editCompanyProfile(ctx *gin.Context, userId string) {
 	if input.Banner != nil {
 		banner, err := SaveFile(ctx, h.DB, userId, input.Banner, model.FileCategoryImage)
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			msg := "Failed to save banner"
+			slog.Error(msg, "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 			return
 		}
 		company.BannerID = banner.ID
@@ -202,7 +212,9 @@ func (h *UserHandlers) editCompanyProfile(ctx *gin.Context, userId string) {
 
 	// Save updated company to database.
 	if err := h.DB.Save(&company).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		msg := "Failed to save company"
+		slog.Error(msg, "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		return
 	}
 
@@ -227,7 +239,9 @@ func (h *UserHandlers) editStudentProfile(ctx *gin.Context, userId string) {
 	input := StudentEditProfileInput{}
 	err := ctx.MustBindWith(&input, binding.FormMultipart)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		msg := "Failed to bind input data"
+		slog.Debug(msg, "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": msg})
 		return
 	}
 
@@ -236,14 +250,18 @@ func (h *UserHandlers) editStudentProfile(ctx *gin.Context, userId string) {
 		UserID: userId,
 	}
 	if err := h.DB.First(&student).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		msg := "Failed to fetch student data"
+		slog.Error(msg, "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		return
 	}
 	// Update student data according to input, maintain same data if not provided
 	if input.BirthDate != nil {
 		parsedBirthDate, err := time.Parse(time.RFC3339, *input.BirthDate)
 		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			msg := "Failed to parse birth date"
+			slog.Debug(msg, "error", err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": msg})
 			return
 		}
 		student.BirthDate = datatypes.Date(parsedBirthDate)
@@ -267,7 +285,9 @@ func (h *UserHandlers) editStudentProfile(ctx *gin.Context, userId string) {
 	if input.Photo != nil {
 		photo, err := SaveFile(ctx, h.DB, userId, input.Photo, model.FileCategoryImage)
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			msg := "Failed to save photo"
+			slog.Error(msg, "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 			return
 		}
 		student.PhotoID = photo.ID
@@ -276,7 +296,9 @@ func (h *UserHandlers) editStudentProfile(ctx *gin.Context, userId string) {
 	// Save data into database
 	result := h.DB.Save(&student)
 	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		msg := "Failed to save student"
+		slog.Error(msg, "error", result.Error)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		return
 	}
 

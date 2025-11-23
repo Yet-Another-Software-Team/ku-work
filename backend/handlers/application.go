@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"ku-work/backend/model"
 	"ku-work/backend/services"
+	"log/slog"
 	"math"
 	"mime/multipart"
 	"net/http"
@@ -123,7 +124,8 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 	input := ApplyJobInput{}
 	err = ctx.Bind(&input)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		slog.Debug("Failed to bind job application request", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
@@ -133,7 +135,8 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 	}
 	result := h.DB.First(&student)
 	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		slog.Error("Failed to get student profile", "error", result.Error)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get student profile"})
 		return
 	}
 	if student.ApprovalStatus != model.StudentApprovalAccepted {
@@ -146,7 +149,12 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 	}
 	result = h.DB.First(&job)
 	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		if result.Error == gorm.ErrRecordNotFound {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "job not found"})
+		} else {
+			slog.Error("Failed to get job", "error", result.Error)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get job"})
+		}
 		return
 	}
 
@@ -160,7 +168,8 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 		}
 		result = h.DB.First(&user)
 		if result.Error != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+			slog.Error("Failed to get user profile", "error", result.Error)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user profile"})
 			return
 		}
 		input.AltEmail = user.Username // The username of OAuth User is already set as their email
@@ -187,7 +196,8 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 	for _, file := range input.Files {
 		fileObject, err := SaveFile(ctx, h.DB, student.UserID, file, model.FileCategoryDocument)
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to save file %s: %s", file.Filename, err.Error())})
+			slog.Error("failed to save file", "filename", file.Filename, "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to save file %s", file.Filename)})
 			return
 		}
 		jobApplication.Files = append(jobApplication.Files, *fileObject)
@@ -195,7 +205,8 @@ func (h *ApplicationHandlers) CreateJobApplicationHandler(ctx *gin.Context) {
 
 	// Create application database object
 	if err := h.DB.Create(&jobApplication).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Error("Failed to create job application", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create job application"})
 		return
 	}
 	success = true
@@ -289,7 +300,8 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "job not found"})
 		} else {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			slog.Error("Failed to get job", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get job"})
 		}
 		return
 	}
@@ -301,7 +313,8 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 		admin := model.Admin{}
 		result := h.DB.Where("user_id = ?", userId).First(&admin)
 		if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+			slog.Error("Failed to check admin privileges", "error", result.Error)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check admin privileges"})
 			return
 		}
 		if result.RowsAffected == 0 {
@@ -322,7 +335,8 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 	input := FetchJobApplicationsInput{}
 	err = ctx.Bind(&input)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Debug("Failed to bind get job applications request", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
@@ -364,7 +378,8 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 	var jobApplications []ShortApplicationDetail
 	result := query.Offset(int(input.Offset)).Limit(int(input.Limit)).Scan(&jobApplications)
 	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		slog.Error("Failed to get job applications", "error", result.Error)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get job applications"})
 		return
 	}
 
@@ -378,7 +393,8 @@ func (h *ApplicationHandlers) GetJobApplicationsHandler(ctx *gin.Context) {
 				jobApplications[i].JobID, jobApplications[i].UserID).
 			Find(&files).Error
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			slog.Error("Failed to load files for job application", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get job applications"})
 			return
 		}
 		jobApplications[i].Files = files
@@ -423,7 +439,8 @@ func (h *ApplicationHandlers) ClearJobApplicationsHandler(ctx *gin.Context) {
 	}
 	var input ClearJobApplicationsInput
 	if err := ctx.ShouldBind(&input); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		slog.Debug("Failed to bind clear job applications request", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
@@ -436,7 +453,8 @@ func (h *ApplicationHandlers) ClearJobApplicationsHandler(ctx *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "job not found"})
 		} else {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			slog.Error("Failed to get job", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get job"})
 		}
 		return
 	}
@@ -453,7 +471,8 @@ func (h *ApplicationHandlers) ClearJobApplicationsHandler(ctx *gin.Context) {
 		query = query.Not("status = ?", model.JobApplicationPending)
 	}
 	if err := query.Delete(&model.JobApplication{}).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Error("Failed to delete job applications", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete job applications"})
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"message": "ok"})
@@ -508,13 +527,15 @@ func (h *ApplicationHandlers) GetJobApplicationHandler(ctx *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "job application not found or student account deactivated"})
 		} else {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			slog.Error("Failed to get job application", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get job application"})
 		}
 		return
 	}
 
 	// explicitly load the "Files" association into the struct.
 	if err := h.DB.Model(&jobApplication.JobApplication).Association("Files").Find(&jobApplication.Files); err != nil {
+		slog.Error("Failed to load application files", "error", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load application files"})
 		return
 	}
@@ -550,7 +571,8 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 	input := FetchJobApplicationsInput{}
 	err := ctx.Bind(&input)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Debug("Failed to bind get all job applications request", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
@@ -584,7 +606,8 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 	}
 	result := h.DB.Limit(1).Find(&company)
 	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		slog.Error("Failed to determine user role", "error", result.Error)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to determine user role"})
 		return
 	}
 
@@ -598,7 +621,8 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 		}
 		result = h.DB.Limit(1).Find(&student)
 		if result.Error != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+			slog.Error("Failed to determine user role", "error", result.Error)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to determine user role"})
 			return
 		}
 
@@ -634,7 +658,8 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 	var jobApplications []ApplicationWithJobDetails
 	result = query.Offset(int(input.Offset)).Limit(int(input.Limit)).Scan(&jobApplications)
 	if result.Error != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		slog.Error("Failed to get job applications", "error", result.Error)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get job applications"})
 		return
 	}
 
@@ -648,7 +673,8 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 				jobApplications[i].JobID, jobApplications[i].UserID).
 			Find(&files).Error
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			slog.Error("Failed to load files for job application", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get job applications"})
 			return
 		}
 		jobApplications[i].Files = files
@@ -680,7 +706,8 @@ func (h *ApplicationHandlers) GetAllJobApplicationsHandler(ctx *gin.Context) {
 	}
 
 	if err := countQuery.Count(&totalCount).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Error("Failed to count job applications", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to count job applications"})
 		return
 	}
 
@@ -728,7 +755,8 @@ func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context
 		if err == gorm.ErrRecordNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "job not found"})
 		} else {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			slog.Error("Failed to get job", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get job"})
 		}
 		return
 	}
@@ -746,7 +774,8 @@ func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context
 	}
 	input := UpdateStatusInput{}
 	if err := ctx.BindJSON(&input); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		slog.Debug("Failed to bind update job application status request", "error", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
@@ -758,7 +787,8 @@ func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context
 		if err == gorm.ErrRecordNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "job application not found"})
 		} else {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			slog.Error("Failed to get job application", "error", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get job application"})
 		}
 		return
 	}
@@ -766,7 +796,8 @@ func (h *ApplicationHandlers) UpdateJobApplicationStatusHandler(ctx *gin.Context
 	// Update the status
 	jobApplication.Status = model.JobApplicationStatus(input.Status)
 	if err := h.DB.Save(jobApplication).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Error("Failed to update job application status", "error", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update job application status"})
 		return
 	}
 
