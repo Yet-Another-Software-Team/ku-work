@@ -74,7 +74,7 @@ test.describe("Student E2E Tests (Authenticated)", () => {
 
         // Look for job listings
         const jobCards = page.locator("[data-testid='job-card'], .job-card, article");
-        
+
         // Check if job cards exist
         const jobCardCount = await jobCards.count();
         if (jobCardCount > 0) {
@@ -90,7 +90,7 @@ test.describe("Student E2E Tests (Authenticated)", () => {
 
         // Look for search input
         const searchInput = page.locator("input[type='search'], input[placeholder*='search' i]");
-        
+
         if (await searchInput.isVisible().catch(() => false)) {
             await searchInput.fill("Developer");
             await page.waitForTimeout(1000);
@@ -107,11 +107,10 @@ test.describe("Student E2E Tests (Authenticated)", () => {
 
         // Try to find and click on a company link
         const companyLink = page.locator("a[href*='/jobs/']").first();
-        
+
         if (await companyLink.isVisible().catch(() => false)) {
             await companyLink.click();
             await page.waitForLoadState("networkidle");
-            
             // Verify we're on a company profile page
             await expect(page).toHaveURL(/\/jobs\//);
         }
@@ -169,7 +168,7 @@ test.describe("Student E2E Tests (Authenticated)", () => {
         if (appCount > 0) {
             // Click on first application to view details
             const firstApp = applicationCards.first();
-            
+
             // Look for details/view button
             const viewButton = firstApp.locator("button, a").filter({ hasText: /view|details/i });
             if (await viewButton.isVisible().catch(() => false)) {
@@ -213,7 +212,7 @@ test.describe("Student E2E Tests (Authenticated)", () => {
 
         // Look for logout button
         const logoutButton = page.getByRole("button", { name: /logout|sign out/i });
-        
+
         if (await logoutButton.isVisible().catch(() => false)) {
             await logoutButton.click();
             await page.waitForLoadState("networkidle");

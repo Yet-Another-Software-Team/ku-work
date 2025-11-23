@@ -22,7 +22,7 @@ The tests are organized using Playwright's project feature with setup dependenci
 
 2. **Environment Variables**: Copy `.env.test.example` to `.env.test` and fill in credentials:
    ```bash
-   cp .env.test.example .env.test
+   cp sample.env.test .env.test
    ```
 
    Then edit `.env.test` with your test account credentials:

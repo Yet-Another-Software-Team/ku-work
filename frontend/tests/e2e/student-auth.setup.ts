@@ -22,13 +22,13 @@ setup("authenticate as student", async ({ page }) => {
     // Fill in Google credentials
     const emailInput = popup.getByRole("textbox", { name: /email or phone/i });
     await emailInput.waitFor({ state: "visible" });
-    await emailInput.fill(process.env.TEST_STUDENT_EMAIL || "teststudent@test.com");
+    await emailInput.fill(process.env.TEST_STUDENT_EMAIL);
     await emailInput.press("Enter");
 
     // Wait for password field and fill
     const passwordInput = popup.getByRole("textbox", { name: /enter your password/i });
     await passwordInput.waitFor({ state: "visible", timeout: 10000 });
-    await passwordInput.fill(process.env.TEST_STUDENT_PASSWORD || "TestPassword123");
+    await passwordInput.fill(process.env.TEST_STUDENT_PASSWORD);
     await passwordInput.press("Enter");
 
     // Wait for the popup to close (auth complete)

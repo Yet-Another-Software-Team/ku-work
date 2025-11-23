@@ -22,7 +22,7 @@ setup("authenticate as company", async ({ page }) => {
     // Fill in Google credentials
     const emailInput = popup.getByRole("textbox", { name: /email or phone/i });
     await emailInput.waitFor({ state: "visible" });
-    await emailInput.fill(process.env.TEST_COMPANY_EMAIL || "testcompany@gmail.com");
+    await emailInput.fill("testcompany@kuwork.com");
     await emailInput.press("Enter");
 
     // Wait for password field and fill

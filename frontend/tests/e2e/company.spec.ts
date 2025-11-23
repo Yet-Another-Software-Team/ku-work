@@ -61,7 +61,7 @@ test.describe("Company E2E Tests (Authenticated)", () => {
 
         // Look for job listings or search functionality
         const jobCards = page.locator("[data-testid='job-card'], .job-card, article");
-        
+
         // If there's a search input, try searching
         const searchInput = page.locator("input[type='search'], input[placeholder*='search' i]");
         if (await searchInput.isVisible().catch(() => false)) {
@@ -115,7 +115,7 @@ test.describe("Company E2E Tests (Authenticated)", () => {
 
         // Look for logout button (adjust selector based on actual implementation)
         const logoutButton = page.getByRole("button", { name: /logout|sign out/i });
-        
+
         if (await logoutButton.isVisible().catch(() => false)) {
             await logoutButton.click();
             await page.waitForLoadState("networkidle");
