@@ -200,8 +200,12 @@ func startServer(router *gin.Engine) *http.Server {
 	listenAddress := getListenAddress()
 
 	srv := &http.Server{
-		Addr:    listenAddress,
-		Handler: router,
+		Addr:              listenAddress,
+		Handler:           router,
+		ReadHeaderTimeout: 10 * time.Second,  // Set read header timeout to 10 seconds
+		ReadTimeout:       30 * time.Second,  // Set read timeout to 30 seconds
+		WriteTimeout:      30 * time.Second,  // Set write timeout to 30 seconds
+		IdleTimeout:       120 * time.Second, // Set idle timeout to 120 seconds
 	}
 
 	go func() {

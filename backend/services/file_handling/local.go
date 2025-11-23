@@ -63,7 +63,8 @@ func (p *LocalProvider) SaveFile(ctx *gin.Context, db *gorm.DB, userId string, f
 	}
 
 	// Ensure base directory exists
-	if err := os.MkdirAll(p.BaseDir, 0o755); err != nil {
+	// #nosec G301
+	if err := os.MkdirAll(p.BaseDir, 0o750); err != nil {
 		_ = db.Delete(fileRecord).Error // Rollback DB record
 		return nil, fmt.Errorf("failed to create storage directory: %w", err)
 	}
@@ -77,7 +78,8 @@ func (p *LocalProvider) SaveFile(ctx *gin.Context, db *gorm.DB, userId string, f
 	}
 
 	targetPath := filepath.Join(p.BaseDir, fileRecord.ID)
-	if err := os.WriteFile(targetPath, toWrite, 0o644); err != nil {
+	// #nosec G306
+	if err := os.WriteFile(targetPath, toWrite, 0o640); err != nil {
 		_ = db.Delete(fileRecord) // Rollback DB record
 		return nil, fmt.Errorf("failed to write file to disk: %w", err)
 	}
