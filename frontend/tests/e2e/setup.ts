@@ -12,7 +12,7 @@ function generateRandomString(length: number): string {
     return result;
 }
 
-const csvFile = "frontend/tests/e2e/company-mail.csv";
+const csvFile = "./tests/e2e/company-mail.csv";
 let uniqueEmail = `testcompany+${generateRandomString(8)}@kuwork.com`;
 const uniquePassword = `TestPassword!${generateRandomString(5)}`;
 const newLine = `${uniqueEmail},${uniquePassword}\n`;

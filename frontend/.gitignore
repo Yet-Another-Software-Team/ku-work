@@ -11,7 +11,7 @@ test-results
 
 # Playwright auth states
 playwright-report
-tests/e2e/company-mail.csv
+company-mail.csv
 
 # Node dependencies
 node_modules
