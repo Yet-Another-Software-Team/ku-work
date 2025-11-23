@@ -10,8 +10,8 @@ dist
 test-results
 
 # Playwright auth states
-playwright/.auth/
 playwright-report
+tests/e2e/company-mail.csv
 
 # Node dependencies
 node_modules
