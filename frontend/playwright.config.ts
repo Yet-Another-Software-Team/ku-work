@@ -14,7 +14,7 @@ export default defineConfig({
     },
     projects: [
         // Setup projects
-        { name: "setup-company", testMatch: /.*company-auth\.setup\.ts/ },
+        // { name: "setup", testMatch: /.*setup\.ts/ },
 
         // Company tests using authenticated state
         {

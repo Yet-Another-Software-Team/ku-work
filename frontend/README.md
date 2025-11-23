@@ -80,7 +80,6 @@ The application will be available at `http://localhost:3000`
 | `bun format`       | Check project file format with prettier |
 | `bun format:fix`   | Fix project file format with prettier   |
 | `bun test:e2e`     | Run e2e test using playwright           |
-| `bun test:e2e:ui`  | Run e2e test using playwright ui        |
 
 ## Production Deployment
 
