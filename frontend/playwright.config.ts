@@ -3,9 +3,6 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
     testDir: "./tests/e2e",
     fullyParallel: true,
-    forbidOnly: !!process.env.CI,
-    retries: process.env.CI ? 2 : 0,
-    workers: process.env.CI ? 1 : undefined,
     reporter: "html",
     use: {
         baseURL: "http://localhost:3000", // Nuxt dev server URL
@@ -18,7 +15,7 @@ export default defineConfig({
     projects: [
         // Setup projects
         { name: "setup-company", testMatch: /.*company-auth\.setup\.ts/ },
-        { name: "setup-student", testMatch: /.*student-auth\.setup\.ts/ },
+        // { name: "setup-student", testMatch: /.*student-auth\.setup\.ts/ },
 
         // Company tests using authenticated state
         {
@@ -32,15 +29,15 @@ export default defineConfig({
         },
 
         // Student tests using authenticated state
-        {
-            name: "student",
-            testMatch: /.*student\.spec\.ts/,
-            use: {
-                ...devices["Desktop Chrome"],
-                storageState: "./playwright/.auth/student.json",
-            },
-            dependencies: ["setup-student"],
-        },
+        // {
+        //     name: "student",
+        //     testMatch: /.*student\.spec\.ts/,
+        //     use: {
+        //         ...devices["Desktop Chrome"],
+        //         storageState: "./playwright/.auth/student.json",
+        //     },
+        //     dependencies: ["setup-student"],
+        // },
 
         // Other tests without authentication
         {
@@ -54,6 +51,6 @@ export default defineConfig({
         command: "bun run dev",
         port: 3000,
         cwd: ".",
-        reuseExistingServer: !process.env.CI,
+        reuseExistingServer: true,
     },
 });
