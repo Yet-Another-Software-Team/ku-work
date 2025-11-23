@@ -60,7 +60,7 @@ test.describe("Company E2E Tests (Authenticated)", () => {
         await page.waitForLoadState("networkidle");
 
         // Look for job listings or search functionality
-        const jobCards = page.locator("[data-testid='job-card'], .job-card, article");
+        // const jobCards = page.locator("[data-testid='job-card'], .job-card, article");
 
         // If there's a search input, try searching
         const searchInput = page.locator("input[type='search'], input[placeholder*='search' i]");

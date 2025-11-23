@@ -15,7 +15,6 @@ export default defineConfig({
     projects: [
         // Setup projects
         { name: "setup-company", testMatch: /.*company-auth\.setup\.ts/ },
-        // { name: "setup-student", testMatch: /.*student-auth\.setup\.ts/ },
 
         // Company tests using authenticated state
         {
@@ -25,23 +24,11 @@ export default defineConfig({
                 ...devices["Desktop Chrome"],
                 storageState: "./playwright/.auth/company.json",
             },
-            dependencies: ["setup-company"],
         },
-
-        // Student tests using authenticated state
-        // {
-        //     name: "student",
-        //     testMatch: /.*student\.spec\.ts/,
-        //     use: {
-        //         ...devices["Desktop Chrome"],
-        //         storageState: "./playwright/.auth/student.json",
-        //     },
-        //     dependencies: ["setup-student"],
-        // },
 
         // Other tests without authentication
         {
-            name: "chromium",
+            name: "other",
             testIgnore: [/.*company\.spec\.ts/, /.*student\.spec\.ts/],
             use: { ...devices["Desktop Chrome"] },
         },
