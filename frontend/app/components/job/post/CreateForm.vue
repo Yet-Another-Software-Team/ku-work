@@ -190,6 +190,7 @@
 import { ref, reactive, watch } from "vue";
 import type { CreateJobPost } from "~/data/datatypes";
 import * as z from "zod";
+import { useAuthStore } from "~/stores/auth";
 
 const emit = defineEmits(["close"]);
 
@@ -363,7 +364,8 @@ async function onSubmit() {
     }
 
     try {
-        const token = localStorage.getItem("token");
+        const authStore = useAuthStore();
+        const token = authStore.token;
         await api.post("/jobs", result.data, {
             headers: {
                 Authorization: `Bearer ${token}`,

@@ -115,6 +115,7 @@
 
 <script setup lang="ts">
 import type { JobPost } from "~/data/datatypes";
+import { useAuthStore } from "~/stores/auth";
 
 const props = defineProps<{
     data: JobPost;
@@ -155,7 +156,8 @@ interface PatchJobForm {
 async function handleToggle() {
     // Set up for the patch request toggle switch
     patchWaiting.value = true;
-    const token = localStorage.getItem("token");
+    const authStore = useAuthStore();
+    const token = authStore.token;
     if (!token) {
         toast.add({
             title: "Not authenticated",
@@ -166,7 +168,7 @@ async function handleToggle() {
         return;
     }
 
-    const role = localStorage.getItem("role");
+    const role = authStore.role;
     if (role !== "company") {
         toast.add({
             title: "Unauthorized",

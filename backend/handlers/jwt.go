@@ -294,16 +294,26 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	role := helper.GetRole(refreshTokenDB.UserID, h.DB)
 	username := helper.GetUsername(refreshTokenDB.UserID, role, h.DB)
 
+	isRegistered := true
+	if role == helper.Viewer {
+		var count int64
+		h.DB.Model(&model.Student{}).Where("user_id = ?", refreshTokenDB.UserID).Count(&count)
+		if count == 0 {
+			isRegistered = false
+		}
+	}
+
 	ctx.SetSameSite(helper.GetCookieSameSite())
 	ctx.SetCookie("refresh_token", newRefreshToken, int(time.Hour*24*30/time.Second), "/", "", helper.GetCookieSecure(), true)
 
 	slog.Info("Token refreshed successfully", "user", refreshTokenDB.UserID, "ip", clientIP)
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"token":    jwtToken,
-		"username": username,
-		"role":     role,
-		"userId":   refreshTokenDB.UserID,
+		"token":        jwtToken,
+		"username":     username,
+		"role":         role,
+		"userId":       refreshTokenDB.UserID,
+		"isRegistered": isRegistered,
 	})
 }
 

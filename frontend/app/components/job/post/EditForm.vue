@@ -197,6 +197,7 @@
 import { ref, reactive, watch } from "vue";
 import type { EditJobPost, JobPost } from "~/data/datatypes";
 import * as z from "zod";
+import { useAuthStore } from "~/stores/auth";
 
 const props = defineProps<{
     data: JobPost;
@@ -380,7 +381,8 @@ async function onSubmit() {
     }
 
     try {
-        const token = localStorage.getItem("token");
+        const authStore = useAuthStore();
+        const token = authStore.token;
         console.log("Updating job with data:", result.data);
         await api.patch(`/jobs/${props.data.id}`, result.data, {
             headers: {

@@ -28,7 +28,7 @@
                         Terms of Service
                     </NuxtLink>
                     <NuxtLink
-                        to="/"
+                        :to="getHomePath()"
                         class="text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 transition-colors"
                     >
                         Home
@@ -56,6 +56,29 @@
 
 <script setup lang="ts">
 const year = new Date().getFullYear();
+const authStore = useAuthStore();
+
+const getHomePath = () => {
+    // Get Home path according the user role.
+
+    if (!authStore.isAuthenticated) {
+        return "/";
+    }
+
+    if (authStore.isAdmin) {
+        return "/admin/dashboard";
+    }
+
+    if (authStore.isStudent || authStore.isViewer) {
+        return "/jobs";
+    }
+
+    if (authStore.isCompany) {
+        return "/dashboard";
+    }
+
+    return "/";
+};
 </script>
 
 <style scoped>

@@ -114,6 +114,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from "vue";
 import { useApi } from "@/composables/useApi";
+import { useAuthStore } from "~/stores/auth";
 
 const api = useApi();
 const toast = useToast();
@@ -143,11 +144,12 @@ const form = reactive({
 });
 
 onMounted(() => {
-    const username = localStorage.getItem("username");
-    const role = localStorage.getItem("role");
-    const isRegistered = localStorage.getItem("isRegistered");
+    const authStore = useAuthStore();
+    const username = authStore.username;
+    const role = authStore.role;
+    const isRegistered = authStore.isRegistered;
 
-    if (role === "viewer" && isRegistered === "true") {
+    if (role === "viewer" && isRegistered === true) {
         toast.add({
             title: "Already Registered",
             description: "Redirecting to jobs page...",
@@ -229,7 +231,8 @@ const onSubmit = async () => {
     isSubmitting.value = true;
 
     try {
-        const token = localStorage.getItem("token");
+        const authStore = useAuthStore();
+        const token = authStore.token;
         if (!token) {
             toast.add({
                 title: "Authentication Error",
@@ -270,7 +273,7 @@ const onSubmit = async () => {
                 "X-Turnstile-Token": cfToken.value,
             },
         });
-        localStorage.setItem("isRegistered", "true"); // Set isRegistered to True.
+        authStore.setIsRegistered(true);
         currentStep.value++;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {

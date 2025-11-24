@@ -11,8 +11,7 @@
 
 <script setup lang="ts">
 import { useApi } from "~/composables/useApi";
-
-const toast = useToast();
+import { useAuthStore } from "~/stores/auth";
 
 const logout = async () => {
     try {
@@ -25,16 +24,8 @@ const logout = async () => {
             }
         );
 
-        localStorage.removeItem("token");
-        localStorage.removeItem("username");
-        localStorage.removeItem("role");
-        localStorage.removeItem("userId");
-
-        toast.add({
-            title: "Logged Out",
-            description: "You have been successfully logged out.",
-            color: "neutral",
-        });
+        const authStore = useAuthStore();
+        authStore.logout();
 
         // Redirect to the home page after logout
         window.location.href = "/";
