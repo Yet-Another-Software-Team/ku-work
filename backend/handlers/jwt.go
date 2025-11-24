@@ -216,7 +216,7 @@ func (h *JWTHandlers) GenerateTokens(userID string) (string, string, error) {
 func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	clientIP := ctx.ClientIP()
 
-	refreshToken, err := ctx.Cookie("refresh_token")
+	refreshToken, err := ctx.Cookie(helper.GetRefreshCookieName())
 	if err != nil {
 		slog.Warn("SECURITY: Missing refresh token", "ip", clientIP)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
@@ -228,7 +228,7 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	if len(parts) != 2 {
 		slog.Warn("SECURITY: Invalid refresh token format", "ip", clientIP)
 		ctx.SetSameSite(helper.GetCookieSameSite())
-		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
+		ctx.SetCookie(helper.GetRefreshCookieName(), "", -1, "/", "", helper.GetCookieSecure(), true)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
 		return
 	}
@@ -240,7 +240,7 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	if err := h.DB.Where("token_selector = ?", selector).First(&refreshTokenDB).Error; err != nil {
 		slog.Warn("SECURITY: Invalid refresh token", "ip", clientIP)
 		ctx.SetSameSite(helper.GetCookieSameSite())
-		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
+		ctx.SetCookie(helper.GetRefreshCookieName(), "", -1, "/", "", helper.GetCookieSecure(), true)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
 		return
 	}
@@ -250,7 +250,7 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	if err != nil || !match {
 		slog.Warn("SECURITY: Invalid refresh token", "ip", clientIP)
 		ctx.SetSameSite(helper.GetCookieSameSite())
-		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
+		ctx.SetCookie(helper.GetRefreshCookieName(), "", -1, "/", "", helper.GetCookieSecure(), true)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
 		return
 	}
@@ -267,7 +267,7 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 			Update("revoked_at", now)
 
 		ctx.SetSameSite(helper.GetCookieSameSite())
-		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
+		ctx.SetCookie(helper.GetRefreshCookieName(), "", -1, "/", "", helper.GetCookieSecure(), true)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
 		return
 	}
@@ -278,7 +278,7 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 		now := time.Now()
 		h.DB.Model(&refreshTokenDB).Update("revoked_at", now)
 		ctx.SetSameSite(helper.GetCookieSameSite())
-		ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
+		ctx.SetCookie(helper.GetRefreshCookieName(), "", -1, "/", "", helper.GetCookieSecure(), true)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
 		return
 	}
@@ -304,7 +304,7 @@ func (h *JWTHandlers) RefreshTokenHandler(ctx *gin.Context) {
 	}
 
 	ctx.SetSameSite(helper.GetCookieSameSite())
-	ctx.SetCookie("refresh_token", newRefreshToken, int(time.Hour*24*30/time.Second), "/", "", helper.GetCookieSecure(), true)
+	ctx.SetCookie(helper.GetRefreshCookieName(), newRefreshToken, int(time.Hour*24*30/time.Second), "/", "", helper.GetCookieSecure(), true)
 
 	slog.Info("Token refreshed successfully", "user", refreshTokenDB.UserID, "ip", clientIP)
 
@@ -356,7 +356,7 @@ func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
 	}
 
 	// Revoke the refresh token
-	refreshToken, err := ctx.Cookie("refresh_token")
+	refreshToken, err := ctx.Cookie(helper.GetRefreshCookieName())
 	if err == nil && refreshToken != "" {
 		// Split token into selector and validator
 		parts := strings.SplitN(refreshToken, ":", 2)
@@ -380,7 +380,7 @@ func (h *JWTHandlers) LogoutHandler(ctx *gin.Context) {
 
 	// Always clear the cookie, even if token revocation failed
 	ctx.SetSameSite(helper.GetCookieSameSite())
-	ctx.SetCookie("refresh_token", "", -1, "/", "", helper.GetCookieSecure(), true)
+	ctx.SetCookie(helper.GetRefreshCookieName(), "", -1, "/", "", helper.GetCookieSecure(), true)
 
 	if userID != nil {
 		slog.Info("User logged out successfully", "user_id", userID, "ip", clientIP)

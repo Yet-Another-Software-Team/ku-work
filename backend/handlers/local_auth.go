@@ -159,7 +159,7 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 
 	maxAge := int(time.Hour * 24 * 30 / time.Second)
 	ctx.SetSameSite(helper.GetCookieSameSite())
-	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", helper.GetCookieSecure(), true)
+	ctx.SetCookie(helper.GetRefreshCookieName(), refreshToken, maxAge, "/", "", helper.GetCookieSecure(), true)
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"token":    jwtToken,
@@ -224,7 +224,7 @@ func (h *LocalAuthHandlers) CompanyLoginHandler(ctx *gin.Context) {
 
 	maxAge := int(time.Hour * 24 * 30 / time.Second)
 	ctx.SetSameSite(helper.GetCookieSameSite())
-	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", helper.GetCookieSecure(), true)
+	ctx.SetCookie(helper.GetRefreshCookieName(), refreshToken, maxAge, "/", "", helper.GetCookieSecure(), true)
 
 	slog.Info("Company logged in", "user_id", user.ID, "ip", ctx.ClientIP())
 
@@ -286,7 +286,7 @@ func (h *LocalAuthHandlers) AdminLoginHandler(ctx *gin.Context) {
 
 	maxAge := int(time.Hour * 24 * 30 / time.Second)
 	ctx.SetSameSite(helper.GetCookieSameSite())
-	ctx.SetCookie("refresh_token", refreshToken, maxAge, "/", "", helper.GetCookieSecure(), true)
+	ctx.SetCookie(helper.GetRefreshCookieName(), refreshToken, maxAge, "/", "", helper.GetCookieSecure(), true)
 
 	slog.Info("Admin logged in", "user_id", user.ID, "ip", ctx.ClientIP())
 
