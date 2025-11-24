@@ -9,12 +9,6 @@ import (
 	"sync"
 )
 
-// Caching cookie name with mutex to prevert initialize race condition
-var cookieNameCache = struct {
-	sync.RWMutex
-	m map[string]string
-}{m: make(map[string]string)}
-
 var cookieSecureOnce sync.Once
 var isCookieSecure bool
 
@@ -51,13 +45,6 @@ func GetCookieName(baseName string) (string, error) {
 		return "", errors.New("cookie name cannot be empty")
 	}
 
-	cookieNameCache.RLock()
-	if name, ok := cookieNameCache.m[baseName]; ok {
-		cookieNameCache.RUnlock()
-		return name, nil // Cookie name found in cache
-	}
-	cookieNameCache.RUnlock()
-	// Cache miss, calculate the name
 	secure := GetCookieSecure()
 	var canonicalName string
 
@@ -66,10 +53,6 @@ func GetCookieName(baseName string) (string, error) {
 	} else {
 		canonicalName = baseName
 	}
-
-	cookieNameCache.Lock()
-	cookieNameCache.m[baseName] = canonicalName
-	cookieNameCache.Unlock()
 
 	return canonicalName, nil
 }
