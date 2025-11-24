@@ -14,7 +14,7 @@ export default defineNuxtConfig({
     css: ["~/assets/css/main.css"],
     runtimeConfig: {
         public: {
-            apiBaseUrl: process.env.API_BASE_URL || "http://localhost:8000",
+            apiBaseUrl: process.env.API_BASE_URL,
             googleClientId: process.env.GOOGLE_CLIENT_ID,
             turnstileClientToken: process.env.TURNSTILE_CLIENT_TOKEN,
         },
