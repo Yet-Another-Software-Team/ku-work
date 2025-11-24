@@ -29,12 +29,6 @@ const logout = async () => {
         const authStore = useAuthStore();
         authStore.logout();
 
-        toast.add({
-            title: "Logged Out",
-            description: "You have been successfully logged out.",
-            color: "neutral",
-        });
-
         // Redirect to the home page after logout
         window.location.href = "/";
     } catch (error) {

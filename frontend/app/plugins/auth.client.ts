@@ -6,6 +6,11 @@ export default defineNuxtPlugin({
     setup: (nuxtApp) => {
         const { $axios } = nuxtApp;
         let refreshTimeoutId: NodeJS.Timeout | null = null;
+        // Public routes to indicate which routes should not be redirected to login page.
+        const ROUTE_WHITELIST_CONFIG = {
+            exact: ["/register/company", "/admin"],
+            startsWith: ["/agreement"],
+        };
 
         const scheduleTokenRefresh = () => {
             if (import.meta.server) {
@@ -75,8 +80,14 @@ export default defineNuxtPlugin({
 
             const route = useRoute();
 
-            // Don't redirect on public routes or registration pages
-            if (route.path.startsWith("/register") && route.path.startsWith("/agreement")) {
+            const isRouteWhitelisted = (path: string) => {
+                if (ROUTE_WHITELIST_CONFIG.exact.includes(path)) {
+                    return true;
+                }
+                return ROUTE_WHITELIST_CONFIG.startsWith.some((prefix) => path.startsWith(prefix));
+            };
+
+            if (isRouteWhitelisted(route.path)) {
                 return;
             }
 
@@ -119,8 +130,6 @@ export default defineNuxtPlugin({
                 }
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (error) {
-                // To handle error if the token is invalid or expired
-                // so it can clear the store and redirect to login page
                 logout();
             }
         };
