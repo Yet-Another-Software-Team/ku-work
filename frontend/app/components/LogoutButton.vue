@@ -13,8 +13,6 @@
 import { useApi } from "~/composables/useApi";
 import { useAuthStore } from "~/stores/auth";
 
-const toast = useToast();
-
 const logout = async () => {
     try {
         const api = useApi();
