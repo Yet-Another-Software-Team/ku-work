@@ -151,8 +151,10 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 	if userCount == 0 {
 		var newUser model.User
 		h.DB.Unscoped().FirstOrCreate(&newUser, model.User{
-			Username: userInfo.Email,
-			UserType: "oauth",
+			Username:   userInfo.Email,
+			UserType:   "oauth",
+			AcceptPDPA: true,
+			AcceptGDPR: true,
 		})
 
 		oauthDetail = model.GoogleOAuthDetails{

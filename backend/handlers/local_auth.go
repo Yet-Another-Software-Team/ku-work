@@ -97,6 +97,8 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 		Username:     req.Username,
 		UserType:     "company",
 		PasswordHash: hashedPassword,
+		AcceptPDPA:   true,
+		AcceptGDPR:   true,
 	}
 
 	if err := tx.Create(&newUser).Error; err != nil {

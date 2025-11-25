@@ -16,6 +16,8 @@ type User struct {
 	Username     string         `gorm:"index:idx_username_user_type,unique"`
 	UserType     string         `gorm:"index:idx_username_user_type,unique"`
 	PasswordHash string         `json:"-"`
+	AcceptPDPA   bool			`gorm:"default:false"`
+	AcceptGDPR   bool			`gorm:"default:false"`
 }
 
 func (user *User) BeforeDelete(tx *gorm.DB) (err error) {
