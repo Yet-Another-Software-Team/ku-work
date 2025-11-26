@@ -1,47 +1,52 @@
+import crypto from "node:crypto";
+
 export default defineEventHandler((event) => {
-    // Anti-clickjacking headers
-    // X-Frame-Options: Prevents your site from being embedded in iframes
+    // Generate a unique nonce for this request
+    const nonce = crypto.randomUUID();
+
+    // Make nonce available to Nuxt renderer
+    event.context.nonce = nonce;
+
+    // --- Content Security Policy ---
+    // Note:
+    // - No unsafe-inline
+    // - Turnstile domain allowed
+    // - Nuxt will automatically attach nonce to SSR inline scripts
+    const csp = [
+        `default-src 'self'`,
+        `script-src 'self' https://challenges.cloudflare.com 'nonce-${nonce}'`,
+        `style-src 'self'`, // no unsafe-inline
+        `img-src 'self' data:`,
+        `font-src 'self' data:`,
+        `connect-src 'self' https://challenges.cloudflare.com`,
+        `frame-src 'none'`,
+        `frame-ancestors 'none'`,
+        `form-action 'self'`,
+        `base-uri 'self'`,
+        `object-src 'none'`,
+        `media-src 'self'`,
+        `manifest-src 'self'`,
+        `worker-src 'self'`,
+        `upgrade-insecure-requests`,
+    ].join("; ");
+
+    setResponseHeader(event, "Content-Security-Policy", csp);
+
+    // --- Additional security headers ---
     setResponseHeader(event, "X-Frame-Options", "DENY");
-
-    // Content-Security-Policy: Comprehensive policy for security
-    const cspDirectives = [
-        "default-src 'self'", // Default fallback for unspecified directives
-        // Allow self, inline scripts, and Turnstile scripts
-        "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
-        // Allow styles from self and inline styles for Nuxt
-        "style-src 'self' 'unsafe-inline'",
-        // Allow images and fonts from self, data URIs, and HTTPS sources
-        "img-src 'self' data: https:",
-        "font-src 'self' data:",
-        // Allow API connections to self and Turnstile
-        "connect-src 'self' https://challenges.cloudflare.com",
-        // No iframes allowed
-        "frame-src 'none'",
-        "frame-ancestors 'none'", // Prevent embedding (anti-clickjacking)
-        "form-action 'self'", // Forms can only submit to same origin
-        "base-uri 'self'", // Restrict base tag URLs
-        "object-src 'none'", // No plugins (Flash, Java, etc.)
-        "media-src 'self'", // Media from self only
-        "manifest-src 'self'", // Web manifest from self only
-        "worker-src 'self'", // Web workers from self only
-        "upgrade-insecure-requests", // Upgrade HTTP to HTTPS
-    ];
-    setResponseHeader(event, "Content-Security-Policy", cspDirectives.join("; "));
-
-    // Additional security headers
-    // X-Content-Type-Options: Prevents MIME type sniffing
     setResponseHeader(event, "X-Content-Type-Options", "nosniff");
-
-    // Referrer-Policy: Controls how much referrer information is shared
     setResponseHeader(event, "Referrer-Policy", "strict-origin-when-cross-origin");
-
-    // X-XSS-Protection: Legacy XSS protection (mostly deprecated but still useful for older browsers)
     setResponseHeader(event, "X-XSS-Protection", "1; mode=block");
 
-    // Permissions-Policy: Controls browser features and APIs
+    // Permissions-Policy: disable optional APIs
     setResponseHeader(
         event,
         "Permissions-Policy",
         "geolocation=(), microphone=(), camera=(), payment=()"
     );
+
+    // Cross-Origin security (recommended)
+    setResponseHeader(event, "Cross-Origin-Opener-Policy", "same-origin");
+    setResponseHeader(event, "Cross-Origin-Embedder-Policy", "require-corp");
+    setResponseHeader(event, "Cross-Origin-Resource-Policy", "same-origin");
 });
