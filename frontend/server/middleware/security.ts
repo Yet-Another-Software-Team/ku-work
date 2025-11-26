@@ -3,9 +3,30 @@ export default defineEventHandler((event) => {
     // X-Frame-Options: Prevents your site from being embedded in iframes
     setResponseHeader(event, "X-Frame-Options", "DENY");
 
-    // Content-Security-Policy frame-ancestors: Modern replacement for X-Frame-Options
-    // 'none' prevents the page from being embedded in any frame/iframe
-    setResponseHeader(event, "Content-Security-Policy", "frame-ancestors 'none'");
+    // Content-Security-Policy: Comprehensive policy for security
+    const cspDirectives = [
+        "default-src 'self'", // Default fallback for unspecified directives
+        // Allow self, inline scripts, and Turnstile scripts
+        "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
+        // Allow styles from self and inline styles for Nuxt
+        "style-src 'self' 'unsafe-inline'",
+        // Allow images and fonts from self, data URIs, and HTTPS sources
+        "img-src 'self' data: https:",
+        "font-src 'self' data:",
+        // Allow API connections to self and Turnstile
+        "connect-src 'self' https://challenges.cloudflare.com",
+        // No iframes allowed
+        "frame-src 'none'",
+        "frame-ancestors 'none'", // Prevent embedding (anti-clickjacking)
+        "form-action 'self'", // Forms can only submit to same origin
+        "base-uri 'self'", // Restrict base tag URLs
+        "object-src 'none'", // No plugins (Flash, Java, etc.)
+        "media-src 'self'", // Media from self only
+        "manifest-src 'self'", // Web manifest from self only
+        "worker-src 'self'", // Web workers from self only
+        "upgrade-insecure-requests", // Upgrade HTTP to HTTPS
+    ];
+    setResponseHeader(event, "Content-Security-Policy", cspDirectives.join("; "));
 
     // Additional security headers
     // X-Content-Type-Options: Prevents MIME type sniffing
