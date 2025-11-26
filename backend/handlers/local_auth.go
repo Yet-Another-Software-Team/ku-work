@@ -40,8 +40,8 @@ type RegisterRequest struct {
 	Photo      *multipart.FileHeader `form:"photo" binding:"required"`
 	Banner     *multipart.FileHeader `form:"banner" binding:"required"`
 	AboutUs    string                `form:"about" binding:"max=16384"`
-	AcceptPDPA bool                  `form:"accept_pdpa" binding:"required"`
-	AcceptGDPR bool                  `form:"accept_gdpr" binding:"required"`
+	AcceptPDPA bool                  `form:"accept_pdpa"`
+	AcceptGDPR bool                  `form:"accept_gdpr"`
 }
 
 // @Summary Register a new company
