@@ -29,17 +29,19 @@ func NewLocalAuthHandlers(db *gorm.DB, jwtHandlers *JWTHandlers) *LocalAuthHandl
 
 // struct to handle incoming registration data.
 type RegisterRequest struct {
-	Username string                `form:"username" binding:"required,max=256"`
-	Password string                `form:"password" binding:"required,min=8"`
-	Email    string                `form:"email" binding:"required,max=100"`
-	Website  string                `form:"website" binding:"max=200"`
-	Phone    string                `form:"phone" binding:"required,max=20"`
-	Address  string                `form:"address" binding:"required,max=200"`
-	City     string                `form:"city" binding:"required,max=100"`
-	Country  string                `form:"country" binding:"required,max=100"`
-	Photo    *multipart.FileHeader `form:"photo" binding:"required"`
-	Banner   *multipart.FileHeader `form:"banner" binding:"required"`
-	AboutUs  string                `form:"about" binding:"max=16384"`
+	Username   string                `form:"username" binding:"required,max=256"`
+	Password   string                `form:"password" binding:"required,min=8"`
+	Email      string                `form:"email" binding:"required,max=100"`
+	Website    string                `form:"website" binding:"max=200"`
+	Phone      string                `form:"phone" binding:"required,max=20"`
+	Address    string                `form:"address" binding:"required,max=200"`
+	City       string                `form:"city" binding:"required,max=100"`
+	Country    string                `form:"country" binding:"required,max=100"`
+	Photo      *multipart.FileHeader `form:"photo" binding:"required"`
+	Banner     *multipart.FileHeader `form:"banner" binding:"required"`
+	AboutUs    string                `form:"about" binding:"max=16384"`
+	AcceptPDPA bool                  `form:"accept_pdpa" binding:"required"`
+	AcceptGDPR bool                  `form:"accept_gdpr" binding:"required"`
 }
 
 // @Summary Register a new company
@@ -97,8 +99,8 @@ func (h *LocalAuthHandlers) CompanyRegisterHandler(ctx *gin.Context) {
 		Username:     req.Username,
 		UserType:     "company",
 		PasswordHash: hashedPassword,
-		AcceptPDPA:   true,
-		AcceptGDPR:   true,
+		AcceptPDPA:   req.AcceptPDPA,
+		AcceptGDPR:   req.AcceptGDPR,
 	}
 
 	if err := tx.Create(&newUser).Error; err != nil {

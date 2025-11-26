@@ -129,6 +129,8 @@ const form = reactive({
     about: "",
     companyLogo: null as File | null,
     banner: null as File | null,
+    acceptPDPA: true,
+    acceptGDPR: true,
 });
 
 const canProceedToNext = computed(() => {
@@ -223,6 +225,8 @@ const onSubmit = async () => {
         formData.append("about", form.about);
         formData.append("photo", form.companyLogo);
         formData.append("banner", form.banner);
+        formData.append("accept_pdpa", String(form.acceptPDPA));
+        formData.append("accept_gdpr", String(form.acceptGDPR));
 
         const response = await api.postFormData<AuthResponse>("/auth/company/register", formData, {
             headers: {
