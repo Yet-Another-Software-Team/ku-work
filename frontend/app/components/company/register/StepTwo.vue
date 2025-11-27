@@ -202,7 +202,13 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(["update:about", "update:companyLogo", "update:banner"]);
+const emit = defineEmits([
+    "update:about",
+    "update:companyLogo",
+    "update:banner",
+    "update:acceptedTerms",
+    "update:acceptedPrivacy",
+]);
 
 const previewLogoUrl = ref(null);
 const previewBannerUrl = ref(null);
@@ -305,11 +311,13 @@ const acceptTerms = () => {
     if (!hasReadTerms.value) return;
     acceptedTerms.value = true;
     termsModalOpen.value = false;
+    emit("update:acceptedTerms", true);
 };
 const acceptPrivacy = () => {
     if (!hasReadPrivacy.value) return;
     acceptedPrivacy.value = true;
     privacyModalOpen.value = false;
+    emit("update:acceptedPrivacy", true);
 };
 
 const onLogoFileChange = (event) => {

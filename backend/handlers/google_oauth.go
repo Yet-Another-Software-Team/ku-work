@@ -130,6 +130,8 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 		Name       string `json:"name"`
 		GivenName  string `json:"given_name"`
 		FamilyName string `json:"family_name"`
+		AcceptPDPA bool   `json:"accept_pdpa"`
+		AcceptGDPR bool   `json:"accept_gdpr"`
 	}
 
 	var userInfo UserInfo
@@ -151,8 +153,10 @@ func (h *OauthHandlers) GoogleOauthHandler(ctx *gin.Context) {
 	if userCount == 0 {
 		var newUser model.User
 		h.DB.Unscoped().FirstOrCreate(&newUser, model.User{
-			Username: userInfo.Email,
-			UserType: "oauth",
+			Username:   userInfo.Email,
+			UserType:   "oauth",
+			AcceptPDPA: userInfo.AcceptPDPA,
+			AcceptGDPR: userInfo.AcceptGDPR,
 		})
 
 		oauthDetail = model.GoogleOAuthDetails{

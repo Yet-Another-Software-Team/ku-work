@@ -141,6 +141,8 @@ const form = reactive({
     major: "",
     studentStatus: "",
     verificationFile: null as File | null,
+    acceptPDPA: true,
+    acceptGDPR: true,
 });
 
 onMounted(() => {
@@ -267,6 +269,10 @@ const onSubmit = async () => {
         if (form.linkedinURL) {
             formData.append("linkedIn", form.linkedinURL);
         }
+
+        // Add PDPA and GDPR consent
+        formData.append("acceptPDPA", String(form.acceptPDPA));
+        formData.append("acceptGDPR", String(form.acceptGDPR));
 
         await api.postFormData("/auth/student/register", formData, {
             headers: {

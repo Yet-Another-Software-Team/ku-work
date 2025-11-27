@@ -21,14 +21,16 @@ func TestCompany(t *testing.T) {
 	t.Run("Valid Company Creation", func(t *testing.T) {
 		username := fmt.Sprintf("companytester-%d", time.Now().UnixNano())
 		values := map[string]string{
-			"username": username,
-			"password": "password123",
-			"email":    "company@test.com",
-			"website":  "https://www.company.com",
-			"phone":    "0987654321",
-			"address":  "123 Test St",
-			"city":     "Testville",
-			"country":  "Testland",
+			"username":    username,
+			"password":    "password123",
+			"email":       "company@test.com",
+			"website":     "https://www.company.com",
+			"phone":       "0987654321",
+			"address":     "123 Test St",
+			"city":        "Testville",
+			"country":     "Testland",
+			"accept_pdpa": "true",
+			"accept_gdpr": "true",
 		}
 
 		w := httptest.NewRecorder()
@@ -123,14 +125,16 @@ func TestCompany(t *testing.T) {
 		}
 
 		values := map[string]string{
-			"username": username, // Same username
-			"password": "password123",
-			"email":    "company@test.com",
-			"website":  "https://www.company.com",
-			"phone":    "0987654321",
-			"address":  "123 Test St",
-			"city":     "Testville",
-			"country":  "Testland",
+			"username":    username, // Same username
+			"password":    "password123",
+			"email":       "company@test.com",
+			"website":     "https://www.company.com",
+			"phone":       "0987654321",
+			"address":     "123 Test St",
+			"city":        "Testville",
+			"country":     "Testland",
+			"accept_pdpa": "true",
+			"accept_gdpr": "true",
 		}
 
 		w := httptest.NewRecorder()
