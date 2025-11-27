@@ -12,6 +12,7 @@
                 :position="progressConfig.position"
                 :animation="progressConfig.animation"
             />
+            <ExternalRedirect />
             <NuxtLayout>
                 <NuxtPage />
             </NuxtLayout>
